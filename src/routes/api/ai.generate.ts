@@ -1,6 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { promises as fs } from "fs";
 import path from "path";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+async function logRun(row: {
+  task_id: string | null;
+  model: string;
+  system_prompt: string | null;
+  user_prompt: string | null;
+  output: string | null;
+  saved_path: string | null;
+  save_kind: string | null;
+  status: "ok" | "error";
+  error_message: string | null;
+  http_status: number | null;
+  duration_ms: number;
+}) {
+  try {
+    await supabaseAdmin.from("ai_runs").insert(row);
+  } catch (e) {
+    console.error("[ai.generate] failed to log run:", e);
+  }
+}
 
 interface GenerateBody {
   taskId?: string;
