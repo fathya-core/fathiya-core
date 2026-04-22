@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
+import { Route as ApiAiGenerateRouteImport } from './routes/api/ai.generate'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiN8nWorkflowsRoute = ApiN8nWorkflowsRouteImport.update({
+  id: '/api/n8n/workflows',
+  path: '/api/n8n/workflows',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiGenerateRoute = ApiAiGenerateRouteImport.update({
+  id: '/api/ai/generate',
+  path: '/api/ai/generate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/api/ai/generate' | '/api/n8n/workflows'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/ai/generate' | '/api/n8n/workflows'
+  id: '__root__' | '/' | '/api/ai/generate' | '/api/n8n/workflows'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAiGenerateRoute: typeof ApiAiGenerateRoute
+  ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/n8n/workflows': {
+      id: '/api/n8n/workflows'
+      path: '/api/n8n/workflows'
+      fullPath: '/api/n8n/workflows'
+      preLoaderRoute: typeof ApiN8nWorkflowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/generate': {
+      id: '/api/ai/generate'
+      path: '/api/ai/generate'
+      fullPath: '/api/ai/generate'
+      preLoaderRoute: typeof ApiAiGenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAiGenerateRoute: ApiAiGenerateRoute,
+  ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
