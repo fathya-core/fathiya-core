@@ -2,6 +2,7 @@ import { ChevronLeft, FileJson, FileText, Workflow } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { OwnerBadges } from "./OwnerBadges";
+import { GenerateButton } from "./GenerateButton";
 import { priorityStars, type Task } from "@/lib/ops/tasks";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ export function TaskCard({ task, onOpen }: TaskCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={task.status} />
             <OwnerBadges owners={task.owners} />
+            <GenerateButton taskId={task.id} />
           </div>
         </div>
         <ChevronLeft className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
