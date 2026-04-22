@@ -1,0 +1,12 @@
+{
+  "profile_id": "FATHIYA_SECURITY_BASE",
+  "status": "stub",
+  "owner": "Claude",
+  "purpose": "Base customization profile for security operations (target profiling, surface mapping, recon planning).",
+  "tone": null,
+  "guardrails": [],
+  "routing_hints": [],
+  "system_prompt": null,
+  "review_rules": [],
+  "_todo": "Claude يملأ هذا الملف. GPT يحوّله لاحقًا إلى صيغة قابلة للحقن في الـ wrapper."
+}

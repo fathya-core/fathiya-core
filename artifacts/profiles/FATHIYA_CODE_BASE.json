@@ -1,0 +1,12 @@
+{
+  "profile_id": "FATHIYA_CODE_BASE",
+  "status": "stub",
+  "owner": "Claude",
+  "purpose": "Base profile for code/build tasks (schemas, bridges, validators, parsers).",
+  "tone": null,
+  "guardrails": [],
+  "routing_hints": [],
+  "system_prompt": null,
+  "review_rules": [],
+  "_todo": "ينتظر مخرجات Claude."
+}
