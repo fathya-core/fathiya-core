@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AiConsoleRouteImport } from './routes/ai-console'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
 import { Route as ApiAiGenerateRouteImport } from './routes/api/ai.generate'
 
+const AiConsoleRoute = AiConsoleRouteImport.update({
+  id: '/ai-console',
+  path: '/ai-console',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,36 +37,52 @@ const ApiAiGenerateRoute = ApiAiGenerateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-console': typeof AiConsoleRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-console': typeof AiConsoleRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-console': typeof AiConsoleRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/ai/generate' | '/api/n8n/workflows'
+  fullPaths: '/' | '/ai-console' | '/api/ai/generate' | '/api/n8n/workflows'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/ai/generate' | '/api/n8n/workflows'
-  id: '__root__' | '/' | '/api/ai/generate' | '/api/n8n/workflows'
+  to: '/' | '/ai-console' | '/api/ai/generate' | '/api/n8n/workflows'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-console'
+    | '/api/ai/generate'
+    | '/api/n8n/workflows'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiConsoleRoute: typeof AiConsoleRoute
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ai-console': {
+      id: '/ai-console'
+      path: '/ai-console'
+      fullPath: '/ai-console'
+      preLoaderRoute: typeof AiConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +109,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiConsoleRoute: AiConsoleRoute,
   ApiAiGenerateRoute: ApiAiGenerateRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,
 }
