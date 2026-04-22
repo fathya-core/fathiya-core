@@ -1,0 +1,12 @@
+{
+  "profile_id": "FATHIYA_CRYPTO_BASE",
+  "status": "stub",
+  "owner": "Claude",
+  "purpose": "Base profile for crypto intelligence (catalyst scan, narrative analysis, thesis review).",
+  "tone": null,
+  "guardrails": [],
+  "routing_hints": [],
+  "system_prompt": null,
+  "review_rules": [],
+  "_todo": "ينتظر مخرجات Claude + Perplexity."
+}

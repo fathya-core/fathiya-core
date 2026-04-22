@@ -1,0 +1,12 @@
+{
+  "profile_id": "FATHIYA_RESEARCH_BASE",
+  "status": "stub",
+  "owner": "Claude",
+  "purpose": "Base profile for deep research tasks (premium-source dossiers, vendor intelligence).",
+  "tone": null,
+  "guardrails": [],
+  "routing_hints": [],
+  "system_prompt": null,
+  "review_rules": [],
+  "_todo": "ينتظر مخرجات Claude."
+}

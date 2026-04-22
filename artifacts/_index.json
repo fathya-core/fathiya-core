@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "generated_by": "src/lib/ops/tasks.ts",
+  "rule": "كل مهمة لا تُغلق إلا بـ artifact دائم تحت artifacts/",
+  "tasks": []
+}
