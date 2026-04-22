@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          http_status: number | null
+          id: string
+          model: string
+          output: string | null
+          save_kind: string | null
+          saved_path: string | null
+          status: string
+          system_prompt: string | null
+          task_id: string | null
+          user_prompt: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          model: string
+          output?: string | null
+          save_kind?: string | null
+          saved_path?: string | null
+          status?: string
+          system_prompt?: string | null
+          task_id?: string | null
+          user_prompt?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          model?: string
+          output?: string | null
+          save_kind?: string | null
+          saved_path?: string | null
+          status?: string
+          system_prompt?: string | null
+          task_id?: string | null
+          user_prompt?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

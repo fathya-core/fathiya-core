@@ -78,6 +78,13 @@ function OpsConsole() {
                 <Sparkles className="h-3 w-3" />
                 AI Console
               </Link>
+              <Link
+                to="/ai-runs"
+                className="inline-flex items-center gap-1 rounded border border-border/60 bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:border-primary/30"
+              >
+                <Activity className="h-3 w-3" />
+                Runs
+              </Link>
               <span className="inline-flex items-center gap-1.5 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Drain Mode
