@@ -1,8 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayerSection } from "@/components/ops/LayerSection";
 import { TaskDetailSheet } from "@/components/ops/TaskDetailSheet";
+import { N8nStatusPanel } from "@/components/ops/N8nStatusPanel";
+import { Toaster } from "@/components/ui/sonner";
 import {
   LAYERS,
   TASKS,
@@ -11,7 +13,7 @@ import {
   type Owner,
   type Task,
 } from "@/lib/ops/tasks";
-import { Activity, Database } from "lucide-react";
+import { Activity, Database, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,6 +71,13 @@ function OpsConsole() {
                   <span className="text-primary mr-1.5">{overall.pct}%</span>
                 </div>
               </div>
+              <Link
+                to="/ai-console"
+                className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] text-primary hover:bg-primary/20"
+              >
+                <Sparkles className="h-3 w-3" />
+                AI Console
+              </Link>
               <span className="inline-flex items-center gap-1.5 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Drain Mode
@@ -105,6 +114,8 @@ function OpsConsole() {
       </div>
 
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+        <N8nStatusPanel />
+
         {/* Filters */}
         <div className="mb-6 space-y-3">
           <Tabs value={layerTab} onValueChange={(v) => setLayerTab(v as "All" | LayerId)}>
@@ -163,6 +174,7 @@ function OpsConsole() {
       </main>
 
       <TaskDetailSheet task={openTask} onClose={() => setOpenTask(null)} />
+      <Toaster position="bottom-left" />
     </div>
   );
 }
