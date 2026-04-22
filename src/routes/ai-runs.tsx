@@ -71,14 +71,15 @@ function fmtDate(iso: string) {
 }
 
 function AiRunsPage() {
-  const { runs } = Route.useLoaderData();
+  const data = Route.useLoaderData() as { runs: AiRun[] };
+  const runs = data.runs;
   const router = useRouter();
   const [filter, setFilter] = useState<"all" | "ok" | "error">("all");
   const [open, setOpen] = useState<AiRun | null>(null);
 
-  const filtered = runs.filter((r) => filter === "all" || r.status === filter);
-  const okCount = runs.filter((r) => r.status === "ok").length;
-  const errCount = runs.filter((r) => r.status === "error").length;
+  const filtered = runs.filter((r: AiRun) => filter === "all" || r.status === filter);
+  const okCount = runs.filter((r: AiRun) => r.status === "ok").length;
+  const errCount = runs.filter((r: AiRun) => r.status === "error").length;
 
   return (
     <div dir="rtl" lang="ar" className="min-h-screen bg-background text-foreground">
