@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "recorded-future",
+      "name": "Recorded Future",
+      "category": "vuln_intel",
+      "url": "https://www.recordedfuture.com/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 10,
+      "notes": "منصة استخبارات شاملة تغطي جميع الفئات تقريبًا، قوية جدًا في استخبارات الثغرات والجهات الفاعلة."
+    },
+    {
+      "id": "mandiant-advantage",
+      "name": "Mandiant Advantage",
+      "category": "security_research",
+      "url": "https://www.mandiant.com/advantage",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 9,
+      "notes": "أبحاث وتقارير معمقة حول التهديدات الفاعلة ومجموعات APT، مع بيانات من استجابات الحوادث."
+    },
+    {
+      "id": "crowdstrike-falcon-intelligence",
+      "name": "CrowdStrike Falcon Intelligence",
+      "category": "security_research",
+      "url": "https://www.crowdstrike.com/products/threat-intelligence/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 9,
+      "notes": "تقارير وتحليلات استراتيجية وتكتيكية، تركز على الجهات الفاعلة وأساليبها (TTPs)."
+    },
+    {
+      "id": "vulndb",
+      "name": "VulnDB",
+      "category": "vuln_intel",
+      "url": "https://vulndb.cyberriskanalytics.com/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 9,
+      "notes": "قاعدة بيانات ثغرات شاملة ومفصلة، غالبًا ما تحتوي على معلومات قبل نشرها في المصادر العامة."
+    },
+    {
+      "id": "domaintools-iris",
+      "name": "DomainTools Iris",
+      "category": "threat_feeds",
+      "url": "https://www.domaintools.com/products/iris",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 9,
+      "notes": "استخبارات متقدمة حول النطاقات والبنية التحتية للإنترنت، ممتازة للتحقيق في هجمات التصيد والبرمجيات الخبيثة."
+    },
+    {
+      "id": "chainalysis",
+      "name": "Chainalysis",
+      "category": "crypto_research",
+      "url": "https://www.chainalysis.com/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 9,
+      "notes": "رائد في تحليل البلوك تشين وتتبع المعاملات المشبوهة، أساسي للتحقيقات المتعلقة بالعملات المشفرة."
+    },
+    {
+      "id": "talos-intelligence",
+      "name": "Cisco Talos Intelligence",
+      "category": "security_research",
+      "url": "https://www.talosintelligence.com/",
+      "access_tier": "freemium",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "أبحاث قوية وتقارير عامة ممتازة، مع بيانات سمعة IP ونطاقات."
+    },
+    {
+      "id": "unit42",
+      "name": "Unit 42 (Palo Alto Networks)",
+      "category": "security_research",
+      "url": "https://unit42.paloaltonetworks.com/",
+      "access_tier": "freemium",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "تحليلات معمقة للبرمجيات الخبيثة والحملات، مع تركيز على التهديدات السحابية."
+    },
+    {
+      "id": "abuse-ch",
+      "name": "abuse.ch",
+      "category": "threat_feeds",
+      "url": "https://abuse.ch/",
+      "access_tier": "free",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "مجموعة مشاريع مجتمعية ممتازة مثل MalwareBazaar و ThreatFox و URLhaus لتوفير مؤشرات اختراق (IOCs) محدثة."
+    },
+    {
+      "id": "ieee-xplore",
+      "name": "IEEE Xplore Digital Library",
+      "category": "academic",
+      "url": "https://ieeexplore.ieee.org/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "مصدر أساسي للأوراق البحثية الأكاديمية في الهندسة وعلوم الحاسوب والأمن السيبراني."
+    },
+    {
+      "id": "acm-digital-library",
+      "name": "ACM Digital Library",
+      "category": "academic",
+      "url": "https://dl.acm.org/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "مكتبة رقمية رائدة لأبحاث علوم الحاسوب، تحتوي على منشورات من مؤتمرات ومجلات مرموقة."
+    },
+    {
+      "id": "elliptic",
+      "name": "Elliptic",
+      "category": "crypto_research",
+      "url": "https://www.elliptic.co/",
+      "access_tier": "paid",
+      "api_available": true,
+      "value_score": 8,
+      "notes": "تحليل ومراقبة معاملات البلوك تشين للامتثال وإدارة المخاطر."
+    },
+    {
+      "id": "greynoise",
+      "name": "GreyNoise",
+      "category": "vuln_intel",
+      "url": "https://www.greynoise.io/",
+      "access_tier": "freemium",
+      "api_available": true,
+      "value_score": 7,
+      "notes": "يصنف ضجيج الإنترنت ويساعد في تمييز المسح العشوائي عن الهجمات المستهدفة، مفيد لتحديد أولويات التنبيهات."
+    },
+    {
+      "id": "spamhaus-project",
+      "name": "The Spamhaus Project",
+      "category": "threat_feeds",
+      "url": "https://www.spamhaus.org/",
+      "access_tier": "freemium",
+      "api_available": true,
+      "value_score": 7,
+      "notes": "مصدر موثوق لقوائم الحظر (blocklists) للنطاقات وعناوين IP المرتبطة بالبريد المزعج والأنشطة الخبيثة."
+    },
+    {
+      "id": "gartner",
+      "name": "Gartner",
+      "category": "market_intel",
+      "url": "https://www.gartner.com/",
+      "access_tier": "paid",
+      "api_available": false,
+      "value_score": 7,
+      "notes": "تحليلات استراتيجية وتقارير حول سوق تقنية المعلومات والأمن السيبراني، مفيد لاتخاذ القرارات الاستراتيجية."
+    },
+    {
+      "id": "nvd",
+      "name": "National Vulnerability Database (NVD)",
+      "category": "vuln_intel",
+      "url": "https://nvd.nist.gov/",
+      "access_tier": "free",
+      "api_available": true,
+      "value_score": 7,
+      "notes": "المصدر الرسمي لبيانات الثغرات CVE في الولايات المتحدة، أساسي ولكن قد يتأخر في تحديث التفاصيل."
+    }
+  ]
+}

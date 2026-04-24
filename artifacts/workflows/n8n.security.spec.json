@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "workflows": [
+    {
+      "id": "security_run_v1",
+      "name": "Security Scan Runner",
+      "trigger": "webhook",
+      "nodes": [
+        {
+          "id": "node_1",
+          "type": "n8n-nodes-base.webhook",
+          "purpose": "نقطة الدخول للـ workflow، يستقبل طلبات بدء الفحص."
+        },
+        {
+          "id": "node_2",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "تنفيذ الفحص الفعلي عبر استدعاء API أداة أمنية خارجية (مثل Trivy, Nuclei)."
+        },
+        {
+          "id": "node_3",
+          "type": "n8n-nodes-base.code",
+          "purpose": "معالجة النتائج الأولية من أداة الفحص وتحويلها إلى صيغة موحدة."
+        },
+        {
+          "id": "node_4",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "تخزين النتائج المعالجة في قاعدة بيانات أو مخزن مخصص."
+        },
+        {
+          "id": "node_5",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "إطلاق workflow توليد التقرير (security.report) عبر استدعاء الـ webhook الخاص به."
+        }
+      ],
+      "edges": [
+        {
+          "source": "node_1",
+          "target": "node_2"
+        },
+        {
+          "source": "node_2",
+          "target": "node_3"
+        },
+        {
+          "source": "node_3",
+          "target": "node_4"
+        },
+        {
+          "source": "node_4",
+          "target": "node_5"
+        }
+      ],
+      "inputs_schema": {
+        "type": "object",
+        "properties": {
+          "scanType": {
+            "type": "string",
+            "enum": [
+              "sca",
+              "sast",
+              "dast"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "description": "e.g., git repository URL, docker image name, web app URL"
+          }
+        },
+        "required": [
+          "scanType",
+          "target"
+        ]
+      },
+      "outputs_schema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ]
+          },
+          "reportTriggered": {
+            "type": "boolean"
+          }
+        }
+      },
+      "fail_closed_behavior": "في حال الفشل، يتم تسجيل الخطأ في قناة مراقبة مخصصة ويتوقف التنفيذ. يعتبر الفحص فاشلاً وغير مكتمل ولا يتم الانتقال لمرحلة التقرير."
+    },
+    {
+      "id": "security_report_v1",
+      "name": "Security Report Generator",
+      "trigger": "webhook",
+      "nodes": [
+        {
+          "id": "node_1",
+          "type": "n8n-nodes-base.webhook",
+          "purpose": "يستقبل طلب توليد تقرير مع معرّف الفحص (scanId)."
+        },
+        {
+          "id": "node_2",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "سحب نتائج الفحص الكاملة من قاعدة البيانات باستخدام scanId."
+        },
+        {
+          "id": "node_3",
+          "type": "n8n-nodes-base.code",
+          "purpose": "تجميع وتلخيص البيانات (مثل إحصائيات الثغرات حسب الخطورة)."
+        },
+        {
+          "id": "node_4",
+          "type": "n8n-nodes-base.code",
+          "purpose": "توليد محتوى التقرير بصيغة Markdown."
+        },
+        {
+          "id": "node_5",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "نشر التقرير على منصة تعاون (مثل Confluence أو GitLab Wiki) عبر API."
+        },
+        {
+          "id": "node_6",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "إرسال إشعار للفريق المعني عبر Slack/Mattermost يحتوي على رابط للتقرير."
+        }
+      ],
+      "edges": [
+        {
+          "source": "node_1",
+          "target": "node_2"
+        },
+        {
+          "source": "node_2",
+          "target": "node_3"
+        },
+        {
+          "source": "node_3",
+          "target": "node_4"
+        },
+        {
+          "source": "node_4",
+          "target": "node_5"
+        },
+        {
+          "source": "node_5",
+          "target": "node_6"
+        }
+      ],
+      "inputs_schema": {
+        "type": "object",
+        "properties": {
+          "scanId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scanId"
+        ]
+      },
+      "outputs_schema": {
+        "type": "object",
+        "properties": {
+          "reportUrl": {
+            "type": "string"
+          },
+          "notificationSent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "fail_closed_behavior": "إذا فشل سحب النتائج أو توليد التقرير، يتم إرسال تنبيه فشل إلى قناة فريق الأمن مع scanId. لا يتم نشر أي تقرير غير مكتمل أو خاطئ."
+    },
+    {
+      "id": "security_alerts_v1",
+      "name": "Real-time Security Alerter",
+      "trigger": "cron",
+      "nodes": [
+        {
+          "id": "node_1",
+          "type": "n8n-nodes-base.cron",
+          "purpose": "يعمل بشكل دوري (مثلاً كل 5 دقائق) للبحث عن إنذارات جديدة."
+        },
+        {
+          "id": "node_2",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "الاستعلام عن الثغرات الحرجة/الخطيرة الجديدة التي لم يتم التعامل معها."
+        },
+        {
+          "id": "node_3",
+          "type": "n8n-nodes-base.if",
+          "purpose": "التحقق من وجود ثغرات جديدة تستدعي الإنذار."
+        },
+        {
+          "id": "node_4",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "إنشاء تذكرة ذات أولوية عالية في نظام تتبع المهام (مثل Jira)."
+        },
+        {
+          "id": "node_5",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "إرسال تنبيه فوري للمهندس المناوب عبر خدمة (مثل PagerDuty)."
+        },
+        {
+          "id": "node_6",
+          "type": "n8n-nodes-base.httpRequest",
+          "purpose": "تحديث حالة الثغرة في قاعدة البيانات لتجنب إرسال تنبيهات متكررة."
+        }
+      ],
+      "edges": [
+        {
+          "source": "node_1",
+          "target": "node_2"
+        },
+        {
+          "source": "node_2",
+          "target": "node_3"
+        },
+        {
+          "source": "node_3",
+          "target": "node_4",
+          "output": "true"
+        },
+        {
+          "source": "node_4",
+          "target": "node_5"
+        },
+        {
+          "source": "node_5",
+          "target": "node_6"
+        }
+      ],
+      "inputs_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputs_schema": {
+        "type": "object",
+        "properties": {
+          "alertsProcessed": {
+            "type": "integer"
+          },
+          "ticketsCreated": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "fail_closed_behavior": "عند فشل أي خطوة، يحاول الـ workflow مرة أخرى. إذا استمر الفشل، يرسل تنبيهًا وصفيًا (meta-alert) حول عطل في نظام الإنذارات نفسه. تبقى الثغرة غير معالجة ليتم التقاطها في التشغيل الناجح التالي."
+    }
+  ]
+}
