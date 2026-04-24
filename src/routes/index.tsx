@@ -4,11 +4,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayerSection } from "@/components/ops/LayerSection";
 import { TaskDetailSheet } from "@/components/ops/TaskDetailSheet";
 import { N8nStatusPanel } from "@/components/ops/N8nStatusPanel";
+import { RunAllButton } from "@/components/ops/RunAllButton";
+import { ArtifactViewer } from "@/components/ops/ArtifactViewer";
 import { Toaster } from "@/components/ui/sonner";
+import { useArtifactIndex } from "@/hooks/use-artifact-index";
 import {
   LAYERS,
   TASKS,
-  overallProgress,
   type LayerId,
   type Owner,
   type Task,
@@ -35,9 +37,19 @@ function OpsConsole() {
   const [layerTab, setLayerTab] = useState<"All" | LayerId>("All");
   const [ownerFilter, setOwnerFilter] = useState<"All" | Owner>("All");
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [viewArtifact, setViewArtifact] = useState<string | null>(null);
+  const { idx, isDone } = useArtifactIndex();
 
-  const overall = useMemo(() => overallProgress(), []);
   const visibleLayers = layerTab === "All" ? LAYERS : LAYERS.filter((l) => l.id === layerTab);
+
+  // dynamic overall progress reading from _index.json
+  const overall = useMemo(() => {
+    const total = TASKS.length;
+    const done = TASKS.filter(
+      (t) => t.status === "done" || isDone(t.id, t.artifacts.map((a) => a.path)),
+    ).length;
+    return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+  }, [isDone]);
 
   const ownerCounts = useMemo(() => {
     const m = new Map<Owner, number>();
@@ -62,7 +74,7 @@ function OpsConsole() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="text-right">
                 <div className="text-[10px] text-muted-foreground">الإنجاز الكلي</div>
                 <div className="font-mono text-sm font-semibold">
@@ -71,6 +83,7 @@ function OpsConsole() {
                   <span className="text-primary mr-1.5">{overall.pct}%</span>
                 </div>
               </div>
+              <RunAllButton index={idx} />
               <Link
                 to="/ai-console"
                 className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] text-primary hover:bg-primary/20"
@@ -110,12 +123,12 @@ function OpsConsole() {
           <span className="text-muted-foreground/50">·</span>
           <span className="inline-flex items-center gap-1.5 text-amber-400">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-            profiles: 4 stubs published
+            artifacts: {idx?.tasks.length ?? 0} مسجّل
           </span>
           <span className="text-muted-foreground/50 mr-auto" />
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
             <Database className="h-3 w-3" />
-            artifacts/
+            artifacts/_index.json
           </span>
         </div>
       </div>
@@ -169,6 +182,7 @@ function OpsConsole() {
             layer={layer}
             ownerFilter={ownerFilter}
             onOpenTask={setOpenTask}
+            onViewArtifact={setViewArtifact}
           />
         ))}
 
@@ -181,6 +195,7 @@ function OpsConsole() {
       </main>
 
       <TaskDetailSheet task={openTask} onClose={() => setOpenTask(null)} />
+      <ArtifactViewer path={viewArtifact} onClose={() => setViewArtifact(null)} />
       <Toaster position="bottom-left" />
     </div>
   );
