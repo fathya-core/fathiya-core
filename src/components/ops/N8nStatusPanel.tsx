@@ -40,6 +40,25 @@ export function N8nStatusPanel() {
 
   const list = data?.configured ? data.workflows : data?.snapshot ?? [];
 
+  const configured = !!data?.configured;
+  // في وضع snapshot نعرض شريط مضغوط جداً قابل للطي بدل البانر الكبير
+  if (!configured && !expanded) {
+    return (
+      <div className="mb-4 flex items-center justify-between gap-2 rounded border border-border/40 bg-muted/20 px-3 py-1.5 text-[10px]">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Workflow className="h-3 w-3 text-rose-300/70" />
+          <span>n8n: snapshot mode ({data?.snapshot?.length ?? 0} workflows)</span>
+        </div>
+        <button
+          onClick={() => setExpanded(true)}
+          className="text-[10px] text-primary/80 hover:text-primary"
+        >
+          عرض
+        </button>
+      </div>
+    );
+  }
+
   return (
     <Card className="border-rose-500/20 bg-rose-500/5 p-4 mb-6">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -50,22 +69,34 @@ export function N8nStatusPanel() {
           <div>
             <h3 className="text-xs font-bold text-foreground">n8n Bridge</h3>
             <p className="text-[10px] text-muted-foreground">
-              {data?.configured
+              {configured
                 ? "متصل مباشرة بـ n8n REST API"
                 : "وضع snapshot — أضف N8N_BASE_URL و N8N_API_KEY للجسر المباشر"}
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={load}
-          disabled={loading}
-          className="h-7 px-2 text-[10px]"
-        >
-          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-          تحديث
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={load}
+            disabled={loading}
+            className="h-7 px-2 text-[10px]"
+          >
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            تحديث
+          </Button>
+          {!configured && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setExpanded(false)}
+              className="h-7 px-2 text-[10px]"
+            >
+              طيّ
+            </Button>
+          )}
+        </div>
       </div>
 
       {data?.message && (
