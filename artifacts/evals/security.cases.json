@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "SEC_001",
+      "category": "VALID_INPUT_DOMAIN",
+      "input": "google.com",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "google.com"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "فشل استخلاص النوع كـDOMAIN",
+        "لم يتم توجيه المدخل للتحليل الكامل"
+      ],
+      "notes": "حالة اختبار أساسية لنطاق معروف وصحيح."
+    },
+    {
+      "id": "SEC_002",
+      "category": "VALID_INPUT_IP",
+      "input": "8.8.8.8",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "IPV4",
+        "value": "8.8.8.8"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "فشل استخلاص النوع كـIPV4",
+        "تم التعامل معه كنطاق"
+      ],
+      "notes": "حالة اختبار أساسية لـ IP معروف وصحيح."
+    },
+    {
+      "id": "SEC_003",
+      "category": "VALID_INPUT_CIDR",
+      "input": "192.168.1.0/24",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "CIDR",
+        "value": "192.168.1.0/24"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "فشل استخلاص النوع كـCIDR"
+      ],
+      "notes": "حالة اختبار أساسية لكتلة CIDR صحيحة."
+    },
+    {
+      "id": "SEC_004",
+      "category": "INVALID_INPUT_GARBAGE",
+      "input": "!@#$%^&*()",
+      "expected_route": "EARLY_EXIT_INVALID",
+      "expected_extracted_fields": {
+        "type": "INVALID",
+        "value": "!@#$%^&*()"
+      },
+      "expected_status": "ERROR",
+      "fail_conditions": [
+        "لم يتم تصنيف المدخل كـINVALID",
+        "لم يتم إنهاء المعالجة مبكراً"
+      ],
+      "notes": "يجب رفض المدخلات غير الصالحة تمامًا في مرحلة التقييم الأولي."
+    },
+    {
+      "id": "SEC_005",
+      "category": "INVALID_INPUT_DOMAIN",
+      "input": "in-valid-.com",
+      "expected_route": "EARLY_EXIT_INVALID",
+      "expected_extracted_fields": {
+        "type": "INVALID",
+        "value": "in-valid-.com"
+      },
+      "expected_status": "ERROR",
+      "fail_conditions": [
+        "تم قبول النطاق بالرغم من مخالفته لـ RFC (شرطة في نهاية الجزء)"
+      ],
+      "notes": "اختبار التحقق من صحة صيغة النطاق حسب المعايير القياسية."
+    },
+    {
+      "id": "SEC_006",
+      "category": "INVALID_INPUT_IP",
+      "input": "256.10.20.30",
+      "expected_route": "EARLY_EXIT_INVALID",
+      "expected_extracted_fields": {
+        "type": "INVALID",
+        "value": "256.10.20.30"
+      },
+      "expected_status": "ERROR",
+      "fail_conditions": [
+        "تم قبول العنوان بالرغم من أن أحد الأجزاء خارج النطاق (0-255)"
+      ],
+      "notes": "اختبار التحقق من صحة قيم خانات IPv4."
+    },
+    {
+      "id": "SEC_007",
+      "category": "FALSE_POSITIVE_AMBIGUOUS",
+      "input": "1.2.3.4.com",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "1.2.3.4.com"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "تم تصنيف المدخل كـIPV4 بدلاً من DOMAIN"
+      ],
+      "notes": "حالة حافة، المدخل هو نطاق صالح وليس عنوان IP. يجب أن تكون أولوية التحليل للنطاقات."
+    },
+    {
+      "id": "SEC_008",
+      "category": "EARLY_STOP_ALLOWLIST",
+      "input": "corp-fileserver.internal",
+      "expected_route": "EARLY_EXIT_ALLOW",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "corp-fileserver.internal"
+      },
+      "expected_status": "ALLOWED",
+      "fail_conditions": [
+        "لم يتم التعرف على المدخل كجزء من القائمة البيضاء",
+        "استمر التحليل بعد مطابقة القائمة البيضاء"
+      ],
+      "notes": "اختبار كفاءة القائمة البيضاء لوقف التحليل غير الضروري."
+    },
+    {
+      "id": "SEC_009",
+      "category": "REPORT_CONSISTENCY_BLOCK",
+      "input": "totally-malicious-domain.bad",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "totally-malicious-domain.bad"
+      },
+      "expected_status": "BLOCKED",
+      "fail_conditions": [
+        "التقرير النهائي لا يحتوي على حقل 'threat_type'",
+        "التقرير النهائي لا يحتوي على حقل 'confidence_score'",
+        "القرار النهائي غير متطابق مع التحليل"
+      ],
+      "notes": "يركز هذا الاختبار على اكتمال واتساق حقول التقرير النهائي في حالة الحجب."
+    },
+    {
+      "id": "SEC_010",
+      "category": "INVALID_INPUT_CIDR",
+      "input": "10.0.0.1/33",
+      "expected_route": "EARLY_EXIT_INVALID",
+      "expected_extracted_fields": {
+        "type": "INVALID",
+        "value": "10.0.0.1/33"
+      },
+      "expected_status": "ERROR",
+      "fail_conditions": [
+        "تم قبول CIDR بقناع شبكة غير صالح (>32)."
+      ],
+      "notes": "اختبار التحقق من صحة قناع الشبكة في صيغة CIDR."
+    },
+    {
+      "id": "SEC_011",
+      "category": "VALID_INPUT_IDN",
+      "input": "مثال.com",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "xn--mgbh0fb.com"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "فشل في تحويل Punycode بشكل صحيح",
+        "فشل في التعرف عليه كنطاق صالح"
+      ],
+      "notes": "اختبار دعم النطاقات الدولية (IDN). يجب تحويل المدخل إلى Punycode قبل التحليل."
+    },
+    {
+      "id": "SEC_012",
+      "category": "EARLY_STOP_BLOCKLIST",
+      "input": "confirmed-malware-dist.cn",
+      "expected_route": "EARLY_EXIT_BLOCK",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "confirmed-malware-dist.cn"
+      },
+      "expected_status": "BLOCKED",
+      "fail_conditions": [
+        "لم يتم التعرف على المدخل كجزء من القائمة السوداء",
+        "استمر التحليل الكامل بعد مطابقة القائمة السوداء"
+      ],
+      "notes": "اختبار كفاءة القائمة السوداء للحجب الفوري."
+    },
+    {
+      "id": "SEC_013",
+      "category": "VALID_INPUT_DOMAIN_LONG",
+      "input": "very.long.subdomain.name.that.is.still.technically.valid.example.com",
+      "expected_route": "FULL_ANALYSIS",
+      "expected_extracted_fields": {
+        "type": "DOMAIN",
+        "value": "very.long.subdomain.name.that.is.still.technically.valid.example.com"
+      },
+      "expected_status": "PENDING_ANALYSIS",
+      "fail_conditions": [
+        "فشل المحرك في معالجة النطاق الطويل",
+        "تم اقتطاع اسم النطاق بشكل غير صحيح"
+      ],
+      "notes": "اختبار قدرة التحمل مع مدخلات طويلة ولكنها صالحة."
+    }
+  ]
+}

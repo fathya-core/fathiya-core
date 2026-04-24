@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "providers": [
+    "Manus",
+    "Claude",
+    "Perplexity",
+    "GPT-5",
+    "OpenRouter",
+    "Lovable AI Gateway"
+  ],
+  "tasks": [
+    "research",
+    "code",
+    "reasoning",
+    "writing",
+    "security_review",
+    "crypto_analysis",
+    "structured_output",
+    "long_context"
+  ],
+  "matrix": [
+    [
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "مُحسَّن لمهام البحث الداخلية وبيئات التشغيل الخاصة."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "قدرات عالية في توليد وتحليل الأكواد الآمنة."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "منطق متقدم، مُدرَّب على بيانات خاصة بالعمليات."
+      },
+      {
+        "score": 7,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "جيد للكتابة التقنية، أقل إبداعًا في المحتوى العام."
+      },
+      {
+        "score": 10,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "نقطة القوة الأساسية، مخصص للمراجعات الأمنية."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "قدرات تحليلية قوية، لكن يتطلب إشراف خبير."
+      },
+      {
+        "score": 10,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "دقيق للغاية في توليد JSON/YAML والمخرجات المهيكلة."
+      },
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "يعالج المستندات الطويلة بكفاءة ضمن البيئة الداخلية."
+      }
+    ],
+    [
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "ممتاز في تلخيص وتحليل المعلومات من المستندات الطويلة."
+      },
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "كفاءة عالية، خاصة مع Claude 3 Opus في المشاريع المعقدة."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "من أقوى النماذج في الاستنتاج المنطقي المعقد."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "أسلوب كتابة طبيعي ومتماسك، مناسب للمحتوى الطويل."
+      },
+      {
+        "score": 7,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "جيد للمراجعات العامة، لكن ليس متخصصًا مثل Manus."
+      },
+      {
+        "score": 4,
+        "cost_tier": "mid",
+        "risk_tier": "high",
+        "notes": "قدرات محدودة، لا يُنصح به للمهام الحساسة."
+      },
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "موثوق في توليد المخرجات المهيكلة، خاصة عبر واجهة برمجة التطبيقات."
+      },
+      {
+        "score": 10,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "نافذة سياق ضخمة مع استدعاء دقيق للمعلومات (Needle in a Haystack)."
+      }
+    ],
+    [
+      {
+        "score": 10,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "الأفضل في فئته للبحث الحي من الويب مع استشهادات ومصادر."
+      },
+      {
+        "score": 5,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "يجد حلولاً وأمثلة، لكنه ليس الأفضل في توليد كود جديد."
+      },
+      {
+        "score": 6,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "يعتمد على نتائج البحث، المنطق المستقل متوسط."
+      },
+      {
+        "score": 7,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "جيد في تجميع وصياغة المعلومات التي يجدها."
+      },
+      {
+        "score": 2,
+        "cost_tier": "cheap",
+        "risk_tier": "high",
+        "notes": "غير مصمم لهذه المهمة، لا يمكن الاعتماد عليه."
+      },
+      {
+        "score": 1,
+        "cost_tier": "cheap",
+        "risk_tier": "high",
+        "notes": "غير مناسب على الإطلاق."
+      },
+      {
+        "score": 6,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "متوسط الدقة، قد يتطلب إعادة تهيئة."
+      },
+      {
+        "score": 7,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "يمكنه معالجة الروابط والمستندات المرفوعة، لكن ليس كسياق متصل."
+      }
+    ],
+    [
+      {
+        "score": 9,
+        "cost_tier": "premium",
+        "risk_tier": "mid",
+        "notes": "متوقع أن يكون متقدمًا جدًا مع تكامل محسن للبحث (تكهنات)."
+      },
+      {
+        "score": 10,
+        "cost_tier": "premium",
+        "risk_tier": "low",
+        "notes": "قفزة نوعية متوقعة في توليد وفهم الأكواد المعقدة (تكهنات)."
+      },
+      {
+        "score": 10,
+        "cost_tier": "premium",
+        "risk_tier": "mid",
+        "notes": "من المحتمل أن يكون رائد السوق في الاستنتاج متعدد الخطوات (تكهنات)."
+      },
+      {
+        "score": 9,
+        "cost_tier": "premium",
+        "risk_tier": "low",
+        "notes": "مرونة عالية في الأسلوب والنبرة، إبداع متزايد (تكهنات)."
+      },
+      {
+        "score": 8,
+        "cost_tier": "premium",
+        "risk_tier": "mid",
+        "notes": "قدرات تحليلية محسّنة، لكن لا يزال يتطلب مراجعة بشرية (تكهنات)."
+      },
+      {
+        "score": 5,
+        "cost_tier": "premium",
+        "risk_tier": "high",
+        "notes": "تحسن محتمل، ولكنه يبقى مجالًا متخصصًا وخطرًا (تكهنات)."
+      },
+      {
+        "score": 9,
+        "cost_tier": "premium",
+        "risk_tier": "low",
+        "notes": "دقة عالية جدًا متوقعة (تكهنات)."
+      },
+      {
+        "score": 9,
+        "cost_tier": "premium",
+        "risk_tier": "low",
+        "notes": "نافذة سياق كبيرة جدًا مع أداء محسن (تكهنات)."
+      }
+    ],
+    [
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "وصول لمجموعة واسعة من النماذج، مرونة عالية لاختيار الأنسب."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "مرونة في اختيار النموذج الأفضل للمهمة (e.g., Opus)."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "يتيح استخدام أقوى النماذج المنطقية بتكلفة متغيرة."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "وصول لنماذج كتابة ممتازة مثل كلود."
+      },
+      {
+        "score": 7,
+        "cost_tier": "mid",
+        "risk_tier": "high",
+        "notes": "يعتمد على النموذج المستخدم، يضيف طبقة أخرى من المخاطر."
+      },
+      {
+        "score": 4,
+        "cost_tier": "mid",
+        "risk_tier": "high",
+        "notes": "لا يُنصح به بسبب الاعتماد على طرف ثالث وسلسلة الثقة."
+      },
+      {
+        "score": 8,
+        "cost_tier": "cheap",
+        "risk_tier": "mid",
+        "notes": "مرونة في استخدام نماذج رخيصة للمهام البسيطة."
+      },
+      {
+        "score": 10,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "يوفر وصولًا سهلاً لنماذج السياق الطويل بتسعير لكل توكن."
+      }
+    ],
+    [
+      {
+        "score": 9,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "بوابة موحدة للوصول إلى أفضل نماذج البحث مع تحكم وتخزين مؤقت."
+      },
+      {
+        "score": 9,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "توجيه ذكي لنموذج الكود الأنسب مع سياسات أمان مطبقة."
+      },
+      {
+        "score": 9,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "يوفر وصولاً مسجلاً ومراقباً لنماذج المنطق القوية."
+      },
+      {
+        "score": 9,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "تحسين التكلفة عن طريق التوجيه التلقائي."
+      },
+      {
+        "score": 8,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "يفرض سياسات تسجيل ومراقبة صارمة على مخرجات النماذج."
+      },
+      {
+        "score": 4,
+        "cost_tier": "mid",
+        "risk_tier": "mid",
+        "notes": "لا يزال غير موصى به، لكن البوابة تضيف طبقة من التحكم."
+      },
+      {
+        "score": 9,
+        "cost_tier": "cheap",
+        "risk_tier": "low",
+        "notes": "يضمن الموثوقية من خلال آليات إعادة المحاولة والتوجيه."
+      },
+      {
+        "score": 10,
+        "cost_tier": "mid",
+        "risk_tier": "low",
+        "notes": "وصول مُدار وآمن لنماذج السياق الطويل مع تحسين للتكلفة."
+      }
+    ]
+  ]
+}

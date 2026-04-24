@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "policy": {
+    "news_scan": {
+      "primary": "TheBlock",
+      "fallback": "Messari",
+      "cheap": "GPT4-WebAgent",
+      "premium": "Nansen",
+      "when": "المراقبة المستمرة للأنباء في الوقت الحقيقي.",
+      "why": "الأولوية للسرعة والتغطية الواسعة لرصد الإشارات الأولية. يُستخدم المزود المتميز لربط الأخبار بالنشاط على السلسلة.",
+      "fail_closed": false
+    },
+    "narrative_analysis": {
+      "primary": "GPT4-Advanced",
+      "fallback": "InternalAnalytics",
+      "cheap": "GPT4-Advanced-Fast",
+      "premium": "DelphiDigital",
+      "when": "تحديد التوجهات السردية في السوق بشكل أسبوعي أو عند الطلب.",
+      "why": "الاستفادة من نماذج اللغة الكبيرة لتحقيق نطاق واسع، مع تحليل بشري متميز للعمق والدقة.",
+      "fail_closed": false
+    },
+    "thesis_review": {
+      "primary": "DelphiDigital",
+      "fallback": "Messari",
+      "cheap": "InternalAnalytics-PeerReview",
+      "premium": "Glassnode+CryptoQuant",
+      "when": "فحص الأطروحات الاستثمارية قبل التنفيذ أو عند إعادة تقييم المحافظ الرئيسية.",
+      "why": "يتطلب أعلى جودة من الأبحاث المتخصصة، مدعومة بالتحقق المباشر من بيانات السلسلة الخام.",
+      "fail_closed": true
+    },
+    "transformation": {
+      "primary": "GPT4-Advanced",
+      "fallback": "InternalAnalytics-Scripting",
+      "cheap": "FATHIYA-Internal-LLM",
+      "premium": "GPT4-Advanced-CoT",
+      "when": "توحيد صيغ المدخلات للتقارير والنماذج التحليلية اللاحقة.",
+      "why": "مهمة تعتمد بشكل أساسي على نماذج اللغة. يتم التحسين من أجل السرعة والتكلفة، مع خيار متميز للتحويلات المعقدة وعالية الأهمية.",
+      "fail_closed": false
+    },
+    "invalidation_check": {
+      "primary": "Glassnode",
+      "fallback": "DuneAnalytics",
+      "cheap": "TokenTerminal",
+      "premium": "Nansen",
+      "when": "المراقبة المستمرة لافتراضات الأطروحة الأساسية بعد الاستثمار.",
+      "why": "بيانات السلسلة هي الحقيقة المطلقة. الأولوية للتنبيهات الفورية القائمة على المقاييس. يُستخدم تحليل تدفقات الأموال الذكية كمؤشر استباقي متميز.",
+      "fail_closed": true
+    },
+    "report": {
+      "primary": "InternalAnalytics",
+      "fallback": "GPT4-Advanced-Drafting",
+      "cheap": "GPT4-Advanced-Summary",
+      "premium": "InternalAnalytics+Messari",
+      "when": "إصدار تقارير استخباراتية دورية أو خاصة بموضوع معين.",
+      "why": "التجميع النهائي والعرض مهمة تتمركز حول الإنسان. يمكن لنماذج اللغة المساعدة في صياغة المسودات، لكن المنتج النهائي يتطلب إشرافًا متخصصًا.",
+      "fail_closed": true
+    }
+  }
+}

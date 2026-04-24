@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "target_profiling",
+      "title_ar": "تصنيف الهدف",
+      "title_en": "Target Profiling",
+      "inputs": [
+        "target_identifier",
+        "initial_scope_document"
+      ],
+      "outputs": [
+        "target_profile_dossier",
+        "preliminary_tech_stack_assessment"
+      ],
+      "gates": [
+        "Scope Confirmation",
+        "Legality & ROE Check"
+      ],
+      "primary_provider": "OSINT Team",
+      "fallback_provider": "Manual Search (Analyst)",
+      "when_to_use": "عند بدء عملية تقييم أمني جديدة أو الاشتباه في حادثة تتطلب فهمًا عميقًا للهدف قبل أي إجراء فني.",
+      "when_to_skip": "إذا كان الهدف معروفًا تمامًا والفريق لديه ملف تعريف حديث ومكتمل (أقل من 3 أشهر)."
+    },
+    {
+      "id": "surface_mapping",
+      "title_ar": "مسح السطح الهجومي",
+      "title_en": "Attack Surface Mapping",
+      "inputs": [
+        "target_profile_dossier",
+        "target_identifier"
+      ],
+      "outputs": [
+        "asset_inventory_live",
+        "discovered_subdomains",
+        "open_ports_report"
+      ],
+      "gates": [
+        "Asset Ownership Verification",
+        "False Positive Review"
+      ],
+      "primary_provider": "FATHIYA.ReconEngine",
+      "fallback_provider": "Nmap/Masscan + Amass (Manual Run)",
+      "when_to_use": "في مرحلة الاستطلاع النشط (Active Recon) لاكتشاف الأصول الرقمية الخارجية والبنية التحتية المرتبطة بالهدف.",
+      "when_to_skip": "في عمليات التقييم الداخلية البحتة (Internal Pentest) أو عندما يكون نطاق العمل محددًا بدقة على أصل واحد معروف مسبقًا."
+    },
+    {
+      "id": "recon_planning",
+      "title_ar": "تخطيط الاستطلاع",
+      "title_en": "Reconnaissance Planning",
+      "inputs": [
+        "surface_mapping_results",
+        "target_profile_dossier"
+      ],
+      "outputs": [
+        "recon_strategy_document",
+        "tool_configuration_plan",
+        "prioritized_asset_list"
+      ],
+      "gates": [
+        "Strategy Approval",
+        "Resource Allocation Check"
+      ],
+      "primary_provider": "Lead Security Analyst",
+      "fallback_provider": "Senior Security Engineer",
+      "when_to_use": "بعد المسح الأولي للسطح الهجومي، لتنظيم وتوجيه جهود الاستطلاع العميق (Deep Recon) بشكل فعال ومنهجي.",
+      "when_to_skip": "في العمليات السريعة والمحددة جدًا التي لا تتطلب استراتيجية معقدة."
+    },
+    {
+      "id": "evidence_review",
+      "title_ar": "مراجعة الأدلة",
+      "title_en": "Evidence Review",
+      "inputs": [
+        "raw_scan_outputs",
+        "vulnerability_reports",
+        "analyst_notes"
+      ],
+      "outputs": [
+        "validated_findings_list",
+        "false_positives_log",
+        "evidence_package_for_reporting"
+      ],
+      "gates": [
+        "Reproducibility Check",
+        "Severity Assessment Consensus"
+      ],
+      "primary_provider": "Peer Review (Another Analyst)",
+      "fallback_provider": "Lead Security Analyst",
+      "when_to_use": "بعد كل مرحلة فحص أو استغلال لتوثيق النتائج، والتحقق من صحتها، وتصنيفها قبل تضمينها في التقرير النهائي.",
+      "when_to_skip": "لا يتم تخطي هذه الخطوة أبدًا. هي جزء أساسي لضمان جودة ومصداقية المخرجات."
+    },
+    {
+      "id": "status_report",
+      "title_ar": "تقرير الحالة",
+      "title_en": "Status Report",
+      "inputs": [
+        "validated_findings_list",
+        "project_timeline",
+        "analyst_work_log"
+      ],
+      "outputs": [
+        "weekly_status_report_md",
+        "executive_summary_json",
+        "updated_risk_register"
+      ],
+      "gates": [
+        "Clarity & Conciseness Check",
+        "Stakeholder Approval"
+      ],
+      "primary_provider": "FATHIYA.ReportingModule",
+      "fallback_provider": "Manual Report (Markdown Template)",
+      "when_to_use": "لتوفير تحديثات دورية لأصحاب المصلحة حول تقدم عملية التقييم، النتائج الأولية، والعوائق.",
+      "when_to_skip": "في المهام القصيرة جدًا (أقل من يوم عمل) حيث يكون التقرير النهائي كافيًا."
+    }
+  ]
+}

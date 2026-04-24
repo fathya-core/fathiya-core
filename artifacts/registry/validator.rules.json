@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "is_customized",
+      "check": "يتحقق مما إذا كان الحساب قد تم تخصيصه وفقًا لمعايير فتحية.",
+      "severity": "block",
+      "action_on_fail": "quarantine",
+      "related_field": "account.profile.customized_at"
+    },
+    {
+      "id": "is_warm",
+      "check": "يتحقق مما إذا كان الحساب قد أكمل فترة الإحماء اللازمة قبل الاستخدام الفعلي.",
+      "severity": "block",
+      "action_on_fail": "schedule_warmup",
+      "related_field": "account.state.warmup_completed_at"
+    },
+    {
+      "id": "has_valid_output",
+      "check": "يفحص ما إذا كانت آخر مخرجات معروفة للحساب صالحة وقابلة للتحليل.",
+      "severity": "block",
+      "action_on_fail": "trigger_health_check",
+      "related_field": "account.health.last_output_status"
+    },
+    {
+      "id": "has_assigned_pool",
+      "check": "يضمن أن الحساب مُعيَّن إلى مجمع موارد (pool) نشط.",
+      "severity": "block",
+      "action_on_fail": "assign_to_default_pool",
+      "related_field": "account.assignment.pool_id"
+    },
+    {
+      "id": "is_not_draining",
+      "check": "يتحقق من أن الحساب غير مُعلَّم للتصريف (draining) لاستقبال مهام جديدة.",
+      "severity": "block",
+      "action_on_fail": "none",
+      "related_field": "account.state.is_draining"
+    },
+    {
+      "id": "is_not_exhausted",
+      "check": "يتحقق من أن الحساب لم يستهلك حصته (quota) التشغيلية بالكامل.",
+      "severity": "block",
+      "action_on_fail": "mark_for_rotation",
+      "related_field": "account.quota.usage"
+    },
+    {
+      "id": "no_recent_failure",
+      "check": "يتحقق من عدم وجود فشل حرج للحساب في فترة التهدئة الأخيرة.",
+      "severity": "warn",
+      "action_on_fail": "temp_disable",
+      "related_field": "account.health.last_failure_at"
+    },
+    {
+      "id": "is_not_rate_limited",
+      "check": "يتحقق مما إذا كان الحساب لا يخضع حاليًا لأي شكل من أشكال تقييد المعدل (rate limit).",
+      "severity": "block",
+      "action_on_fail": "temp_disable_with_backoff",
+      "related_field": "account.health.rate_limit_status"
+    }
+  ]
+}
