@@ -55,11 +55,12 @@ export function useArtifactIndex() {
     [idx],
   );
 
+  // المهمة تُعتبر done إذا أنتجت artifact واحد على الأقل (لأن باقي
+  // الـ artifacts أحياناً تكون مرافِقة md/docs تُنتج لاحقاً يدوياً).
   const isDone = useCallback(
-    (taskId: string, expectedPaths: string[]): boolean => {
-      if (expectedPaths.length === 0) return false;
-      const have = new Set((idx?.tasks ?? []).filter((t) => t.task_id === taskId).map((t) => t.path));
-      return expectedPaths.every((p) => have.has(`artifacts/${p}`) || have.has(p));
+    (taskId: string, _expectedPaths: string[]): boolean => {
+      const have = (idx?.tasks ?? []).filter((t) => t.task_id === taskId);
+      return have.length > 0;
     },
     [idx],
   );

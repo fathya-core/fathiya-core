@@ -19,6 +19,7 @@ interface WfState {
 export function N8nStatusPanel() {
   const [data, setData] = useState<{ configured: boolean; workflows: WfState[]; snapshot?: WfState[]; message?: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const load = async () => {
     setLoading(true);
