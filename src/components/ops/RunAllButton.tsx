@@ -46,7 +46,7 @@ export function RunAllButton({ index }: RunAllButtonProps) {
         // poll for up to 60s
         for (let i = 0; i < 20; i++) {
           await new Promise((res) => setTimeout(res, 3000));
-          const probe = await fetch("/api/artifacts/index", { cache: "no-store" });
+          const probe = await fetch("/api/artifacts/", { cache: "no-store" });
           const probeData = (await probe.json()) as ArtifactIndex;
           const recent = probeData.tasks.find(
             (t) => t.task_id === taskId && t.saved_at >= startedAtIso,
