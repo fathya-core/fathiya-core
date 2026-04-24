@@ -52,12 +52,14 @@ export const Route = createFileRoute("/api/n8n/workflows")({
           );
         }
         try {
-          const data = (await n8nFetch("/workflows?limit=50")) as { data: N8nWorkflow[] };
+          const data = (await n8nFetch(N8N_BASE, N8N_API_KEY, "/workflows?limit=50")) as { data: N8nWorkflow[] };
           // For each workflow, fetch last execution (best-effort)
           const enriched = await Promise.all(
             (data.data ?? []).map(async (wf) => {
               try {
                 const ex = (await n8nFetch(
+                  N8N_BASE,
+                  N8N_API_KEY,
                   `/executions?workflowId=${wf.id}&limit=1`,
                 )) as { data: N8nExecution[] };
                 const last = ex.data?.[0];
