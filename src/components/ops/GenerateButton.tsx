@@ -17,13 +17,24 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setState("loading");
-    toast.info(`توليد ${taskId} عبر Lovable AI…`);
+    toast.info(`توليد ${taskId} عبر Lovable AI…`, { duration: 4000 });
     try {
       const r = await fetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ taskId }),
       });
+
+      // 504 من Worker: النموذج تجاوز 30s — لكن السجل يكتمل في الخلفية
+      if (r.status === 504) {
+        setState("err");
+        toast.warning(
+          `انتهت مهلة الاتصال (504) — قد يكون التوليد اكتمل. افحصي /ai-runs للتأكد.`,
+          { duration: 8000 },
+        );
+        return;
+      }
+
       const data = (await r.json()) as { ok?: boolean; savedPath?: string; error?: string };
       if (!r.ok || !data.ok) {
         setState("err");

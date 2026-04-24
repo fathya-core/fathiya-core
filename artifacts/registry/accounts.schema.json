@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9._-]*$",
+      "description": "اسم مزوّد الخدمة/المنصّة (مُعرّف منطقي قصير)."
+    },
+    "account_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:@-]+$",
+      "description": "المعرّف الأصلي للحساب لدى المزوّد (ID/username/label)."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "draining",
+        "exhausted",
+        "banned"
+      ],
+      "description": "حالة تشغيل الحساب ضمن المنظومة."
+    },
+    "balance_state": {
+      "type": "object",
+      "description": "حالة الرصيد/الحصة المتاحة وقابليتها للاستخدام.",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "quota",
+            "monetary",
+            "unlimited",
+            "unknown"
+          ],
+          "description": "نوع الرصيد: quota (حصص/اعتمادات)، monetary (مالي)، unlimited (غير محدود)، unknown (غير معروف)."
+        },
+        "available": {
+          "type": "number",
+          "minimum": 0,
+          "description": "القيمة المتبقية القابلة للاستخدام وفق الوحدة المحددة."
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "وحدة القياس (مثال: credits, messages, usd_cents)."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "عملة ISO-4217 عند كون النوع monetary (مثال: USD, EUR)."
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "طابع زمني لآخر تحديث معKnown/مقدّر (قد يكون null عند عدم التيقّن)."
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "تاريخ الانتهاء إن وجد (قد يكون null)."
+        }
+      },
+      "required": [
+        "kind",
+        "updated_at"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "monetary"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "available",
+              "unit",
+              "currency"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "quota"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "available",
+              "unit"
+            ]
+          }
+        }
+      ]
+    },
+    "customization_profile": {
+      "type": "string",
+      "pattern": "^profiles/[a-z0-9][a-z0-9._-]*$",
+      "description": "مرجع ملف التخصيص تحت المسار profiles/."
+    },
+    "domain_pool": {
+      "type": "array",
+      "description": "قائمة النطاقات المرشحة للاستخدام من هذا الحساب.",
+      "items": {
+        "type": "string",
+        "pattern": "^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?:\\.(?!-)[A-Za-z0-9-]{1,63})+$"
+      },
+      "uniqueItems": true,
+      "minItems": 0
+    },
+    "last_success_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "آخر طابع زمني لعملية ناجحة مرتبطة بالحساب."
+    },
+    "last_failure_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "آخر طابع زمني لعملية فاشلة مرتبطة بالحساب."
+    },
+    "fallback_group": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]*$",
+      "description": "اسم مجموعة السقوط الاحتياطي للحسابات البديلة."
+    },
+    "notes": {
+      "type": "string",
+      "default": "",
+      "description": "ملاحظات تشغيلية حرّة قصيرة."
+    }
+  },
+  "required": [
+    "provider",
+    "account_id",
+    "status",
+    "balance_state",
+    "customization_profile",
+    "domain_pool",
+    "last_success_at",
+    "last_failure_at",
+    "fallback_group",
+    "notes"
+  ]
+}

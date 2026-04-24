@@ -10,6 +10,7 @@ export const AI_MODELS = [
 ] as const;
 
 export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
-export const DEFAULT_GPT_MODEL = "openai/gpt-5";
+// ملاحظة: GPT-5 يستغرق 60-75s على Worker (حد 30s) → نستخدم Gemini 2.5 Pro كافتراضي للمهام الجادة.
+export const DEFAULT_GPT_MODEL = "google/gemini-2.5-pro";
 
 export type AIModelId = (typeof AI_MODELS)[number]["id"];
