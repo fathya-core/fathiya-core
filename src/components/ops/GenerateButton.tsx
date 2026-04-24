@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TASK_PROMPTS } from "@/lib/ai/prompts";
 import { supabase } from "@/integrations/supabase/client";
+import { refreshArtifactIndex } from "@/hooks/use-artifact-index";
 
 // بعد 504 من Worker، نتحقق من ai_runs لمدة ~60s لمعرفة هل اكتمل التوليد فعلاً
 async function pollForCompletion(
@@ -59,6 +60,7 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
         if (result?.ok) {
           setState("ok");
           toast.success(`تم حفظ ${result.savedPath ?? "(no path)"} ✓`);
+          await refreshArtifactIndex();
           onGenerated?.(result.savedPath ?? "");
           return;
         }
@@ -80,6 +82,7 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
       }
       setState("ok");
       toast.success(`تم حفظ ${data.savedPath}`);
+      await refreshArtifactIndex();
       onGenerated?.(data.savedPath ?? "");
     } catch (e) {
       setState("err");

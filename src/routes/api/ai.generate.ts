@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { promises as fs } from "fs";
 import path from "path";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { recordArtifact } from "@/lib/ops/artifact-index";
 
 async function logRun(row: {
   task_id: string | null;
@@ -225,9 +226,26 @@ export const Route = createFileRoute("/api/ai/generate")({
             }
           }
 
-          await fs.writeFile(abs, toWrite + (toWrite.endsWith("\n") ? "" : "\n"), "utf8");
+          const finalContent = toWrite + (toWrite.endsWith("\n") ? "" : "\n");
+          await fs.writeFile(abs, finalContent, "utf8");
           saved = true;
           savedPath = `artifacts/${safe}`;
+
+          // auto-register in artifacts/_index.json
+          if (body.taskId) {
+            try {
+              await recordArtifact({
+                task_id: body.taskId,
+                path: savedPath,
+                kind: saveKind ?? "json",
+                saved_at: new Date().toISOString(),
+                bytes: Buffer.byteLength(finalContent, "utf8"),
+                model,
+              });
+            } catch (e) {
+              console.error("[ai.generate] failed to update _index.json:", e);
+            }
+          }
         }
 
         await logRun({
