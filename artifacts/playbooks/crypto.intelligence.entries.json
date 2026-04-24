@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "catalyst_scan",
+      "title_ar": "مسح المحفزات",
+      "title_en": "Catalyst Scan",
+      "inputs": [
+        "Sector/Asset List",
+        "Timeframe (e.g., 30-90 days)"
+      ],
+      "outputs": [
+        "Ranked list of upcoming catalysts",
+        "Catalyst impact/probability score"
+      ],
+      "gates": [
+        "Source reliability check",
+        "Is the event directly price-actionable?"
+      ],
+      "primary_provider": "Intel Team (Manual Curation)",
+      "fallback_provider": "TokenUnlocks, CoinMarketCal API",
+      "when_to_use": "At the beginning of each quarter, or when a new high-conviction sector is identified.",
+      "when_to_skip": "During extreme market volatility where catalysts are likely to be ignored (e.g., macro-driven crash)."
+    },
+    {
+      "id": "narrative_analysis",
+      "title_ar": "تحليل السرديات",
+      "title_en": "Narrative Analysis",
+      "inputs": [
+        "List of potential narratives",
+        "Social media data sources (Twitter, Farcaster)",
+        "On-chain activity data"
+      ],
+      "outputs": [
+        "Dominant narrative report",
+        "Emerging narratives watchlist",
+        "Key influencers map"
+      ],
+      "gates": [
+        "Is the narrative gaining traction (volume, engagement)?",
+        "Is there on-chain data to support it?"
+      ],
+      "primary_provider": "Social Analytics Tool (e.g., Artemis, LunarCrush)",
+      "fallback_provider": "Manual scan by Intel Analyst",
+      "when_to_use": "Weekly basis to track market sentiment, or when a new buzzword starts trending.",
+      "when_to_skip": "In illiquid, range-bound markets with no clear sentiment driver."
+    },
+    {
+      "id": "thesis_review",
+      "title_ar": "مراجعة الأطروحة الاستثمارية",
+      "title_en": "Thesis Review",
+      "inputs": [
+        "Existing Investment Thesis Document",
+        "New market data/events",
+        "Performance metrics of related assets"
+      ],
+      "outputs": [
+        "Updated Thesis Document (Validated/Modified/Invalidated)",
+        "Actionable changes (e.g., increase/decrease exposure)"
+      ],
+      "gates": [
+        "Does new data fundamentally challenge a core assumption?",
+        "Is the 'alpha' of the thesis decaying?"
+      ],
+      "primary_provider": "Lead Investment Analyst",
+      "fallback_provider": "Peer Review by another analyst",
+      "when_to_use": "Monthly for high-conviction theses, or immediately after a major event impacting the thesis.",
+      "when_to_skip": "If the thesis is less than 2 weeks old and no major events have occurred."
+    },
+    {
+      "id": "invalidation_map",
+      "title_ar": "خريطة نقاط الإبطال",
+      "title_en": "Invalidation Map",
+      "inputs": [
+        "Active Investment Thesis",
+        "Key performance indicators (KPIs)",
+        "Price levels"
+      ],
+      "outputs": [
+        "A clear list of invalidation points (qualitative & quantitative)",
+        "Alerts configuration for monitoring these points"
+      ],
+      "gates": [
+        "Is the invalidation point unambiguous?",
+        "Can it be monitored automatically?"
+      ],
+      "primary_provider": "Portfolio Manager",
+      "fallback_provider": "Risk Management System",
+      "when_to_use": "Immediately after a new position is taken or a new thesis is formalized.",
+      "when_to_skip": "For short-term, purely technical trades that do not rely on a fundamental thesis."
+    },
+    {
+      "id": "watchlist_output",
+      "title_ar": "مخرجات قائمة المراقبة",
+      "title_en": "Watchlist Output",
+      "inputs": [
+        "Outputs from Catalyst Scan & Narrative Analysis",
+        "Valuation models",
+        "Technical Analysis charts"
+      ],
+      "outputs": [
+        "Tiered Watchlist (Tier 1: High Conviction, Tier 2: Monitoring)",
+        "Entry price targets and rationale for each asset"
+      ],
+      "gates": [
+        "Does the asset fit the portfolio's risk profile?",
+        "Is there sufficient liquidity?"
+      ],
+      "primary_provider": "Investment Committee",
+      "fallback_provider": "Lead Analyst's Discretion",
+      "when_to_use": "Bi-weekly, synthesizing all intel work into a single actionable list.",
+      "when_to_skip": "During a portfolio lockdown period or a de-risking mandate."
+    }
+  ]
+}
