@@ -1,17 +1,26 @@
 import { Progress } from "@/components/ui/progress";
 import { TaskCard } from "./TaskCard";
-import { tasksByLayer, progressFor, type Layer, type Task } from "@/lib/ops/tasks";
+import { tasksByLayer, type Layer, type Task } from "@/lib/ops/tasks";
+import { useArtifactIndex } from "@/hooks/use-artifact-index";
 
 interface LayerSectionProps {
   layer: Layer;
   ownerFilter: string;
   onOpenTask: (task: Task) => void;
+  onViewArtifact?: (path: string) => void;
 }
 
-export function LayerSection({ layer, ownerFilter, onOpenTask }: LayerSectionProps) {
+export function LayerSection({ layer, ownerFilter, onOpenTask, onViewArtifact }: LayerSectionProps) {
   const all = tasksByLayer(layer.id);
   const tasks = ownerFilter === "All" ? all : all.filter((t) => t.owners.includes(ownerFilter as never));
-  const { done, total, pct } = progressFor(layer.id);
+  const { isDone } = useArtifactIndex();
+
+  // dynamic progress: count tasks done either by status or by artifacts on disk
+  const total = all.length;
+  const done = all.filter(
+    (t) => t.status === "done" || isDone(t.id, t.artifacts.map((a) => a.path)),
+  ).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
 
   return (
     <section className="mb-8">
@@ -36,7 +45,7 @@ export function LayerSection({ layer, ownerFilter, onOpenTask }: LayerSectionPro
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onOpen={onOpenTask} />
+            <TaskCard key={task.id} task={task} onOpen={onOpenTask} onViewArtifact={onViewArtifact} />
           ))}
         </div>
       )}
