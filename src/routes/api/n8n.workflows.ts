@@ -16,15 +16,9 @@ interface N8nExecution {
   finished: boolean;
 }
 
-const N8N_BASE = process.env.N8N_BASE_URL; // e.g. https://my.app.n8n.cloud
-const N8N_API_KEY = process.env.N8N_API_KEY;
-
-async function n8nFetch(path: string) {
-  if (!N8N_BASE || !N8N_API_KEY) {
-    throw new Error("missing_credentials");
-  }
-  const r = await fetch(`${N8N_BASE.replace(/\/+$/, "")}/api/v1${path}`, {
-    headers: { "X-N8N-API-KEY": N8N_API_KEY, Accept: "application/json" },
+async function n8nFetch(base: string, key: string, path: string) {
+  const r = await fetch(`${base.replace(/\/+$/, "")}/api/v1${path}`, {
+    headers: { "X-N8N-API-KEY": key, Accept: "application/json" },
   });
   if (!r.ok) throw new Error(`n8n ${r.status}: ${await r.text()}`);
   return r.json();
@@ -34,6 +28,11 @@ export const Route = createFileRoute("/api/n8n/workflows")({
   server: {
     handlers: {
       GET: async () => {
+        // قراءة الأسرار داخل الـ handler (وليس على مستوى الـ module)
+        // لضمان أنها تُقرأ في وقت التشغيل من بيئة Worker.
+        const N8N_BASE = process.env.N8N_BASE_URL;
+        const N8N_API_KEY = process.env.N8N_API_KEY;
+
         if (!N8N_BASE || !N8N_API_KEY) {
           return new Response(
             JSON.stringify({
@@ -53,12 +52,14 @@ export const Route = createFileRoute("/api/n8n/workflows")({
           );
         }
         try {
-          const data = (await n8nFetch("/workflows?limit=50")) as { data: N8nWorkflow[] };
+          const data = (await n8nFetch(N8N_BASE, N8N_API_KEY, "/workflows?limit=50")) as { data: N8nWorkflow[] };
           // For each workflow, fetch last execution (best-effort)
           const enriched = await Promise.all(
             (data.data ?? []).map(async (wf) => {
               try {
                 const ex = (await n8nFetch(
+                  N8N_BASE,
+                  N8N_API_KEY,
                   `/executions?workflowId=${wf.id}&limit=1`,
                 )) as { data: N8nExecution[] };
                 const last = ex.data?.[0];
