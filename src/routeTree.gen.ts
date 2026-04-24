@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AiRunsRouteImport } from './routes/ai-runs'
 import { Route as AiConsoleRouteImport } from './routes/ai-console'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiArtifactsIndexRouteImport } from './routes/api/artifacts.index'
 import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
+import { Route as ApiArtifactsReadRouteImport } from './routes/api/artifacts.read'
 import { Route as ApiAiGenerateRouteImport } from './routes/api/ai.generate'
 
 const AiRunsRoute = AiRunsRouteImport.update({
@@ -30,9 +32,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiArtifactsIndexRoute = ApiArtifactsIndexRouteImport.update({
+  id: '/api/artifacts/',
+  path: '/api/artifacts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiN8nWorkflowsRoute = ApiN8nWorkflowsRouteImport.update({
   id: '/api/n8n/workflows',
   path: '/api/n8n/workflows',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiArtifactsReadRoute = ApiArtifactsReadRouteImport.update({
+  id: '/api/artifacts/read',
+  path: '/api/artifacts/read',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAiGenerateRoute = ApiAiGenerateRouteImport.update({
@@ -46,14 +58,18 @@ export interface FileRoutesByFullPath {
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
+  '/api/artifacts/': typeof ApiArtifactsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
+  '/api/artifacts': typeof ApiArtifactsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,7 +77,9 @@ export interface FileRoutesById {
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
+  '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
+  '/api/artifacts/': typeof ApiArtifactsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -70,21 +88,27 @@ export interface FileRouteTypes {
     | '/ai-console'
     | '/ai-runs'
     | '/api/ai/generate'
+    | '/api/artifacts/read'
     | '/api/n8n/workflows'
+    | '/api/artifacts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/ai-console'
     | '/ai-runs'
     | '/api/ai/generate'
+    | '/api/artifacts/read'
     | '/api/n8n/workflows'
+    | '/api/artifacts'
   id:
     | '__root__'
     | '/'
     | '/ai-console'
     | '/ai-runs'
     | '/api/ai/generate'
+    | '/api/artifacts/read'
     | '/api/n8n/workflows'
+    | '/api/artifacts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -92,7 +116,9 @@ export interface RootRouteChildren {
   AiConsoleRoute: typeof AiConsoleRoute
   AiRunsRoute: typeof AiRunsRoute
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
+  ApiArtifactsReadRoute: typeof ApiArtifactsReadRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
+  ApiArtifactsIndexRoute: typeof ApiArtifactsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -118,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/artifacts/': {
+      id: '/api/artifacts/'
+      path: '/api/artifacts'
+      fullPath: '/api/artifacts/'
+      preLoaderRoute: typeof ApiArtifactsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/n8n/workflows': {
       id: '/api/n8n/workflows'
       path: '/api/n8n/workflows'
       fullPath: '/api/n8n/workflows'
       preLoaderRoute: typeof ApiN8nWorkflowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/artifacts/read': {
+      id: '/api/artifacts/read'
+      path: '/api/artifacts/read'
+      fullPath: '/api/artifacts/read'
+      preLoaderRoute: typeof ApiArtifactsReadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ai/generate': {
@@ -140,7 +180,9 @@ const rootRouteChildren: RootRouteChildren = {
   AiConsoleRoute: AiConsoleRoute,
   AiRunsRoute: AiRunsRoute,
   ApiAiGenerateRoute: ApiAiGenerateRoute,
+  ApiArtifactsReadRoute: ApiArtifactsReadRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,
+  ApiArtifactsIndexRoute: ApiArtifactsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
