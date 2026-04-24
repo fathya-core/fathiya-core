@@ -18,7 +18,7 @@ let cache: ArtifactIndex | null = null;
 const listeners = new Set<() => void>();
 
 async function load(): Promise<ArtifactIndex> {
-  const r = await fetch("/api/artifacts/index", { cache: "no-store" });
+  const r = await fetch("/api/artifacts/", { cache: "no-store" });
   if (!r.ok) return { version: 1, tasks: [] };
   const data = (await r.json()) as ArtifactIndex;
   cache = data;

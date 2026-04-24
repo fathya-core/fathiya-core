@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "CEV_001",
+      "category": "false_narrative",
+      "scenario": "مشروع بلوكتشين جديد يدّعي قدرته على معالجة 'مليون معاملة في الثانية' بناءً على حسابات نظرية، بينما البيانات على الشبكة تظهر 50 معاملة في الثانية فقط تحت ضغط عالٍ. السردية مدفوعة من قبل المؤثرين.",
+      "expected_action": "no_trade",
+      "invalidation_signals": [
+        "Actual on-chain TPS consistently exceeding 100k",
+        "Major dApps migrating and citing performance as the reason"
+      ],
+      "notes": "السردية التسويقية لا تتطابق مع الواقع التقني. الأرقام المعلنة نظرية بحتة ومضللة."
+    },
+    {
+      "id": "CEV_002",
+      "category": "conflicting_signals",
+      "scenario": "عملة تظهر مقاييس قوية على السلسلة (زيادة العناوين النشطة، نسبة تخزين عالية) لكن حركة السعر هبوطية، حيث كسرت مستويات دعم رئيسية، وتدفقات العملة إلى المنصات في ازدياد.",
+      "expected_action": "research_more",
+      "invalidation_signals": [
+        "Price reclaiming key support levels on high volume",
+        "Exchange inflows dropping significantly while on-chain metrics remain strong"
+      ],
+      "notes": "هناك تضارب بين التحليل الأساسي (on-chain) والتحليل الفني/تدفقات السوق. يتطلب تحقيقًا أعمق لفهم سبب التناقض (هل هناك حوت كبير يبيع؟ هل هناك خبر سلبي غير معلن؟)."
+    },
+    {
+      "id": "CEV_003",
+      "category": "hype_vs_evidence",
+      "scenario": "مشروع يُسوّق له كـ'قاتل سولانا' يحظى بضجة إعلامية هائلة. يرتفع السعر 300% في أسبوع. ومع ذلك، مستودع GitHub لم يشهد أي تحديثات منذ 3 أشهر، وفريق العمل مجهول الهوية.",
+      "expected_action": "no_trade",
+      "invalidation_signals": [
+        "Team doxxing with credible backgrounds",
+        "Consistent and meaningful updates on GitHub",
+        "Launch of a functional testnet with public access"
+      ],
+      "notes": "الضجيج الإعلامي والارتفاع السعري لا يستندان إلى أي دليل على تقدم حقيقي في التطوير. حالة مضاربة عالية الخطورة."
+    },
+    {
+      "id": "CEV_004",
+      "category": "invalid_thesis",
+      "scenario": "الأطروحة: 'مشروع X سيسيطر على سوق DePIN لأنه الأول في السوق'. يظهر منافس جديد بتمويل قوي وتقنية متفوقة وفريق أقوى.",
+      "expected_action": "abort",
+      "invalidation_signals": [
+        "New competitor failing to gain traction or secure partnerships",
+        "Project X announces a major technological leap that matches or exceeds the competitor's"
+      ],
+      "notes": "الأطروحة الأصلية ('أفضلية المحرك الأول') تم إبطالها بظهور منافس متفوق. يجب التخلي عن المركز أو إعادة تقييمه من الصفر."
+    },
+    {
+      "id": "CEV_005",
+      "category": "missing_data",
+      "scenario": "مشروع GameFi واعد على وشك الإطلاق. الورقة البيضاء تبدو جيدة، ولكن لا توجد معلومات عامة حول اقتصاديات الرمز (tokenomics)، جداول الاستحقاق (vesting) للفريق والمستثمرين، أو المعروض الأولي للتداول.",
+      "expected_action": "research_more",
+      "invalidation_signals": [
+        "Attempting to trade without this data is gambling"
+      ],
+      "notes": "البيانات المفقودة حول اقتصاديات الرمز حيوية لتقييم المخاطرة. الدخول بدونها يعرض المستثمر لخطر ضغط بيع هائل وغير متوقع بعد الإطلاق."
+    },
+    {
+      "id": "CEV_006",
+      "category": "no_trade_case",
+      "scenario": "سعر عملة يتذبذب في نطاق ضيق لعدة أشهر. حجم التداول منخفض. لا توجد محفزات قادمة. التقنية متوسطة، بدون ميزة تنافسية واضحة.",
+      "expected_action": "no_trade",
+      "invalidation_signals": [
+        "Announcement of a major partnership",
+        "A significant technological breakthrough",
+        "Sudden spike in volume and a breakout from the range"
+      ],
+      "notes": "لا يوجد سبب مقنع للدخول في صفقة. التكلفة البديلة (Opportunity Cost) لإبقاء رأس المال في هذا الأصل عالية جدًا. 'لا صفقة' هي صفقة بحد ذاتها."
+    },
+    {
+      "id": "CEV_007",
+      "category": "fomo_trap",
+      "scenario": "بعد ارتفاع بنسبة 500% في أسبوعين، عملة 'ميم' تتصدر الترند في كل مكان. المؤثرون يروجون لها كـ'الـ 100x القادمة'. المتداول يشعر بحاجة ملحة للشراء قبل أن يرتفع السعر أكثر.",
+      "expected_action": "no_trade",
+      "invalidation_signals": [
+        "A significant pullback to key support levels combined with a fundamental catalyst",
+        "This is purely psychological; invalidation is recognizing the emotional trigger"
+      ],
+      "notes": "فخ الخوف من فوات الفرصة (FOMO). الشراء عند قمة الضجيج وبعد ارتفاع عمودي هو وصفة للخسارة. نسبة المخاطرة إلى العائد سيئة للغاية."
+    },
+    {
+      "id": "CEV_008",
+      "category": "exit_signal",
+      "scenario": "أنت تحتفظ بمركز في مشروع. المطور الرئيسي، الذي كان صاحب الرؤية، يعلن عن رحيله. بالتزامن، تظهر البيانات على السلسلة عمليات فتح كميات كبيرة من العملات (unlocks) مجدولة للشهر القادم.",
+      "expected_action": "trade",
+      "invalidation_signals": [
+        "The team immediately announces a highly credible and respected replacement",
+        "The project successfully mitigates the impact of the token unlocks with a new utility or lock-up incentive"
+      ],
+      "notes": "إشارة خروج قوية. رحيل العقل المدبر للمشروع مع ضغط بيع محتمل قادم يشكلان خطرًا مزدوجًا. القرار المنطقي هو البيع لتأمين الأرباح أو تقليل الخسائر."
+    },
+    {
+      "id": "CEV_009",
+      "category": "invalid_thesis",
+      "scenario": "الأطروحة: 'عملة خصوصية سترتفع قيمتها مع بحث المستخدمين عن إخفاء الهوية'. تقوم وزارة الخزانة الأمريكية بفرض عقوبات على البروتوكول، وتبدأ المنصات الكبرى في شطب العملة للامتثال.",
+      "expected_action": "abort",
+      "invalidation_signals": [
+        "Exchanges reversing their delisting decisions",
+        "A successful legal challenge against the sanctions"
+      ],
+      "notes": "الأطروحة أصبحت باطلة بسبب متغير خارجي حاسم (تنظيمي). السيولة والوصول إلى الأصل تضررا بشدة، مما يجعل الاحتفاظ به مخاطرة كبيرة."
+    },
+    {
+      "id": "CEV_010",
+      "category": "conflicting_signals",
+      "scenario": "مشروع كريبتو مرتبط بالذكاء الاصطناعي أطلق منتجًا مبتكرًا يظهر نموًا قويًا في عدد المستخدمين (إيجابي جزئيًا). ومع ذلك، السوق العام في تراجع بسبب أسعار الفائدة المرتفعة ومعنويات الاقتصاد الكلي السلبية (سلبي كليًا).",
+      "expected_action": "research_more",
+      "invalidation_signals": [
+        "Positive signals from the Fed about rate cuts",
+        "The project's token price showing strong relative strength and decoupling from the market trend"
+      ],
+      "notes": "قوة المشروع الداخلية (Micro) تواجه رياحًا معاكسة من السوق الكلي (Macro). هل قوة المشروع كافية للتغلب على ضعف السوق العام؟ يتطلب تقييمًا دقيقًا للمخاطرة."
+    },
+    {
+      "id": "CEV_011",
+      "category": "false_narrative",
+      "scenario": "المشروع 'Y' يعلن عن 'شراكة' مع شركة تقنية كبيرة. ينتشر الخبر ويرتفع السعر. عند التدقيق، يتبين أن 'الشراكة' هي مجرد استخدام المشروع لخدمات الحوسبة السحابية التي تقدمها الشركة الكبيرة، وهي خدمة متاحة للجميع.",
+      "expected_action": "no_trade",
+      "invalidation_signals": [
+        "A joint press release from both companies announcing a deep, strategic integration",
+        "The large company integrating the project's token or tech into its core products"
+      ],
+      "notes": "تضخيم إعلامي لعلاقة تجارية عادية وتقديمها على أنها شراكة استراتيجية لخداع المستثمرين غير المدققين."
+    },
+    {
+      "id": "CEV_012",
+      "category": "exit_signal",
+      "scenario": "أنت مستثمر في منصة تداول لامركزية (DEX) رائدة على شبكة معينة. فجأة، تطلق Uniswap نسختها الجديدة على نفس الشبكة، برسوم أقل وميزات سيولة متفوقة، وتبدأ بسحب السيولة بسرعة من المنصة التي تستثمر فيها.",
+      "expected_action": "trade",
+      "invalidation_signals": [
+        "Your DEX rapidly innovates with a feature Uniswap cannot replicate",
+        "User and liquidity drain stops and reverses course for several consecutive weeks"
+      ],
+      "notes": "تم تآكل الخندق التنافسي (competitive moat) للمشروع. ظهور لاعب مهيمن يهدد بشكل مباشر الحصة السوقية. الخروج هو الإجراء الوقائي الأنسب."
+    }
+  ]
+}
