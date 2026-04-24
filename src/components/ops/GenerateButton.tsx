@@ -3,6 +3,32 @@ import { Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TASK_PROMPTS } from "@/lib/ai/prompts";
+import { supabase } from "@/integrations/supabase/client";
+
+// بعد 504 من Worker، نتحقق من ai_runs لمدة ~60s لمعرفة هل اكتمل التوليد فعلاً
+async function pollForCompletion(
+  taskId: string,
+  startedAtIso: string,
+  maxAttempts = 20,
+  intervalMs = 3000,
+): Promise<{ ok: true; savedPath: string | null } | { ok: false; error?: string } | null> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    const { data, error } = await supabase
+      .from("ai_runs")
+      .select("status,saved_path,error_message,created_at")
+      .eq("task_id", taskId)
+      .gte("created_at", startedAtIso)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (error) continue;
+    const row = data?.[0];
+    if (!row) continue;
+    if (row.status === "ok") return { ok: true, savedPath: row.saved_path };
+    if (row.status === "error") return { ok: false, error: row.error_message ?? "error" };
+  }
+  return null;
+}
 
 interface GenerateButtonProps {
   taskId: string;
@@ -17,6 +43,7 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setState("loading");
+    const startedAtIso = new Date().toISOString();
     toast.info(`توليد ${taskId} عبر Lovable AI…`, { duration: 4000 });
     try {
       const r = await fetch("/api/ai/generate", {
@@ -25,13 +52,23 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
         body: JSON.stringify({ taskId }),
       });
 
-      // 504 من Worker: النموذج تجاوز 30s — لكن السجل يكتمل في الخلفية
+      // 504: Worker قطع الاتصال — لكن النموذج يكمل في الخلفية ويسجل في ai_runs
       if (r.status === 504) {
+        toast.info(`504 من Worker — أتحقق من ai_runs…`, { duration: 4000 });
+        const result = await pollForCompletion(taskId, startedAtIso);
+        if (result?.ok) {
+          setState("ok");
+          toast.success(`تم حفظ ${result.savedPath ?? "(no path)"} ✓`);
+          onGenerated?.(result.savedPath ?? "");
+          return;
+        }
+        if (result && !result.ok) {
+          setState("err");
+          toast.error(`فشل في الخلفية: ${result.error}`);
+          return;
+        }
         setState("err");
-        toast.warning(
-          `انتهت مهلة الاتصال (504) — قد يكون التوليد اكتمل. افحصي /ai-runs للتأكد.`,
-          { duration: 8000 },
-        );
+        toast.warning(`لم يكتمل خلال 60s — افحصي /ai-runs يدوياً.`, { duration: 8000 });
         return;
       }
 
