@@ -56,7 +56,7 @@ export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={taskDone ? "done" : task.status} />
             <OwnerBadges owners={task.owners} />
-            <GenerateButton taskId={task.id} />
+            {!taskDone && <GenerateButton taskId={task.id} />}
           </div>
         </div>
         <ChevronLeft className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
