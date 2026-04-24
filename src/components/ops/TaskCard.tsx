@@ -1,14 +1,16 @@
-import { ChevronLeft, FileJson, FileText, Workflow } from "lucide-react";
+import { ChevronLeft, FileJson, FileText, Workflow, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { OwnerBadges } from "./OwnerBadges";
 import { GenerateButton } from "./GenerateButton";
 import { priorityStars, type Task } from "@/lib/ops/tasks";
+import { useArtifactIndex } from "@/hooks/use-artifact-index";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task;
   onOpen: (task: Task) => void;
+  onViewArtifact?: (path: string) => void;
 }
 
 const KIND_ICON = {
@@ -18,13 +20,20 @@ const KIND_ICON = {
   workflow: Workflow,
 } as const;
 
-export function TaskCard({ task, onOpen }: TaskCardProps) {
+export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
   const stars = priorityStars(task.priority);
+  const { entriesForTask, isDone } = useArtifactIndex();
+  const savedEntries = entriesForTask(task.id);
+  const expectedPaths = task.artifacts.map((a) => a.path);
+  const taskDone = task.status === "done" || isDone(task.id, expectedPaths);
+  const partial = savedEntries.length > 0 && !taskDone;
+
   return (
     <Card
       className={cn(
         "group cursor-pointer border-border/60 bg-card/40 p-4 transition-all hover:border-primary/40 hover:bg-card/70",
-        task.status === "done" && "opacity-70",
+        taskDone && "border-emerald-500/30 bg-emerald-500/5",
+        partial && "border-amber-500/30",
       )}
       onClick={() => onOpen(task)}
     >
@@ -34,6 +43,9 @@ export function TaskCard({ task, onOpen }: TaskCardProps) {
             <span className="font-mono text-[10px] text-muted-foreground">{task.id}</span>
             <span className="font-mono text-[10px] text-muted-foreground/60">{task.code}</span>
             {stars && <span className="text-[10px] text-amber-400 tracking-tight">{stars}</span>}
+            {taskDone && (
+              <span className="text-[10px] text-emerald-400 font-bold">✓ done</span>
+            )}
           </div>
           <h3 className="text-sm font-semibold text-foreground leading-snug mb-2">
             {task.title}
@@ -42,7 +54,7 @@ export function TaskCard({ task, onOpen }: TaskCardProps) {
             {task.description}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <StatusBadge status={task.status} />
+            <StatusBadge status={taskDone ? "done" : task.status} />
             <OwnerBadges owners={task.owners} />
             <GenerateButton taskId={task.id} />
           </div>
@@ -50,20 +62,35 @@ export function TaskCard({ task, onOpen }: TaskCardProps) {
         <ChevronLeft className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
       </div>
 
-      {task.artifacts.length > 0 && (
+      {(savedEntries.length > 0 || task.artifacts.length > 0) && (
         <div className="mt-3 pt-3 border-t border-border/40">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-muted-foreground/70 ml-1">Artifacts:</span>
-            {task.artifacts.map((a) => {
-              const Icon = KIND_ICON[a.kind];
+            <span className="text-[10px] text-muted-foreground/70 ml-1">
+              {savedEntries.length > 0 ? "محفوظ:" : "متوقع:"}
+            </span>
+            {(savedEntries.length > 0 ? savedEntries : task.artifacts.map((a) => ({ path: a.path, kind: a.kind }))).map((a) => {
+              const Icon = KIND_ICON[a.kind as keyof typeof KIND_ICON] ?? FileJson;
+              const isSaved = savedEntries.some((s) => s.path === a.path || s.path === `artifacts/${a.path}`);
               return (
-                <span
+                <button
                   key={a.path}
-                  className="inline-flex items-center gap-1 rounded bg-muted/40 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isSaved && onViewArtifact) onViewArtifact(a.path);
+                  }}
+                  disabled={!isSaved}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono transition-colors",
+                    isSaved
+                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer"
+                      : "bg-muted/40 text-muted-foreground border border-transparent",
+                  )}
+                  title={isSaved ? "اضغطي للعرض" : "لم يُولَّد بعد"}
                 >
                   <Icon className="h-2.5 w-2.5" />
                   {a.path.split("/").pop()}
-                </span>
+                  {isSaved && <Eye className="h-2.5 w-2.5 mr-0.5" />}
+                </button>
               );
             })}
           </div>
