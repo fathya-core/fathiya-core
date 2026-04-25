@@ -44,7 +44,7 @@ export const Route = createFileRoute("/api/public/sec/report")({
           if (fetchErr) throw fetchErr;
           if (!scan) return Response.json({ error: "scan not found" }, { status: 404 });
 
-          const md = buildMarkdown(scan.scan_id, scan.target, (scan.findings as Finding[]) ?? []);
+          const md = buildMarkdown(scan.scan_id, scan.target, (scan.findings as unknown as Finding[]) ?? []);
           const reportUrl = `/api/public/sec/report?scanId=${encodeURIComponent(scanId)}`;
 
           const { error: upErr } = await supabaseAdmin
