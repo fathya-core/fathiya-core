@@ -11,11 +11,18 @@
         "artifacts/workflows/n8n.security.spec.json"
       ],
       "deployed_workflows": [
-        { "id": "iPV8TN7Km0jHCbny", "name": "FATHIYA V2 — Security Scan Runner", "url": "https://fathya.app.n8n.cloud/workflow/iPV8TN7Km0jHCbny" },
-        { "id": "xZRmZLLITqQtZgOj", "name": "FATHIYA V2 — Security Report Generator", "url": "https://fathya.app.n8n.cloud/workflow/xZRmZLLITqQtZgOj" },
-        { "id": "xSsJtwKx3knogXYZ", "name": "FATHIYA V2 — Security Alerter", "url": "https://fathya.app.n8n.cloud/workflow/xSsJtwKx3knogXYZ" }
+        { "id": "iPV8TN7Km0jHCbny", "name": "FATHIYA V2 — Security Scan Runner", "url": "https://fathya.app.n8n.cloud/workflow/iPV8TN7Km0jHCbny", "calls": ["/api/public/sec/scan", "/api/public/sec/report", "/api/public/sec/notify"] },
+        { "id": "xZRmZLLITqQtZgOj", "name": "FATHIYA V2 — Security Report Generator", "url": "https://fathya.app.n8n.cloud/workflow/xZRmZLLITqQtZgOj", "calls": ["/api/public/sec/report", "/api/public/sec/notify"] },
+        { "id": "xSsJtwKx3knogXYZ", "name": "FATHIYA V2 — Security Alerter", "url": "https://fathya.app.n8n.cloud/workflow/xSsJtwKx3knogXYZ", "calls": ["/api/public/sec/scan", "/api/public/sec/notify"] }
       ],
-      "closed_at": "2026-04-25T06:15:00Z"
+      "backend_endpoints": [
+        "src/routes/api/public/sec/scan.ts",
+        "src/routes/api/public/sec/store.ts",
+        "src/routes/api/public/sec/report.ts",
+        "src/routes/api/public/sec/notify.ts"
+      ],
+      "database": "public.security_scans",
+      "closed_at": "2026-04-25T06:22:00Z"
     }
   ]
 }

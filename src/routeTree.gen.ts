@@ -16,6 +16,10 @@ import { Route as ApiArtifactsIndexRouteImport } from './routes/api/artifacts.in
 import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
 import { Route as ApiArtifactsReadRouteImport } from './routes/api/artifacts.read'
 import { Route as ApiAiGenerateRouteImport } from './routes/api/ai.generate'
+import { Route as ApiPublicSecStoreRouteImport } from './routes/api/public/sec/store'
+import { Route as ApiPublicSecScanRouteImport } from './routes/api/public/sec/scan'
+import { Route as ApiPublicSecReportRouteImport } from './routes/api/public/sec/report'
+import { Route as ApiPublicSecNotifyRouteImport } from './routes/api/public/sec/notify'
 
 const AiRunsRoute = AiRunsRouteImport.update({
   id: '/ai-runs',
@@ -52,6 +56,26 @@ const ApiAiGenerateRoute = ApiAiGenerateRouteImport.update({
   path: '/api/ai/generate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSecStoreRoute = ApiPublicSecStoreRouteImport.update({
+  id: '/api/public/sec/store',
+  path: '/api/public/sec/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSecScanRoute = ApiPublicSecScanRouteImport.update({
+  id: '/api/public/sec/scan',
+  path: '/api/public/sec/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSecReportRoute = ApiPublicSecReportRouteImport.update({
+  id: '/api/public/sec/report',
+  path: '/api/public/sec/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSecNotifyRoute = ApiPublicSecNotifyRouteImport.update({
+  id: '/api/public/sec/notify',
+  path: '/api/public/sec/notify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +85,10 @@ export interface FileRoutesByFullPath {
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts/': typeof ApiArtifactsIndexRoute
+  '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
+  '/api/public/sec/report': typeof ApiPublicSecReportRoute
+  '/api/public/sec/scan': typeof ApiPublicSecScanRoute
+  '/api/public/sec/store': typeof ApiPublicSecStoreRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +98,10 @@ export interface FileRoutesByTo {
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts': typeof ApiArtifactsIndexRoute
+  '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
+  '/api/public/sec/report': typeof ApiPublicSecReportRoute
+  '/api/public/sec/scan': typeof ApiPublicSecScanRoute
+  '/api/public/sec/store': typeof ApiPublicSecStoreRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +112,10 @@ export interface FileRoutesById {
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts/': typeof ApiArtifactsIndexRoute
+  '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
+  '/api/public/sec/report': typeof ApiPublicSecReportRoute
+  '/api/public/sec/scan': typeof ApiPublicSecScanRoute
+  '/api/public/sec/store': typeof ApiPublicSecStoreRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +127,10 @@ export interface FileRouteTypes {
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts/'
+    | '/api/public/sec/notify'
+    | '/api/public/sec/report'
+    | '/api/public/sec/scan'
+    | '/api/public/sec/store'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +140,10 @@ export interface FileRouteTypes {
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts'
+    | '/api/public/sec/notify'
+    | '/api/public/sec/report'
+    | '/api/public/sec/scan'
+    | '/api/public/sec/store'
   id:
     | '__root__'
     | '/'
@@ -109,6 +153,10 @@ export interface FileRouteTypes {
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts/'
+    | '/api/public/sec/notify'
+    | '/api/public/sec/report'
+    | '/api/public/sec/scan'
+    | '/api/public/sec/store'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +167,10 @@ export interface RootRouteChildren {
   ApiArtifactsReadRoute: typeof ApiArtifactsReadRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
   ApiArtifactsIndexRoute: typeof ApiArtifactsIndexRoute
+  ApiPublicSecNotifyRoute: typeof ApiPublicSecNotifyRoute
+  ApiPublicSecReportRoute: typeof ApiPublicSecReportRoute
+  ApiPublicSecScanRoute: typeof ApiPublicSecScanRoute
+  ApiPublicSecStoreRoute: typeof ApiPublicSecStoreRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +224,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sec/store': {
+      id: '/api/public/sec/store'
+      path: '/api/public/sec/store'
+      fullPath: '/api/public/sec/store'
+      preLoaderRoute: typeof ApiPublicSecStoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sec/scan': {
+      id: '/api/public/sec/scan'
+      path: '/api/public/sec/scan'
+      fullPath: '/api/public/sec/scan'
+      preLoaderRoute: typeof ApiPublicSecScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sec/report': {
+      id: '/api/public/sec/report'
+      path: '/api/public/sec/report'
+      fullPath: '/api/public/sec/report'
+      preLoaderRoute: typeof ApiPublicSecReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sec/notify': {
+      id: '/api/public/sec/notify'
+      path: '/api/public/sec/notify'
+      fullPath: '/api/public/sec/notify'
+      preLoaderRoute: typeof ApiPublicSecNotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +263,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiArtifactsReadRoute: ApiArtifactsReadRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,
   ApiArtifactsIndexRoute: ApiArtifactsIndexRoute,
+  ApiPublicSecNotifyRoute: ApiPublicSecNotifyRoute,
+  ApiPublicSecReportRoute: ApiPublicSecReportRoute,
+  ApiPublicSecScanRoute: ApiPublicSecScanRoute,
+  ApiPublicSecStoreRoute: ApiPublicSecStoreRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

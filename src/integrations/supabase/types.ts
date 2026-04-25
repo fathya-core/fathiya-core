@@ -62,6 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      security_scans: {
+        Row: {
+          created_at: string
+          findings: Json
+          id: string
+          notified: boolean
+          report_markdown: string | null
+          report_url: string | null
+          scan_id: string
+          scan_type: string
+          status: string
+          target: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          findings?: Json
+          id?: string
+          notified?: boolean
+          report_markdown?: string | null
+          report_url?: string | null
+          scan_id: string
+          scan_type: string
+          status?: string
+          target: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          findings?: Json
+          id?: string
+          notified?: boolean
+          report_markdown?: string | null
+          report_url?: string | null
+          scan_id?: string
+          scan_type?: string
+          status?: string
+          target?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
