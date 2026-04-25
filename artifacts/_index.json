@@ -2,5 +2,20 @@
   "version": 1,
   "generated_by": "src/lib/ops/tasks.ts",
   "rule": "كل مهمة لا تُغلق إلا بـ artifact دائم تحت artifacts/",
-  "tasks": []
+  "tasks": [
+    {
+      "task_id": "T01",
+      "title": "n8n Security Workflows",
+      "status": "done",
+      "artifacts": [
+        "artifacts/workflows/n8n.security.spec.json"
+      ],
+      "deployed_workflows": [
+        { "id": "iPV8TN7Km0jHCbny", "name": "FATHIYA V2 — Security Scan Runner", "url": "https://fathya.app.n8n.cloud/workflow/iPV8TN7Km0jHCbny" },
+        { "id": "xZRmZLLITqQtZgOj", "name": "FATHIYA V2 — Security Report Generator", "url": "https://fathya.app.n8n.cloud/workflow/xZRmZLLITqQtZgOj" },
+        { "id": "xSsJtwKx3knogXYZ", "name": "FATHIYA V2 — Security Alerter", "url": "https://fathya.app.n8n.cloud/workflow/xSsJtwKx3knogXYZ" }
+      ],
+      "closed_at": "2026-04-25T06:15:00Z"
+    }
+  ]
 }
