@@ -1,9 +1,9 @@
-import { ChevronLeft, FileJson, FileText, Workflow, Eye } from "lucide-react";
+import { ChevronLeft, File as FileJson, FileText, Workflow, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { OwnerBadges } from "./OwnerBadges";
 import { GenerateButton } from "./GenerateButton";
-import { priorityStars, type Task } from "@/lib/ops/tasks";
+import { priorityStars, type Task, type LayerId } from "@/lib/ops/tasks";
 import { useArtifactIndex } from "@/hooks/use-artifact-index";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,14 @@ const KIND_ICON = {
   workflow: Workflow,
 } as const;
 
+const LAYER_ACCENT: Record<LayerId, string> = {
+  A: "border-l-emerald-500/70 hover:shadow-emerald-500/5",
+  B: "border-l-sky-500/70 hover:shadow-sky-500/5",
+  C: "border-l-amber-500/70 hover:shadow-amber-500/5",
+  D: "border-l-teal-500/70 hover:shadow-teal-500/5",
+  E: "border-l-rose-500/70 hover:shadow-rose-500/5",
+};
+
 export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
   const stars = priorityStars(task.priority);
   const { entriesForTask, isDone } = useArtifactIndex();
@@ -31,9 +39,12 @@ export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
   return (
     <Card
       className={cn(
-        "group cursor-pointer border-border/60 bg-card/40 p-4 transition-all hover:border-primary/40 hover:bg-card/70",
-        taskDone && "border-emerald-500/30 bg-emerald-500/5",
-        partial && "border-amber-500/30",
+        "group cursor-pointer border-border/60 border-l-4 bg-card/40 p-4",
+        "transition-all duration-200 ease-out",
+        "hover:border-primary/40 hover:bg-card/70 hover:shadow-lg hover:-translate-y-0.5",
+        LAYER_ACCENT[task.layer],
+        taskDone && "border-l-emerald-500/80 bg-emerald-500/5",
+        partial && "border-l-amber-500/80",
       )}
       onClick={() => onOpen(task)}
     >
@@ -44,10 +55,13 @@ export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
             <span className="font-mono text-[10px] text-muted-foreground/60">{task.code}</span>
             {stars && <span className="text-[10px] text-amber-400 tracking-tight">{stars}</span>}
             {taskDone && (
-              <span className="text-[10px] text-emerald-400 font-bold">✓ done</span>
+              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                done
+              </span>
             )}
           </div>
-          <h3 className="text-sm font-semibold text-foreground leading-snug mb-2">
+          <h3 className="text-sm font-semibold text-foreground leading-snug mb-2 group-hover:text-primary transition-colors duration-200">
             {task.title}
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
@@ -59,7 +73,7 @@ export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
             {!taskDone && <GenerateButton taskId={task.id} />}
           </div>
         </div>
-        <ChevronLeft className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:-translate-x-0.5 group-hover:text-primary" />
+        <ChevronLeft className="h-4 w-4 text-muted-foreground/50 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-primary" />
       </div>
 
       {(savedEntries.length > 0 || task.artifacts.length > 0) && (
@@ -80,9 +94,9 @@ export function TaskCard({ task, onOpen, onViewArtifact }: TaskCardProps) {
                   }}
                   disabled={!isSaved}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono transition-colors",
+                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono transition-all duration-150",
                     isSaved
-                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer"
+                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 hover:scale-105 cursor-pointer"
                       : "bg-muted/40 text-muted-foreground border border-transparent",
                   )}
                   title={isSaved ? "اضغطي للعرض" : "لم يُولَّد بعد"}
