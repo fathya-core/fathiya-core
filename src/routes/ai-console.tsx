@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AI_MODELS, DEFAULT_MODEL } from "@/lib/ai/models";
+import { AI_MODELS, DEFAULT_MODEL, getModelProvider } from "@/lib/ai/models";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/ai-console")({
@@ -120,7 +120,8 @@ function AiConsole() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {AI_MODELS.map((m) => (
+                  <div className="px-2 py-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">OpenRouter</div>
+                  {AI_MODELS.filter((m) => m.provider === "openrouter").map((m) => (
                     <SelectItem key={m.id} value={m.id} className="text-xs">
                       <div className="flex items-center gap-2">
                         <span className={
@@ -131,18 +132,39 @@ function AiConsole() {
                       </div>
                     </SelectItem>
                   ))}
+                  <div className="px-2 py-1 mt-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/40">Hugging Face</div>
+                  {AI_MODELS.filter((m) => m.provider === "huggingface").map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                        {m.label}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {selectedModel && (
-                <span className={
-                  "inline-flex items-center gap-1 mt-1.5 text-[9px] font-medium rounded px-1.5 py-0.5 " +
-                  (selectedModel.tier === "premium"
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                    : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20")
-                }>
-                  <Zap className="h-2.5 w-2.5" />
-                  {selectedModel.tier === "premium" ? "Premium" : "Fast"}
-                </span>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className={
+                    "inline-flex items-center gap-1 text-[9px] font-medium rounded px-1.5 py-0.5 " +
+                    (selectedModel.provider === "openrouter"
+                      ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                      : "bg-sky-500/10 text-sky-400 border border-sky-500/20")
+                  }>
+                    {selectedModel.provider === "openrouter" ? "OpenRouter" : "HuggingFace"}
+                  </span>
+                  <span className={
+                    "inline-flex items-center gap-1 text-[9px] font-medium rounded px-1.5 py-0.5 " +
+                    (selectedModel.tier === "premium"
+                      ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      : selectedModel.tier === "free"
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20")
+                  }>
+                    <Zap className="h-2.5 w-2.5" />
+                    {selectedModel.tier === "premium" ? "Premium" : selectedModel.tier === "free" ? "Free" : "Fast"}
+                  </span>
+                </div>
               )}
             </div>
 

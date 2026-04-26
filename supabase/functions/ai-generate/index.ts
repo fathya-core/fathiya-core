@@ -10,6 +10,7 @@ const corsHeaders = {
 
 interface GenerateBody {
   model?: string;
+  provider?: "openrouter" | "huggingface";
   system?: string;
   user?: string;
   taskId?: string;
@@ -18,85 +19,117 @@ interface GenerateBody {
   expectsJson?: boolean;
 }
 
+interface ProviderConfig {
+  url: string;
+  apiKey: string;
+  headers: Record<string, string>;
+  bodyExtra: Record<string, unknown>;
+}
+
+function getProviderConfig(
+  provider: "openrouter" | "huggingface",
+  model: string,
+): ProviderConfig | { error: string } {
+  if (provider === "openrouter") {
+    const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+    if (!apiKey) {
+      return {
+        error:
+          "OPENROUTER_API_KEY not configured. Add it via Supabase Edge Function secrets.",
+      };
+    }
+    return {
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      apiKey,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://fathiya.ops",
+        "X-Title": "FATHIYA Ops Console",
+      },
+      bodyExtra: {},
+    };
+  }
+
+  // huggingface
+  const apiKey = Deno.env.get("HUGGINGFACE_API_KEY");
+  if (!apiKey) {
+    return {
+      error:
+        "HUGGINGFACE_API_KEY not configured. Add it via Supabase Edge Function secrets.",
+    };
+  }
+  return {
+    url: `https://router.huggingface.co/v1/chat/completions`,
+    apiKey,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    bodyExtra: {},
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error:
-            "OPENAI_API_KEY not configured. Add it via Supabase Edge Function secrets.",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
     let body: GenerateBody;
     try {
       body = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Invalid JSON body" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return jsonResponse({ ok: false, error: "Invalid JSON body" }, 400);
     }
 
-    const model = body.model || "gpt-4o-mini";
+    const provider = body.provider || "openrouter";
+    const model = body.model || "google/gemini-2.5-flash";
     const systemPrompt = body.system || "You are a helpful assistant.";
     const userPrompt = body.user;
 
     if (!userPrompt) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "user prompt is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return jsonResponse({ ok: false, error: "user prompt is required" }, 400);
+    }
+
+    const config = getProviderConfig(provider, model);
+    if ("error" in config) {
+      return jsonResponse({ ok: false, error: config.error }, 500);
     }
 
     const startedAt = Date.now();
 
-    const upstream = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          ...(body.expectsJson
-            ? { response_format: { type: "json_object" } }
-            : {}),
-        }),
-      },
-    );
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      ...config.bodyExtra,
+    };
+
+    if (body.expectsJson) {
+      requestBody.response_format = { type: "json_object" };
+    }
+
+    const upstream = await fetch(config.url, {
+      method: "POST",
+      headers: config.headers,
+      body: JSON.stringify(requestBody),
+    });
 
     const durationMs = Date.now() - startedAt;
 
     if (!upstream.ok) {
       const text = await upstream.text();
-      let errMsg = `AI API error ${upstream.status}`;
-      if (upstream.status === 429) errMsg = "Rate limited -- try again shortly";
-      if (upstream.status === 401) errMsg = "Invalid API key";
-      if (upstream.status === 403) errMsg = "API key does not have access to this model";
+      let errMsg = `${provider} API error ${upstream.status}`;
+      if (upstream.status === 429)
+        errMsg = "Rate limited -- try again shortly";
+      if (upstream.status === 401) errMsg = `Invalid ${provider} API key`;
+      if (upstream.status === 403)
+        errMsg = `API key does not have access to model: ${model}`;
+      if (upstream.status === 404)
+        errMsg = `Model not found: ${model}`;
 
       await logRun({
         taskId: body.taskId ?? null,
@@ -112,12 +145,9 @@ Deno.serve(async (req: Request) => {
         durationMs,
       });
 
-      return new Response(
-        JSON.stringify({ ok: false, error: errMsg, upstream: text }),
-        {
-          status: upstream.status === 429 ? 429 : 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+      return jsonResponse(
+        { ok: false, error: errMsg, upstream: text },
+        upstream.status === 429 ? 429 : 502,
       );
     }
 
@@ -139,12 +169,9 @@ Deno.serve(async (req: Request) => {
         durationMs,
       });
 
-      return new Response(
-        JSON.stringify({ ok: false, error: "Empty response from model" }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+      return jsonResponse(
+        { ok: false, error: "Empty response from model" },
+        502,
       );
     }
 
@@ -178,16 +205,9 @@ Deno.serve(async (req: Request) => {
             durationMs,
           });
 
-          return new Response(
-            JSON.stringify({
-              ok: false,
-              error: "Model returned invalid JSON",
-              raw: content,
-            }),
-            {
-              status: 502,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
+          return jsonResponse(
+            { ok: false, error: "Model returned invalid JSON", raw: content },
+            502,
           );
         }
       }
@@ -207,30 +227,26 @@ Deno.serve(async (req: Request) => {
       durationMs,
     });
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        model,
-        taskId: body.taskId ?? null,
-        content,
-        saved: !!savedPath,
-        savedPath,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return jsonResponse({
+      ok: true,
+      model,
+      provider,
+      taskId: body.taskId ?? null,
+      content,
+      saved: !!savedPath,
+      savedPath,
+    });
   } catch (e) {
-    return new Response(
-      JSON.stringify({ ok: false, error: String(e) }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return jsonResponse({ ok: false, error: String(e) }, 500);
   }
 });
+
+function jsonResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 async function logRun(row: {
   taskId: string | null;

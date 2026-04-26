@@ -36,13 +36,16 @@ export const Route = createFileRoute("/api/ai/generate")({
         }
 
         const { TASK_PROMPTS } = await import("@/lib/ai/prompts");
-        const { DEFAULT_MODEL } = await import("@/lib/ai/models");
+        const { DEFAULT_MODEL, getModelProvider } = await import(
+          "@/lib/ai/models"
+        );
 
         const spec = body.taskId ? TASK_PROMPTS[body.taskId] : null;
         const system =
           body.systemOverride ?? spec?.system ?? "أنت مساعد توليد محتوى نهائي.";
         const user = body.userOverride ?? spec?.userTemplate;
         const model = body.model ?? DEFAULT_MODEL;
+        const provider = getModelProvider(model);
 
         if (!user) {
           return new Response(
@@ -69,6 +72,7 @@ export const Route = createFileRoute("/api/ai/generate")({
           },
           body: JSON.stringify({
             model,
+            provider,
             system,
             user,
             taskId: body.taskId ?? null,
