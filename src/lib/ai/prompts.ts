@@ -1,4 +1,4 @@
-// System prompts per task — what kind of artifact GPT/Lovable AI should produce.
+// System prompts per task — what kind of artifact the AI should produce.
 
 export interface TaskPromptSpec {
   system: string;
@@ -70,7 +70,7 @@ primary, fallback, cheap, premium, when, why, max_tokens_hint, fail_closed.
   T10: {
     system: ARABIC_RULE,
     userTemplate: `Competitive Capability Map — مقارنة عملية بين المزودين.
-المزودون: Manus, Claude, Perplexity, GPT-5, OpenRouter, Lovable AI Gateway.
+المزودون: Manus, Claude, Perplexity, GPT, OpenRouter, FATHIYA AI Gateway.
 لكل مزود × مهمة (research, code, reasoning, writing, security_review, crypto_analysis, structured_output, long_context):
 score (0-10), cost_tier (free/cheap/mid/premium), risk_tier (low/mid/high), notes.
 أرجع JSON: { "version": 1, "providers": [...], "tasks": [...], "matrix": [[...]] }`,

@@ -1,16 +1,12 @@
-// Available models on Lovable AI Gateway
 export const AI_MODELS = [
-  { id: "google/gemini-3-flash-preview", label: "Gemini 3 Flash (سريع · افتراضي)", tier: "fast" },
-  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash", tier: "fast" },
-  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", tier: "premium" },
-  { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (preview)", tier: "premium" },
-  { id: "openai/gpt-5", label: "GPT-5 (بديل GPT الكامل)", tier: "premium" },
-  { id: "openai/gpt-5-mini", label: "GPT-5 Mini", tier: "fast" },
-  { id: "openai/gpt-5.2", label: "GPT-5.2 (الأقوى)", tier: "premium" },
+  { id: "gpt-4o-mini", label: "GPT-4o Mini (سريع · افتراضي)", tier: "fast" },
+  { id: "gpt-4o", label: "GPT-4o", tier: "premium" },
+  { id: "gpt-4.1", label: "GPT-4.1", tier: "premium" },
+  { id: "gpt-4.1-mini", label: "GPT-4.1 Mini", tier: "fast" },
+  { id: "gpt-4.1-nano", label: "GPT-4.1 Nano (أرخص)", tier: "fast" },
+  { id: "o4-mini", label: "o4-mini (تفكير عميق)", tier: "premium" },
 ] as const;
 
-export const DEFAULT_MODEL = "google/gemini-3-flash-preview";
-// ملاحظة: GPT-5 يستغرق 60-75s على Worker (حد 30s) → نستخدم Gemini 2.5 Pro كافتراضي للمهام الجادة.
-export const DEFAULT_GPT_MODEL = "google/gemini-2.5-pro";
+export const DEFAULT_MODEL = "gpt-4o-mini";
 
 export type AIModelId = (typeof AI_MODELS)[number]["id"];

@@ -13,21 +13,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AI_MODELS, DEFAULT_GPT_MODEL } from "@/lib/ai/models";
+import { AI_MODELS, DEFAULT_MODEL } from "@/lib/ai/models";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/ai-console")({
   head: () => ({
     meta: [
       { title: "AI Console — FATHIYA" },
-      { name: "description", content: "ملعب Lovable AI الحر — جرّب prompts واحفظها كـ artifacts." },
+      { name: "description", content: "ملعب FATHIYA AI — جرّب prompts واحفظها كـ artifacts." },
     ],
   }),
   component: AiConsole,
 });
 
 function AiConsole() {
-  const [model, setModel] = useState<string>(DEFAULT_GPT_MODEL);
+  const [model, setModel] = useState<string>(DEFAULT_MODEL);
   const [system, setSystem] = useState(
     "أنت محرك توليد artifacts نهائية. أرجع المحتوى المطلوب فقط دون مقدمات.",
   );
@@ -93,7 +93,7 @@ function AiConsole() {
               </div>
               <div>
                 <h1 className="text-sm font-bold">AI Console</h1>
-                <span className="text-[10px] text-muted-foreground">Lovable AI Gateway</span>
+                <span className="text-[10px] text-muted-foreground">FATHIYA AI Gateway</span>
               </div>
             </div>
             <Link

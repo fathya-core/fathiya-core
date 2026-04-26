@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, Loader as Loader2, CircleCheck as CheckCircle2, CircleAlert as AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { TASK_PROMPTS } from "@/lib/ai/prompts";
@@ -45,7 +45,7 @@ export function GenerateButton({ taskId, onGenerated }: GenerateButtonProps) {
     e.stopPropagation();
     setState("loading");
     const startedAtIso = new Date().toISOString();
-    toast.info(`توليد ${taskId} عبر Lovable AI…`, { duration: 4000 });
+    toast.info(`توليد ${taskId} عبر FATHIYA AI…`, { duration: 4000 });
     try {
       const r = await fetch("/api/ai/generate", {
         method: "POST",
