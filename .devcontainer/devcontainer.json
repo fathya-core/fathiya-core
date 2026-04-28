@@ -1282,5 +1282,16 @@
 		"ghcr.io/postfinance/devcontainer-features/vault-cli:1": {},
 		"ghcr.io/postfinance/devcontainer-features/zig:1": {},
 		"ghcr.io/nicoviii/devcontainer-features/lefthook:0": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode-remote.remote-containers",
+				"ms-azuretools.vscode-containers",
+				"christian-kohler.npm-intellisense",
+				"ms-edgedevtools.vscode-edge-devtools",
+				"PKief.material-icon-theme"
+			]
+		}
 	}
 }
