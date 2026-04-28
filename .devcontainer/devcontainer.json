@@ -1294,7 +1294,8 @@
 				"docker.docker",
 				"ms-kubernetes-tools.vscode-kubernetes-tools",
 				"ms-azuretools.vscode-docker",
-				"eamodio.gitlens"
+				"eamodio.gitlens",
+				"DhananjaySenday.mcp--inspector"
 			]
 		}
 	}
