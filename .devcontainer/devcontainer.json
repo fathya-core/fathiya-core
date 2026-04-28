@@ -1293,7 +1293,8 @@
 				"PKief.material-icon-theme",
 				"docker.docker",
 				"ms-kubernetes-tools.vscode-kubernetes-tools",
-				"ms-azuretools.vscode-docker"
+				"ms-azuretools.vscode-docker",
+				"eamodio.gitlens"
 			]
 		}
 	}
