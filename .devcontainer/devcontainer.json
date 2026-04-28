@@ -1290,7 +1290,8 @@
 				"ms-azuretools.vscode-containers",
 				"christian-kohler.npm-intellisense",
 				"ms-edgedevtools.vscode-edge-devtools",
-				"PKief.material-icon-theme"
+				"PKief.material-icon-theme",
+				"docker.docker"
 			]
 		}
 	}
