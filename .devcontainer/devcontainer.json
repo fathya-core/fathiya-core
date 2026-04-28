@@ -1291,7 +1291,8 @@
 				"christian-kohler.npm-intellisense",
 				"ms-edgedevtools.vscode-edge-devtools",
 				"PKief.material-icon-theme",
-				"docker.docker"
+				"docker.docker",
+				"ms-kubernetes-tools.vscode-kubernetes-tools"
 			]
 		}
 	}
