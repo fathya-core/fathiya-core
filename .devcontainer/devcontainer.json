@@ -1295,7 +1295,8 @@
 				"ms-kubernetes-tools.vscode-kubernetes-tools",
 				"ms-azuretools.vscode-docker",
 				"eamodio.gitlens",
-				"DhananjaySenday.mcp--inspector"
+				"DhananjaySenday.mcp--inspector",
+				"firefox-devtools.vscode-firefox-debug"
 			]
 		}
 	}
