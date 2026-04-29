@@ -1,0 +1,6 @@
+import flask; print('Flask OK')
+import requests; print('Requests OK')
+import psutil; print('Psutil OK')
+import aiohttp; print('Aiohttp OK')
+import json; print('JSON OK')
+print('All core imports successful!')
