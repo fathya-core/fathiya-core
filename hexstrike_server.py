@@ -60,10 +60,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
-# import mitmproxy  # Temporarily commented out for Alpine Linux compatibility
-# from mitmproxy import http as mitmhttp
-# from mitmproxy.tools.dump import DumpMaster
-# from mitmproxy.options import Options as MitmOptions
+import mitmproxy
+from mitmproxy import http as mitmhttp
+from mitmproxy.tools.dump import DumpMaster
+from mitmproxy.options import Options as MitmOptions
 
 # ============================================================================
 # LOGGING CONFIGURATION (MUST BE FIRST)
@@ -9234,7 +9234,7 @@ def generate_payload():
         filename = params.get("filename", f"payload_{int(time.time())}")
 
         if size > 100 * 1024 * 1024:  # 100MB limit
-            return jsonify({"error": "Payload size too large (max 100MB)"}), 400
+            return flask.jsonify({"error": "Payload size too large (max 100MB)"}), 400
 
         if payload_type == "buffer":
             content = pattern * (size // len(pattern))
@@ -9249,7 +9249,7 @@ def generate_payload():
             import string
             content = ''.join(random.choices(string.ascii_letters + string.digits, k=size))
         else:
-            return jsonify({"error": "Invalid payload type"}), 400
+            return flask.jsonify({"error": "Invalid payload type"}), 400
 
         result = file_manager.create_file(filename, content)
         result["payload_info"] = {
@@ -9259,16 +9259,16 @@ def generate_payload():
         }
 
         logger.info(f"🎯 Generated {payload_type} payload: {filename} ({size} bytes)")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error generating payload: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # Cache Management Endpoint
 @app.route("/api/cache/stats", methods=["GET"])
 def cache_stats():
     """Get cache statistics"""
-    return jsonify(cache.get_stats())
+    return flask.jsonify(cache.get_stats())
 
 @app.route("/api/cache/clear", methods=["POST"])
 def clear_cache():
@@ -9276,13 +9276,13 @@ def clear_cache():
     cache.cache.clear()
     cache.stats = {"hits": 0, "misses": 0, "evictions": 0}
     logger.info("🧹 Cache cleared")
-    return jsonify({"success": True, "message": "Cache cleared"})
+    return flask.jsonify({"success": True, "message": "Cache cleared"})
 
 # Telemetry Endpoint
 @app.route("/api/telemetry", methods=["GET"])
 def get_telemetry():
     """Get system telemetry"""
-    return jsonify(telemetry.get_stats())
+    return flask.jsonify(telemetry.get_stats())
 
 # ============================================================================
 # PROCESS MANAGEMENT API ENDPOINTS (v5.0 ENHANCEMENT)
@@ -9305,14 +9305,14 @@ def list_processes():
             else:
                 info["eta_formatted"] = "Unknown"
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "active_processes": processes,
             "total_count": len(processes)
         })
     except Exception as e:
         logger.error(f"💥 Error listing processes: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/processes/status/<int:pid>", methods=["GET"])
 def get_process_status(pid):
@@ -9331,19 +9331,19 @@ def get_process_status(pid):
             else:
                 process_info["eta_formatted"] = "Unknown"
 
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "process": process_info
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Process {pid} not found"
             }), 404
 
     except Exception as e:
         logger.error(f"💥 Error getting process status: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/processes/terminate/<int:pid>", methods=["POST"])
 def terminate_process(pid):
@@ -9353,19 +9353,19 @@ def terminate_process(pid):
 
         if success:
             logger.info(f"🛑 Process {pid} terminated successfully")
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "message": f"Process {pid} terminated successfully"
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to terminate process {pid} or process not found"
             }), 404
 
     except Exception as e:
         logger.error(f"💥 Error terminating process {pid}: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/processes/pause/<int:pid>", methods=["POST"])
 def pause_process(pid):
@@ -9375,19 +9375,19 @@ def pause_process(pid):
 
         if success:
             logger.info(f"⏸️ Process {pid} paused successfully")
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "message": f"Process {pid} paused successfully"
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to pause process {pid} or process not found"
             }), 404
 
     except Exception as e:
         logger.error(f"💥 Error pausing process {pid}: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/processes/resume/<int:pid>", methods=["POST"])
 def resume_process(pid):
@@ -9397,19 +9397,19 @@ def resume_process(pid):
 
         if success:
             logger.info(f"▶️ Process {pid} resumed successfully")
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "message": f"Process {pid} resumed successfully"
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to resume process {pid} or process not found"
             }), 404
 
     except Exception as e:
         logger.error(f"💥 Error resuming process {pid}: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/processes/dashboard", methods=["GET"])
 def process_dashboard():
@@ -9458,24 +9458,24 @@ def process_dashboard():
             }
             dashboard["processes"].append(process_status)
 
-        return jsonify(dashboard)
+        return flask.jsonify(dashboard)
 
     except Exception as e:
         logger.error(f"💥 Error getting process dashboard: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/visual/vulnerability-card", methods=["POST"])
 def create_vulnerability_card():
     """Create a beautiful vulnerability card using ModernVisualEngine"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            return flask.jsonify({"error": "No data provided"}), 400
 
         # Create vulnerability card
         card = ModernVisualEngine.render_vulnerability_card(data)
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "vulnerability_card": card,
             "timestamp": datetime.now().isoformat()
@@ -9483,21 +9483,21 @@ def create_vulnerability_card():
 
     except Exception as e:
         logger.error(f"💥 Error creating vulnerability card: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/visual/summary-report", methods=["POST"])
 def create_summary_report():
     """Create a beautiful summary report using ModernVisualEngine"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            return flask.jsonify({"error": "No data provided"}), 400
 
         # Create summary report
         visual_engine = ModernVisualEngine()
         report = visual_engine.create_summary_report(data)
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "summary_report": report,
             "timestamp": datetime.now().isoformat()
@@ -9505,15 +9505,15 @@ def create_summary_report():
 
     except Exception as e:
         logger.error(f"💥 Error creating summary report: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/visual/tool-output", methods=["POST"])
 def format_tool_output():
     """Format tool output using ModernVisualEngine"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'tool' not in data or 'output' not in data:
-            return jsonify({"error": "Tool and output data required"}), 400
+            return flask.jsonify({"error": "Tool and output data required"}), 400
 
         tool = data['tool']
         output = data['output']
@@ -9522,7 +9522,7 @@ def format_tool_output():
         # Format tool output
         formatted_output = ModernVisualEngine.format_tool_output(tool, output, success)
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "formatted_output": formatted_output,
             "timestamp": datetime.now().isoformat()
@@ -9530,7 +9530,7 @@ def format_tool_output():
 
     except Exception as e:
         logger.error(f"💥 Error formatting tool output: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # INTELLIGENT DECISION ENGINE API ENDPOINTS
@@ -9540,9 +9540,9 @@ def format_tool_output():
 def analyze_target():
     """Analyze target and create comprehensive profile using Intelligent Decision Engine"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data:
-            return jsonify({"error": "Target is required"}), 400
+            return flask.jsonify({"error": "Target is required"}), 400
 
         target = data['target']
         logger.info(f"🧠 Analyzing target: {target}")
@@ -9553,7 +9553,7 @@ def analyze_target():
         logger.info(f"✅ Target analysis completed for {target}")
         logger.info(f"📊 Target type: {profile.target_type.value}, Risk level: {profile.risk_level}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "target_profile": profile.to_dict(),
             "timestamp": datetime.now().isoformat()
@@ -9561,15 +9561,15 @@ def analyze_target():
 
     except Exception as e:
         logger.error(f"💥 Error analyzing target: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/intelligence/select-tools", methods=["POST"])
 def select_optimal_tools():
     """Select optimal tools based on target profile and objective"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data:
-            return jsonify({"error": "Target is required"}), 400
+            return flask.jsonify({"error": "Target is required"}), 400
 
         target = data['target']
         objective = data.get('objective', 'comprehensive')  # comprehensive, quick, stealth
@@ -9584,7 +9584,7 @@ def select_optimal_tools():
 
         logger.info(f"✅ Selected {len(selected_tools)} tools for {target}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "target": target,
             "objective": objective,
@@ -9596,15 +9596,15 @@ def select_optimal_tools():
 
     except Exception as e:
         logger.error(f"💥 Error selecting tools: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/intelligence/optimize-parameters", methods=["POST"])
 def optimize_tool_parameters():
     """Optimize tool parameters based on target profile and context"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data or 'tool' not in data:
-            return jsonify({"error": "Target and tool are required"}), 400
+            return flask.jsonify({"error": "Target and tool are required"}), 400
 
         target = data['target']
         tool = data['tool']
@@ -9620,7 +9620,7 @@ def optimize_tool_parameters():
 
         logger.info(f"✅ Parameters optimized for {tool}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "target": target,
             "tool": tool,
@@ -9632,15 +9632,15 @@ def optimize_tool_parameters():
 
     except Exception as e:
         logger.error(f"💥 Error optimizing parameters: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/intelligence/create-attack-chain", methods=["POST"])
 def create_attack_chain():
     """Create an intelligent attack chain based on target profile"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data:
-            return jsonify({"error": "Target is required"}), 400
+            return flask.jsonify({"error": "Target is required"}), 400
 
         target = data['target']
         objective = data.get('objective', 'comprehensive')
@@ -9656,7 +9656,7 @@ def create_attack_chain():
         logger.info(f"✅ Attack chain created with {len(attack_chain.steps)} steps")
         logger.info(f"📊 Success probability: {attack_chain.success_probability:.2f}, Estimated time: {attack_chain.estimated_time}s")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "target": target,
             "objective": objective,
@@ -9667,15 +9667,15 @@ def create_attack_chain():
 
     except Exception as e:
         logger.error(f"💥 Error creating attack chain: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/intelligence/smart-scan", methods=["POST"])
 def intelligent_smart_scan():
     """Execute an intelligent scan using AI-driven tool selection and parameter optimization with parallel execution"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data:
-            return jsonify({"error": "Target is required"}), 400
+            return flask.jsonify({"error": "Target is required"}), 400
 
         target = data['target']
         objective = data.get('objective', 'comprehensive')
@@ -9811,7 +9811,7 @@ def intelligent_smart_scan():
         logger.info(f"✅ Intelligent smart scan completed for {target}")
         logger.info(f"📊 Results: {len(successful_tools)}/{len(selected_tools)} tools successful, {scan_results['total_vulnerabilities']} vulnerabilities found")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "scan_results": scan_results,
             "timestamp": datetime.now().isoformat()
@@ -9819,7 +9819,7 @@ def intelligent_smart_scan():
 
     except Exception as e:
         logger.error(f"💥 Error in intelligent smart scan: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}", "success": False}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}", "success": False}), 500
 
 # Helper functions for intelligent smart scan tool execution
 def execute_nmap_scan(target, params):
@@ -10042,9 +10042,9 @@ def execute_subfinder_scan(target, params):
 def detect_technologies():
     """Detect technologies and create technology-specific testing recommendations"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target' not in data:
-            return jsonify({"error": "Target is required"}), 400
+            return flask.jsonify({"error": "Target is required"}), 400
 
         target = data['target']
 
@@ -10077,7 +10077,7 @@ def detect_technologies():
 
         logger.info(f"✅ Technology detection completed for {target}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "target": target,
             "detected_technologies": [tech.value for tech in profile.technologies],
@@ -10089,7 +10089,7 @@ def detect_technologies():
 
     except Exception as e:
         logger.error(f"💥 Error in technology detection: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # BUG BOUNTY HUNTING WORKFLOW API ENDPOINTS
@@ -10099,9 +10099,9 @@ def detect_technologies():
 def create_reconnaissance_workflow():
     """Create comprehensive reconnaissance workflow for bug bounty hunting"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'domain' not in data:
-            return jsonify({"error": "Domain is required"}), 400
+            return flask.jsonify({"error": "Domain is required"}), 400
 
         domain = data['domain']
         scope = data.get('scope', [])
@@ -10123,7 +10123,7 @@ def create_reconnaissance_workflow():
 
         logger.info(f"✅ Reconnaissance workflow created for {domain}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "timestamp": datetime.now().isoformat()
@@ -10131,15 +10131,15 @@ def create_reconnaissance_workflow():
 
     except Exception as e:
         logger.error(f"💥 Error creating reconnaissance workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/bugbounty/vulnerability-hunting-workflow", methods=["POST"])
 def create_vulnerability_hunting_workflow():
     """Create vulnerability hunting workflow prioritized by impact"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'domain' not in data:
-            return jsonify({"error": "Domain is required"}), 400
+            return flask.jsonify({"error": "Domain is required"}), 400
 
         domain = data['domain']
         priority_vulns = data.get('priority_vulns', ["rce", "sqli", "xss", "idor", "ssrf"])
@@ -10159,7 +10159,7 @@ def create_vulnerability_hunting_workflow():
 
         logger.info(f"✅ Vulnerability hunting workflow created for {domain}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "timestamp": datetime.now().isoformat()
@@ -10167,15 +10167,15 @@ def create_vulnerability_hunting_workflow():
 
     except Exception as e:
         logger.error(f"💥 Error creating vulnerability hunting workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/bugbounty/business-logic-workflow", methods=["POST"])
 def create_business_logic_workflow():
     """Create business logic testing workflow"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'domain' not in data:
-            return jsonify({"error": "Domain is required"}), 400
+            return flask.jsonify({"error": "Domain is required"}), 400
 
         domain = data['domain']
         program_type = data.get('program_type', 'web')
@@ -10190,7 +10190,7 @@ def create_business_logic_workflow():
 
         logger.info(f"✅ Business logic testing workflow created for {domain}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "timestamp": datetime.now().isoformat()
@@ -10198,15 +10198,15 @@ def create_business_logic_workflow():
 
     except Exception as e:
         logger.error(f"💥 Error creating business logic workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/bugbounty/osint-workflow", methods=["POST"])
 def create_osint_workflow():
     """Create OSINT gathering workflow"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'domain' not in data:
-            return jsonify({"error": "Domain is required"}), 400
+            return flask.jsonify({"error": "Domain is required"}), 400
 
         domain = data['domain']
 
@@ -10220,7 +10220,7 @@ def create_osint_workflow():
 
         logger.info(f"✅ OSINT workflow created for {domain}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "timestamp": datetime.now().isoformat()
@@ -10228,15 +10228,15 @@ def create_osint_workflow():
 
     except Exception as e:
         logger.error(f"💥 Error creating OSINT workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/bugbounty/file-upload-testing", methods=["POST"])
 def create_file_upload_testing():
     """Create file upload vulnerability testing workflow"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'target_url' not in data:
-            return jsonify({"error": "Target URL is required"}), 400
+            return flask.jsonify({"error": "Target URL is required"}), 400
 
         target_url = data['target_url']
 
@@ -10251,7 +10251,7 @@ def create_file_upload_testing():
 
         logger.info(f"✅ File upload testing workflow created for {target_url}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "timestamp": datetime.now().isoformat()
@@ -10259,15 +10259,15 @@ def create_file_upload_testing():
 
     except Exception as e:
         logger.error(f"💥 Error creating file upload testing workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/bugbounty/comprehensive-assessment", methods=["POST"])
 def create_comprehensive_bugbounty_assessment():
     """Create comprehensive bug bounty assessment combining all workflows"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         if not data or 'domain' not in data:
-            return jsonify({"error": "Domain is required"}), 400
+            return flask.jsonify({"error": "Domain is required"}), 400
 
         domain = data['domain']
         scope = data.get('scope', [])
@@ -10310,7 +10310,7 @@ def create_comprehensive_bugbounty_assessment():
 
         logger.info(f"✅ Comprehensive bug bounty assessment created for {domain}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "assessment": assessment,
             "timestamp": datetime.now().isoformat()
@@ -10318,7 +10318,7 @@ def create_comprehensive_bugbounty_assessment():
 
     except Exception as e:
         logger.error(f"💥 Error creating comprehensive assessment: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # SECURITY TOOLS API ENDPOINTS
@@ -10328,7 +10328,7 @@ def create_comprehensive_bugbounty_assessment():
 def nmap():
     """Execute nmap scan with enhanced logging, caching, and intelligent error handling"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         scan_type = params.get("scan_type", "-sCV")
         ports = params.get("ports", "")
@@ -10337,7 +10337,7 @@ def nmap():
 
         if not target:
             logger.warning("🎯 Nmap called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -10366,11 +10366,11 @@ def nmap():
             result = execute_command(command)
 
         logger.info(f"📊 Nmap scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in nmap endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10378,7 +10378,7 @@ def nmap():
 def gobuster():
     """Execute gobuster with enhanced logging and intelligent error handling"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         mode = params.get("mode", "dir")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
@@ -10387,14 +10387,14 @@ def gobuster():
 
         if not url:
             logger.warning("🌐 Gobuster called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
         # Validate mode
         if mode not in ["dir", "dns", "fuzz", "vhost"]:
             logger.warning(f"❌ Invalid gobuster mode: {mode}")
-            return jsonify({
+            return flask.jsonify({
                 "error": f"Invalid mode: {mode}. Must be one of: dir, dns, fuzz, vhost"
             }), 400
 
@@ -10418,11 +10418,11 @@ def gobuster():
             result = execute_command(command)
 
         logger.info(f"📊 Gobuster scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in gobuster endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10430,7 +10430,7 @@ def gobuster():
 def nuclei():
     """Execute Nuclei vulnerability scanner with enhanced logging and intelligent error handling"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         severity = params.get("severity", "")
         tags = params.get("tags", "")
@@ -10440,7 +10440,7 @@ def nuclei():
 
         if not target:
             logger.warning("🎯 Nuclei called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -10474,11 +10474,11 @@ def nuclei():
             result = execute_command(command)
 
         logger.info(f"📊 Nuclei scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in nuclei endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10490,7 +10490,7 @@ def nuclei():
 def prowler():
     """Execute Prowler for AWS security assessment"""
     try:
-        params = request.json
+        params = flask.request.json
         provider = params.get("provider", "aws")
         profile = params.get("profile", "default")
         region = params.get("region", "")
@@ -10523,10 +10523,10 @@ def prowler():
         result = execute_command(command)
         result["output_directory"] = output_dir
         logger.info(f"📊 Prowler assessment completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in prowler endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10534,7 +10534,7 @@ def prowler():
 def trivy():
     """Execute Trivy for container/filesystem vulnerability scanning"""
     try:
-        params = request.json
+        params = flask.request.json
         scan_type = params.get("scan_type", "image")  # image, fs, repo
         target = params.get("target", "")
         output_format = params.get("output_format", "json")
@@ -10544,7 +10544,7 @@ def trivy():
 
         if not target:
             logger.warning("🎯 Trivy called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -10567,10 +10567,10 @@ def trivy():
         if output_file:
             result["output_file"] = output_file
         logger.info(f"📊 Trivy scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in trivy endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10582,7 +10582,7 @@ def trivy():
 def scout_suite():
     """Execute Scout Suite for multi-cloud security assessment"""
     try:
-        params = request.json
+        params = flask.request.json
         provider = params.get("provider", "aws")  # aws, azure, gcp, aliyun, oci
         profile = params.get("profile", "default")
         report_dir = params.get("report_dir", "/tmp/scout-suite")
@@ -10613,16 +10613,16 @@ def scout_suite():
         result = execute_command(command)
         result["report_directory"] = report_dir
         logger.info(f"📊 Scout Suite assessment completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in scout-suite endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/cloudmapper", methods=["POST"])
 def cloudmapper():
     """Execute CloudMapper for AWS network visualization and security analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         action = params.get("action", "collect")  # collect, prepare, webserver, find_admins, etc.
         account = params.get("account", "")
         config = params.get("config", "config.json")
@@ -10630,7 +10630,7 @@ def cloudmapper():
 
         if not account and action != "webserver":
             logger.warning("☁️  CloudMapper called without account parameter")
-            return jsonify({"error": "Account parameter is required for most actions"}), 400
+            return flask.jsonify({"error": "Account parameter is required for most actions"}), 400
 
         command = f"cloudmapper {action}"
 
@@ -10646,16 +10646,16 @@ def cloudmapper():
         logger.info(f"☁️  Starting CloudMapper {action}")
         result = execute_command(command)
         logger.info(f"📊 CloudMapper {action} completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in cloudmapper endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/pacu", methods=["POST"])
 def pacu():
     """Execute Pacu for AWS exploitation framework"""
     try:
-        params = request.json
+        params = flask.request.json
         session_name = params.get("session_name", "hexstrike_session")
         modules = params.get("modules", "")
         data_services = params.get("data_services", "")
@@ -10698,16 +10698,16 @@ def pacu():
             pass
 
         logger.info(f"📊 Pacu exploitation completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in pacu endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/kube-hunter", methods=["POST"])
 def kube_hunter():
     """Execute kube-hunter for Kubernetes penetration testing"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         remote = params.get("remote", "")
         cidr = params.get("cidr", "")
@@ -10742,16 +10742,16 @@ def kube_hunter():
         logger.info(f"☁️  Starting kube-hunter Kubernetes scan")
         result = execute_command(command)
         logger.info(f"📊 kube-hunter scan completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in kube-hunter endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/kube-bench", methods=["POST"])
 def kube_bench():
     """Execute kube-bench for CIS Kubernetes benchmark checks"""
     try:
-        params = request.json
+        params = flask.request.json
         targets = params.get("targets", "")  # master, node, etcd, policies
         version = params.get("version", "")
         config_dir = params.get("config_dir", "")
@@ -10778,16 +10778,16 @@ def kube_bench():
         logger.info(f"☁️  Starting kube-bench CIS benchmark")
         result = execute_command(command)
         logger.info(f"📊 kube-bench benchmark completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in kube-bench endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/docker-bench-security", methods=["POST"])
 def docker_bench_security():
     """Execute Docker Bench for Security for Docker security assessment"""
     try:
-        params = request.json
+        params = flask.request.json
         checks = params.get("checks", "")  # Specific checks to run
         exclude = params.get("exclude", "")  # Checks to exclude
         output_file = params.get("output_file", "/tmp/docker-bench-results.json")
@@ -10811,16 +10811,16 @@ def docker_bench_security():
         result = execute_command(command)
         result["output_file"] = output_file
         logger.info(f"📊 Docker Bench Security completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in docker-bench-security endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/clair", methods=["POST"])
 def clair():
     """Execute Clair for container vulnerability analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         image = params.get("image", "")
         config = params.get("config", "/etc/clair/config.yaml")
         output_format = params.get("output_format", "json")
@@ -10828,7 +10828,7 @@ def clair():
 
         if not image:
             logger.warning("🐳 Clair called without image parameter")
-            return jsonify({"error": "Image parameter is required"}), 400
+            return flask.jsonify({"error": "Image parameter is required"}), 400
 
         # Use clairctl for scanning
         command = f"clairctl analyze {image}"
@@ -10845,16 +10845,16 @@ def clair():
         logger.info(f"🐳 Starting Clair vulnerability scan: {image}")
         result = execute_command(command)
         logger.info(f"📊 Clair scan completed for {image}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in clair endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/falco", methods=["POST"])
 def falco():
     """Execute Falco for runtime security monitoring"""
     try:
-        params = request.json
+        params = flask.request.json
         config_file = params.get("config_file", "/etc/falco/falco.yaml")
         rules_file = params.get("rules_file", "")
         output_format = params.get("output_format", "json")
@@ -10878,16 +10878,16 @@ def falco():
         logger.info(f"🛡️  Starting Falco runtime monitoring for {duration}s")
         result = execute_command(command)
         logger.info(f"📊 Falco monitoring completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in falco endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/checkov", methods=["POST"])
 def checkov():
     """Execute Checkov for infrastructure as code security scanning"""
     try:
-        params = request.json
+        params = flask.request.json
         directory = params.get("directory", ".")
         framework = params.get("framework", "")  # terraform, cloudformation, kubernetes, etc.
         check = params.get("check", "")
@@ -10915,16 +10915,16 @@ def checkov():
         logger.info(f"🔍 Starting Checkov IaC scan: {directory}")
         result = execute_command(command)
         logger.info(f"📊 Checkov scan completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in checkov endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/terrascan", methods=["POST"])
 def terrascan():
     """Execute Terrascan for infrastructure as code security scanning"""
     try:
-        params = request.json
+        params = flask.request.json
         scan_type = params.get("scan_type", "all")  # all, terraform, k8s, etc.
         iac_dir = params.get("iac_dir", ".")
         policy_type = params.get("policy_type", "")
@@ -10949,23 +10949,23 @@ def terrascan():
         logger.info(f"🔍 Starting Terrascan IaC scan: {iac_dir}")
         result = execute_command(command)
         logger.info(f"📊 Terrascan scan completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in terrascan endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/dirb", methods=["POST"])
 def dirb():
     """Execute dirb with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
         additional_args = params.get("additional_args", "")
 
         if not url:
             logger.warning("🌐 Dirb called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -10977,10 +10977,10 @@ def dirb():
         logger.info(f"📁 Starting Dirb scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 Dirb scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in dirb endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -10988,13 +10988,13 @@ def dirb():
 def nikto():
     """Execute nikto with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         additional_args = params.get("additional_args", "")
 
         if not target:
             logger.warning("🎯 Nikto called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -11006,10 +11006,10 @@ def nikto():
         logger.info(f"🔬 Starting Nikto scan: {target}")
         result = execute_command(command)
         logger.info(f"📊 Nikto scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in nikto endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11017,14 +11017,14 @@ def nikto():
 def sqlmap():
     """Execute sqlmap with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         data = params.get("data", "")
         additional_args = params.get("additional_args", "")
 
         if not url:
             logger.warning("🎯 SQLMap called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -11039,10 +11039,10 @@ def sqlmap():
         logger.info(f"💉 Starting SQLMap scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 SQLMap scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in sqlmap endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11050,13 +11050,13 @@ def sqlmap():
 def metasploit():
     """Execute metasploit module with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         module = params.get("module", "")
         options = params.get("options", {})
 
         if not module:
             logger.warning("🚀 Metasploit called without module parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Module parameter is required"
             }), 400
 
@@ -11083,10 +11083,10 @@ def metasploit():
             logger.warning(f"Error removing temporary resource file: {str(e)}")
 
         logger.info(f"📊 Metasploit module completed: {module}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in metasploit endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11094,7 +11094,7 @@ def metasploit():
 def hydra():
     """Execute hydra with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         service = params.get("service", "")
         username = params.get("username", "")
@@ -11105,13 +11105,13 @@ def hydra():
 
         if not target or not service:
             logger.warning("🎯 Hydra called without target or service parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target and service parameters are required"
             }), 400
 
         if not (username or username_file) or not (password or password_file):
             logger.warning("🔑 Hydra called without username/password parameters")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Username/username_file and password/password_file are required"
             }), 400
 
@@ -11135,10 +11135,10 @@ def hydra():
         logger.info(f"🔑 Starting Hydra attack: {target}:{service}")
         result = execute_command(command)
         logger.info(f"📊 Hydra attack completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in hydra endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11146,7 +11146,7 @@ def hydra():
 def john():
     """Execute john with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         hash_file = params.get("hash_file", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/rockyou.txt")
         format_type = params.get("format", "")
@@ -11154,7 +11154,7 @@ def john():
 
         if not hash_file:
             logger.warning("🔐 John called without hash_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Hash file parameter is required"
             }), 400
 
@@ -11174,10 +11174,10 @@ def john():
         logger.info(f"🔐 Starting John the Ripper: {hash_file}")
         result = execute_command(command)
         logger.info(f"📊 John the Ripper completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in john endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11185,13 +11185,13 @@ def john():
 def wpscan():
     """Execute wpscan with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         additional_args = params.get("additional_args", "")
 
         if not url:
             logger.warning("🌐 WPScan called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -11203,10 +11203,10 @@ def wpscan():
         logger.info(f"🔍 Starting WPScan: {url}")
         result = execute_command(command)
         logger.info(f"📊 WPScan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in wpscan endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11214,13 +11214,13 @@ def wpscan():
 def enum4linux():
     """Execute enum4linux with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         additional_args = params.get("additional_args", "-a")
 
         if not target:
             logger.warning("🎯 Enum4linux called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -11229,10 +11229,10 @@ def enum4linux():
         logger.info(f"🔍 Starting Enum4linux: {target}")
         result = execute_command(command)
         logger.info(f"📊 Enum4linux completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in enum4linux endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11240,7 +11240,7 @@ def enum4linux():
 def ffuf():
     """Execute FFuf web fuzzer with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
         mode = params.get("mode", "directory")
@@ -11249,7 +11249,7 @@ def ffuf():
 
         if not url:
             logger.warning("🌐 FFuf called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -11272,10 +11272,10 @@ def ffuf():
         logger.info(f"🔍 Starting FFuf {mode} fuzzing: {url}")
         result = execute_command(command)
         logger.info(f"📊 FFuf fuzzing completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in ffuf endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11283,7 +11283,7 @@ def ffuf():
 def netexec():
     """Execute NetExec (formerly CrackMapExec) with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         protocol = params.get("protocol", "smb")
         username = params.get("username", "")
@@ -11294,7 +11294,7 @@ def netexec():
 
         if not target:
             logger.warning("🎯 NetExec called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -11318,10 +11318,10 @@ def netexec():
         logger.info(f"🔍 Starting NetExec {protocol} scan: {target}")
         result = execute_command(command)
         logger.info(f"📊 NetExec scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in netexec endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11329,14 +11329,14 @@ def netexec():
 def amass():
     """Execute Amass for subdomain enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         mode = params.get("mode", "enum")
         additional_args = params.get("additional_args", "")
 
         if not domain:
             logger.warning("🌐 Amass called without domain parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Domain parameter is required"
             }), 400
 
@@ -11353,10 +11353,10 @@ def amass():
         logger.info(f"🔍 Starting Amass {mode}: {domain}")
         result = execute_command(command)
         logger.info(f"📊 Amass completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in amass endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11364,7 +11364,7 @@ def amass():
 def hashcat():
     """Execute Hashcat for password cracking with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         hash_file = params.get("hash_file", "")
         hash_type = params.get("hash_type", "")
         attack_mode = params.get("attack_mode", "0")
@@ -11374,13 +11374,13 @@ def hashcat():
 
         if not hash_file:
             logger.warning("🔐 Hashcat called without hash_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Hash file parameter is required"
             }), 400
 
         if not hash_type:
             logger.warning("🔐 Hashcat called without hash_type parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Hash type parameter is required"
             }), 400
 
@@ -11397,10 +11397,10 @@ def hashcat():
         logger.info(f"🔐 Starting Hashcat attack: mode {attack_mode}")
         result = execute_command(command)
         logger.info(f"📊 Hashcat attack completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in hashcat endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11408,7 +11408,7 @@ def hashcat():
 def subfinder():
     """Execute Subfinder for passive subdomain enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         silent = params.get("silent", True)
         all_sources = params.get("all_sources", False)
@@ -11416,7 +11416,7 @@ def subfinder():
 
         if not domain:
             logger.warning("🌐 Subfinder called without domain parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Domain parameter is required"
             }), 400
 
@@ -11434,10 +11434,10 @@ def subfinder():
         logger.info(f"🔍 Starting Subfinder: {domain}")
         result = execute_command(command)
         logger.info(f"📊 Subfinder completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in subfinder endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11445,7 +11445,7 @@ def subfinder():
 def smbmap():
     """Execute SMBMap for SMB share enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         username = params.get("username", "")
         password = params.get("password", "")
@@ -11454,7 +11454,7 @@ def smbmap():
 
         if not target:
             logger.warning("🎯 SMBMap called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -11475,10 +11475,10 @@ def smbmap():
         logger.info(f"🔍 Starting SMBMap: {target}")
         result = execute_command(command)
         logger.info(f"📊 SMBMap completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in smbmap endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11490,7 +11490,7 @@ def smbmap():
 def rustscan():
     """Execute Rustscan for ultra-fast port scanning with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         ports = params.get("ports", "")
         ulimit = params.get("ulimit", 5000)
@@ -11501,7 +11501,7 @@ def rustscan():
 
         if not target:
             logger.warning("🎯 Rustscan called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"rustscan -a {target} --ulimit {ulimit} -b {batch_size} -t {timeout}"
 
@@ -11517,16 +11517,16 @@ def rustscan():
         logger.info(f"⚡ Starting Rustscan: {target}")
         result = execute_command(command)
         logger.info(f"📊 Rustscan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in rustscan endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/masscan", methods=["POST"])
 def masscan():
     """Execute Masscan for high-speed Internet-scale port scanning with intelligent rate limiting"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         ports = params.get("ports", "1-65535")
         rate = params.get("rate", 1000)
@@ -11538,7 +11538,7 @@ def masscan():
 
         if not target:
             logger.warning("🎯 Masscan called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"masscan {target} -p{ports} --rate={rate}"
 
@@ -11560,16 +11560,16 @@ def masscan():
         logger.info(f"🚀 Starting Masscan: {target} at rate {rate}")
         result = execute_command(command)
         logger.info(f"📊 Masscan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in masscan endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/nmap-advanced", methods=["POST"])
 def nmap_advanced():
     """Execute advanced Nmap scans with custom NSE scripts and optimized timing"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         scan_type = params.get("scan_type", "-sS")
         ports = params.get("ports", "")
@@ -11583,7 +11583,7 @@ def nmap_advanced():
 
         if not target:
             logger.warning("🎯 Advanced Nmap called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"nmap {scan_type} {target}"
 
@@ -11615,16 +11615,16 @@ def nmap_advanced():
         logger.info(f"🔍 Starting Advanced Nmap: {target}")
         result = execute_command(command)
         logger.info(f"📊 Advanced Nmap completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in advanced nmap endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/autorecon", methods=["POST"])
 def autorecon():
     """Execute AutoRecon for comprehensive automated reconnaissance"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         output_dir = params.get("output_dir", "/tmp/autorecon")
         port_scans = params.get("port_scans", "top-100-ports")
@@ -11635,7 +11635,7 @@ def autorecon():
 
         if not target:
             logger.warning("🎯 AutoRecon called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"autorecon {target} -o {output_dir} --heartbeat {heartbeat} --timeout {timeout}"
 
@@ -11651,16 +11651,16 @@ def autorecon():
         logger.info(f"🔄 Starting AutoRecon: {target}")
         result = execute_command(command)
         logger.info(f"📊 AutoRecon completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in autorecon endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/enum4linux-ng", methods=["POST"])
 def enum4linux_ng():
     """Execute Enum4linux-ng for advanced SMB enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         username = params.get("username", "")
         password = params.get("password", "")
@@ -11673,7 +11673,7 @@ def enum4linux_ng():
 
         if not target:
             logger.warning("🎯 Enum4linux-ng called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"enum4linux-ng {target}"
 
@@ -11706,16 +11706,16 @@ def enum4linux_ng():
         logger.info(f"🔍 Starting Enum4linux-ng: {target}")
         result = execute_command(command)
         logger.info(f"📊 Enum4linux-ng completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in enum4linux-ng endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/rpcclient", methods=["POST"])
 def rpcclient():
     """Execute rpcclient for RPC enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         username = params.get("username", "")
         password = params.get("password", "")
@@ -11725,7 +11725,7 @@ def rpcclient():
 
         if not target:
             logger.warning("🎯 rpcclient called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         # Build authentication string
         auth_string = ""
@@ -11750,16 +11750,16 @@ def rpcclient():
         logger.info(f"🔍 Starting rpcclient: {target}")
         result = execute_command(command)
         logger.info(f"📊 rpcclient completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in rpcclient endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/nbtscan", methods=["POST"])
 def nbtscan():
     """Execute nbtscan for NetBIOS name scanning with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         verbose = params.get("verbose", False)
         timeout = params.get("timeout", 2)
@@ -11767,7 +11767,7 @@ def nbtscan():
 
         if not target:
             logger.warning("🎯 nbtscan called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"nbtscan -t {timeout}"
 
@@ -11782,16 +11782,16 @@ def nbtscan():
         logger.info(f"🔍 Starting nbtscan: {target}")
         result = execute_command(command)
         logger.info(f"📊 nbtscan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in nbtscan endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/arp-scan", methods=["POST"])
 def arp_scan():
     """Execute arp-scan for network discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         interface = params.get("interface", "")
         local_network = params.get("local_network", False)
@@ -11801,7 +11801,7 @@ def arp_scan():
 
         if not target and not local_network:
             logger.warning("🎯 arp-scan called without target parameter")
-            return jsonify({"error": "Target parameter or local_network flag is required"}), 400
+            return flask.jsonify({"error": "Target parameter or local_network flag is required"}), 400
 
         command = f"arp-scan -t {timeout} -r {retry}"
 
@@ -11819,16 +11819,16 @@ def arp_scan():
         logger.info(f"🔍 Starting arp-scan: {target if target else 'local network'}")
         result = execute_command(command)
         logger.info(f"📊 arp-scan completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in arp-scan endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/responder", methods=["POST"])
 def responder():
     """Execute Responder for credential harvesting with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         interface = params.get("interface", "eth0")
         analyze = params.get("analyze", False)
         wpad = params.get("wpad", True)
@@ -11839,7 +11839,7 @@ def responder():
 
         if not interface:
             logger.warning("🎯 Responder called without interface parameter")
-            return jsonify({"error": "Interface parameter is required"}), 400
+            return flask.jsonify({"error": "Interface parameter is required"}), 400
 
         command = f"timeout {duration} responder -I {interface}"
 
@@ -11861,16 +11861,16 @@ def responder():
         logger.info(f"🔍 Starting Responder on interface: {interface}")
         result = execute_command(command)
         logger.info(f"📊 Responder completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in responder endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/volatility", methods=["POST"])
 def volatility():
     """Execute Volatility for memory forensics with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         memory_file = params.get("memory_file", "")
         plugin = params.get("plugin", "")
         profile = params.get("profile", "")
@@ -11878,7 +11878,7 @@ def volatility():
 
         if not memory_file:
             logger.warning("🧠 Volatility called without memory_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Memory file parameter is required"
             }), 400
 
@@ -11922,7 +11922,7 @@ def msfvenom():
 
         if not payload:
             logger.warning("🚀 MSFVenom called without payload parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Payload parameter is required"
             }), 400
 
@@ -11946,10 +11946,10 @@ def msfvenom():
         logger.info(f"🚀 Starting MSFVenom payload generation: {payload}")
         result = execute_command(command)
         logger.info(f"📊 MSFVenom payload generated")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in msfvenom endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -11961,7 +11961,7 @@ def msfvenom():
 def gdb():
     """Execute GDB for binary analysis and debugging with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         commands = params.get("commands", "")
         script_file = params.get("script_file", "")
@@ -11969,7 +11969,7 @@ def gdb():
 
         if not binary:
             logger.warning("🔧 GDB called without binary parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Binary parameter is required"
             }), 400
 
@@ -11999,10 +11999,10 @@ def gdb():
                 pass
 
         logger.info(f"📊 GDB analysis completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in gdb endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12010,14 +12010,14 @@ def gdb():
 def radare2():
     """Execute Radare2 for binary analysis and reverse engineering with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         commands = params.get("commands", "")
         additional_args = params.get("additional_args", "")
 
         if not binary:
             logger.warning("🔧 Radare2 called without binary parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Binary parameter is required"
             }), 400
 
@@ -12042,10 +12042,10 @@ def radare2():
                 pass
 
         logger.info(f"📊 Radare2 analysis completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in radare2 endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12053,14 +12053,14 @@ def radare2():
 def binwalk():
     """Execute Binwalk for firmware and file analysis with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         file_path = params.get("file_path", "")
         extract = params.get("extract", False)
         additional_args = params.get("additional_args", "")
 
         if not file_path:
             logger.warning("🔧 Binwalk called without file_path parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "File path parameter is required"
             }), 400
 
@@ -12077,10 +12077,10 @@ def binwalk():
         logger.info(f"🔧 Starting Binwalk analysis: {file_path}")
         result = execute_command(command)
         logger.info(f"📊 Binwalk analysis completed for {file_path}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in binwalk endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12088,14 +12088,14 @@ def binwalk():
 def ropgadget():
     """Search for ROP gadgets in a binary using ROPgadget with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         gadget_type = params.get("gadget_type", "")
         additional_args = params.get("additional_args", "")
 
         if not binary:
             logger.warning("🔧 ROPgadget called without binary parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Binary parameter is required"
             }), 400
 
@@ -12110,10 +12110,10 @@ def ropgadget():
         logger.info(f"🔧 Starting ROPgadget search: {binary}")
         result = execute_command(command)
         logger.info(f"📊 ROPgadget search completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in ropgadget endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12121,12 +12121,12 @@ def ropgadget():
 def checksec():
     """Check security features of a binary with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
 
         if not binary:
             logger.warning("🔧 Checksec called without binary parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Binary parameter is required"
             }), 400
 
@@ -12135,10 +12135,10 @@ def checksec():
         logger.info(f"🔧 Starting Checksec analysis: {binary}")
         result = execute_command(command)
         logger.info(f"📊 Checksec analysis completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in checksec endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12146,7 +12146,7 @@ def checksec():
 def xxd():
     """Create a hex dump of a file using xxd with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         file_path = params.get("file_path", "")
         offset = params.get("offset", "0")
         length = params.get("length", "")
@@ -12154,7 +12154,7 @@ def xxd():
 
         if not file_path:
             logger.warning("🔧 XXD called without file_path parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "File path parameter is required"
             }), 400
 
@@ -12171,10 +12171,10 @@ def xxd():
         logger.info(f"🔧 Starting XXD hex dump: {file_path}")
         result = execute_command(command)
         logger.info(f"📊 XXD hex dump completed for {file_path}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in xxd endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12182,14 +12182,14 @@ def xxd():
 def strings():
     """Extract strings from a binary file with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         file_path = params.get("file_path", "")
         min_len = params.get("min_len", 4)
         additional_args = params.get("additional_args", "")
 
         if not file_path:
             logger.warning("🔧 Strings called without file_path parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "File path parameter is required"
             }), 400
 
@@ -12203,10 +12203,10 @@ def strings():
         logger.info(f"🔧 Starting Strings extraction: {file_path}")
         result = execute_command(command)
         logger.info(f"📊 Strings extraction completed for {file_path}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in strings endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12214,14 +12214,14 @@ def strings():
 def objdump():
     """Analyze a binary using objdump with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         disassemble = params.get("disassemble", True)
         additional_args = params.get("additional_args", "")
 
         if not binary:
             logger.warning("🔧 Objdump called without binary parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Binary parameter is required"
             }), 400
 
@@ -12240,10 +12240,10 @@ def objdump():
         logger.info(f"🔧 Starting Objdump analysis: {binary}")
         result = execute_command(command)
         logger.info(f"📊 Objdump analysis completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in objdump endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12255,7 +12255,7 @@ def objdump():
 def ghidra():
     """Execute Ghidra for advanced binary analysis and reverse engineering"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         project_name = params.get("project_name", "hexstrike_analysis")
         script_file = params.get("script_file", "")
@@ -12265,7 +12265,7 @@ def ghidra():
 
         if not binary:
             logger.warning("🔧 Ghidra called without binary parameter")
-            return jsonify({"error": "Binary parameter is required"}), 400
+            return flask.jsonify({"error": "Binary parameter is required"}), 400
 
         # Create Ghidra project directory
         project_dir = f"/tmp/ghidra_projects/{project_name}"
@@ -12286,16 +12286,16 @@ def ghidra():
         logger.info(f"🔧 Starting Ghidra analysis: {binary}")
         result = execute_command(command, timeout=analysis_timeout)
         logger.info(f"📊 Ghidra analysis completed for {binary}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in ghidra endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/pwntools", methods=["POST"])
 def pwntools():
     """Execute Pwntools for exploit development and automation"""
     try:
-        params = request.json
+        params = flask.request.json
         script_content = params.get("script_content", "")
         target_binary = params.get("target_binary", "")
         target_host = params.get("target_host", "")
@@ -12305,7 +12305,7 @@ def pwntools():
 
         if not script_content and not target_binary:
             logger.warning("🔧 Pwntools called without script content or target binary")
-            return jsonify({"error": "Script content or target binary is required"}), 400
+            return flask.jsonify({"error": "Script content or target binary is required"}), 400
 
         # Create temporary Python script
         script_file = "/tmp/pwntools_exploit.py"
@@ -12361,23 +12361,23 @@ p.interactive()
             pass
 
         logger.info(f"📊 Pwntools exploit completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in pwntools endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/one-gadget", methods=["POST"])
 def one_gadget():
     """Execute one_gadget to find one-shot RCE gadgets in libc"""
     try:
-        params = request.json
+        params = flask.request.json
         libc_path = params.get("libc_path", "")
         level = params.get("level", 1)  # 0, 1, 2 for different constraint levels
         additional_args = params.get("additional_args", "")
 
         if not libc_path:
             logger.warning("🔧 one_gadget called without libc_path parameter")
-            return jsonify({"error": "libc_path parameter is required"}), 400
+            return flask.jsonify({"error": "libc_path parameter is required"}), 400
 
         command = f"one_gadget {libc_path} --level {level}"
 
@@ -12387,16 +12387,16 @@ def one_gadget():
         logger.info(f"🔧 Starting one_gadget analysis: {libc_path}")
         result = execute_command(command)
         logger.info(f"📊 one_gadget analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in one_gadget endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/libc-database", methods=["POST"])
 def libc_database():
     """Execute libc-database for libc identification and offset lookup"""
     try:
-        params = request.json
+        params = flask.request.json
         action = params.get("action", "find")  # find, dump, download
         symbols = params.get("symbols", "")  # format: "symbol1:offset1 symbol2:offset2"
         libc_id = params.get("libc_id", "")
@@ -12404,11 +12404,11 @@ def libc_database():
 
         if action == "find" and not symbols:
             logger.warning("🔧 libc-database find called without symbols")
-            return jsonify({"error": "Symbols parameter is required for find action"}), 400
+            return flask.jsonify({"error": "Symbols parameter is required for find action"}), 400
 
         if action in ["dump", "download"] and not libc_id:
             logger.warning("🔧 libc-database called without libc_id for dump/download")
-            return jsonify({"error": "libc_id parameter is required for dump/download actions"}), 400
+            return flask.jsonify({"error": "libc_id parameter is required for dump/download actions"}), 400
 
         # Navigate to libc-database directory (assuming it's installed)
         base_command = "cd /opt/libc-database 2>/dev/null || cd ~/libc-database 2>/dev/null || echo 'libc-database not found'"
@@ -12420,7 +12420,7 @@ def libc_database():
         elif action == "download":
             command = f"{base_command} && ./download {libc_id}"
         else:
-            return jsonify({"error": f"Invalid action: {action}"}), 400
+            return flask.jsonify({"error": f"Invalid action: {action}"}), 400
 
         if additional_args:
             command += f" {additional_args}"
@@ -12428,16 +12428,16 @@ def libc_database():
         logger.info(f"🔧 Starting libc-database {action}: {symbols or libc_id}")
         result = execute_command(command)
         logger.info(f"📊 libc-database {action} completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in libc-database endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/gdb-peda", methods=["POST"])
 def gdb_peda():
     """Execute GDB with PEDA for enhanced debugging and exploitation"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         commands = params.get("commands", "")
         attach_pid = params.get("attach_pid", 0)
@@ -12446,7 +12446,7 @@ def gdb_peda():
 
         if not binary and not attach_pid and not core_file:
             logger.warning("🔧 GDB-PEDA called without binary, PID, or core file")
-            return jsonify({"error": "Binary, PID, or core file parameter is required"}), 400
+            return flask.jsonify({"error": "Binary, PID, or core file parameter is required"}), 400
 
         # Base GDB command with PEDA
         command = "gdb -q"
@@ -12490,16 +12490,16 @@ quit
                 pass
 
         logger.info(f"📊 GDB-PEDA analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in gdb-peda endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/angr", methods=["POST"])
 def angr():
     """Execute angr for symbolic execution and binary analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         script_content = params.get("script_content", "")
         find_address = params.get("find_address", "")
@@ -12509,7 +12509,7 @@ def angr():
 
         if not binary:
             logger.warning("🔧 angr called without binary parameter")
-            return jsonify({"error": "Binary parameter is required"}), 400
+            return flask.jsonify({"error": "Binary parameter is required"}), 400
 
         # Create angr script
         script_file = "/tmp/angr_analysis.py"
@@ -12581,16 +12581,16 @@ for func_addr, func in cfg.functions.items():
             pass
 
         logger.info(f"📊 angr analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in angr endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/ropper", methods=["POST"])
 def ropper():
     """Execute ropper for advanced ROP/JOP gadget searching"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         gadget_type = params.get("gadget_type", "rop")  # rop, jop, sys, all
         quality = params.get("quality", 1)  # 1-5, higher = better quality
@@ -12600,7 +12600,7 @@ def ropper():
 
         if not binary:
             logger.warning("🔧 ropper called without binary parameter")
-            return jsonify({"error": "Binary parameter is required"}), 400
+            return flask.jsonify({"error": "Binary parameter is required"}), 400
 
         command = f"ropper --file {binary}"
 
@@ -12628,16 +12628,16 @@ def ropper():
         logger.info(f"🔧 Starting ropper analysis: {binary}")
         result = execute_command(command)
         logger.info(f"📊 ropper analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in ropper endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/pwninit", methods=["POST"])
 def pwninit():
     """Execute pwninit for CTF binary exploitation setup"""
     try:
-        params = request.json
+        params = flask.request.json
         binary = params.get("binary", "")
         libc = params.get("libc", "")
         ld = params.get("ld", "")
@@ -12646,7 +12646,7 @@ def pwninit():
 
         if not binary:
             logger.warning("🔧 pwninit called without binary parameter")
-            return jsonify({"error": "Binary parameter is required"}), 400
+            return flask.jsonify({"error": "Binary parameter is required"}), 400
 
         command = f"pwninit --bin {binary}"
 
@@ -12665,10 +12665,10 @@ def pwninit():
         logger.info(f"🔧 Starting pwninit setup: {binary}")
         result = execute_command(command)
         logger.info(f"📊 pwninit setup completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in pwninit endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # ADDITIONAL WEB SECURITY TOOLS
@@ -12678,7 +12678,7 @@ def pwninit():
 def feroxbuster():
     """Execute Feroxbuster for recursive content discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
         threads = params.get("threads", 10)
@@ -12686,7 +12686,7 @@ def feroxbuster():
 
         if not url:
             logger.warning("🌐 Feroxbuster called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -12698,10 +12698,10 @@ def feroxbuster():
         logger.info(f"🔍 Starting Feroxbuster scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 Feroxbuster scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in feroxbuster endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12709,14 +12709,14 @@ def feroxbuster():
 def dotdotpwn():
     """Execute DotDotPwn for directory traversal testing with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         module = params.get("module", "http")
         additional_args = params.get("additional_args", "")
 
         if not target:
             logger.warning("🎯 DotDotPwn called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -12730,10 +12730,10 @@ def dotdotpwn():
         logger.info(f"🔍 Starting DotDotPwn scan: {target}")
         result = execute_command(command)
         logger.info(f"📊 DotDotPwn scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in dotdotpwn endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12741,14 +12741,14 @@ def dotdotpwn():
 def xsser():
     """Execute XSSer for XSS vulnerability testing with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         params_str = params.get("params", "")
         additional_args = params.get("additional_args", "")
 
         if not url:
             logger.warning("🌐 XSSer called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -12763,10 +12763,10 @@ def xsser():
         logger.info(f"🔍 Starting XSSer scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 XSSer scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in xsser endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12774,14 +12774,14 @@ def xsser():
 def wfuzz():
     """Execute Wfuzz for web application fuzzing with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirb/common.txt")
         additional_args = params.get("additional_args", "")
 
         if not url:
             logger.warning("🌐 Wfuzz called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -12793,10 +12793,10 @@ def wfuzz():
         logger.info(f"🔍 Starting Wfuzz scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 Wfuzz scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in wfuzz endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -12808,7 +12808,7 @@ def wfuzz():
 def dirsearch():
     """Execute Dirsearch for advanced directory and file discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         extensions = params.get("extensions", "php,html,js,txt,xml,json")
         wordlist = params.get("wordlist", "/usr/share/wordlists/dirsearch/common.txt")
@@ -12818,7 +12818,7 @@ def dirsearch():
 
         if not url:
             logger.warning("🌐 Dirsearch called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         command = f"dirsearch -u {url} -e {extensions} -w {wordlist} -t {threads}"
 
@@ -12831,16 +12831,16 @@ def dirsearch():
         logger.info(f"📁 Starting Dirsearch scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 Dirsearch scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in dirsearch endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/katana", methods=["POST"])
 def katana():
     """Execute Katana for next-generation crawling and spidering with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         depth = params.get("depth", 3)
         js_crawl = params.get("js_crawl", True)
@@ -12850,7 +12850,7 @@ def katana():
 
         if not url:
             logger.warning("🌐 Katana called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         command = f"katana -u {url} -d {depth}"
 
@@ -12869,16 +12869,16 @@ def katana():
         logger.info(f"⚔️  Starting Katana crawl: {url}")
         result = execute_command(command)
         logger.info(f"📊 Katana crawl completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in katana endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/gau", methods=["POST"])
 def gau():
     """Execute Gau (Get All URLs) for URL discovery from multiple sources with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         providers = params.get("providers", "wayback,commoncrawl,otx,urlscan")
         include_subs = params.get("include_subs", True)
@@ -12887,7 +12887,7 @@ def gau():
 
         if not domain:
             logger.warning("🌐 Gau called without domain parameter")
-            return jsonify({"error": "Domain parameter is required"}), 400
+            return flask.jsonify({"error": "Domain parameter is required"}), 400
 
         command = f"gau {domain}"
 
@@ -12906,16 +12906,16 @@ def gau():
         logger.info(f"📡 Starting Gau URL discovery: {domain}")
         result = execute_command(command)
         logger.info(f"📊 Gau URL discovery completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in gau endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/waybackurls", methods=["POST"])
 def waybackurls():
     """Execute Waybackurls for historical URL discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         get_versions = params.get("get_versions", False)
         no_subs = params.get("no_subs", False)
@@ -12923,7 +12923,7 @@ def waybackurls():
 
         if not domain:
             logger.warning("🌐 Waybackurls called without domain parameter")
-            return jsonify({"error": "Domain parameter is required"}), 400
+            return flask.jsonify({"error": "Domain parameter is required"}), 400
 
         command = f"waybackurls {domain}"
 
@@ -12939,16 +12939,16 @@ def waybackurls():
         logger.info(f"🕰️  Starting Waybackurls discovery: {domain}")
         result = execute_command(command)
         logger.info(f"📊 Waybackurls discovery completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in waybackurls endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/arjun", methods=["POST"])
 def arjun():
     """Execute Arjun for HTTP parameter discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         method = params.get("method", "GET")
         wordlist = params.get("wordlist", "")
@@ -12959,7 +12959,7 @@ def arjun():
 
         if not url:
             logger.warning("🌐 Arjun called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         command = f"arjun -u {url} -m {method} -t {threads}"
 
@@ -12978,16 +12978,16 @@ def arjun():
         logger.info(f"🎯 Starting Arjun parameter discovery: {url}")
         result = execute_command(command)
         logger.info(f"📊 Arjun parameter discovery completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in arjun endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/paramspider", methods=["POST"])
 def paramspider():
     """Execute ParamSpider for parameter mining from web archives with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         level = params.get("level", 2)
         exclude = params.get("exclude", "png,jpg,gif,jpeg,swf,woff,svg,pdf,css,ico")
@@ -12996,7 +12996,7 @@ def paramspider():
 
         if not domain:
             logger.warning("🌐 ParamSpider called without domain parameter")
-            return jsonify({"error": "Domain parameter is required"}), 400
+            return flask.jsonify({"error": "Domain parameter is required"}), 400
 
         command = f"paramspider -d {domain} -l {level}"
 
@@ -13012,16 +13012,16 @@ def paramspider():
         logger.info(f"🕷️  Starting ParamSpider mining: {domain}")
         result = execute_command(command)
         logger.info(f"📊 ParamSpider mining completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in paramspider endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/x8", methods=["POST"])
 def x8():
     """Execute x8 for hidden parameter discovery with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         wordlist = params.get("wordlist", "/usr/share/wordlists/x8/params.txt")
         method = params.get("method", "GET")
@@ -13031,7 +13031,7 @@ def x8():
 
         if not url:
             logger.warning("🌐 x8 called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         command = f"x8 -u {url} -w {wordlist} -X {method}"
 
@@ -13047,16 +13047,16 @@ def x8():
         logger.info(f"🔍 Starting x8 parameter discovery: {url}")
         result = execute_command(command)
         logger.info(f"📊 x8 parameter discovery completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in x8 endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/jaeles", methods=["POST"])
 def jaeles():
     """Execute Jaeles for advanced vulnerability scanning with custom signatures"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         signatures = params.get("signatures", "")
         config = params.get("config", "")
@@ -13066,7 +13066,7 @@ def jaeles():
 
         if not url:
             logger.warning("🌐 Jaeles called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         command = f"jaeles scan -u {url} -c {threads} --timeout {timeout}"
 
@@ -13082,16 +13082,16 @@ def jaeles():
         logger.info(f"🔬 Starting Jaeles vulnerability scan: {url}")
         result = execute_command(command)
         logger.info(f"📊 Jaeles vulnerability scan completed for {url}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in jaeles endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/dalfox", methods=["POST"])
 def dalfox():
     """Execute Dalfox for advanced XSS vulnerability scanning with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         pipe_mode = params.get("pipe_mode", False)
         blind = params.get("blind", False)
@@ -13102,7 +13102,7 @@ def dalfox():
 
         if not url and not pipe_mode:
             logger.warning("🌐 Dalfox called without URL parameter")
-            return jsonify({"error": "URL parameter is required"}), 400
+            return flask.jsonify({"error": "URL parameter is required"}), 400
 
         if pipe_mode:
             command = "dalfox pipe"
@@ -13127,16 +13127,16 @@ def dalfox():
         logger.info(f"🎯 Starting Dalfox XSS scan: {url if url else 'pipe mode'}")
         result = execute_command(command)
         logger.info(f"📊 Dalfox XSS scan completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in dalfox endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/httpx", methods=["POST"])
 def httpx():
     """Execute httpx for fast HTTP probing and technology detection"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         probe = params.get("probe", True)
         tech_detect = params.get("tech_detect", False)
@@ -13149,7 +13149,7 @@ def httpx():
 
         if not target:
             logger.warning("🌐 httpx called without target parameter")
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         command = f"httpx -l {target} -t {threads}"
 
@@ -13177,23 +13177,23 @@ def httpx():
         logger.info(f"🌍 Starting httpx probe: {target}")
         result = execute_command(command)
         logger.info(f"📊 httpx probe completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in httpx endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/anew", methods=["POST"])
 def anew():
     """Execute anew for appending new lines to files (useful for data processing)"""
     try:
-        params = request.json
+        params = flask.request.json
         input_data = params.get("input_data", "")
         output_file = params.get("output_file", "")
         additional_args = params.get("additional_args", "")
 
         if not input_data:
             logger.warning("📝 Anew called without input data")
-            return jsonify({"error": "Input data is required"}), 400
+            return flask.jsonify({"error": "Input data is required"}), 400
 
         if output_file:
             command = f"echo '{input_data}' | anew {output_file}"
@@ -13206,23 +13206,23 @@ def anew():
         logger.info("📝 Starting anew data processing")
         result = execute_command(command)
         logger.info("📊 anew data processing completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in anew endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/qsreplace", methods=["POST"])
 def qsreplace():
     """Execute qsreplace for query string parameter replacement"""
     try:
-        params = request.json
+        params = flask.request.json
         urls = params.get("urls", "")
         replacement = params.get("replacement", "FUZZ")
         additional_args = params.get("additional_args", "")
 
         if not urls:
             logger.warning("🌐 qsreplace called without URLs")
-            return jsonify({"error": "URLs parameter is required"}), 400
+            return flask.jsonify({"error": "URLs parameter is required"}), 400
 
         command = f"echo '{urls}' | qsreplace '{replacement}'"
 
@@ -13232,16 +13232,16 @@ def qsreplace():
         logger.info("🔄 Starting qsreplace parameter replacement")
         result = execute_command(command)
         logger.info("📊 qsreplace parameter replacement completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in qsreplace endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/uro", methods=["POST"])
 def uro():
     """Execute uro for filtering out similar URLs"""
     try:
-        params = request.json
+        params = flask.request.json
         urls = params.get("urls", "")
         whitelist = params.get("whitelist", "")
         blacklist = params.get("blacklist", "")
@@ -13249,7 +13249,7 @@ def uro():
 
         if not urls:
             logger.warning("🌐 uro called without URLs")
-            return jsonify({"error": "URLs parameter is required"}), 400
+            return flask.jsonify({"error": "URLs parameter is required"}), 400
 
         command = f"echo '{urls}' | uro"
 
@@ -13265,10 +13265,10 @@ def uro():
         logger.info("🔍 Starting uro URL filtering")
         result = execute_command(command)
         logger.info("📊 uro URL filtering completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in uro endpoint: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # ADVANCED WEB SECURITY TOOLS CONTINUED
@@ -13322,7 +13322,7 @@ class HTTPTestingFramework:
             elif method.upper() == 'DELETE':
                 response = self.session.delete(url, headers=send_headers, timeout=30)
             else:
-                response = self.session.request(method, url, data=data, headers=send_headers, timeout=30)
+                response = self.session.flask.request(method, url, data=data, headers=send_headers, timeout=30)
 
             # Store request/response in history
             self._req_id += 1
@@ -13330,7 +13330,7 @@ class HTTPTestingFramework:
                 'id': self._req_id,
                 'url': url,
                 'method': method,
-                'headers': dict(response.request.headers),
+                'headers': dict(response.flask.request.headers),
                 'data': data,
                 'timestamp': datetime.now().isoformat()
             }
@@ -14040,7 +14040,7 @@ browser_agent = BrowserAgent()
 def http_framework_endpoint():
     """Enhanced HTTP testing framework (Burp Suite alternative)"""
     try:
-        params = request.json
+        params = flask.request.json
         action = params.get("action", "request")  # request, spider, proxy_history, set_rules, set_scope, repeater, intruder
         url = params.get("url", "")
         method = params.get("method", "GET")
@@ -14052,7 +14052,7 @@ def http_framework_endpoint():
 
         if action == "request":
             if not url:
-                return jsonify({"error": "URL parameter is required for request action"}), 400
+                return flask.jsonify({"error": "URL parameter is required for request action"}), 400
 
             request_command = f"{method} {url}"
             logger.info(f"{ModernVisualEngine.format_command_execution(request_command, 'STARTING')}")
@@ -14063,11 +14063,11 @@ def http_framework_endpoint():
             else:
                 logger.error(f"{ModernVisualEngine.format_tool_status('HTTP-Framework', 'FAILED', url)}")
 
-            return jsonify(result)
+            return flask.jsonify(result)
 
         elif action == "spider":
             if not url:
-                return jsonify({"error": "URL parameter is required for spider action"}), 400
+                return flask.jsonify({"error": "URL parameter is required for spider action"}), 400
 
             max_depth = params.get("max_depth", 3)
             max_pages = params.get("max_pages", 100)
@@ -14083,10 +14083,10 @@ def http_framework_endpoint():
             else:
                 logger.error(f"{ModernVisualEngine.format_tool_status('HTTP-Spider', 'FAILED', url)}")
 
-            return jsonify(result)
+            return flask.jsonify(result)
 
         elif action == "proxy_history":
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "history": http_framework.proxy_history[-100:],  # Last 100 requests
                 "total_requests": len(http_framework.proxy_history),
@@ -14096,24 +14096,24 @@ def http_framework_endpoint():
         elif action == "set_rules":
             rules = params.get("rules", [])
             http_framework.set_match_replace_rules(rules)
-            return jsonify({"success": True, "rules_set": len(rules)})
+            return flask.jsonify({"success": True, "rules_set": len(rules)})
 
         elif action == "set_scope":
             scope_host = params.get("host")
             include_sub = params.get("include_subdomains", True)
             if not scope_host:
-                return jsonify({"error": "host parameter required"}), 400
+                return flask.jsonify({"error": "host parameter required"}), 400
             http_framework.set_scope(scope_host, include_sub)
-            return jsonify({"success": True, "scope": http_framework.scope})
+            return flask.jsonify({"success": True, "scope": http_framework.scope})
 
         elif action == "repeater":
             request_spec = params.get("request") or {}
             result = http_framework.send_custom_request(request_spec)
-            return jsonify(result)
+            return flask.jsonify(result)
 
         elif action == "intruder":
             if not url:
-                return jsonify({"error": "URL parameter required"}), 400
+                return flask.jsonify({"error": "URL parameter required"}), 400
             method = params.get("method", "GET")
             location = params.get("location", "query")
             fuzz_params = params.get("params", [])
@@ -14123,20 +14123,20 @@ def http_framework_endpoint():
             result = http_framework.intruder_sniper(
                 url, method, location, fuzz_params, payloads, base_data, max_requests
             )
-            return jsonify(result)
+            return flask.jsonify(result)
 
         else:
-            return jsonify({"error": f"Unknown action: {action}"}), 400
+            return flask.jsonify({"error": f"Unknown action: {action}"}), 400
 
     except Exception as e:
         logger.error(f"{ModernVisualEngine.format_error_card('ERROR', 'HTTP-Framework', str(e))}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/browser-agent", methods=["POST"])
 def browser_agent_endpoint():
     """AI-powered browser agent for web application inspection"""
     try:
-        params = request.json or {}
+        params = flask.request.json or {}
         action = params.get("action", "navigate")  # navigate, screenshot, close
         url = params.get("url", "")
         headless = params.get("headless", True)
@@ -14151,7 +14151,7 @@ def browser_agent_endpoint():
         if action == "navigate":
             if not url:
                 return (
-                    jsonify({"error": "URL parameter is required for navigate action"}),
+                    flask.jsonify({"error": "URL parameter is required for navigate action"}),
                     400,
                 )
 
@@ -14159,7 +14159,7 @@ def browser_agent_endpoint():
             if not browser_agent.driver:
                 setup_success = browser_agent.setup_browser(headless, proxy_port)
                 if not setup_success:
-                    return jsonify({"error": "Failed to setup browser"}), 500
+                    return flask.jsonify({"error": "Failed to setup browser"}), 500
 
             result = browser_agent.navigate_and_inspect(url, wait_time)
             if result.get("success") and active_tests:
@@ -14175,12 +14175,12 @@ def browser_agent_endpoint():
                             f"Active findings: {len(active_results['active_findings'])}",
                         )
                     )
-            return jsonify(result)
+            return flask.jsonify(result)
 
         elif action == "screenshot":
             if not browser_agent.driver:
                 return (
-                    jsonify(
+                    flask.jsonify(
                         {"error": "Browser not initialized. Use navigate action first."}
                     ),
                     400,
@@ -14189,7 +14189,7 @@ def browser_agent_endpoint():
             screenshot_path = f"/tmp/hexstrike_screenshot_{int(time.time())}.png"
             browser_agent.driver.save_screenshot(screenshot_path)
 
-            return jsonify(
+            return flask.jsonify(
                 {
                     "success": True,
                     "screenshot": screenshot_path,
@@ -14200,10 +14200,10 @@ def browser_agent_endpoint():
 
         elif action == "close":
             browser_agent.close_browser()
-            return jsonify({"success": True, "message": "Browser closed successfully"})
+            return flask.jsonify({"success": True, "message": "Browser closed successfully"})
 
         elif action == "status":
-            return jsonify(
+            return flask.jsonify(
                 {
                     "success": True,
                     "browser_active": browser_agent.driver is not None,
@@ -14213,19 +14213,19 @@ def browser_agent_endpoint():
             )
 
         else:
-            return jsonify({"error": f"Unknown action: {action}"}), 400
+            return flask.jsonify({"error": f"Unknown action: {action}"}), 400
 
     except Exception as e:
         logger.error(
             f"{ModernVisualEngine.format_error_card('ERROR', 'BrowserAgent', str(e))}"
         )
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/tools/burpsuite-alternative", methods=["POST"])
 def burpsuite_alternative():
     """Comprehensive Burp Suite alternative combining HTTP framework and browser agent"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         scan_type = params.get("scan_type", "comprehensive")  # comprehensive, spider, passive, active
         headless = params.get("headless", True)
@@ -14233,7 +14233,7 @@ def burpsuite_alternative():
         max_pages = params.get("max_pages", 50)
 
         if not target:
-            return jsonify({"error": "Target parameter is required"}), 400
+            return flask.jsonify({"error": "Target parameter is required"}), 400
 
         logger.info(f"{ModernVisualEngine.create_section_header('BURP SUITE ALTERNATIVE', '🔥', 'BLOOD_RED')}")
         scan_message = f'Starting {scan_type} scan of {target}'
@@ -14305,13 +14305,13 @@ def burpsuite_alternative():
         for severity, count in vuln_summary.items():
             logger.info(f"  {ModernVisualEngine.format_vulnerability_severity(severity, count)}")
 
-        return jsonify(results)
+        return flask.jsonify(results)
 
     except Exception as e:
         logger.error(f"{ModernVisualEngine.format_error_card('CRITICAL', 'BurpAlternative', str(e))}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
         logger.error(f"💥 Error in burpsuite endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14319,7 +14319,7 @@ def burpsuite_alternative():
 def zap():
     """Execute OWASP ZAP with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         scan_type = params.get("scan_type", "baseline")
         api_key = params.get("api_key", "")
@@ -14332,7 +14332,7 @@ def zap():
 
         if not target and scan_type != "daemon":
             logger.warning("🎯 ZAP called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required for scans"
             }), 400
 
@@ -14358,10 +14358,10 @@ def zap():
         logger.info(f"🔍 Starting ZAP scan: {target}")
         result = execute_command(command)
         logger.info(f"📊 ZAP scan completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in zap endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14369,13 +14369,13 @@ def zap():
 def wafw00f():
     """Execute wafw00f to identify and fingerprint WAF products with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         target = params.get("target", "")
         additional_args = params.get("additional_args", "")
 
         if not target:
             logger.warning("🛡️ Wafw00f called without target parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Target parameter is required"
             }), 400
 
@@ -14387,10 +14387,10 @@ def wafw00f():
         logger.info(f"🛡️ Starting Wafw00f WAF detection: {target}")
         result = execute_command(command)
         logger.info(f"📊 Wafw00f completed for {target}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in wafw00f endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14398,14 +14398,14 @@ def wafw00f():
 def fierce():
     """Execute fierce for DNS reconnaissance with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         dns_server = params.get("dns_server", "")
         additional_args = params.get("additional_args", "")
 
         if not domain:
             logger.warning("🌐 Fierce called without domain parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Domain parameter is required"
             }), 400
 
@@ -14420,10 +14420,10 @@ def fierce():
         logger.info(f"🔍 Starting Fierce DNS recon: {domain}")
         result = execute_command(command)
         logger.info(f"📊 Fierce completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in fierce endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14431,7 +14431,7 @@ def fierce():
 def dnsenum():
     """Execute dnsenum for DNS enumeration with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         domain = params.get("domain", "")
         dns_server = params.get("dns_server", "")
         wordlist = params.get("wordlist", "")
@@ -14439,7 +14439,7 @@ def dnsenum():
 
         if not domain:
             logger.warning("🌐 DNSenum called without domain parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Domain parameter is required"
             }), 400
 
@@ -14457,10 +14457,10 @@ def dnsenum():
         logger.info(f"🔍 Starting DNSenum: {domain}")
         result = execute_command(command)
         logger.info(f"📊 DNSenum completed for {domain}")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in dnsenum endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14469,48 +14469,48 @@ def dnsenum():
 def install_python_package():
     """Install a Python package in a virtual environment"""
     try:
-        params = request.json
+        params = flask.request.json
         package = params.get("package", "")
         env_name = params.get("env_name", "default")
 
         if not package:
-            return jsonify({"error": "Package name is required"}), 400
+            return flask.jsonify({"error": "Package name is required"}), 400
 
         logger.info(f"📦 Installing Python package: {package} in env {env_name}")
         success = env_manager.install_package(env_name, package)
 
         if success:
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "message": f"Package {package} installed successfully",
                 "env_name": env_name
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to install package {package}"
             }), 500
 
     except Exception as e:
         logger.error(f"💥 Error installing Python package: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/python/execute", methods=["POST"])
 def execute_python_script():
     """Execute a Python script in a virtual environment"""
     try:
-        params = request.json
+        params = flask.request.json
         script = params.get("script", "")
         env_name = params.get("env_name", "default")
         filename = params.get("filename", f"script_{int(time.time())}.py")
 
         if not script:
-            return jsonify({"error": "Script content is required"}), 400
+            return flask.jsonify({"error": "Script content is required"}), 400
 
         # Create script file
         script_result = file_manager.create_file(filename, script)
         if not script_result["success"]:
-            return jsonify(script_result), 500
+            return flask.jsonify(script_result), 500
 
         # Get Python path for environment
         python_path = env_manager.get_python_path(env_name)
@@ -14527,11 +14527,11 @@ def execute_python_script():
         result["env_name"] = env_name
         result["script_filename"] = filename
         logger.info(f"📊 Python script execution completed")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error executing Python script: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # AI-POWERED PAYLOAD GENERATION (v5.0 ENHANCEMENT) UNDER DEVELOPMENT
@@ -14750,7 +14750,7 @@ ai_payload_generator = AIPayloadGenerator()
 def ai_generate_payload():
     """Generate AI-powered contextual payloads for security testing"""
     try:
-        params = request.json
+        params = flask.request.json
         target_info = {
             "attack_type": params.get("attack_type", "xss"),
             "complexity": params.get("complexity", "basic"),
@@ -14763,7 +14763,7 @@ def ai_generate_payload():
 
         logger.info(f"✅ Generated {result['payload_count']} contextual payloads")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "ai_payload_generation": result,
             "timestamp": datetime.now().isoformat()
@@ -14771,7 +14771,7 @@ def ai_generate_payload():
 
     except Exception as e:
         logger.error(f"💥 Error in AI payload generation: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -14780,13 +14780,13 @@ def ai_generate_payload():
 def ai_test_payload():
     """Test generated payload against target with AI analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         payload = params.get("payload", "")
         target_url = params.get("target_url", "")
         method = params.get("method", "GET")
 
         if not payload or not target_url:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "Payload and target_url are required"
             }), 400
@@ -14820,7 +14820,7 @@ def ai_test_payload():
 
         logger.info(f"🔍 Payload test completed | Potential vuln: {analysis['potential_vulnerability']}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "test_result": result,
             "ai_analysis": analysis,
@@ -14829,7 +14829,7 @@ def ai_test_payload():
 
     except Exception as e:
         logger.error(f"💥 Error in AI payload testing: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -14842,7 +14842,7 @@ def ai_test_payload():
 def api_fuzzer():
     """Advanced API endpoint fuzzing with intelligent parameter discovery"""
     try:
-        params = request.json
+        params = flask.request.json
         base_url = params.get("base_url", "")
         endpoints = params.get("endpoints", [])
         methods = params.get("methods", ["GET", "POST", "PUT", "DELETE"])
@@ -14850,7 +14850,7 @@ def api_fuzzer():
 
         if not base_url:
             logger.warning("🌐 API Fuzzer called without base_url parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Base URL parameter is required"
             }), 400
 
@@ -14870,7 +14870,7 @@ def api_fuzzer():
                     })
 
             logger.info(f"🔍 API endpoint testing completed for {len(endpoints)} endpoints")
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "fuzzing_type": "endpoint_testing",
                 "results": results
@@ -14883,7 +14883,7 @@ def api_fuzzer():
             result = execute_command(command)
             logger.info(f"📊 API endpoint discovery completed")
 
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "fuzzing_type": "endpoint_discovery",
                 "result": result
@@ -14891,7 +14891,7 @@ def api_fuzzer():
 
     except Exception as e:
         logger.error(f"💥 Error in API fuzzer: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -14899,7 +14899,7 @@ def api_fuzzer():
 def graphql_scanner():
     """Advanced GraphQL security scanning and introspection"""
     try:
-        params = request.json
+        params = flask.request.json
         endpoint = params.get("endpoint", "")
         introspection = params.get("introspection", True)
         query_depth = params.get("query_depth", 10)
@@ -14907,7 +14907,7 @@ def graphql_scanner():
 
         if not endpoint:
             logger.warning("🌐 GraphQL Scanner called without endpoint parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "GraphQL endpoint parameter is required"
             }), 400
 
@@ -14991,14 +14991,14 @@ def graphql_scanner():
 
         logger.info(f"📊 GraphQL scan completed | Vulnerabilities found: {len(results['vulnerabilities'])}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "graphql_scan_results": results
         })
 
     except Exception as e:
         logger.error(f"💥 Error in GraphQL scanner: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15006,13 +15006,13 @@ def graphql_scanner():
 def jwt_analyzer():
     """Advanced JWT token analysis and vulnerability testing"""
     try:
-        params = request.json
+        params = flask.request.json
         jwt_token = params.get("jwt_token", "")
         target_url = params.get("target_url", "")
 
         if not jwt_token:
             logger.warning("🔐 JWT Analyzer called without jwt_token parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "JWT token parameter is required"
             }), 400
 
@@ -15109,14 +15109,14 @@ def jwt_analyzer():
 
         logger.info(f"📊 JWT analysis completed | Vulnerabilities found: {len(results['vulnerabilities'])}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "jwt_analysis_results": results
         })
 
     except Exception as e:
         logger.error(f"💥 Error in JWT analyzer: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15124,13 +15124,13 @@ def jwt_analyzer():
 def api_schema_analyzer():
     """Analyze API schemas and identify potential security issues"""
     try:
-        params = request.json
+        params = flask.request.json
         schema_url = params.get("schema_url", "")
         schema_type = params.get("schema_type", "openapi")  # openapi, swagger, graphql
 
         if not schema_url:
             logger.warning("📋 API Schema Analyzer called without schema_url parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Schema URL parameter is required"
             }), 400
 
@@ -15141,7 +15141,7 @@ def api_schema_analyzer():
         result = execute_command(command, use_cache=True)
 
         if not result.get("success"):
-            return jsonify({
+            return flask.jsonify({
                 "error": "Failed to fetch API schema"
             }), 400
 
@@ -15217,14 +15217,14 @@ def api_schema_analyzer():
 
         logger.info(f"📊 Schema analysis completed | Issues found: {len(analysis_results['security_issues'])}")
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "schema_analysis_results": analysis_results
         })
 
     except Exception as e:
         logger.error(f"💥 Error in API schema analyzer: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15236,7 +15236,7 @@ def api_schema_analyzer():
 def volatility3():
     """Execute Volatility3 for advanced memory forensics with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         memory_file = params.get("memory_file", "")
         plugin = params.get("plugin", "")
         output_file = params.get("output_file", "")
@@ -15244,13 +15244,13 @@ def volatility3():
 
         if not memory_file:
             logger.warning("🧠 Volatility3 called without memory_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Memory file parameter is required"
             }), 400
 
         if not plugin:
             logger.warning("🧠 Volatility3 called without plugin parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Plugin parameter is required"
             }), 400
 
@@ -15265,10 +15265,10 @@ def volatility3():
         logger.info(f"🧠 Starting Volatility3 analysis: {plugin}")
         result = execute_command(command)
         logger.info(f"📊 Volatility3 analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in volatility3 endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15276,7 +15276,7 @@ def volatility3():
 def foremost():
     """Execute Foremost for file carving with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         input_file = params.get("input_file", "")
         output_dir = params.get("output_dir", "/tmp/foremost_output")
         file_types = params.get("file_types", "")
@@ -15284,7 +15284,7 @@ def foremost():
 
         if not input_file:
             logger.warning("📁 Foremost called without input_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Input file parameter is required"
             }), 400
 
@@ -15305,10 +15305,10 @@ def foremost():
         result = execute_command(command)
         result["output_directory"] = output_dir
         logger.info(f"📊 Foremost carving completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in foremost endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15316,7 +15316,7 @@ def foremost():
 def steghide():
     """Execute Steghide for steganography analysis with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         action = params.get("action", "extract")  # extract, embed, info
         cover_file = params.get("cover_file", "")
         embed_file = params.get("embed_file", "")
@@ -15326,7 +15326,7 @@ def steghide():
 
         if not cover_file:
             logger.warning("🖼️ Steghide called without cover_file parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Cover file parameter is required"
             }), 400
 
@@ -15336,12 +15336,12 @@ def steghide():
                 command += f" -xf {output_file}"
         elif action == "embed":
             if not embed_file:
-                return jsonify({"error": "Embed file required for embed action"}), 400
+                return flask.jsonify({"error": "Embed file required for embed action"}), 400
             command = f"steghide embed -cf {cover_file} -ef {embed_file}"
         elif action == "info":
             command = f"steghide info {cover_file}"
         else:
-            return jsonify({"error": "Invalid action. Use: extract, embed, info"}), 400
+            return flask.jsonify({"error": "Invalid action. Use: extract, embed, info"}), 400
 
         if passphrase:
             command += f" -p {passphrase}"
@@ -15354,10 +15354,10 @@ def steghide():
         logger.info(f"🖼️ Starting Steghide {action}: {cover_file}")
         result = execute_command(command)
         logger.info(f"📊 Steghide {action} completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in steghide endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15365,7 +15365,7 @@ def steghide():
 def exiftool():
     """Execute ExifTool for metadata extraction with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         file_path = params.get("file_path", "")
         output_format = params.get("output_format", "")  # json, xml, csv
         tags = params.get("tags", "")
@@ -15373,7 +15373,7 @@ def exiftool():
 
         if not file_path:
             logger.warning("📷 ExifTool called without file_path parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "File path parameter is required"
             }), 400
 
@@ -15393,10 +15393,10 @@ def exiftool():
         logger.info(f"📷 Starting ExifTool analysis: {file_path}")
         result = execute_command(command)
         logger.info(f"📊 ExifTool analysis completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in exiftool endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15404,7 +15404,7 @@ def exiftool():
 def hashpump():
     """Execute HashPump for hash length extension attacks with enhanced logging"""
     try:
-        params = request.json
+        params = flask.request.json
         signature = params.get("signature", "")
         data = params.get("data", "")
         key_length = params.get("key_length", "")
@@ -15413,7 +15413,7 @@ def hashpump():
 
         if not all([signature, data, key_length, append_data]):
             logger.warning("🔐 HashPump called without required parameters")
-            return jsonify({
+            return flask.jsonify({
                 "error": "Signature, data, key_length, and append_data parameters are required"
             }), 400
 
@@ -15425,10 +15425,10 @@ def hashpump():
         logger.info(f"🔐 Starting HashPump attack")
         result = execute_command(command)
         logger.info(f"📊 HashPump attack completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in hashpump endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15450,7 +15450,7 @@ def hakrawler():
     - -subs for subdomain inclusion
     """
     try:
-        params = request.json
+        params = flask.request.json
         url = params.get("url", "")
         depth = params.get("depth", 2)
         forms = params.get("forms", True)
@@ -15461,7 +15461,7 @@ def hakrawler():
 
         if not url:
             logger.warning("🕷️ Hakrawler called without URL parameter")
-            return jsonify({
+            return flask.jsonify({
                 "error": "URL parameter is required"
             }), 400
 
@@ -15482,10 +15482,10 @@ def hakrawler():
         logger.info(f"🕷️ Starting Hakrawler crawling: {url}")
         result = execute_command(command)
         logger.info(f"📊 Hakrawler crawling completed")
-        return jsonify(result)
+        return flask.jsonify(result)
     except Exception as e:
         logger.error(f"💥 Error in hakrawler endpoint: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
 
@@ -15497,7 +15497,7 @@ def hakrawler():
 def cve_monitor():
     """Monitor CVE databases for new vulnerabilities with AI analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         hours = params.get("hours", 24)
         severity_filter = params.get("severity_filter", "HIGH,CRITICAL")
         keywords = params.get("keywords", "")
@@ -15538,11 +15538,11 @@ def cve_monitor():
         }
 
         logger.info(f"📊 CVE monitoring completed | Found: {len(cve_results.get('cves', []))} CVEs")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in CVE monitoring: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -15551,7 +15551,7 @@ def cve_monitor():
 def exploit_generate():
     """Generate exploits from vulnerability data using AI"""
     try:
-        params = request.json
+        params = flask.request.json
         cve_id = params.get("cve_id", "")
         target_os = params.get("target_os", "")
         target_arch = params.get("target_arch", "x64")
@@ -15571,7 +15571,7 @@ def exploit_generate():
 
         if not cve_id:
             logger.warning("🤖 Exploit generation called without CVE ID")
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "CVE ID parameter is required"
             }), 400
@@ -15582,7 +15582,7 @@ def exploit_generate():
         cve_analysis = cve_intelligence.analyze_cve_exploitability(cve_id)
 
         if not cve_analysis.get("success"):
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to analyze CVE {cve_id}: {cve_analysis.get('error', 'Unknown error')}"
             }), 400
@@ -15611,11 +15611,11 @@ def exploit_generate():
         }
 
         logger.info(f"🎯 Exploit generation completed for {cve_id}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in exploit generation: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -15624,14 +15624,14 @@ def exploit_generate():
 def discover_attack_chains():
     """Discover multi-stage attack possibilities"""
     try:
-        params = request.json
+        params = flask.request.json
         target_software = params.get("target_software", "")
         attack_depth = params.get("attack_depth", 3)
         include_zero_days = params.get("include_zero_days", False)
 
         if not target_software:
             logger.warning("🔗 Attack chain discovery called without target software")
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "Target software parameter is required"
             }), 400
@@ -15688,11 +15688,11 @@ def discover_attack_chains():
         }
 
         logger.info(f"🎯 Attack chain discovery completed | Found: {len(chain_results.get('attack_chains', []))} chains")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in attack chain discovery: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -15701,7 +15701,7 @@ def discover_attack_chains():
 def threat_intelligence_feeds():
     """Aggregate and correlate threat intelligence from multiple sources"""
     try:
-        params = request.json
+        params = flask.request.json
         indicators = params.get("indicators", [])
         timeframe = params.get("timeframe", "30d")
         sources = params.get("sources", "all")
@@ -15711,7 +15711,7 @@ def threat_intelligence_feeds():
 
         if not indicators:
             logger.warning("🧠 Threat intelligence called without indicators")
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "Indicators parameter is required"
             }), 400
@@ -15823,11 +15823,11 @@ def threat_intelligence_feeds():
         }
 
         logger.info(f"🎯 Threat intelligence correlation completed | Threat Score: {correlation_results['threat_score']:.1f}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in threat intelligence: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -15836,14 +15836,14 @@ def threat_intelligence_feeds():
 def zero_day_research():
     """Automated zero-day vulnerability research using AI analysis"""
     try:
-        params = request.json
+        params = flask.request.json
         target_software = params.get("target_software", "")
         analysis_depth = params.get("analysis_depth", "standard")
         source_code_url = params.get("source_code_url", "")
 
         if not target_software:
             logger.warning("🔬 Zero-day research called without target software")
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "Target software parameter is required"
             }), 400
@@ -15962,11 +15962,11 @@ def zero_day_research():
         }
 
         logger.info(f"🎯 Zero-day research completed | Risk Score: {research_results['risk_assessment']['risk_score']}")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in zero-day research: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -15975,7 +15975,7 @@ def zero_day_research():
 def advanced_payload_generation():
     """Generate advanced payloads with AI-powered evasion techniques"""
     try:
-        params = request.json
+        params = flask.request.json
         attack_type = params.get("attack_type", "rce")
         target_context = params.get("target_context", "")
         evasion_level = params.get("evasion_level", "standard")
@@ -15983,7 +15983,7 @@ def advanced_payload_generation():
 
         if not attack_type:
             logger.warning("🎯 Advanced payload generation called without attack type")
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": "Attack type parameter is required"
             }), 400
@@ -16100,11 +16100,11 @@ def advanced_payload_generation():
         }
 
         logger.info(f"🎯 Advanced payload generation completed | Generated: {len(advanced_payloads)} payloads")
-        return jsonify(result)
+        return flask.jsonify(result)
 
     except Exception as e:
         logger.error(f"💥 Error in advanced payload generation: {str(e)}")
-        return jsonify({
+        return flask.jsonify({
             "success": False,
             "error": f"Server error: {str(e)}"
         }), 500
@@ -16117,7 +16117,7 @@ def advanced_payload_generation():
 def create_ctf_challenge_workflow():
     """Create specialized workflow for CTF challenge"""
     try:
-        params = request.json
+        params = flask.request.json
         challenge_name = params.get("name", "")
         category = params.get("category", "misc")
         difficulty = params.get("difficulty", "unknown")
@@ -16126,7 +16126,7 @@ def create_ctf_challenge_workflow():
         target = params.get("target", "")
 
         if not challenge_name:
-            return jsonify({"error": "Challenge name is required"}), 400
+            return flask.jsonify({"error": "Challenge name is required"}), 400
 
         # Create CTF challenge object
         challenge = CTFChallenge(
@@ -16142,7 +16142,7 @@ def create_ctf_challenge_workflow():
         workflow = ctf_manager.create_ctf_challenge_workflow(challenge)
 
         logger.info(f"🎯 CTF workflow created for {challenge_name} | Category: {category} | Difficulty: {difficulty}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "workflow": workflow,
             "challenge": challenge.to_dict(),
@@ -16151,13 +16151,13 @@ def create_ctf_challenge_workflow():
 
     except Exception as e:
         logger.error(f"💥 Error creating CTF workflow: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/auto-solve-challenge", methods=["POST"])
 def auto_solve_ctf_challenge():
     """Attempt to automatically solve a CTF challenge"""
     try:
-        params = request.json
+        params = flask.request.json
         challenge_name = params.get("name", "")
         category = params.get("category", "misc")
         difficulty = params.get("difficulty", "unknown")
@@ -16166,7 +16166,7 @@ def auto_solve_ctf_challenge():
         target = params.get("target", "")
 
         if not challenge_name:
-            return jsonify({"error": "Challenge name is required"}), 400
+            return flask.jsonify({"error": "Challenge name is required"}), 400
 
         # Create CTF challenge object
         challenge = CTFChallenge(
@@ -16182,7 +16182,7 @@ def auto_solve_ctf_challenge():
         result = ctf_automator.auto_solve_challenge(challenge)
 
         logger.info(f"🤖 CTF auto-solve attempted for {challenge_name} | Status: {result['status']}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "solve_result": result,
             "challenge": challenge.to_dict(),
@@ -16191,18 +16191,18 @@ def auto_solve_ctf_challenge():
 
     except Exception as e:
         logger.error(f"💥 Error in CTF auto-solve: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/team-strategy", methods=["POST"])
 def create_ctf_team_strategy():
     """Create optimal team strategy for CTF competition"""
     try:
-        params = request.json
+        params = flask.request.json
         challenges_data = params.get("challenges", [])
         team_skills = params.get("team_skills", {})
 
         if not challenges_data:
-            return jsonify({"error": "Challenges data is required"}), 400
+            return flask.jsonify({"error": "Challenges data is required"}), 400
 
         # Convert challenge data to CTFChallenge objects
         challenges = []
@@ -16221,7 +16221,7 @@ def create_ctf_team_strategy():
         strategy = ctf_coordinator.optimize_team_strategy(challenges, team_skills)
 
         logger.info(f"👥 CTF team strategy created | Challenges: {len(challenges)} | Team members: {len(team_skills)}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "strategy": strategy,
             "challenges_count": len(challenges),
@@ -16231,18 +16231,18 @@ def create_ctf_team_strategy():
 
     except Exception as e:
         logger.error(f"💥 Error creating CTF team strategy: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/suggest-tools", methods=["POST"])
 def suggest_ctf_tools():
     """Suggest optimal tools for CTF challenge based on description and category"""
     try:
-        params = request.json
+        params = flask.request.json
         description = params.get("description", "")
         category = params.get("category", "misc")
 
         if not description:
-            return jsonify({"error": "Challenge description is required"}), 400
+            return flask.jsonify({"error": "Challenge description is required"}), 400
 
         # Get tool suggestions
         suggested_tools = ctf_tools.suggest_tools_for_challenge(description, category)
@@ -16257,7 +16257,7 @@ def suggest_ctf_tools():
                 tool_commands[tool] = f"{tool} TARGET"
 
         logger.info(f"🔧 CTF tools suggested | Category: {category} | Tools: {len(suggested_tools)}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "suggested_tools": suggested_tools,
             "category_tools": category_tools,
@@ -16268,13 +16268,13 @@ def suggest_ctf_tools():
 
     except Exception as e:
         logger.error(f"💥 Error suggesting CTF tools: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/cryptography-solver", methods=["POST"])
 def ctf_cryptography_solver():
     """Advanced cryptography challenge solver with multiple attack methods"""
     try:
-        params = request.json
+        params = flask.request.json
         cipher_text = params.get("cipher_text", "")
         cipher_type = params.get("cipher_type", "unknown")
         key_hint = params.get("key_hint", "")
@@ -16282,7 +16282,7 @@ def ctf_cryptography_solver():
         additional_info = params.get("additional_info", "")
 
         if not cipher_text:
-            return jsonify({"error": "Cipher text is required"}), 400
+            return flask.jsonify({"error": "Cipher text is required"}), 400
 
         results = {
             "cipher_text": cipher_text,
@@ -16358,7 +16358,7 @@ def ctf_cryptography_solver():
             ])
 
         logger.info(f"🔐 CTF crypto analysis completed | Type: {cipher_type} | Tools: {len(results['recommended_tools'])}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "analysis": results,
             "timestamp": datetime.now().isoformat()
@@ -16366,20 +16366,20 @@ def ctf_cryptography_solver():
 
     except Exception as e:
         logger.error(f"💥 Error in CTF crypto solver: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/forensics-analyzer", methods=["POST"])
 def ctf_forensics_analyzer():
     """Advanced forensics challenge analyzer with multiple investigation techniques"""
     try:
-        params = request.json
+        params = flask.request.json
         file_path = params.get("file_path", "")
         analysis_type = params.get("analysis_type", "comprehensive")
         extract_hidden = params.get("extract_hidden", True)
         check_steganography = params.get("check_steganography", True)
 
         if not file_path:
-            return jsonify({"error": "File path is required"}), 400
+            return flask.jsonify({"error": "File path is required"}), 400
 
         results = {
             "file_path": file_path,
@@ -16501,7 +16501,7 @@ def ctf_forensics_analyzer():
             })
 
         logger.info(f"🔍 CTF forensics analysis completed | File: {file_path} | Tools used: {len(results['recommended_tools'])}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "analysis": results,
             "timestamp": datetime.now().isoformat()
@@ -16509,20 +16509,20 @@ def ctf_forensics_analyzer():
 
     except Exception as e:
         logger.error(f"💥 Error in CTF forensics analyzer: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/ctf/binary-analyzer", methods=["POST"])
 def ctf_binary_analyzer():
     """Advanced binary analysis for reverse engineering and pwn challenges"""
     try:
-        params = request.json
+        params = flask.request.json
         binary_path = params.get("binary_path", "")
         analysis_depth = params.get("analysis_depth", "comprehensive")  # basic, comprehensive, deep
         check_protections = params.get("check_protections", True)
         find_gadgets = params.get("find_gadgets", True)
 
         if not binary_path:
-            return jsonify({"error": "Binary path is required"}), 400
+            return flask.jsonify({"error": "Binary path is required"}), 400
 
         results = {
             "binary_path": binary_path,
@@ -16677,7 +16677,7 @@ def ctf_binary_analyzer():
             results["recommended_tools"].append("format-string-exploiter")
 
         logger.info(f"🔬 CTF binary analysis completed | Binary: {binary_path} | Hints: {len(results['exploitation_hints'])}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "analysis": results,
             "timestamp": datetime.now().isoformat()
@@ -16685,7 +16685,7 @@ def ctf_binary_analyzer():
 
     except Exception as e:
         logger.error(f"💥 Error in CTF binary analyzer: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # ADVANCED PROCESS MANAGEMENT API ENDPOINTS (v10.0 ENHANCEMENT)
@@ -16695,18 +16695,18 @@ def ctf_binary_analyzer():
 def execute_command_async():
     """Execute command asynchronously using enhanced process management"""
     try:
-        params = request.json
+        params = flask.request.json
         command = params.get("command", "")
         context = params.get("context", {})
 
         if not command:
-            return jsonify({"error": "Command parameter is required"}), 400
+            return flask.jsonify({"error": "Command parameter is required"}), 400
 
         # Execute command asynchronously
         task_id = enhanced_process_manager.execute_command_async(command, context)
 
         logger.info(f"🚀 Async command execution started | Task ID: {task_id}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "task_id": task_id,
             "command": command,
@@ -16716,7 +16716,7 @@ def execute_command_async():
 
     except Exception as e:
         logger.error(f"💥 Error in async command execution: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/get-task-result/<task_id>", methods=["GET"])
 def get_async_task_result(task_id):
@@ -16725,10 +16725,10 @@ def get_async_task_result(task_id):
         result = enhanced_process_manager.get_task_result(task_id)
 
         if result["status"] == "not_found":
-            return jsonify({"error": "Task not found"}), 404
+            return flask.jsonify({"error": "Task not found"}), 404
 
         logger.info(f"📋 Task result retrieved | Task ID: {task_id} | Status: {result['status']}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "task_id": task_id,
             "result": result,
@@ -16737,7 +16737,7 @@ def get_async_task_result(task_id):
 
     except Exception as e:
         logger.error(f"💥 Error getting task result: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/pool-stats", methods=["GET"])
 def get_process_pool_stats():
@@ -16746,7 +16746,7 @@ def get_process_pool_stats():
         stats = enhanced_process_manager.get_comprehensive_stats()
 
         logger.info(f"📊 Process pool stats retrieved | Active workers: {stats['process_pool']['active_workers']}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "stats": stats,
             "timestamp": datetime.now().isoformat()
@@ -16754,7 +16754,7 @@ def get_process_pool_stats():
 
     except Exception as e:
         logger.error(f"💥 Error getting pool stats: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/cache-stats", methods=["GET"])
 def get_cache_stats():
@@ -16763,7 +16763,7 @@ def get_cache_stats():
         cache_stats = enhanced_process_manager.cache.get_stats()
 
         logger.info(f"💾 Cache stats retrieved | Hit rate: {cache_stats['hit_rate']:.1f}%")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "cache_stats": cache_stats,
             "timestamp": datetime.now().isoformat()
@@ -16771,7 +16771,7 @@ def get_cache_stats():
 
     except Exception as e:
         logger.error(f"💥 Error getting cache stats: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/clear-cache", methods=["POST"])
 def clear_process_cache():
@@ -16780,7 +16780,7 @@ def clear_process_cache():
         enhanced_process_manager.cache.clear()
 
         logger.info("🧹 Process cache cleared")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "message": "Cache cleared successfully",
             "timestamp": datetime.now().isoformat()
@@ -16788,7 +16788,7 @@ def clear_process_cache():
 
     except Exception as e:
         logger.error(f"💥 Error clearing cache: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/resource-usage", methods=["GET"])
 def get_resource_usage():
@@ -16798,7 +16798,7 @@ def get_resource_usage():
         usage_trends = enhanced_process_manager.resource_monitor.get_usage_trends()
 
         logger.info(f"📈 Resource usage retrieved | CPU: {current_usage['cpu_percent']:.1f}% | Memory: {current_usage['memory_percent']:.1f}%")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "current_usage": current_usage,
             "usage_trends": usage_trends,
@@ -16807,7 +16807,7 @@ def get_resource_usage():
 
     except Exception as e:
         logger.error(f"💥 Error getting resource usage: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/performance-dashboard", methods=["GET"])
 def get_performance_dashboard():
@@ -16832,7 +16832,7 @@ def get_performance_dashboard():
         }
 
         logger.info(f"📊 Performance dashboard retrieved | Success rate: {dashboard_data.get('success_rate', 0):.1f}%")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "dashboard": dashboard,
             "timestamp": datetime.now().isoformat()
@@ -16840,27 +16840,27 @@ def get_performance_dashboard():
 
     except Exception as e:
         logger.error(f"💥 Error getting performance dashboard: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/terminate-gracefully/<int:pid>", methods=["POST"])
 def terminate_process_gracefully(pid):
     """Terminate process with graceful degradation"""
     try:
-        params = request.json or {}
+        params = flask.request.json or {}
         timeout = params.get("timeout", 30)
 
         success = enhanced_process_manager.terminate_process_gracefully(pid, timeout)
 
         if success:
             logger.info(f"✅ Process {pid} terminated gracefully")
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "message": f"Process {pid} terminated successfully",
                 "pid": pid,
                 "timestamp": datetime.now().isoformat()
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": False,
                 "error": f"Failed to terminate process {pid}",
                 "pid": pid,
@@ -16869,13 +16869,13 @@ def terminate_process_gracefully(pid):
 
     except Exception as e:
         logger.error(f"💥 Error terminating process {pid}: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/auto-scaling", methods=["POST"])
 def configure_auto_scaling():
     """Configure auto-scaling settings"""
     try:
-        params = request.json
+        params = flask.request.json
         enabled = params.get("enabled", True)
         thresholds = params.get("thresholds", {})
 
@@ -16886,7 +16886,7 @@ def configure_auto_scaling():
             enhanced_process_manager.resource_thresholds.update(thresholds)
 
         logger.info(f"⚙️ Auto-scaling configured | Enabled: {enabled}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "auto_scaling_enabled": enabled,
             "resource_thresholds": enhanced_process_manager.resource_thresholds,
@@ -16895,18 +16895,18 @@ def configure_auto_scaling():
 
     except Exception as e:
         logger.error(f"💥 Error configuring auto-scaling: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/scale-pool", methods=["POST"])
 def manual_scale_pool():
     """Manually scale the process pool"""
     try:
-        params = request.json
+        params = flask.request.json
         action = params.get("action", "")  # "up" or "down"
         count = params.get("count", 1)
 
         if action not in ["up", "down"]:
-            return jsonify({"error": "Action must be 'up' or 'down'"}), 400
+            return flask.jsonify({"error": "Action must be 'up' or 'down'"}), 400
 
         current_stats = enhanced_process_manager.process_pool.get_pool_stats()
         current_workers = current_stats["active_workers"]
@@ -16918,7 +16918,7 @@ def manual_scale_pool():
                 new_workers = current_workers + count
                 message = f"Scaled up by {count} workers"
             else:
-                return jsonify({"error": f"Cannot scale up: would exceed max workers ({max_workers})"}), 400
+                return flask.jsonify({"error": f"Cannot scale up: would exceed max workers ({max_workers})"}), 400
         else:  # down
             min_workers = enhanced_process_manager.process_pool.min_workers
             if current_workers - count >= min_workers:
@@ -16926,10 +16926,10 @@ def manual_scale_pool():
                 new_workers = current_workers - count
                 message = f"Scaled down by {count} workers"
             else:
-                return jsonify({"error": f"Cannot scale down: would go below min workers ({min_workers})"}), 400
+                return flask.jsonify({"error": f"Cannot scale down: would go below min workers ({min_workers})"}), 400
 
         logger.info(f"📏 Manual scaling | {message} | Workers: {current_workers} → {new_workers}")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "message": message,
             "previous_workers": current_workers,
@@ -16939,7 +16939,7 @@ def manual_scale_pool():
 
     except Exception as e:
         logger.error(f"💥 Error scaling pool: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/process/health-check", methods=["GET"])
 def process_health_check():
@@ -17023,7 +17023,7 @@ def process_health_check():
             health_report["recommendations"].append("Review cache TTL settings or increase cache size")
 
         logger.info(f"🏥 Health check completed | Status: {status} | Score: {health_score}/100")
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "health_report": health_report,
             "timestamp": datetime.now().isoformat()
@@ -17031,7 +17031,7 @@ def process_health_check():
 
     except Exception as e:
         logger.error(f"💥 Error in health check: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # ============================================================================
 # BANNER AND STARTUP CONFIGURATION
@@ -17046,20 +17046,20 @@ def get_error_statistics():
     """Get error handling statistics"""
     try:
         stats = error_handler.get_error_statistics()
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "statistics": stats,
             "timestamp": datetime.now().isoformat()
         })
     except Exception as e:
         logger.error(f"Error getting error statistics: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/test-recovery", methods=["POST"])
 def test_error_recovery():
     """Test error recovery system with simulated failures"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         tool_name = data.get("tool_name", "nmap")
         error_type = data.get("error_type", "timeout")
         target = data.get("target", "example.com")
@@ -17083,7 +17083,7 @@ def test_error_recovery():
         # Get recovery strategy
         recovery_strategy = error_handler.handle_tool_failure(tool_name, exception, context)
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "recovery_strategy": {
                 "action": recovery_strategy.action.value,
@@ -17099,18 +17099,18 @@ def test_error_recovery():
 
     except Exception as e:
         logger.error(f"Error testing recovery system: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/fallback-chains", methods=["GET"])
 def get_fallback_chains():
     """Get available fallback tool chains"""
     try:
-        operation = request.args.get("operation", "")
-        failed_tools = request.args.getlist("failed_tools")
+        operation = flask.request.args.get("operation", "")
+        failed_tools = flask.request.args.getlist("failed_tools")
 
         if operation:
             fallback_chain = degradation_manager.create_fallback_chain(operation, failed_tools)
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "operation": operation,
                 "fallback_chain": fallback_chain,
@@ -17118,7 +17118,7 @@ def get_fallback_chains():
                 "timestamp": datetime.now().isoformat()
             })
         else:
-            return jsonify({
+            return flask.jsonify({
                 "success": True,
                 "available_operations": list(degradation_manager.fallback_chains.keys()),
                 "critical_operations": list(degradation_manager.critical_operations),
@@ -17127,13 +17127,13 @@ def get_fallback_chains():
 
     except Exception as e:
         logger.error(f"Error getting fallback chains: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/execute-with-recovery", methods=["POST"])
 def execute_with_recovery_endpoint():
     """Execute a command with intelligent error handling and recovery"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         tool_name = data.get("tool_name", "")
         command = data.get("command", "")
         parameters = data.get("parameters", {})
@@ -17141,7 +17141,7 @@ def execute_with_recovery_endpoint():
         use_cache = data.get("use_cache", True)
 
         if not tool_name or not command:
-            return jsonify({"error": "tool_name and command are required"}), 400
+            return flask.jsonify({"error": "tool_name and command are required"}), 400
 
         # Execute command with recovery
         result = execute_command_with_recovery(
@@ -17152,7 +17152,7 @@ def execute_with_recovery_endpoint():
             max_attempts=max_attempts
         )
 
-        return jsonify({
+        return flask.jsonify({
             "success": result.get("success", False),
             "result": result,
             "timestamp": datetime.now().isoformat()
@@ -17160,22 +17160,22 @@ def execute_with_recovery_endpoint():
 
     except Exception as e:
         logger.error(f"Error executing command with recovery: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/classify-error", methods=["POST"])
 def classify_error_endpoint():
     """Classify an error message"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         error_message = data.get("error_message", "")
 
         if not error_message:
-            return jsonify({"error": "error_message is required"}), 400
+            return flask.jsonify({"error": "error_message is required"}), 400
 
         error_type = error_handler.classify_error(error_message)
         recovery_strategies = error_handler.recovery_strategies.get(error_type, [])
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "error_type": error_type.value,
             "recovery_strategies": [
@@ -17192,29 +17192,29 @@ def classify_error_endpoint():
 
     except Exception as e:
         logger.error(f"Error classifying error: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/parameter-adjustments", methods=["POST"])
 def get_parameter_adjustments():
     """Get parameter adjustments for a tool and error type"""
     try:
-        data = request.get_json()
+        data = flask.request.get_json()
         tool_name = data.get("tool_name", "")
         error_type_str = data.get("error_type", "")
         original_params = data.get("original_params", {})
 
         if not tool_name or not error_type_str:
-            return jsonify({"error": "tool_name and error_type are required"}), 400
+            return flask.jsonify({"error": "tool_name and error_type are required"}), 400
 
         # Convert string to ErrorType enum
         try:
             error_type = ErrorType(error_type_str)
         except ValueError:
-            return jsonify({"error": f"Invalid error_type: {error_type_str}"}), 400
+            return flask.jsonify({"error": f"Invalid error_type: {error_type_str}"}), 400
 
         adjusted_params = error_handler.auto_adjust_parameters(tool_name, error_type, original_params)
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "tool_name": tool_name,
             "error_type": error_type.value,
@@ -17225,20 +17225,20 @@ def get_parameter_adjustments():
 
     except Exception as e:
         logger.error(f"Error getting parameter adjustments: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route("/api/error-handling/alternative-tools", methods=["GET"])
 def get_alternative_tools():
     """Get alternative tools for a given tool"""
     try:
-        tool_name = request.args.get("tool_name", "")
+        tool_name = flask.request.args.get("tool_name", "")
 
         if not tool_name:
-            return jsonify({"error": "tool_name parameter is required"}), 400
+            return flask.jsonify({"error": "tool_name parameter is required"}), 400
 
         alternatives = error_handler.tool_alternatives.get(tool_name, [])
 
-        return jsonify({
+        return flask.jsonify({
             "success": True,
             "tool_name": tool_name,
             "alternatives": alternatives,
@@ -17248,7 +17248,7 @@ def get_alternative_tools():
 
     except Exception as e:
         logger.error(f"Error getting alternative tools: {str(e)}")
-        return jsonify({"error": f"Server error: {str(e)}"}), 500
+        return flask.jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # Create the banner after all classes are defined
 BANNER = ModernVisualEngine.create_banner()
