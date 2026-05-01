@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { LayerSection } from "@/components/ops/LayerSection";
 import { TaskDetailSheet } from "@/components/ops/TaskDetailSheet";
 import { N8nStatusPanel } from "@/components/ops/N8nStatusPanel";
-import { SecurityToolsPanel } from "@/components/ops/SecurityToolsPanel";
 import { RunAllButton } from "@/components/ops/RunAllButton";
 import { ArtifactViewer } from "@/components/ops/ArtifactViewer";
 import { Toaster } from "@/components/ui/sonner";
@@ -254,10 +253,6 @@ function OpsConsole() {
 
             <div className="animate-fade-in-up stagger-2">
               <N8nStatusPanel />
-            </div>
-
-            <div className="animate-fade-in-up stagger-3">
-              <SecurityToolsPanel />
             </div>
           </div>
 
