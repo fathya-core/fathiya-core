@@ -1,10 +1,21 @@
 {
   "schema_version": "FATHIYA_RETRIEVAL_VALIDATION_v0",
-  "validated_at": "2026-05-15T15:04:00.929025+00:00",
-  "json_files_parsed": 244,
-  "records_created": 243,
+  "validated_at": "2026-05-15T16:23:05.210952+00:00",
+  "status": "IMPORT_BLOCKED",
+  "json_files_parsed": 0,
+  "records_created": 0,
   "missing_paths": [],
   "duplicate_ids": [],
   "empty_titles": [],
-  "status": "PASS"
+  "graph_missing_refs": [],
+  "readme_mismatches": [],
+  "summary_mismatches": [],
+  "checked_sources": {
+    "zip": "/workspace/knowledge/retrieval/FATHIYA_RETRIEVAL_INDEXES_v0.zip",
+    "manifest": "/workspace/knowledge/retrieval/artifacts/FATHIYA_RETRIEVAL_INDEXES_v0/manifest.json"
+  },
+  "next_steps": [
+    "Place a direct archive at knowledge/retrieval/FATHIYA_RETRIEVAL_INDEXES_v0.zip and rerun `python3 knowledge/retrieval/fathiya_retrieval.py import`.",
+    "Or place manifest.json plus chunk_*.b64 files under knowledge/retrieval/artifacts/FATHIYA_RETRIEVAL_INDEXES_v0/ and rerun `python3 knowledge/retrieval/fathiya_retrieval.py import --source chunks`."
+  ]
 }
