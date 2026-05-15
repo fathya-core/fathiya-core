@@ -1,0 +1,64 @@
+{
+  "schema_version": "FATHIYA_RETRIEVAL_INDEX_SUMMARY_v0",
+  "created_at": "2026-05-15T15:04:00.929025+00:00",
+  "source_archive": "FATHIYA_AWARENESS_VAULT_v0_HUB_READY.zip",
+  "counts": {
+    "search_records": 243,
+    "domains": 23,
+    "sensitivities": 7,
+    "types": 11,
+    "graph_neighbor_nodes": 449,
+    "graph_edges": 963
+  },
+  "top_domains": [
+    ["bug_bounty_security", 124],
+    ["bug_bounty", 58],
+    ["tools_automation", 24],
+    ["unknown", 11],
+    ["awareness", 6],
+    ["content_ops", 2],
+    ["crypto", 2],
+    ["repo_integrator_validator", 1],
+    ["deep_research_synthesis", 1],
+    ["string", 1],
+    ["ui_builders", 1],
+    ["cursor", 1],
+    ["datacamp", 1],
+    ["gemini", 1],
+    ["github", 1],
+    ["hexstrike_ai", 1],
+    ["kali_wsl", 1],
+    ["manus", 1],
+    ["mcp", 1],
+    ["n8n", 1]
+  ],
+  "top_sensitivities": [
+    ["restricted_details", 128],
+    ["high", 85],
+    ["unlabeled", 14],
+    ["medium", 11],
+    ["red_zone", 2],
+    ["medium-high", 2],
+    ["low", 1]
+  ],
+  "top_types": [
+    ["knowledge_card", 138],
+    ["tool_workflow_card", 66],
+    ["tools", 13],
+    ["detection_risk_card", 10],
+    ["decisions", 8],
+    ["adapters", 2],
+    ["hub", 2],
+    ["bug_class_safe_card", 1],
+    ["lab_boundary_card", 1],
+    ["cluster_maps", 1],
+    ["coverage", 1]
+  ],
+  "files": [
+    "knowledge/search_index.json",
+    "knowledge/domain_index.json",
+    "knowledge/sensitivity_index.json",
+    "knowledge/type_index.json",
+    "knowledge/graph_neighbors.json"
+  ]
+}
