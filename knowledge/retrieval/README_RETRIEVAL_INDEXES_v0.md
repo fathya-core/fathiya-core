@@ -4,7 +4,9 @@
 Built locally from `FATHIYA_AWARENESS_VAULT_v0_HUB_READY.zip`.
 
 ## Validation
-PASS
+Local build: PASS (see counts below).
+
+Cursor Agent import (vault/hub-ready-v0): IMPORT_BLOCKED — `FATHIYA_RETRIEVAL_INDEXES_v0.zip` was not present in the agent workspace. See `knowledge/retrieval_validation_report.json`.
 
 ## Counts
 - Search records: 243

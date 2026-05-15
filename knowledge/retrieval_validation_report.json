@@ -1,0 +1,29 @@
+{
+  "status": "IMPORT_BLOCKED",
+  "validated_at": "2026-05-15T15:27:26.051712+00:00",
+  "branch": "vault/hub-ready-v0",
+  "import_source": null,
+  "summary": {
+    "reason": "Archive not available in cloud agent workspace; upload zip to repo root and re-run import.",
+    "expected_archive": "FATHIYA_RETRIEVAL_INDEXES_v0.zip",
+    "expected_outputs": [
+      "knowledge/search_index.json",
+      "knowledge/domain_index.json",
+      "knowledge/sensitivity_index.json",
+      "knowledge/type_index.json",
+      "knowledge/graph_neighbors.json",
+      "knowledge/retrieval_index_summary.json"
+    ]
+  },
+  "checks": [
+    {
+      "name": "import_zip_present",
+      "passed": false,
+      "detail": "FATHIYA_RETRIEVAL_INDEXES_v0.zip not found in workspace",
+      "errors": [
+        "searched: FATHIYA_RETRIEVAL_INDEXES_v0.zip",
+        "searched: knowledge/retrieval/FATHIYA_RETRIEVAL_INDEXES_v0.zip"
+      ]
+    }
+  ]
+}
