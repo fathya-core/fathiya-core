@@ -107,8 +107,6 @@ Current registries:
 - agent_registry_v0.json
 - workflow_registry_v0.json
 - tool_contract_registry_v0.json
-
-Required next registries:
 - skill_registry_v0.json
 - machine_task_registry_v0.json
 - model_router_registry_v0.json
@@ -221,14 +219,10 @@ Correction:
 
 ## Immediate next actions
 
-1. Validate all playbook references.
-2. Create missing registry skeletons:
-   - skill_registry_v0.json
-   - machine_task_registry_v0.json
-   - model_router_registry_v0.json
-   - approval_policy_registry_v0.json
-3. Generate Backbone validation report.
-4. Ask Cursor Agent to verify consistency.
+1. ~~Validate all playbook references.~~ Done — Backbone Validation v0.
+2. ~~Create missing registry skeletons.~~ Done — all 7 registries exist.
+3. ~~Generate Backbone validation report.~~ Done — FATHIYA_BACKBONE_VALIDATION_REPORT_v0.
+4. ~~Ask Cursor Agent to verify consistency.~~ Done — automated validation pass.
 5. Then decide: Command Center UI implementation or Memory Retrieval refresh.
 
 ## Decision

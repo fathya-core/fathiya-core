@@ -18,10 +18,12 @@
   ],
   "status_values": ["draft", "queued", "running", "blocked", "completed", "failed", "needs_review"],
   "receipt_policy": {
+    "hub": "required",
     "knowledge_queue": "required_for_batch",
     "research_queue": "required",
     "engineering_queue": "required",
     "automation_queue": "required_before_activation",
+    "model_queue": "required",
     "approval_queue": "always_required"
   }
 }

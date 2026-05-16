@@ -1,0 +1,185 @@
+{
+  "schema_version": "FATHIYA_BACKBONE_VALIDATION_REPORT_v0",
+  "validation_date": "2026-05-16",
+  "branch": "vault/hub-ready-v0",
+  "validator": "cursor_agent",
+  "overall_status": "pass_with_fixes",
+  "summary": {
+    "files_checked": 19,
+    "json_files": 9,
+    "playbooks": 9,
+    "registries": 7,
+    "runtime_files": 2,
+    "architecture_docs": 1,
+    "issues_found": 7,
+    "fixes_applied": 7,
+    "warnings": 3,
+    "blocking_issues": 0
+  },
+  "checks": {
+    "json_parse": {
+      "status": "pass",
+      "files": [
+        "knowledge/registries/agent_registry_v0.json",
+        "knowledge/registries/workflow_registry_v0.json",
+        "knowledge/registries/tool_contract_registry_v0.json",
+        "knowledge/registries/skill_registry_v0.json",
+        "knowledge/registries/machine_task_registry_v0.json",
+        "knowledge/registries/model_router_registry_v0.json",
+        "knowledge/registries/approval_policy_registry_v0.json",
+        "knowledge/runtime/runtime_queue_v0.json",
+        "knowledge/runtime/receipt_ledger_v0.json"
+      ],
+      "all_valid": true
+    },
+    "playbook_chain": {
+      "status": "pass_after_fix",
+      "chain": [
+        {"from": "PB001", "to": "PB002", "valid": true, "fix_applied": "FIX-001"},
+        {"from": "PB002", "to": "PB003", "valid": true},
+        {"from": "PB003", "to": "PB004", "valid": true},
+        {"from": "PB004", "to": "PB005", "valid": true, "fix_applied": "FIX-003"},
+        {"from": "PB005", "to": "PB006", "valid": true},
+        {"from": "PB006", "to": "PB007", "valid": true},
+        {"from": "PB007", "to": "PB008", "valid": true},
+        {"from": "PB008", "to": "PB009", "valid": true},
+        {"from": "PB009", "to": "PB010", "valid": false, "reason": "PB010 paused and not yet created"}
+      ]
+    },
+    "queue_cross_reference": {
+      "status": "pass_after_fix",
+      "defined_queues": ["Hub", "Knowledge Queue", "Research Queue", "Engineering Queue", "Automation Queue", "Model Queue", "Approval Queue"],
+      "referenced_queues": ["Hub", "Knowledge Queue", "Research Queue", "Engineering Queue", "Automation Queue", "Model Queue", "Approval Queue"],
+      "missing_before_fix": ["Hub"],
+      "fix_applied": "FIX-004"
+    },
+    "adapter_cross_reference": {
+      "status": "pass_after_fix",
+      "resolved_adapters": [
+        {"adapter": "fathiya_kernel", "in_agent_registry": true, "status": "ok"},
+        {"adapter": "cursor_agent", "in_agent_registry": true, "in_tool_contracts": true, "status": "ok"},
+        {"adapter": "manus_ai", "in_agent_registry": true, "in_tool_contracts": true, "status": "ok"},
+        {"adapter": "cursor_agent_optional", "in_agent_registry": true, "status": "ok_optional"},
+        {"adapter": "manus_ai_optional", "in_agent_registry": true, "status": "ok_optional"},
+        {"adapter": "gemini_optional", "status": "ok_optional_external"},
+        {"adapter": "perplexity_optional", "status": "ok_optional_external"},
+        {"adapter": "github", "in_tool_contracts": true, "status": "ok"},
+        {"adapter": "n8n", "in_tool_contracts": true, "status": "planned", "fix_applied": "FIX-005"},
+        {"adapter": "zapier_mcp", "in_tool_contracts": true, "status": "planned", "fix_applied": "FIX-005"},
+        {"adapter": "local_scripts", "in_tool_contracts": true, "status": "planned", "fix_applied": "FIX-005"}
+      ]
+    },
+    "tool_contract_fields": {
+      "status": "pass",
+      "required_fields": ["input_schema", "output_schema", "side_effects", "approval_required", "receipt_required", "failure_modes"],
+      "contracts": [
+        {"tool_id": "github_create_or_update_file", "all_fields_present": true},
+        {"tool_id": "cursor_launch_agent", "all_fields_present": true},
+        {"tool_id": "manus_create_task", "all_fields_present": true},
+        {"tool_id": "n8n_workflow", "all_fields_present": true, "status": "planned"},
+        {"tool_id": "zapier_mcp_action", "all_fields_present": true, "status": "planned"},
+        {"tool_id": "local_script_runner", "all_fields_present": true, "status": "planned"}
+      ]
+    },
+    "approval_class_alignment": {
+      "status": "pass",
+      "classes_checked": 6,
+      "playbooks_checked": ["PB003", "PB004", "PB008", "PB009"],
+      "all_side_effects_covered": true,
+      "alignment": [
+        {"side_effect": "draft_classification", "class": "no_approval_draft", "covered_by": ["PB003", "PB004", "PB009"]},
+        {"side_effect": "repo_write", "class": "approval_repo_write", "covered_by": ["PB003", "PB004", "PB008"]},
+        {"side_effect": "email_send", "class": "approval_external_message", "covered_by": ["PB003", "PB004", "PB008", "PB009"]},
+        {"side_effect": "webhook_workflow", "class": "approval_webhook_or_workflow", "covered_by": ["PB003", "PB004", "PB008", "PB009"]},
+        {"side_effect": "market_execution", "class": "approval_market_execution", "covered_by": ["PB003", "PB004", "PB008", "PB009"]},
+        {"side_effect": "target_specific", "class": "approval_target_specific_external", "covered_by": ["PB003", "PB004", "PB008", "PB009"]}
+      ]
+    },
+    "command_center_ui_data_sources": {
+      "status": "pass_after_fix",
+      "sources": [
+        {"path": "knowledge/runtime/runtime_queue_v0.json", "exists": true},
+        {"path": "knowledge/runtime/receipt_ledger_v0.json", "exists": true},
+        {"path": "knowledge/registries/agent_registry_v0.json", "exists": true},
+        {"path": "knowledge/registries/workflow_registry_v0.json", "exists": true},
+        {"path": "knowledge/registries/tool_contract_registry_v0.json", "exists": true},
+        {"path": "knowledge/playbooks/", "exists": true},
+        {"path": "knowledge/retrieval_index_summary.json", "exists": true},
+        {"path": "knowledge/FATHIYA_AWARENESS_STATE.json", "exists": true, "fix_applied": "FIX-006"}
+      ]
+    }
+  },
+  "fixes_applied": [
+    {
+      "fix_id": "FIX-001",
+      "file": "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md",
+      "description": "Corrected next-playbook reference from 'Target Preparation' to 'Agent / Machine / Workflow Intelligence Intake'",
+      "type": "label_correction"
+    },
+    {
+      "fix_id": "FIX-002",
+      "file": "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md",
+      "description": "Standardized heading from 'Next playbook candidate' to 'Next playbook'",
+      "type": "heading_standardization"
+    },
+    {
+      "fix_id": "FIX-003",
+      "file": "knowledge/playbooks/PLAYBOOK_004_TOOL_CONTRACT_RESOLVER.md",
+      "description": "Corrected next-playbook reference from 'Security Target Preparation' to 'Scope & Authorization Preparation'",
+      "type": "label_correction"
+    },
+    {
+      "fix_id": "FIX-004",
+      "file": "knowledge/runtime/runtime_queue_v0.json",
+      "description": "Added missing 'Hub' queue definition referenced by agent_registry, skill_registry, and PB003",
+      "type": "missing_queue"
+    },
+    {
+      "fix_id": "FIX-005",
+      "file": "knowledge/registries/tool_contract_registry_v0.json",
+      "description": "Added planned tool contracts for n8n_workflow, zapier_mcp_action, and local_script_runner",
+      "type": "missing_contracts"
+    },
+    {
+      "fix_id": "FIX-006",
+      "file": "knowledge/FATHIYA_AWARENESS_STATE.json",
+      "description": "Created skeleton awareness state file referenced as UI data source in PB008",
+      "type": "missing_file"
+    },
+    {
+      "fix_id": "FIX-007",
+      "files": [
+        "knowledge/runtime/runtime_queue_v0.json",
+        "knowledge/runtime/receipt_ledger_v0.json",
+        "knowledge/reports/architecture/FATHIYA_OPERATING_BACKBONE_v0.md"
+      ],
+      "description": "Aligned runtime_queue required_entry_fields with PB003 spec; added hub and model_queue to receipt_policy; updated backbone registry list and next actions",
+      "type": "schema_alignment"
+    }
+  ],
+  "warnings": [
+    {
+      "warn_id": "WARN-001",
+      "description": "PB009 references PB010 (Memory Retrieval & Index Refresh) which does not exist yet. Backbone doc declares PB010 paused."
+    },
+    {
+      "warn_id": "WARN-002",
+      "description": "Several external adapters listed in backbone doc (Gmail, Outlook, Webhooks, Files, AI by Zapier, RSS, Zapier Tables, Chrome Extension, Zapier Forms, Zapier Chatbots, Gemini, Perplexity, DataCamp, Kali WSL, HexStrike AI) do not have tool contracts. These are future integrations."
+    },
+    {
+      "warn_id": "WARN-003",
+      "description": "queue_entries and receipts arrays are empty in runtime files. Expected for v0 skeleton."
+    }
+  ],
+  "files_changed": [
+    "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md",
+    "knowledge/playbooks/PLAYBOOK_004_TOOL_CONTRACT_RESOLVER.md",
+    "knowledge/reports/architecture/FATHIYA_OPERATING_BACKBONE_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/registries/tool_contract_registry_v0.json",
+    "knowledge/FATHIYA_AWARENESS_STATE.json",
+    "knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.md",
+    "knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json"
+  ]
+}

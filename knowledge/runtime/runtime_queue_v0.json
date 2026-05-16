@@ -3,6 +3,11 @@
   "status": "draft",
   "purpose": "Track routed work across FATHIYA queues before adapter execution or validation.",
   "queues": {
+    "Hub": {
+      "purpose": "Routing and control decisions managed by FATHIYA Kernel.",
+      "default_approval": false,
+      "allowed_outputs": ["decision", "queue_entry", "artifact_spec", "next_action"]
+    },
     "Knowledge Queue": {
       "purpose": "Convert sources into vault memory.",
       "default_approval": false,
@@ -35,5 +40,5 @@
     }
   },
   "queue_entries": [],
-  "required_entry_fields": ["id", "timestamp", "source", "queue", "adapter", "input", "expected_output", "status", "approval_required", "receipt_path"]
+  "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]
 }

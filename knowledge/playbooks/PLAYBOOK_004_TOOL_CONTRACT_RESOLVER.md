@@ -227,4 +227,4 @@ knowledge/playbooks/PLAYBOOK_003_RUNTIME_QUEUE_RECEIPT_LEDGER.md
 ```
 
 ## Next playbook
-PLAYBOOK 005 — Security Target Preparation
+PLAYBOOK 005 — Scope & Authorization Preparation

@@ -44,6 +44,48 @@
       "receipt_required": true,
       "failure_modes": ["insufficient_context", "task_timeout", "ambiguous_prompt"],
       "status": "available"
+    },
+    {
+      "tool_id": "n8n_workflow",
+      "name": "n8n Workflow Activation",
+      "adapter": "n8n",
+      "queue": "Automation Queue",
+      "allowed_actions": ["activate_workflow", "draft_workflow"],
+      "input_schema": ["workflow_id", "trigger_data"],
+      "output_schema": ["execution_id", "status", "result", "error"],
+      "side_effects": ["workflow_execution", "possible_external_call"],
+      "approval_required": true,
+      "receipt_required": true,
+      "failure_modes": ["workflow_not_found", "trigger_mismatch", "execution_timeout"],
+      "status": "planned"
+    },
+    {
+      "tool_id": "zapier_mcp_action",
+      "name": "Zapier MCP Action",
+      "adapter": "Zapier MCP",
+      "queue": "Automation Queue",
+      "allowed_actions": ["run_action", "list_tools"],
+      "input_schema": ["action_id", "parameters"],
+      "output_schema": ["result", "status", "error"],
+      "side_effects": ["varies_by_action"],
+      "approval_required": true,
+      "receipt_required": true,
+      "failure_modes": ["action_not_found", "auth_failure", "parameter_mismatch"],
+      "status": "planned"
+    },
+    {
+      "tool_id": "local_script_runner",
+      "name": "Local Script Runner",
+      "adapter": "local",
+      "queue": "Engineering Queue",
+      "allowed_actions": ["run_script", "validate_output"],
+      "input_schema": ["script_path", "arguments"],
+      "output_schema": ["exit_code", "stdout", "stderr"],
+      "side_effects": ["local_file_changes"],
+      "approval_required": false,
+      "receipt_required": true,
+      "failure_modes": ["script_not_found", "permission_denied", "timeout", "non_zero_exit"],
+      "status": "planned"
     }
   ]
 }
