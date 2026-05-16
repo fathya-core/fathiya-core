@@ -39,6 +39,22 @@
       "allowed_outputs": ["payload_preview", "approval_record", "execution_receipt"]
     }
   },
-  "queue_entries": [],
+  "queue_entries": [
+    {
+      "id": "rt-2026-05-16-command-center-hardening-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "PR #7 Harden FATHIYA Command Center v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Command Center hardening",
+      "input_artifact": "PR #6 Command Center implementation + PR #5 Backbone checkpoint",
+      "expected_output": "hardened Command Center with provenance and empty states",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-command-center-hardening-v0.json",
+      "next_step": "use the first receipt to validate Command Center live data rendering"
+    }
+  ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]
 }
