@@ -1,0 +1,39 @@
+{
+  "schema_version": "FATHIYA_WORKFLOW_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of repeatable FATHIYA workflows promoted from corpus and playbooks.",
+  "workflows": [
+    {
+      "workflow_id": "wf_corpus_intake_to_card",
+      "name": "Corpus Intake to Knowledge Card",
+      "playbook": "PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION",
+      "trigger": "new_source_item",
+      "mode": "Knowledge Mode",
+      "queue": "Knowledge Queue",
+      "steps": ["preserve_raw", "clean", "triage", "artifact_select", "card_candidate", "link", "quality_gate", "index_update", "receipt"],
+      "inputs": ["source_text", "source_url", "source_file", "domain_hint"],
+      "outputs": ["raw_archive", "triage_record", "card_candidate", "relation_candidate", "audit_receipt"],
+      "adapters": ["fathiya_kernel", "cursor_agent_optional"],
+      "approval_required": false,
+      "receipt_required": true,
+      "failure_modes": ["missing_source", "duplicate", "partial_text", "unclear_artifact"],
+      "status": "draft"
+    },
+    {
+      "workflow_id": "wf_agent_machine_workflow_intake",
+      "name": "Agent Machine Workflow Intelligence Intake",
+      "playbook": "PLAYBOOK_002_AGENT_MACHINE_WORKFLOW_INTELLIGENCE_INTAKE",
+      "trigger": "agentic_or_workflow_source_item",
+      "mode": "Agent/Machine/Workflow Mode",
+      "queue": "Knowledge Queue",
+      "steps": ["preserve_source", "detect_operational_unit", "extract_affected_layer", "create_strongest_artifact", "route", "receipt", "promote_if_repeated"],
+      "inputs": ["source_item", "source_url", "article_map", "cluster_hint"],
+      "outputs": ["agent_card", "skill_card", "workflow_card", "machine_task", "tool_contract", "runtime_queue_rule", "architecture_impact_note"],
+      "adapters": ["fathiya_kernel", "manus_ai_optional", "cursor_agent_optional"],
+      "approval_required": false,
+      "receipt_required": true,
+      "failure_modes": ["tool_boundary_vague", "no_artifact_detected", "missing_context", "hype_only"],
+      "status": "draft"
+    }
+  ]
+}
