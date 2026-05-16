@@ -41,6 +41,19 @@
       "error": null,
       "approval_reference": "none_required_draft_and_preparation_only",
       "next_step": "keep Scope & Authorization in needs_policy state until a formal written policy is published"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-repo-identity-correction-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source_request": "rt-2026-05-16-fathiya-repo-identity-correction-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "Incorrect fathya-core/fathiya-ops-console references in Target Card and Scope Map",
+      "output_artifact": "Corrected TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json + SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json + knowledge/audit/FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_data_correction_only",
+      "next_step": "validate all future artifacts reference the correct repository identities per FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md"
     }
   ],
   "required_receipt_fields": [
