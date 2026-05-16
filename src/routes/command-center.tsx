@@ -798,14 +798,17 @@ function CommandCenterPage() {
                 <CardHeader>
                   <CardTitle>Live batch summary</CardTitle>
                   <CardDescription>
-                    Canonical PB006 batch manifest and queue/receipt linkage for the first live Crypto
-                    Radar intake.
+                    Canonical PB006 batch manifest and queue/receipt linkage for the first live
+                    Crypto Radar intake.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <OverviewField label="Batch id" value={data.cryptoRadarBatch.batchId} />
-                    <OverviewField label="Card count" value={String(data.cryptoRadarBatch.cardCount)} />
+                    <OverviewField
+                      label="Card count"
+                      value={String(data.cryptoRadarBatch.cardCount)}
+                    />
                     <OverviewField
                       label="Queue entry id"
                       value={data.cryptoRadarBatch.queueEntryId}
@@ -816,16 +819,16 @@ function CommandCenterPage() {
                     <OverviewField label="Status" value={data.cryptoRadarBatch.status} />
                     <OverviewField label="Created at" value={data.cryptoRadarBatch.createdAt} />
                   </div>
-                  <OverviewField
-                    label="Source file"
-                    value={data.cryptoRadarBatch.sourceFile}
-                  />
+                  <OverviewField label="Source file" value={data.cryptoRadarBatch.sourceFile} />
                   <OverviewField label="Boundary" value={data.cryptoRadarBatch.boundary} />
                   <div>
                     <div className="mb-2 text-sm font-medium">Batch notes</div>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       {data.cryptoRadarBatch.notes.map((note) => (
-                        <li key={note} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                        <li
+                          key={note}
+                          className="rounded-lg border border-border/50 bg-muted/20 p-3"
+                        >
                           {note}
                         </li>
                       ))}
@@ -1066,7 +1069,9 @@ function RadarCard({ card }: { card: CommandCenterSnapshot["cryptoRadar"][number
         <OverviewField label="Catalyst" value={card.catalyst} />
 
         <div>
-          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">Risks</div>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Risks
+          </div>
           <ul className="space-y-2">
             {card.risks.map((risk) => (
               <li key={risk} className="rounded-lg border border-border/50 bg-muted/20 p-3">
@@ -1082,10 +1087,7 @@ function RadarCard({ card }: { card: CommandCenterSnapshot["cryptoRadar"][number
           </div>
           <ul className="space-y-2">
             {card.invalidationConditions.map((condition) => (
-              <li
-                key={condition}
-                className="rounded-lg border border-border/50 bg-muted/20 p-3"
-              >
+              <li key={condition} className="rounded-lg border border-border/50 bg-muted/20 p-3">
                 {condition}
               </li>
             ))}
