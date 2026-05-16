@@ -28,6 +28,18 @@ const CRYPTO_RADAR_CARD_FILES = import.meta.glob("../../knowledge/crypto/radar/c
   eager: true,
 }) as Record<string, string>;
 
+const TARGET_CARD_FILES = import.meta.glob("../../knowledge/security/targets/*.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const SCOPE_MAP_FILES = import.meta.glob("../../knowledge/security/scope_maps/*.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
 type StatusTone = "neutral" | "good" | "warn" | "danger" | "info";
 
 export type DataStatus = "live" | "empty" | "derived_from_backbone" | "planned";
@@ -135,6 +147,65 @@ type CryptoRadarCard = {
   confidence: string;
   status: string;
   boundary: string;
+};
+
+type TargetCard = {
+  target_id: string;
+  name: string;
+  program: string;
+  policy_url: string;
+  authorization: string;
+  authorized_scope: Array<{
+    asset: string;
+    asset_type?: string;
+    asset_status: string;
+    testing_status?: string;
+    notes?: string;
+  }>;
+  forbidden_scope: string[];
+  asset_types: string[];
+  engagement_rules: string[];
+  rate_limits: string[];
+  data_handling: string[];
+  reporting_channel: string;
+  allowed_artifacts: string[];
+  forbidden_actions: string[];
+  approval_required: string;
+  status: string;
+  mode: string;
+  assets: Array<{
+    url: string;
+    asset_status: string;
+    testing_status?: string;
+  }>;
+  asset_status: string;
+  boundary_note: string;
+  playbook: string;
+  created_at: string;
+};
+
+type ScopeMap = {
+  scope_map_id: string;
+  target_id: string;
+  name: string;
+  program: string;
+  mode: string;
+  authorization_status: string;
+  policy_status: string;
+  status: string;
+  in_scope: Array<{
+    asset: string;
+    asset_status: string;
+    allowed_activity: string;
+    notes?: string;
+  }>;
+  out_of_scope: string[];
+  unknown_scope: string[];
+  requires_clarification: string[];
+  next_artifacts: string[];
+  boundary_note: string;
+  playbook: string;
+  created_at: string;
 };
 
 type AgentRegistry = {
@@ -396,6 +467,54 @@ export type CommandCenterSnapshot = {
     status: string;
     boundary: string;
   }>;
+  targetCards: Array<{
+    targetId: string;
+    name: string;
+    program: string;
+    policyUrl: string;
+    authorization: string;
+    status: string;
+    mode: string;
+    assetStatus: string;
+    reportingChannel: string;
+    approvalRequired: string;
+    allowedArtifacts: string[];
+    forbiddenActions: string[];
+    engagementRules: string[];
+    rateLimits: string[];
+    dataHandling: string[];
+    boundaryNote: string;
+    playbook: string;
+    createdAt: string;
+    assets: Array<{
+      url: string;
+      assetStatus: string;
+      testingStatus: string;
+    }>;
+  }>;
+  scopeMaps: Array<{
+    scopeMapId: string;
+    targetId: string;
+    name: string;
+    program: string;
+    mode: string;
+    authorizationStatus: string;
+    policyStatus: string;
+    status: string;
+    boundaryNote: string;
+    nextArtifacts: string[];
+    outOfScope: string[];
+    unknownScope: string[];
+    requiresClarification: string[];
+    playbook: string;
+    createdAt: string;
+    inScope: Array<{
+      asset: string;
+      assetStatus: string;
+      allowedActivity: string;
+      notes: string;
+    }>;
+  }>;
   scopeAuthorization: Array<{
     targetId: string;
     name: string;
@@ -492,7 +611,9 @@ export function getStatusTone(status: string): StatusTone {
     value.includes("review") ||
     value.includes("planned") ||
     value.includes("waiting") ||
-    value.includes("draft")
+    value.includes("draft") ||
+    value.includes("needs_") ||
+    value.includes("needs ")
   ) {
     return "warn";
   }
@@ -539,6 +660,8 @@ function buildSnapshot(): CommandCenterSnapshot {
   );
   const cryptoRadarBatch = parseJson<CryptoRadarBatch>(cryptoRadarBatchRaw, "crypto radar batch");
   const cryptoRadar = buildCryptoRadarCards(cryptoRadarBatch);
+  const targetCards = buildTargetCards();
+  const scopeMaps = buildScopeMaps();
 
   const playbooks = PLAYBOOK_FILES.map((playbook) =>
     buildPlaybookView(playbook.path, playbook.raw, backboneValidation.validation_date),
@@ -559,31 +682,42 @@ function buildSnapshot(): CommandCenterSnapshot {
   const activeQueueCount = hasQueueEntries ? liveActiveQueueCount : awareness.active_queue_count;
   const hasLiveRuntimeData = hasQueueEntries || hasReceipts;
   const hasLiveCryptoRadarData = cryptoRadar.length > 0;
+  const hasLiveScopeAuthorizationData = targetCards.length > 0 || scopeMaps.length > 0;
 
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
-    loaderNote: hasLiveCryptoRadarData
-      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, and Crypto Radar now render live canonical data, while sections with no target-specific artifacts still show explicit empty states."
-      : hasLiveRuntimeData
-        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger render live canonical data, while sections with no live data still show explicit empty states."
-        : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+    loaderNote: hasLiveScopeAuthorizationData
+      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, Crypto Radar, and Scope & Authorization now render live canonical data. The first PB005 target remains explicitly in draft / needs_policy state, and no active testing is authorized."
+      : hasLiveCryptoRadarData
+        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, and Crypto Radar now render live canonical data, while sections with no target-specific artifacts still show explicit empty states."
+        : hasLiveRuntimeData
+          ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger render live canonical data, while sections with no live data still show explicit empty states."
+          : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
     lineage: {
       backbonePR: "PR #5 — Validate Operating Backbone v0",
-      commandCenterPR: "PB006 — FATHIYA Crypto Radar live batch v0",
-      baseBranch: "cursor/command-center-live-queue-v0",
-      note: hasLiveCryptoRadarData
-        ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger, then adds the first PB006 Crypto Radar batch so the Command Center renders four canonical monitoring cards."
-        : hasLiveRuntimeData
-          ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger."
-          : "The Backbone provides the canonical knowledge files that this UI reads.",
+      commandCenterPR: hasLiveScopeAuthorizationData
+        ? "PB005 — FATHIYA Core owned-surface scope/auth live target prep + PR chain stabilization"
+        : "PB006 — FATHIYA Crypto Radar live batch v0",
+      baseBranch: hasLiveScopeAuthorizationData
+        ? "cursor/crypto-radar-live-v0"
+        : "cursor/command-center-live-queue-v0",
+      note: hasLiveScopeAuthorizationData
+        ? "This layer builds on the ordered PR chain through the live PB006 Crypto Radar batch, then adds the first canonical PB005 Target Card and Scope Map so Scope & Authorization renders live in preparation-only mode with a needs_policy boundary."
+        : hasLiveCryptoRadarData
+          ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger, then adds the first PB006 Crypto Radar batch so the Command Center renders four canonical monitoring cards."
+          : hasLiveRuntimeData
+            ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger."
+            : "The Backbone provides the canonical knowledge files that this UI reads.",
     },
     overview: {
       currentFocus:
         awareness.current_focus ??
-        (hasLiveRuntimeData
-          ? "Command Center live runtime visibility"
-          : "Command Center v0 bootstrap"),
+        (hasLiveScopeAuthorizationData
+          ? "Scope & authorization preparation for owned FATHIYA assets"
+          : hasLiveRuntimeData
+            ? "Command Center live runtime visibility"
+            : "Command Center v0 bootstrap"),
       activeQueueCount,
       blockedItemsCount,
       latestReceiptsCount,
@@ -591,9 +725,11 @@ function buildSnapshot(): CommandCenterSnapshot {
       activeAgentsCount: awareness.active_agents?.length ?? 0,
       nextRecommendedAction:
         awareness.next_recommended_action ??
-        (hasLiveRuntimeData
-          ? "Review the first live runtime queue and receipt ledger rows, then continue promoting real runtime activity into additional sections."
-          : "Create the first runtime queue entry, then record a receipt so the UI begins reflecting live state."),
+        (hasLiveScopeAuthorizationData
+          ? "Publish the formal written FATHIYA Core policy before any live testing or external target activity; until then, keep the Target Card in preparation-only needs_policy state."
+          : hasLiveRuntimeData
+            ? "Review the first live runtime queue and receipt ledger rows, then continue promoting real runtime activity into additional sections."
+            : "Create the first runtime queue entry, then record a receipt so the UI begins reflecting live state."),
       validationStatus: backboneValidation.overall_status,
       warningsCount: backboneValidation.warnings.length,
     },
@@ -608,14 +744,14 @@ function buildSnapshot(): CommandCenterSnapshot {
         source_file: "knowledge/runtime/runtime_queue_v0.json",
         data_status: hasQueueEntries ? "live" : "empty",
         notes: hasQueueEntries
-          ? "Live queue rows are read directly from queue_entries, including the PB006 crypto radar intake batch and the earlier command-center-hardening task."
+          ? "Live queue rows are read directly from queue_entries, including the command-center-hardening task, the PB006 crypto radar intake batch, and the PB005 scope/auth target-preparation batch."
           : "Queue catalog is populated but queue_entries array is empty. Schema is ready for first routed task.",
       },
       receiptLedger: {
         source_file: "knowledge/runtime/receipt_ledger_v0.json",
         data_status: hasReceipts ? "live" : "empty",
         notes: hasReceipts
-          ? "Live receipt rows are read directly from receipts, including the PB006 crypto radar batch receipt and the earlier command-center-hardening receipt."
+          ? "Live receipt rows are read directly from receipts, including the command-center-hardening receipt, the PB006 crypto radar batch receipt, and the PB005 scope/auth preparation receipt."
           : "Receipt policy and required fields are populated. Receipts array is empty until first task completes.",
       },
       agents: {
@@ -652,9 +788,13 @@ function buildSnapshot(): CommandCenterSnapshot {
           : "No live signal-card dataset exists. PB006 defines the intake process. Signals will appear once the first PB006 batch runs.",
       },
       scopeAuthorization: {
-        source_file: "—",
-        data_status: "planned",
-        notes: "No Target Cards or scope maps exist yet. PB005 defines the preparation process.",
+        source_file: hasLiveScopeAuthorizationData
+          ? "knowledge/security/targets/TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json, knowledge/security/scope_maps/SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json"
+          : "—",
+        data_status: hasLiveScopeAuthorizationData ? "live" : "planned",
+        notes: hasLiveScopeAuthorizationData
+          ? "Canonical PB005 target-preparation data now renders from the first owned-surface Target Card and Scope Map. The section is explicitly preparation-only with status draft / needs_policy, and no active testing is authorized."
+          : "No Target Cards or scope maps exist yet. PB005 defines the preparation process.",
       },
       approvalQueue: {
         source_file:
@@ -712,6 +852,14 @@ function buildSnapshot(): CommandCenterSnapshot {
         path: "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
         kind: "canonical",
         note: "Preserved Manus brief used as the sole factual source for the first live radar batch.",
+      },
+      {
+        label: "Security Targets",
+        path: "knowledge/security/targets/*.json, knowledge/security/scope_maps/*.json",
+        kind: "canonical",
+        note: hasLiveScopeAuthorizationData
+          ? "PB005 canonical target-preparation artifacts for owned FATHIYA surfaces. The current target is live in the UI but remains draft / needs_policy with no active testing."
+          : "Reserved for future Target Cards and Scope Maps once PB005 preparation runs.",
       },
     ],
     queueEntries,
@@ -784,7 +932,55 @@ function buildSnapshot(): CommandCenterSnapshot {
       notes: cryptoRadarBatch.notes,
     },
     cryptoRadar,
-    scopeAuthorization: [],
+    targetCards: targetCards.map((card) => ({
+      targetId: card.target_id,
+      name: card.name,
+      program: card.program,
+      policyUrl: card.policy_url,
+      authorization: card.authorization,
+      status: card.status,
+      mode: card.mode,
+      assetStatus: card.asset_status,
+      reportingChannel: card.reporting_channel,
+      approvalRequired: card.approval_required,
+      allowedArtifacts: card.allowed_artifacts,
+      forbiddenActions: card.forbidden_actions,
+      engagementRules: card.engagement_rules,
+      rateLimits: card.rate_limits,
+      dataHandling: card.data_handling,
+      boundaryNote: card.boundary_note,
+      playbook: card.playbook,
+      createdAt: card.created_at,
+      assets: card.assets.map((asset) => ({
+        url: asset.url,
+        assetStatus: asset.asset_status,
+        testingStatus: asset.testing_status ?? "not_specified",
+      })),
+    })),
+    scopeMaps: scopeMaps.map((scopeMap) => ({
+      scopeMapId: scopeMap.scope_map_id,
+      targetId: scopeMap.target_id,
+      name: scopeMap.name,
+      program: scopeMap.program,
+      mode: scopeMap.mode,
+      authorizationStatus: scopeMap.authorization_status,
+      policyStatus: scopeMap.policy_status,
+      status: scopeMap.status,
+      boundaryNote: scopeMap.boundary_note,
+      nextArtifacts: scopeMap.next_artifacts,
+      outOfScope: scopeMap.out_of_scope,
+      unknownScope: scopeMap.unknown_scope,
+      requiresClarification: scopeMap.requires_clarification,
+      playbook: scopeMap.playbook,
+      createdAt: scopeMap.created_at,
+      inScope: scopeMap.in_scope.map((item) => ({
+        asset: item.asset,
+        assetStatus: item.asset_status,
+        allowedActivity: item.allowed_activity,
+        notes: item.notes ?? "—",
+      })),
+    })),
+    scopeAuthorization: buildScopeAuthorizationRows(targetCards, scopeMaps),
     approvalQueue: buildApprovalQueueRows(approvalPolicyRegistry, toolContractRegistry),
     registriesSummary: {
       workflowCount: workflowRegistry.workflows.length,
@@ -871,6 +1067,8 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
     ],
     cryptoRadarBatch: null,
     cryptoRadar: [],
+    targetCards: [],
+    scopeMaps: [],
     scopeAuthorization: [],
     approvalQueue: [],
     registriesSummary: {
@@ -1000,31 +1198,43 @@ function buildCryptoRadarCards(batch: CryptoRadarBatch): CommandCenterSnapshot["
     }));
 }
 
-function buildScopeAuthorizationRows() {
-  return [
-    {
-      targetId: "target_card_required_v0",
-      name: "Target-specific work",
-      policyUrl: "Required before Target-Specific Mode",
-      scopeStatus: "blocked_missing_target_card",
-      authorizationStatus: "required",
-      blockedReason: "No Target Card or policy URL is present in the current knowledge bundle.",
-      nextArtifact: "Target Card + Scope Map",
-      receipt: "—",
-      sourceType: "derived" as const,
-    },
-    {
-      targetId: "lab_mode_local_owned_app",
-      name: "Owned local app / sandbox",
-      policyUrl: "Local or self-owned environment",
-      scopeStatus: "ready_for_lab_mode",
-      authorizationStatus: "self_authorized",
-      blockedReason: "—",
-      nextArtifact: "Experiment Plan / Local Checklist",
-      receipt: "—",
-      sourceType: "derived" as const,
-    },
-  ];
+function buildTargetCards() {
+  return Object.values(TARGET_CARD_FILES)
+    .map((raw, index) => parseJson<TargetCard>(raw, `target card ${index + 1}`))
+    .sort((left, right) => left.target_id.localeCompare(right.target_id));
+}
+
+function buildScopeMaps() {
+  return Object.values(SCOPE_MAP_FILES)
+    .map((raw, index) => parseJson<ScopeMap>(raw, `scope map ${index + 1}`))
+    .sort((left, right) => left.scope_map_id.localeCompare(right.scope_map_id));
+}
+
+function buildScopeAuthorizationRows(
+  targetCards: TargetCard[],
+  scopeMaps: ScopeMap[],
+): CommandCenterSnapshot["scopeAuthorization"] {
+  const scopeMapsByTarget = scopeMaps.reduce<Record<string, ScopeMap>>((accumulator, scopeMap) => {
+    accumulator[scopeMap.target_id] = scopeMap;
+    return accumulator;
+  }, {});
+
+  return targetCards.map((card) => {
+    const scopeMap = scopeMapsByTarget[card.target_id];
+    return {
+      targetId: card.target_id,
+      name: card.name,
+      policyUrl: card.policy_url,
+      scopeStatus: scopeMap?.status ?? card.status,
+      authorizationStatus: card.authorization,
+      blockedReason:
+        scopeMap?.boundary_note ??
+        "Preparation-only mode remains in effect until a formal written policy exists.",
+      nextArtifact: scopeMap?.next_artifacts?.join(", ") ?? "Scope Map",
+      receipt: "receipt-2026-05-16-fathiya-pb005-target-preparation-batch-v0",
+      sourceType: "canonical" as const,
+    };
+  });
 }
 
 function buildApprovalQueueRows(
