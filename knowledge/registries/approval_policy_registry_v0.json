@@ -1,0 +1,54 @@
+{
+  "schema_version": "FATHIYA_APPROVAL_POLICY_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of approval requirements for external side effects, high-impact actions, and sensitive routes.",
+  "default_rule": "Draft and validation are allowed; external side effects require approval unless policy explicitly allows them.",
+  "approval_classes": [
+    {
+      "class_id": "no_approval_draft",
+      "name": "Draft or Classification Only",
+      "requires_approval": false,
+      "examples": ["classify_source", "draft_card", "draft_report", "local_validation"],
+      "receipt_required": true
+    },
+    {
+      "class_id": "approval_repo_write",
+      "name": "Repository Write",
+      "requires_approval": true,
+      "examples": ["create_branch", "create_or_update_file", "open_pull_request"],
+      "receipt_required": true
+    },
+    {
+      "class_id": "approval_external_message",
+      "name": "External Message",
+      "requires_approval": true,
+      "examples": ["send_email", "send_outlook", "publish_message"],
+      "receipt_required": true
+    },
+    {
+      "class_id": "approval_webhook_or_workflow",
+      "name": "Webhook or Workflow Activation",
+      "requires_approval": true,
+      "examples": ["call_webhook", "activate_n8n", "run_zapier_action_with_side_effect"],
+      "receipt_required": true
+    },
+    {
+      "class_id": "approval_market_execution",
+      "name": "Market Execution",
+      "requires_approval": true,
+      "examples": ["trade_execution", "portfolio_mutation", "exchange_order"],
+      "receipt_required": true,
+      "status": "blocked_until_separate_execution_policy"
+    },
+    {
+      "class_id": "approval_target_specific_external",
+      "name": "Target-Specific External Action",
+      "requires_approval": true,
+      "examples": ["target_specific_external_activity", "program_scope_action"],
+      "receipt_required": true,
+      "requires": ["target_card", "scope_status", "policy_url"]
+    }
+  ],
+  "approval_entry_fields": ["approval_id", "timestamp", "requested_action", "tool_contract", "payload_preview", "side_effects", "rollback_or_recovery", "requester", "status", "receipt_path"],
+  "status_values": ["draft", "waiting_approval", "approved", "rejected", "blocked", "executed", "failed"]
+}
