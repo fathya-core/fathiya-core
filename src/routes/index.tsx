@@ -17,7 +17,7 @@ import {
   type Owner,
   type Task,
 } from "@/lib/ops/tasks";
-import { Activity, Database, Sparkles, CircleCheck as CheckCircle2, Clock, TriangleAlert as AlertTriangle, TrendingUp, Shield } from "lucide-react";
+import { Activity, Database, Sparkles, CircleCheck as CheckCircle2, Clock, TriangleAlert as AlertTriangle, TrendingUp, Shield, SquareStack } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -105,6 +105,18 @@ function OpsConsole() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <RunAllButton index={idx} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/command-center"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors duration-150"
+                    >
+                      <SquareStack className="h-3.5 w-3.5" />
+                      Command Center
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>واجهة Backbone التشغيلية</TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
