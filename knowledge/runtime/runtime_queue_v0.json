@@ -1,0 +1,39 @@
+{
+  "schema_version": "FATHIYA_RUNTIME_QUEUE_v0",
+  "status": "draft",
+  "purpose": "Track routed work across FATHIYA queues before adapter execution or validation.",
+  "queues": {
+    "Knowledge Queue": {
+      "purpose": "Convert sources into vault memory.",
+      "default_approval": false,
+      "allowed_outputs": ["raw_archive", "triage_record", "card_candidate", "relation_candidate", "audit_receipt"]
+    },
+    "Research Queue": {
+      "purpose": "Deep synthesis and comparison.",
+      "default_approval": false,
+      "allowed_adapters": ["manus_ai"]
+    },
+    "Engineering Queue": {
+      "purpose": "Repo, schema, index, and validation work.",
+      "default_approval": "write_only",
+      "allowed_adapters": ["cursor_agent", "github"]
+    },
+    "Automation Queue": {
+      "purpose": "Draft n8n/Zapier workflows before activation.",
+      "default_approval": "before_activation",
+      "allowed_adapters": ["n8n", "zapier_mcp"]
+    },
+    "Model Queue": {
+      "purpose": "Route model selection, cost, context, and inference strategy.",
+      "default_approval": false,
+      "allowed_outputs": ["model_router_rule", "cost_note", "context_policy"]
+    },
+    "Approval Queue": {
+      "purpose": "Any external side effect, publication, or execution-capable action.",
+      "default_approval": true,
+      "allowed_outputs": ["payload_preview", "approval_record", "execution_receipt"]
+    }
+  },
+  "queue_entries": [],
+  "required_entry_fields": ["id", "timestamp", "source", "queue", "adapter", "input", "expected_output", "status", "approval_required", "receipt_path"]
+}
