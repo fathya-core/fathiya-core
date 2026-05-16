@@ -132,7 +132,7 @@ function CommandCenterPage() {
             icon={FolderKanban}
             label="Active queue count"
             value={String(data.overview.activeQueueCount)}
-            help="Live count of queued/running/waiting entries, or awareness-state override."
+            help="Uses live queue entries when present; otherwise falls back to the awareness-state count."
           />
           <MetricCard
             icon={TriangleAlert}
@@ -144,7 +144,7 @@ function CommandCenterPage() {
             icon={BadgeCheck}
             label="Latest receipts"
             value={String(data.overview.latestReceiptsCount)}
-            help="Receipt ledger count or awareness latest_receipts count."
+            help="Uses live receipt ledger rows when present; otherwise falls back to awareness latest_receipts."
           />
           <MetricCard
             icon={GitPullRequest}
@@ -275,7 +275,7 @@ function CommandCenterPage() {
                     {latestReceipts.length === 0 ? (
                       <EmptyState
                         title="No receipts recorded yet"
-                        description="The ledger file exists and is wired up, but the v0 receipt array is still empty. Once receipts are written, they will appear here automatically."
+                        description="The ledger file exists and is wired up. As soon as receipts are written into the local JSON ledger, they will appear here automatically."
                       />
                     ) : (
                       <div className="space-y-2">
@@ -379,22 +379,22 @@ function CommandCenterPage() {
           <TabsContent value="queue" className="space-y-4">
             <SectionHeader
               title="Runtime Queue"
-              description="Every routed task should appear here before or during execution. The schema file is live, but the v0 queue_entries array is still empty."
+              description="Every routed task should appear here before or during execution. The table below now renders the first real queue entry from PR #8 directly from runtime_queue_v0.json."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.runtimeQueue} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Queue entries</CardTitle>
                 <CardDescription>
-                  Required columns from PLAYBOOK 003 are preserved even when no entries have been
-                  written yet.
+                  Live rows render directly from <code>queue_entries</code> in PLAYBOOK 003's
+                  runtime queue file.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {data.queueEntries.length === 0 ? (
                   <EmptyState
                     title="No runtime queue entries yet"
-                    description="This is expected for the validated backbone skeleton. Create the first routed task and this table will switch from schema mode to live runtime mode."
+                    description="This table stays empty until a routed task is written into runtime_queue_v0.json."
                   />
                 ) : (
                   <DataTable
@@ -402,9 +402,11 @@ function CommandCenterPage() {
                       "id",
                       "timestamp",
                       "source",
+                      "requested by",
                       "queue",
                       "adapter",
                       "mode",
+                      "input artifact",
                       "expected output",
                       "approval",
                       "status",
@@ -415,9 +417,11 @@ function CommandCenterPage() {
                       <code key="id">{entry.id}</code>,
                       entry.timestamp,
                       entry.source,
+                      entry.requested_by ?? "—",
                       entry.queue,
                       entry.adapter,
                       entry.mode,
+                      entry.input_artifact ?? "—",
                       entry.expected_output,
                       formatApproval(entry.approval_required),
                       <StatusBadge key="status" status={entry.status} />,
@@ -471,27 +475,29 @@ function CommandCenterPage() {
           <TabsContent value="receipts" className="space-y-4">
             <SectionHeader
               title="Receipt Ledger"
-              description="No meaningful action is complete without a receipt. The ledger table is ready for live data, and the receipt policy is already visible."
+              description="No meaningful action is complete without a receipt. The table below now renders the first real receipt from PR #8 directly from receipt_ledger_v0.json."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.receiptLedger} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Receipts</CardTitle>
                 <CardDescription>
-                  Proof rows from knowledge/runtime/receipt_ledger_v0.json.
+                  Proof rows render directly from the <code>receipts</code> array in
+                  knowledge/runtime/receipt_ledger_v0.json.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {data.receipts.length === 0 ? (
                   <EmptyState
                     title="No receipts recorded yet"
-                    description="This is expected for v0. The ledger schema is in place and the table will hydrate from the local JSON file once receipts are written."
+                    description="The ledger schema is in place and this table will populate once receipt rows are written into the local JSON file."
                   />
                 ) : (
                   <DataTable
                     headers={[
                       "receipt id",
                       "timestamp",
+                      "source request",
                       "queue",
                       "adapter",
                       "input artifact",
@@ -504,6 +510,7 @@ function CommandCenterPage() {
                     rows={data.receipts.map((receipt) => [
                       <code key="id">{receipt.receipt_id}</code>,
                       receipt.timestamp,
+                      receipt.source_request ?? "—",
                       receipt.queue,
                       receipt.adapter,
                       receipt.input_artifact,

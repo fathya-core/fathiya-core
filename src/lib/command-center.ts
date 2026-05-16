@@ -483,31 +483,39 @@ function buildSnapshot(): CommandCenterSnapshot {
   );
   const queueEntries = runtimeQueue.queue_entries ?? [];
   const receipts = receiptLedger.receipts ?? [];
+  const hasQueueEntries = queueEntries.length > 0;
+  const hasReceipts = receipts.length > 0;
+  const liveActiveQueueCount = queueEntries.filter((entry) =>
+    ["queued", "running", "waiting_approval"].includes(entry.status),
+  ).length;
   const blockedItemsCount =
     normalizeTextList(awareness.blocked_items).length +
     queueEntries.filter((entry) => entry.status === "blocked").length;
-  const latestReceiptsCount = (awareness.latest_receipts?.length ?? 0) || receipts.length;
-  const activeQueueCount =
-    awareness.active_queue_count ||
-    queueEntries.filter((entry) => ["queued", "running", "waiting_approval"].includes(entry.status))
-      .length;
-
-  const hasQueueEntries = queueEntries.length > 0;
-  const hasReceipts = receipts.length > 0;
+  const latestReceiptsCount = hasReceipts ? receipts.length : (awareness.latest_receipts?.length ?? 0);
+  const activeQueueCount = hasQueueEntries ? liveActiveQueueCount : awareness.active_queue_count;
+  const hasLiveRuntimeData = hasQueueEntries || hasReceipts;
 
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
     loaderNote:
-      "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+      hasLiveRuntimeData
+        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger now render the first real runtime data from PR #8, while sections with no live data still show explicit empty states."
+        : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
     lineage: {
       backbonePR: "PR #5 — Validate Operating Backbone v0",
       commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
       baseBranch: "cursor/validate-backbone-v0",
-      note: "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint. The Backbone provides the canonical knowledge files that this UI reads.",
+      note: hasLiveRuntimeData
+        ? "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint, and PR #8 added the first real runtime queue entry and receipt that this UI now renders live."
+        : "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint. The Backbone provides the canonical knowledge files that this UI reads.",
     },
     overview: {
-      currentFocus: awareness.current_focus ?? "Command Center v0 bootstrap",
+      currentFocus:
+        awareness.current_focus ??
+        (hasLiveRuntimeData
+          ? "Command Center live runtime visibility"
+          : "Command Center v0 bootstrap"),
       activeQueueCount,
       blockedItemsCount,
       latestReceiptsCount,
@@ -515,7 +523,9 @@ function buildSnapshot(): CommandCenterSnapshot {
       activeAgentsCount: awareness.active_agents?.length ?? 0,
       nextRecommendedAction:
         awareness.next_recommended_action ??
-        "Create the first runtime queue entry, then record a receipt so the UI begins reflecting live state.",
+        (hasLiveRuntimeData
+          ? "Review the first live runtime queue and receipt ledger rows, then continue promoting real runtime activity into additional sections."
+          : "Create the first runtime queue entry, then record a receipt so the UI begins reflecting live state."),
       validationStatus: backboneValidation.overall_status,
       warningsCount: backboneValidation.warnings.length,
     },
@@ -530,14 +540,14 @@ function buildSnapshot(): CommandCenterSnapshot {
         source_file: "knowledge/runtime/runtime_queue_v0.json",
         data_status: hasQueueEntries ? "live" : "empty",
         notes: hasQueueEntries
-          ? "Live queue entries present."
+          ? "Live queue rows are read directly from queue_entries, including the first real routed task from PR #8: rt-2026-05-16-command-center-hardening-v0."
           : "Queue catalog is populated but queue_entries array is empty. Schema is ready for first routed task.",
       },
       receiptLedger: {
         source_file: "knowledge/runtime/receipt_ledger_v0.json",
         data_status: hasReceipts ? "live" : "empty",
         notes: hasReceipts
-          ? "Live receipts present."
+          ? "Live receipt rows are read directly from receipts, including the first real receipt from PR #8: receipt-2026-05-16-command-center-hardening-v0."
           : "Receipt policy and required fields are populated. Receipts array is empty until first task completes.",
       },
       agents: {
