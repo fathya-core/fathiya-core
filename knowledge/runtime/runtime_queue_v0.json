@@ -84,6 +84,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-pb005-target-preparation-batch-v0.json",
       "next_step": "publish a formal written policy before any live testing, scanning, or external action"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-repo-identity-correction-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA repository identity correction task",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Repository identity correction",
+      "input_artifact": "Incorrect fathya-core/fathiya-ops-console references in Target Card and Scope Map",
+      "expected_output": "Corrected references to fathya-project/fathiya-ops-console + FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-repo-identity-correction-v0.json",
+      "next_step": "validate all future artifacts reference the correct repository identities per FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

@@ -27,7 +27,7 @@
       "notes": "Repository is in scope for preparation artifacts only; credential access and destructive repository actions are forbidden."
     },
     {
-      "asset": "https://github.com/fathya-core/fathiya-ops-console.git",
+      "asset": "https://github.com/fathya-project/fathiya-ops-console.git",
       "asset_type": "source_repository",
       "asset_status": "owned_or_project_declared",
       "testing_status": "preparation_only_needs_policy",
@@ -98,7 +98,7 @@
       "testing_status": "preparation_only_needs_policy"
     },
     {
-      "url": "https://github.com/fathya-core/fathiya-ops-console.git",
+      "url": "https://github.com/fathya-project/fathiya-ops-console.git",
       "asset_status": "owned_or_project_declared",
       "testing_status": "preparation_only_needs_policy"
     }
