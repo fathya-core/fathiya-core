@@ -67,11 +67,10 @@ This approach was chosen because it works cleanly inside the existing app stack 
 
 ### Canonical vs derived data
 
-Some v0 files are intentionally still skeletons:
+Some v0 screens still use derived data because no dedicated live dataset exists yet:
 
-- `runtime_queue_v0.json` currently has an empty `queue_entries` array
-- `receipt_ledger_v0.json` currently has an empty `receipts` array
-- there is no dedicated live dataset yet for:
+- `runtime_queue_v0.json` and `receipt_ledger_v0.json` now contain live entries populated through the Runtime Queue → Receipt Ledger lifecycle.
+- There is no dedicated live dataset yet for:
   - Daily Intake batch rows
   - Crypto Radar signals
   - Scope/Authorization target cards
