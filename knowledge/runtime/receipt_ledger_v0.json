@@ -80,6 +80,19 @@
       "error": null,
       "approval_reference": "none_required_validation_only",
       "next_step": "merge PR #14 into main once a reviewer approves; no further architecture changes required from validation"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-post-merge-sanity-v0",
+      "timestamp": "2026-05-16T16:07:00Z",
+      "source_request": "rt-2026-05-16-fathiya-post-merge-sanity-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at 6d8777465f0e0bcae3dfc7d291fbe47ca793cab1 (merge commit of PR #16)",
+      "output_artifact": "knowledge/audit/FATHIYA_POST_MERGE_SANITY_REPORT_v0.md + appended runtime_queue_v0.json + appended receipt_ledger_v0.json + knowledge/runtime/receipts/receipt-2026-05-16-fathiya-post-merge-sanity-v0.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_validation_only",
+      "next_step": "address pre-existing prettier formatting errors in a dedicated formatting PR; continue operating from canonical monorepo per ADR-001"
     }
   ],
   "required_receipt_fields": [
