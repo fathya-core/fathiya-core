@@ -1,0 +1,174 @@
+{
+  "report_id": "FATHIYA_RUNTIME_LAYER_VALIDATION_REPORT_v0",
+  "generated_at_utc": "2026-05-16T09:52:23+00:00",
+  "validated_branch": "cursor/validate-runtime-layer-v0",
+  "base_branch": "vault/hub-ready-v0",
+  "scope_files": [
+    "knowledge/reports/study/FATHIYA_FULL_CORPUS_STUDY_SUMMARY_v0.md",
+    "knowledge/reports/architecture/FATHIYA_RUNTIME_ARCHITECTURE_AFTER_STUDY_v0.md",
+    "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md",
+    "knowledge/playbooks/PLAYBOOK_002_AGENT_MACHINE_WORKFLOW_INTELLIGENCE_INTAKE.md",
+    "knowledge/registries/agent_registry_v0.json",
+    "knowledge/registries/workflow_registry_v0.json",
+    "knowledge/registries/tool_contract_registry_v0.json",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json"
+  ],
+  "checks": {
+    "json_parse": {
+      "status": "pass",
+      "files": {
+        "knowledge/registries/agent_registry_v0.json": {
+          "status": "pass"
+        },
+        "knowledge/registries/workflow_registry_v0.json": {
+          "status": "pass"
+        },
+        "knowledge/registries/tool_contract_registry_v0.json": {
+          "status": "pass"
+        },
+        "knowledge/runtime/runtime_queue_v0.json": {
+          "status": "pass"
+        },
+        "knowledge/runtime/receipt_ledger_v0.json": {
+          "status": "pass"
+        }
+      }
+    },
+    "workflow_registry_playbook_references": {
+      "status": "pass",
+      "workflows": [
+        {
+          "workflow_id": "wf_corpus_intake_to_card",
+          "playbook": "PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION",
+          "exists": true
+        },
+        {
+          "workflow_id": "wf_agent_machine_workflow_intake",
+          "playbook": "PLAYBOOK_002_AGENT_MACHINE_WORKFLOW_INTELLIGENCE_INTAKE",
+          "exists": true
+        }
+      ]
+    },
+    "runtime_queue_references": {
+      "status": "pass",
+      "references": [
+        {
+          "source_file": "knowledge/registries/agent_registry_v0.json",
+          "kind": "agent",
+          "id": "cursor_agent",
+          "queue": "Engineering Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/agent_registry_v0.json",
+          "kind": "agent",
+          "id": "manus_ai",
+          "queue": "Research Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/agent_registry_v0.json",
+          "kind": "agent",
+          "id": "fathiya_kernel",
+          "queue": "Hub",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/workflow_registry_v0.json",
+          "kind": "workflow",
+          "id": "wf_corpus_intake_to_card",
+          "queue": "Knowledge Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/workflow_registry_v0.json",
+          "kind": "workflow",
+          "id": "wf_agent_machine_workflow_intake",
+          "queue": "Knowledge Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/tool_contract_registry_v0.json",
+          "kind": "contract",
+          "id": "github_create_or_update_file",
+          "queue": "Engineering Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/tool_contract_registry_v0.json",
+          "kind": "contract",
+          "id": "cursor_launch_agent",
+          "queue": "Engineering Queue",
+          "defined_in_runtime_queue": true
+        },
+        {
+          "source_file": "knowledge/registries/tool_contract_registry_v0.json",
+          "kind": "contract",
+          "id": "manus_create_task",
+          "queue": "Research Queue",
+          "defined_in_runtime_queue": true
+        }
+      ]
+    },
+    "tool_contract_required_fields": {
+      "status": "pass",
+      "contracts": [
+        {
+          "tool_id": "github_create_or_update_file",
+          "receipt_required_present": true,
+          "failure_modes_present": true,
+          "status": "pass"
+        },
+        {
+          "tool_id": "cursor_launch_agent",
+          "receipt_required_present": true,
+          "failure_modes_present": true,
+          "status": "pass"
+        },
+        {
+          "tool_id": "manus_create_task",
+          "receipt_required_present": true,
+          "failure_modes_present": true,
+          "status": "pass"
+        }
+      ]
+    },
+    "playbook_002_next_step": {
+      "status": "pass",
+      "expected_next_step": "PLAYBOOK 003 — Runtime Queue & Receipt Ledger",
+      "present": true
+    },
+    "playbook_001_alignment_note": {
+      "status": "pass",
+      "study_summary_sets_revised_playbook_002": true,
+      "playbook_001_points_to_revised_playbook_002": true
+    }
+  },
+  "issues_found": [],
+  "fixes_applied": [
+    {
+      "id": "hub-queue-definition-added",
+      "status": "fixed",
+      "files": [
+        "knowledge/runtime/runtime_queue_v0.json"
+      ],
+      "details": "Added a Hub queue definition so the FATHIYA Kernel queue reference resolves inside the runtime queue registry."
+    },
+    {
+      "id": "playbook-001-next-step-aligned",
+      "status": "fixed",
+      "files": [
+        "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md"
+      ],
+      "details": "Updated Playbook 001 to point to the revised Agent / Machine / Workflow Intelligence Intake playbook defined by the study summary."
+    }
+  ],
+  "files_changed": [
+    "knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/audit/FATHIYA_RUNTIME_LAYER_VALIDATION_REPORT_v0.md",
+    "knowledge/audit/FATHIYA_RUNTIME_LAYER_VALIDATION_REPORT_v0.json"
+  ],
+  "overall_status": "pass_with_safe_structural_fixes"
+}
