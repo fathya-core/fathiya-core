@@ -1,0 +1,43 @@
+{
+  "schema_version": "FATHIYA_SKILL_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of reusable skills used by FATHIYA agents, workflows, and playbooks.",
+  "skills": [
+    {
+      "skill_id": "corpus_intake",
+      "name": "Corpus Intake",
+      "playbook": "PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION",
+      "queues": ["Knowledge Queue"],
+      "outputs": ["raw_archive", "triage_record", "card_candidate", "receipt"],
+      "adapters": ["fathiya_kernel", "cursor_agent_optional"],
+      "status": "active"
+    },
+    {
+      "skill_id": "agent_workflow_intake",
+      "name": "Agent Machine Workflow Intake",
+      "playbook": "PLAYBOOK_002_AGENT_MACHINE_WORKFLOW_INTELLIGENCE_INTAKE",
+      "queues": ["Knowledge Queue", "Research Queue", "Engineering Queue"],
+      "outputs": ["agent_card", "workflow_card", "machine_task", "tool_contract", "architecture_note"],
+      "adapters": ["fathiya_kernel", "manus_ai_optional", "cursor_agent_optional"],
+      "status": "active"
+    },
+    {
+      "skill_id": "runtime_routing",
+      "name": "Runtime Queue and Receipt Routing",
+      "playbook": "PLAYBOOK_003_RUNTIME_QUEUE_RECEIPT_LEDGER",
+      "queues": ["Hub", "Knowledge Queue", "Research Queue", "Engineering Queue", "Automation Queue", "Model Queue", "Approval Queue"],
+      "outputs": ["queue_entry", "receipt", "next_step"],
+      "adapters": ["fathiya_kernel"],
+      "status": "active"
+    },
+    {
+      "skill_id": "tool_contract_resolution",
+      "name": "Tool Contract Resolution",
+      "playbook": "PLAYBOOK_004_TOOL_CONTRACT_RESOLVER",
+      "queues": ["Engineering Queue", "Automation Queue", "Approval Queue"],
+      "outputs": ["tool_contract", "payload_preview", "blocked_reason", "receipt"],
+      "adapters": ["fathiya_kernel", "github", "cursor_agent", "manus_ai", "zapier_mcp"],
+      "status": "active"
+    }
+  ]
+}
