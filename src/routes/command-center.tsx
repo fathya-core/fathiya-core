@@ -902,7 +902,10 @@ function CommandCenterPage() {
                           <StringListPanel title="Rate limits" items={card.rateLimits} />
                         </div>
                         <div className="space-y-4">
-                          <StringListPanel title="Forbidden actions" items={card.forbiddenActions} />
+                          <StringListPanel
+                            title="Forbidden actions"
+                            items={card.forbiddenActions}
+                          />
                           <StringListPanel title="Data handling" items={card.dataHandling} />
                         </div>
                       </div>
