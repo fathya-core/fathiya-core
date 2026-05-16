@@ -491,17 +491,18 @@ function buildSnapshot(): CommandCenterSnapshot {
   const blockedItemsCount =
     normalizeTextList(awareness.blocked_items).length +
     queueEntries.filter((entry) => entry.status === "blocked").length;
-  const latestReceiptsCount = hasReceipts ? receipts.length : (awareness.latest_receipts?.length ?? 0);
+  const latestReceiptsCount = hasReceipts
+    ? receipts.length
+    : (awareness.latest_receipts?.length ?? 0);
   const activeQueueCount = hasQueueEntries ? liveActiveQueueCount : awareness.active_queue_count;
   const hasLiveRuntimeData = hasQueueEntries || hasReceipts;
 
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
-    loaderNote:
-      hasLiveRuntimeData
-        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger now render the first real runtime data from PR #8, while sections with no live data still show explicit empty states."
-        : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+    loaderNote: hasLiveRuntimeData
+      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger now render the first real runtime data from PR #8, while sections with no live data still show explicit empty states."
+      : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
     lineage: {
       backbonePR: "PR #5 — Validate Operating Backbone v0",
       commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
