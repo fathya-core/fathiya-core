@@ -2,7 +2,21 @@
   "schema_version": "FATHIYA_RECEIPT_LEDGER_v0",
   "status": "draft",
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
-  "receipts": [],
+  "receipts": [
+    {
+      "receipt_id": "receipt-2026-05-16-command-center-hardening-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source_request": "rt-2026-05-16-command-center-hardening-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "PR #6 Command Center implementation + PR #5 Backbone checkpoint",
+      "output_artifact": "PR #7 Harden FATHIYA Command Center v0",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_validation_only",
+      "next_step": "validate Command Center renders live Runtime Queue and Receipt Ledger rows"
+    }
+  ],
   "required_receipt_fields": [
     "receipt_id",
     "timestamp",
