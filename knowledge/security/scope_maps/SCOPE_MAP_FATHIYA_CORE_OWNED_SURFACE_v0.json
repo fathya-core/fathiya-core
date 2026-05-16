@@ -16,9 +16,9 @@
     },
     {
       "asset": "https://fathiya-ops-console-0jfl.bolt.host",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "allowed_activity": "preparation_artifacts_only",
-      "notes": "Preparation-only coverage for the deployed ops console while formal policy is pending."
+      "notes": "Legacy external deployment mirror. The canonical ops console lives inside the monorepo fathya-core/fathiya-core. Retained for historical reference only. See ADR-001."
     },
     {
       "asset": "https://github.com/fathya-core/fathiya-core",
@@ -28,9 +28,9 @@
     },
     {
       "asset": "https://github.com/fathya-project/fathiya-ops-console.git",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "allowed_activity": "preparation_artifacts_only",
-      "notes": "Repository remains in preparation-only mode until formal written policy publication."
+      "notes": "Legacy repository — not source of truth. Canonical architecture lives in fathya-core/fathiya-core monorepo. Retained as historical reference and optional deployment mirror. See ADR-001."
     }
   ],
   "out_of_scope": [

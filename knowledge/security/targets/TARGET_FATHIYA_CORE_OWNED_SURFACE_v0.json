@@ -15,9 +15,9 @@
     {
       "asset": "https://fathiya-ops-console-0jfl.bolt.host",
       "asset_type": "ops_console",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "testing_status": "preparation_only_needs_policy",
-      "notes": "Owned project console declared by the user. No active testing or automated probing is authorized yet."
+      "notes": "Legacy external deployment mirror. The canonical ops console now lives inside the monorepo fathya-core/fathiya-core. This deployment is retained for historical reference only. See ADR-001."
     },
     {
       "asset": "https://github.com/fathya-core/fathiya-core",
@@ -29,9 +29,9 @@
     {
       "asset": "https://github.com/fathya-project/fathiya-ops-console.git",
       "asset_type": "source_repository",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "testing_status": "preparation_only_needs_policy",
-      "notes": "Repository is in scope for owned-project preparation only until a formal policy is published."
+      "notes": "Legacy repository — not source of truth. Canonical architecture lives in fathya-core/fathiya-core monorepo. Retained as historical reference and optional deployment mirror. See ADR-001."
     }
   ],
   "forbidden_scope": [
@@ -89,7 +89,7 @@
     },
     {
       "url": "https://fathiya-ops-console-0jfl.bolt.host",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "testing_status": "preparation_only_needs_policy"
     },
     {
@@ -99,11 +99,11 @@
     },
     {
       "url": "https://github.com/fathya-project/fathiya-ops-console.git",
-      "asset_status": "owned_or_project_declared",
+      "asset_status": "legacy_external_mirror",
       "testing_status": "preparation_only_needs_policy"
     }
   ],
-  "asset_status": "owned_or_project_declared, needs formal policy before active testing",
+  "asset_status": "canonical_monorepo: owned_or_project_declared; legacy_external_mirror: fathya-project/fathiya-ops-console. Needs formal policy before active testing.",
   "boundary_note": "Scope and authorization preparation only. No live testing, scanning, exploitation, credential workflows, destructive actions, or third-party activity are authorized under this draft Target Card.",
   "playbook": "PLAYBOOK_005_SCOPE_AUTHORIZATION_PREPARATION",
   "created_at": "2026-05-16T00:00:00Z"
