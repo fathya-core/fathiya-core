@@ -1,0 +1,49 @@
+{
+  "schema_version": "FATHIYA_TOOL_CONTRACT_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of tool and adapter contracts governing side effects, inputs, outputs, receipts, and failure modes.",
+  "contracts": [
+    {
+      "tool_id": "github_create_or_update_file",
+      "name": "GitHub Create or Update File",
+      "adapter": "Zapier GitHub",
+      "queue": "Engineering Queue",
+      "allowed_actions": ["create_file_on_branch", "update_file_on_branch"],
+      "input_schema": ["repo", "branch", "path", "content", "commit_message"],
+      "output_schema": ["commit_sha", "file_path", "html_url", "error"],
+      "side_effects": ["git_commit"],
+      "approval_required": true,
+      "receipt_required": true,
+      "failure_modes": ["repo_not_found", "branch_missing", "permission_denied", "content_too_large", "sha_conflict"],
+      "status": "active"
+    },
+    {
+      "tool_id": "cursor_launch_agent",
+      "name": "Cursor Launch Agent",
+      "adapter": "Zapier Cursor",
+      "queue": "Engineering Queue",
+      "allowed_actions": ["launch_agent_on_branch", "create_pr_if_enabled"],
+      "input_schema": ["repository_url", "repository_ref", "target_branch_name", "prompt_text", "target_auto_create_pr"],
+      "output_schema": ["agent_id", "status", "target_branch", "pr_url", "error"],
+      "side_effects": ["agent_branch", "possible_pull_request"],
+      "approval_required": true,
+      "receipt_required": true,
+      "failure_modes": ["agent_failed", "missing_artifact", "branch_conflict", "pr_not_created"],
+      "status": "active"
+    },
+    {
+      "tool_id": "manus_create_task",
+      "name": "Manus Create Task",
+      "adapter": "Zapier Manus",
+      "queue": "Research Queue",
+      "allowed_actions": ["create_research_task", "continue_task", "get_task"],
+      "input_schema": ["task_prompt", "source_context", "expected_output"],
+      "output_schema": ["task_id", "status", "result", "error"],
+      "side_effects": ["research_task"],
+      "approval_required": false,
+      "receipt_required": true,
+      "failure_modes": ["insufficient_context", "task_timeout", "ambiguous_prompt"],
+      "status": "available"
+    }
+  ]
+}
