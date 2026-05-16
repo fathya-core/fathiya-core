@@ -1,0 +1,59 @@
+{
+  "schema_version": "FATHIYA_MODEL_ROUTER_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of model routing lanes, selection criteria, cost controls, and fallback rules.",
+  "lanes": [
+    {
+      "lane_id": "lane_1_simple_classification",
+      "name": "Simple Classification",
+      "use_when": ["small_context", "low_risk", "structured_label", "no_external_action"],
+      "outputs": ["classification_label", "queue_recommendation", "draft_metadata"],
+      "approval_required": false,
+      "receipt_required": true
+    },
+    {
+      "lane_id": "lane_2_structured_drafting",
+      "name": "Structured Drafting",
+      "use_when": ["known_artifact_format", "moderate_context", "source_preserved"],
+      "outputs": ["knowledge_card", "workflow_card", "tool_contract_draft", "receipt_draft"],
+      "approval_required": false,
+      "receipt_required": true
+    },
+    {
+      "lane_id": "lane_3_deep_reasoning",
+      "name": "Deep Reasoning",
+      "use_when": ["architecture_change", "policy_conflict", "high_confidence_required"],
+      "outputs": ["architecture_decision", "policy_update", "runtime_change", "promotion_decision"],
+      "approval_required": false,
+      "receipt_required": true
+    },
+    {
+      "lane_id": "lane_4_research_synthesis",
+      "name": "Research Synthesis",
+      "use_when": ["multi_source", "freshness_required", "source_map_required"],
+      "adapters": ["manus_ai", "perplexity_optional", "gemini_optional"],
+      "outputs": ["research_brief", "source_map", "comparison_report"],
+      "approval_required": false,
+      "receipt_required": true
+    },
+    {
+      "lane_id": "lane_5_engineering_validation",
+      "name": "Engineering Validation",
+      "use_when": ["repo_change", "schema_validation", "code_validation", "index_validation"],
+      "adapters": ["cursor_agent", "local_scripts"],
+      "outputs": ["validation_report", "patch", "pr", "test_result"],
+      "approval_required": true,
+      "receipt_required": true
+    },
+    {
+      "lane_id": "lane_6_approval_policy_gate",
+      "name": "Approval and Policy Gate",
+      "use_when": ["external_side_effect", "high_impact_action", "main_branch_write", "webhook_or_email_or_activation"],
+      "outputs": ["payload_preview", "approval_entry", "execution_receipt"],
+      "approval_required": true,
+      "receipt_required": true
+    }
+  ],
+  "fallback_rules": ["reduce_scope", "retrieve_narrower_context", "escalate_one_lane", "call_specialist_adapter", "write_blocked_receipt"],
+  "cost_controls": ["use_cached_indexes", "prefer_summaries", "targeted_retrieval", "local_validation_first", "draft_before_external_action"]
+}
