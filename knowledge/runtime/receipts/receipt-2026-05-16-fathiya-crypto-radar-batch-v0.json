@@ -1,0 +1,31 @@
+{
+  "receipt_id": "receipt-2026-05-16-fathiya-crypto-radar-batch-v0",
+  "timestamp": "2026-05-16T00:00:00Z",
+  "source_request": "rt-2026-05-16-fathiya-crypto-radar-batch-v0",
+  "queue": "Knowledge Queue",
+  "adapter": "cursor_agent",
+  "input_artifact": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+  "output_artifact": "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json + Command Center live Crypto Radar",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_draft_and_monitoring_only",
+  "next_step": "append future PB006 batches without adding trading or execution instructions",
+  "provenance": {
+    "related_files": [
+      "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json",
+      "knowledge/crypto/radar/cards/bitcoin-institutional-outflow-reversal-v0.json",
+      "knowledge/crypto/radar/cards/genius-clarity-regulatory-narrative-v0.json",
+      "knowledge/crypto/radar/cards/solana-etf-staking-yield-v0.json",
+      "knowledge/crypto/radar/cards/kelpdao-layerzero-defi-contagion-v0.json",
+      "src/lib/command-center.ts",
+      "src/routes/command-center.tsx"
+    ],
+    "playbooks_followed": [
+      "PLAYBOOK_003_RUNTIME_QUEUE_RECEIPT_LEDGER",
+      "PLAYBOOK_006_CRYPTO_RADAR_SIGNAL_INTAKE"
+    ],
+    "tool_contract": "cursor_launch_agent",
+    "approval_class": "no_approval_draft",
+    "boundary": "Research and monitoring only. No trading execution, exchange orders, or portfolio mutation."
+  }
+}

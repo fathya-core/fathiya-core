@@ -1,0 +1,23 @@
+{
+  "id": "crypto-radar-solana-etf-staking-yield-v0",
+  "title": "Solana ETF inflows and staking yield integration",
+  "asset_or_sector": "Solana (SOL) / Institutional ETFs",
+  "classification": ["Signal Card", "Narrative Card"],
+  "source_file": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+  "source_urls": ["https://247wallst.com/investing/2026/05/15/xrp-and-solana-etfs-keep-pulling-inflows-while-ethereum-etfs-bleed/"],
+  "timeframe": "Medium Term (1-3 months)",
+  "what_changed": "Solana spot ETFs logged 11 consecutive inflow days through mid-May 2026, adding $100 million in cumulative inflows and bringing total assets to $1.05 billion. The source brief says the Bitwise Solana Staking ETF allows institutions to earn validator yield on top of price exposure while Ethereum ETFs bled $189 million over four days.",
+  "why_it_matters": "The source brief frames staking-yield integration plus continued inflows as evidence of growing institutional comfort with SOL as an alternative to ETH inside a traditional ETF wrapper.",
+  "catalyst": "The Solana Alpenglow upgrade going live on the community testnet on May 11 plus institutional disclosures of ETF positions.",
+  "risks": [
+    "Network instability during mainnet upgrades could weaken the narrative.",
+    "Broader macro-driven ETF outflows could spill over into altcoin products."
+  ],
+  "invalidation_conditions": [
+    "Solana ETFs post sustained consecutive days of net outflows.",
+    "The Alpenglow upgrade fails on mainnet."
+  ],
+  "confidence": "medium-high",
+  "status": "monitoring",
+  "boundary": "No trading execution, buy/sell instruction, or portfolio mutation. Research and monitoring only."
+}

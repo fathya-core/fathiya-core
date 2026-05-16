@@ -1,0 +1,23 @@
+{
+  "id": "crypto-radar-kelpdao-layerzero-defi-contagion-v0",
+  "title": "KelpDAO/LayerZero DeFi contagion risk",
+  "asset_or_sector": "DeFi / Liquid Restaking Tokens (rsETH) / Lending Protocols (Aave)",
+  "classification": ["Risk Card"],
+  "source_file": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+  "source_urls": ["https://www.galaxy.com/insights/research/kelpdao-layerzero-exploit-defi"],
+  "timeframe": "Short to Medium Term (Ongoing fallout)",
+  "what_changed": "On April 18, 2026, attackers exploited KelpDAO's LayerZero OFT bridge via an RPC poisoning attack, draining 116,500 rsETH, valued at roughly $290 million. The stolen tokens were used as collateral on Aave to borrow $236 million in ETH. The source brief says DeFi TVL fell by $13 billion within 48 hours and Aave froze rsETH and WETH markets while major stablecoin markets hit 100% utilization.",
+  "why_it_matters": "The source brief frames the exploit as evidence of systemic risk in single-verifier cross-chain infrastructure and heavily leveraged liquid restaking token collateral, with possible bad debt fallout and frozen lending liquidity.",
+  "catalyst": "KelpDAO's 1-of-1 LayerZero DVN configuration plus Aave's high loan-to-value allowance for rsETH collateral.",
+  "risks": [
+    "Potential bad debt realization on Aave could deepen the fallout.",
+    "Prolonged freezing of major lending markets could suppress DeFi activity and liquidity."
+  ],
+  "invalidation_conditions": [
+    "Aave successfully socializes or isolates the bad debt without major user losses.",
+    "Liquidity returns to normal utilization levels."
+  ],
+  "confidence": "high",
+  "status": "monitoring",
+  "boundary": "No trading execution, buy/sell instruction, or portfolio mutation. Research and monitoring only."
+}

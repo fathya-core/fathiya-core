@@ -1,0 +1,26 @@
+{
+  "id": "crypto-radar-bitcoin-institutional-outflow-reversal-v0",
+  "title": "Bitcoin institutional outflow reversal",
+  "asset_or_sector": "Bitcoin (BTC) / Institutional ETFs",
+  "classification": ["Risk Card", "Signal Card"],
+  "source_file": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+  "source_urls": [
+    "https://www.mexc.com/news/1096709",
+    "https://finance.yahoo.com/news/bitcoin-btc-etfs-see-7-202711367.html"
+  ],
+  "timeframe": "Short to Medium Term (1-4 weeks)",
+  "what_changed": "U.S. spot Bitcoin ETFs recorded over $1 billion in net outflows for the week ending May 15, 2026, breaking a 6-week streak of consecutive inflows that had totaled roughly $3.4 billion. BlackRock's IBIT alone saw a $136.25 million daily exit on May 15.",
+  "why_it_matters": "The source brief describes this as the most significant weekly reversal of institutional capital since January 2026 and frames it as a macro-driven pullback as institutional investors reassess risk appetite amid rising Treasury yields and resistance near the $82,000 mark.",
+  "catalyst": "Rising Treasury yields, uncertain Federal Reserve signals, and technical resistance at the 200-day moving average.",
+  "risks": [
+    "Continued macro uncertainty could prolong ETF outflows.",
+    "Sustained high yields could weaken institutional support for BTC prices."
+  ],
+  "invalidation_conditions": [
+    "Weekly net inflows into U.S. spot Bitcoin ETFs resume.",
+    "IBIT or ARKB leads a renewed positive inflow cycle."
+  ],
+  "confidence": "high",
+  "status": "monitoring",
+  "boundary": "No trading execution, buy/sell instruction, or portfolio mutation. Research and monitoring only."
+}
