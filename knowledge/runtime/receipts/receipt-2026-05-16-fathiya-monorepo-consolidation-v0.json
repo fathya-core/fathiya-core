@@ -1,0 +1,50 @@
+{
+  "receipt_id": "receipt-2026-05-16-fathiya-monorepo-consolidation-v0",
+  "timestamp": "2026-05-16T00:00:00Z",
+  "source_request": "rt-2026-05-16-fathiya-monorepo-consolidation-v0",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "input_artifact": "Two-repo architecture (fathya-core/fathiya-core + fathya-project/fathiya-ops-console) with split-brain risk",
+  "output_artifact": "ADR-001 + FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md (updated) + TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json (updated) + SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json (updated) + FATHIYA_MONOREPO_CONSOLIDATION_REPORT_v0.md + README_COMMAND_CENTER_v0.md (updated)",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_architecture_consolidation_only",
+  "next_step": "validate all future artifacts treat fathya-core/fathiya-core as single source of truth per ADR-001",
+  "provenance": {
+    "related_files": [
+      "knowledge/decisions/ADR_001_FATHIYA_MONOREPO_CANONICAL_REPOSITORY.md",
+      "knowledge/audit/FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md",
+      "knowledge/audit/FATHIYA_MONOREPO_CONSOLIDATION_REPORT_v0.md",
+      "knowledge/security/targets/TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json",
+      "knowledge/security/scope_maps/SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json",
+      "README_COMMAND_CENTER_v0.md",
+      "knowledge/runtime/runtime_queue_v0.json",
+      "knowledge/runtime/receipt_ledger_v0.json"
+    ],
+    "decision": "Use fathya-core/fathiya-core as the single canonical monorepo. Demote fathya-project/fathiya-ops-console to legacy external mirror.",
+    "corrections_applied": [
+      {
+        "file": "knowledge/security/targets/TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json",
+        "change": "ops console entries asset_status changed from owned_or_project_declared to legacy_external_mirror"
+      },
+      {
+        "file": "knowledge/security/scope_maps/SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json",
+        "change": "ops console entries asset_status changed from owned_or_project_declared to legacy_external_mirror"
+      },
+      {
+        "file": "knowledge/audit/FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md",
+        "change": "Updated to reflect canonical monorepo and legacy mirror distinction"
+      },
+      {
+        "file": "README_COMMAND_CENTER_v0.md",
+        "change": "Added canonical status section documenting this as the active Command Center"
+      }
+    ],
+    "playbooks_followed": [
+      "PLAYBOOK_003_RUNTIME_QUEUE_RECEIPT_LEDGER"
+    ],
+    "tool_contract": "cursor_launch_agent",
+    "approval_class": "no_approval_architecture_consolidation",
+    "boundary": "Architecture consolidation only. No live testing, scanning, deletion, or external action."
+  }
+}

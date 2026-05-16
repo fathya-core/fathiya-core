@@ -1,0 +1,10 @@
+{
+  "schema_version": "FATHIYA_RETRIEVAL_VALIDATION_v0",
+  "validated_at": "2026-05-15T15:04:00.929025+00:00",
+  "json_files_parsed": 244,
+  "records_created": 243,
+  "missing_paths": [],
+  "duplicate_ids": [],
+  "empty_titles": [],
+  "status": "PASS"
+}

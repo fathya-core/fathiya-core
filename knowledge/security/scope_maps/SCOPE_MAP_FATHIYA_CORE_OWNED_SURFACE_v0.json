@@ -1,0 +1,63 @@
+{
+  "scope_map_id": "scope-map-fathiya-core-owned-surface-v0",
+  "target_id": "target-fathiya-core-owned-surface-v0",
+  "name": "FATHIYA Core Owned Surface",
+  "program": "Internal / owned project preparation",
+  "mode": "Lab/Internal Owned Surface Preparation",
+  "authorization_status": "owned_project_context_from_user",
+  "policy_status": "needs_policy",
+  "status": "draft / needs_policy",
+  "in_scope": [
+    {
+      "asset": "https://fathiya-core.com/",
+      "asset_status": "owned_or_project_declared",
+      "allowed_activity": "preparation_artifacts_only",
+      "notes": "Document the asset in the Target Card and Scope Map. No active testing is allowed."
+    },
+    {
+      "asset": "https://fathiya-ops-console-0jfl.bolt.host",
+      "asset_status": "legacy_external_mirror",
+      "allowed_activity": "preparation_artifacts_only",
+      "notes": "Legacy external deployment mirror. The canonical ops console lives inside the monorepo fathya-core/fathiya-core. Retained for historical reference only. See ADR-001."
+    },
+    {
+      "asset": "https://github.com/fathya-core/fathiya-core",
+      "asset_status": "owned_or_project_declared",
+      "allowed_activity": "preparation_artifacts_only",
+      "notes": "Repository can be listed in scope artifacts, but no credential access or destructive repository actions are authorized."
+    },
+    {
+      "asset": "https://github.com/fathya-project/fathiya-ops-console.git",
+      "asset_status": "legacy_external_mirror",
+      "allowed_activity": "preparation_artifacts_only",
+      "notes": "Legacy repository — not source of truth. Canonical architecture lives in fathya-core/fathiya-core monorepo. Retained as historical reference and optional deployment mirror. See ADR-001."
+    }
+  ],
+  "out_of_scope": [
+    "Any live external testing, exploitation, or vulnerability validation against these assets before policy publication.",
+    "Scanning, automated probing, or rate-driven enumeration of live systems.",
+    "Credential access, secrets retrieval, private data access, or account interaction.",
+    "Destructive actions, persistence changes, or availability-impacting behavior.",
+    "Any third-party asset, dependency, or service interaction without explicit written policy."
+  ],
+  "unknown_scope": [
+    "Formal written policy URL and safe-harbor language.",
+    "Explicit allowed testing methods, exclusions, and rate limits.",
+    "Reporting contact, escalation path, and SLA for findings.",
+    "Any hosted third-party boundaries attached to the listed assets."
+  ],
+  "requires_clarification": [
+    "Publish formal written policy before any active testing or external action.",
+    "Confirm which subdomains, environments, and supporting services are first-party owned.",
+    "Document rate limits, excluded areas, and reporting channel in a public or otherwise shared policy artifact."
+  ],
+  "next_artifacts": [
+    "Boundary Note",
+    "Report Draft Template",
+    "Queue Entry",
+    "Receipt"
+  ],
+  "boundary_note": "PB005 preparation only. The existence of this Scope Map does not authorize testing. It records owned/project-declared assets and the explicit no-testing boundary until policy is formalized.",
+  "playbook": "PLAYBOOK_005_SCOPE_AUTHORIZATION_PREPARATION",
+  "created_at": "2026-05-16T00:00:00Z"
+}

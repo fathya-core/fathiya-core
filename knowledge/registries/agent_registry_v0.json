@@ -1,0 +1,49 @@
+{
+  "schema_version": "FATHIYA_AGENT_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of agents that can receive routed work from FATHIYA Hub.",
+  "agents": [
+    {
+      "agent_id": "cursor_agent",
+      "name": "Cursor Agent",
+      "role": "engineering_validator",
+      "queue": "Engineering Queue",
+      "capabilities": ["repo_patch", "json_validation", "schema_validation", "test_runner", "pull_request_creation"],
+      "tools": ["GitHub", "filesystem", "terminal"],
+      "permissions": ["read_repo", "write_branch", "open_pr"],
+      "inputs": ["task_prompt", "repository_url", "branch", "artifacts"],
+      "outputs": ["patch", "validation_report", "pr_url", "execution_notes"],
+      "receipt_policy": "required",
+      "failure_modes": ["missing_artifact", "merge_conflict", "test_failure", "branch_missing"],
+      "status": "available"
+    },
+    {
+      "agent_id": "manus_ai",
+      "name": "Manus AI",
+      "role": "deep_research_synthesis",
+      "queue": "Research Queue",
+      "capabilities": ["research", "synthesis", "comparison", "report_generation"],
+      "tools": ["Manus"],
+      "permissions": ["draft_research", "summarize", "compare_sources"],
+      "inputs": ["research_prompt", "source_set", "question"],
+      "outputs": ["research_brief", "source_map", "architecture_notes"],
+      "receipt_policy": "required",
+      "failure_modes": ["insufficient_sources", "stale_info", "ambiguous_scope"],
+      "status": "available"
+    },
+    {
+      "agent_id": "fathiya_kernel",
+      "name": "FATHIYA Kernel",
+      "role": "routing_and_decision_layer",
+      "queue": "Hub",
+      "capabilities": ["classification", "routing", "policy_check", "artifact_selection", "receipt_review"],
+      "tools": ["Vault", "Hub", "Policy Layer"],
+      "permissions": ["draft", "route", "request_approval"],
+      "inputs": ["user_request", "corpus_item", "agent_output"],
+      "outputs": ["decision", "queue_entry", "artifact_spec", "next_action"],
+      "receipt_policy": "required",
+      "failure_modes": ["missing_context", "unclear_scope", "policy_conflict"],
+      "status": "core"
+    }
+  ]
+}

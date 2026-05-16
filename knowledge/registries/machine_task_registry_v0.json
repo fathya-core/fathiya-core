@@ -1,0 +1,40 @@
+{
+  "schema_version": "FATHIYA_MACHINE_TASK_REGISTRY_v0",
+  "status": "draft",
+  "purpose": "Registry of machine-executable or machine-assisted tasks routed by FATHIYA.",
+  "machine_tasks": [
+    {
+      "task_id": "validate_json_files",
+      "name": "Validate JSON Files",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_schema": ["repository_url", "branch", "file_paths"],
+      "output_schema": ["validation_status", "errors", "report_path"],
+      "approval_required": false,
+      "receipt_required": true,
+      "status": "active"
+    },
+    {
+      "task_id": "create_or_update_github_file",
+      "name": "Create or Update GitHub File",
+      "queue": "Engineering Queue",
+      "adapter": "github_create_or_update_file",
+      "input_schema": ["repo", "branch", "path", "content", "commit_message"],
+      "output_schema": ["commit_sha", "file_path", "html_url", "error"],
+      "approval_required": true,
+      "receipt_required": true,
+      "status": "active"
+    },
+    {
+      "task_id": "launch_cursor_validation",
+      "name": "Launch Cursor Validation",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_launch_agent",
+      "input_schema": ["repository_url", "repository_ref", "target_branch_name", "prompt_text"],
+      "output_schema": ["agent_id", "status", "target_branch", "pr_url", "error"],
+      "approval_required": true,
+      "receipt_required": true,
+      "status": "active"
+    }
+  ]
+}

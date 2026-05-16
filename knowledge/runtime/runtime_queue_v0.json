@@ -1,0 +1,135 @@
+{
+  "schema_version": "FATHIYA_RUNTIME_QUEUE_v0",
+  "status": "draft",
+  "purpose": "Track routed work across FATHIYA queues before adapter execution or validation.",
+  "queues": {
+    "Hub": {
+      "purpose": "Routing and control decisions managed by FATHIYA Kernel.",
+      "default_approval": false,
+      "allowed_outputs": ["decision", "queue_entry", "artifact_spec", "next_action"]
+    },
+    "Knowledge Queue": {
+      "purpose": "Convert sources into vault memory.",
+      "default_approval": false,
+      "allowed_outputs": ["raw_archive", "triage_record", "card_candidate", "relation_candidate", "audit_receipt"]
+    },
+    "Research Queue": {
+      "purpose": "Deep synthesis and comparison.",
+      "default_approval": false,
+      "allowed_adapters": ["manus_ai"]
+    },
+    "Engineering Queue": {
+      "purpose": "Repo, schema, index, and validation work.",
+      "default_approval": "write_only",
+      "allowed_adapters": ["cursor_agent", "github"]
+    },
+    "Automation Queue": {
+      "purpose": "Draft n8n/Zapier workflows before activation.",
+      "default_approval": "before_activation",
+      "allowed_adapters": ["n8n", "zapier_mcp"]
+    },
+    "Model Queue": {
+      "purpose": "Route model selection, cost, context, and inference strategy.",
+      "default_approval": false,
+      "allowed_outputs": ["model_router_rule", "cost_note", "context_policy"]
+    },
+    "Approval Queue": {
+      "purpose": "Any external side effect, publication, or execution-capable action.",
+      "default_approval": true,
+      "allowed_outputs": ["payload_preview", "approval_record", "execution_receipt"]
+    }
+  },
+  "queue_entries": [
+    {
+      "id": "rt-2026-05-16-command-center-hardening-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "PR #7 Harden FATHIYA Command Center v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Command Center hardening",
+      "input_artifact": "PR #6 Command Center implementation + PR #5 Backbone checkpoint",
+      "expected_output": "hardened Command Center with provenance and empty states",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-command-center-hardening-v0.json",
+      "next_step": "use the first receipt to validate Command Center live data rendering"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-crypto-radar-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA Crypto Radar source brief v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "mode": "PB006 Crypto Radar intake batch",
+      "input_artifact": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+      "expected_output": "first live FATHIYA Crypto Radar batch with four monitoring cards and Command Center live render",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-crypto-radar-batch-v0.json",
+      "next_step": "monitor future PB006 batches and preserve non-execution boundaries"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-pb005-target-preparation-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA Core owned-surface preparation brief v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "mode": "PB005 Scope/Auth target preparation batch",
+      "input_artifact": "User-declared owned FATHIYA Core assets + PLAYBOOK_005 scope/authorization preparation requirements",
+      "expected_output": "first live owned-surface Target Card + Scope Map + receipt-linked Command Center Scope & Authorization render with needs_policy boundary",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-pb005-target-preparation-batch-v0.json",
+      "next_step": "publish a formal written policy before any live testing, scanning, or external action"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-repo-identity-correction-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA repository identity correction task",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Repository identity correction",
+      "input_artifact": "Incorrect fathya-core/fathiya-ops-console references in Target Card and Scope Map",
+      "expected_output": "Corrected references to fathya-project/fathiya-ops-console + FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-repo-identity-correction-v0.json",
+      "next_step": "validate all future artifacts reference the correct repository identities per FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-monorepo-consolidation-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA monorepo consolidation — ADR-001",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Architecture consolidation",
+      "input_artifact": "Two-repo architecture (fathya-core/fathiya-core + fathya-project/fathiya-ops-console) with split-brain risk",
+      "expected_output": "ADR-001 + updated identity map + updated target card + updated scope map + consolidation report + canonical Command Center documentation",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-monorepo-consolidation-v0.json",
+      "next_step": "validate all future artifacts treat fathya-core/fathiya-core as single source of truth per ADR-001"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-final-integration-validation-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA PR #14 final integration validation before merge",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Final integration validation",
+      "input_artifact": "PR #14 (cursor/monorepo-consolidation-v0 -> main) Integrate FATHIYA Operating Backbone and Monorepo MVP, 61 changed files, mergeable",
+      "expected_output": "knowledge/audit/FATHIYA_FINAL_INTEGRATION_VALIDATION_REPORT_v0.md + appended runtime queue + appended receipt ledger + linked receipt file + merge recommendation",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-final-integration-validation-v0.json",
+      "next_step": "reviewer approval and merge of PR #14 into main; no further changes required from this validation"
+    }
+  ],
+  "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]
+}
