@@ -47,8 +47,66 @@
       "examples": ["target_specific_external_activity", "program_scope_action"],
       "receipt_required": true,
       "requires": ["target_card", "scope_status", "policy_url"]
+    },
+    {
+      "class_id": "webhook_staged",
+      "name": "Webhook Staged",
+      "requires_approval": true,
+      "examples": ["stage_zapier_webhook", "stage_n8n_webhook", "stage_custom_webhook"],
+      "receipt_required": true,
+      "execution_mode": "staged_only",
+      "notes": "Webhook payloads are drafted and previewed but never sent until explicit approval and live-execution policy exist. Added by ADR-003."
+    },
+    {
+      "class_id": "workflow_activation_staged",
+      "name": "Workflow Activation Staged",
+      "requires_approval": true,
+      "examples": ["stage_n8n_workflow_activation", "stage_zapier_zap_activation", "stage_automation_trigger"],
+      "receipt_required": true,
+      "execution_mode": "staged_only",
+      "notes": "Workflow activations are represented as staged queue entries with payload previews. No live activation occurs. Added by ADR-003."
+    },
+    {
+      "class_id": "credential_reference_never_secret_value",
+      "name": "Credential Reference (Never Secret Value)",
+      "requires_approval": false,
+      "examples": ["reference_api_key_name", "reference_oauth_app_name", "reference_service_account_name"],
+      "receipt_required": true,
+      "execution_mode": "reference_only",
+      "notes": "Credentials are referenced by name or identifier only. Secret values, tokens, passwords, and keys are never stored in knowledge artifacts. Added by ADR-003."
+    },
+    {
+      "class_id": "destructive_action_blocked_by_default",
+      "name": "Destructive Action Blocked by Default",
+      "requires_approval": true,
+      "examples": ["delete_repository", "drop_database", "revoke_all_tokens", "force_push_main", "delete_production_data"],
+      "receipt_required": true,
+      "execution_mode": "blocked",
+      "status": "blocked_requires_explicit_unblock_policy",
+      "notes": "Destructive actions are blocked by default and cannot be unblocked without a dedicated unblock policy and explicit human approval. Added by ADR-003."
+    },
+    {
+      "class_id": "owned_asset_operation_staged",
+      "name": "Owned Asset Operation Staged",
+      "requires_approval": true,
+      "examples": ["update_owned_repo_settings", "modify_owned_dns", "update_owned_deployment_config", "prepare_owned_asset_for_operation"],
+      "receipt_required": true,
+      "execution_mode": "staged_only",
+      "requires": ["asset_ownership_proof", "scope_map_reference"],
+      "notes": "Operations on owned FATHIYA assets are staged with payload previews. Execution requires ownership proof and scope map alignment. Added by ADR-003."
+    },
+    {
+      "class_id": "third_party_activity_blocked_unless_formal_scope",
+      "name": "Third-Party Activity Blocked Unless Formal Scope",
+      "requires_approval": true,
+      "examples": ["interact_with_external_api", "send_to_third_party_service", "execute_on_external_platform"],
+      "receipt_required": true,
+      "execution_mode": "blocked",
+      "status": "blocked_requires_formal_scope_and_target_card",
+      "requires": ["target_card", "scope_status", "formal_agreement_or_tos_acceptance"],
+      "notes": "Third-party activity is blocked by default. Unblocking requires a target card, scope map with authorized status, and formal scope documentation. Added by ADR-003."
     }
   ],
   "approval_entry_fields": ["approval_id", "timestamp", "requested_action", "tool_contract", "payload_preview", "side_effects", "rollback_or_recovery", "requester", "status", "receipt_path"],
-  "status_values": ["draft", "waiting_approval", "approved", "rejected", "blocked", "executed", "failed"]
+  "status_values": ["draft", "waiting_approval", "approved", "rejected", "blocked", "executed", "failed", "staged"]
 }

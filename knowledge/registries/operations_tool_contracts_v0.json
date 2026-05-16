@@ -1,0 +1,140 @@
+{
+  "schema_version": "FATHIYA_OPERATIONS_TOOL_CONTRACTS_v0",
+  "status": "draft",
+  "purpose": "Tool contract drafts for operations-layer adapters. Complements tool_contract_registry_v0.json with operations-specific contracts for webhook, workflow, messaging, and repo management tools. All contracts start in staged or planned status per ADR-003.",
+  "added_by": "ADR-003 — FATHIYA Operations Autopilot Mode",
+  "contracts": [
+    {
+      "tool_id": "zapier_webhook_send",
+      "name": "Zapier Webhook Send",
+      "adapter": "Zapier Webhooks",
+      "queue": "Automation Queue",
+      "allowed_actions": ["stage_webhook_payload", "preview_webhook_payload", "dry_run_webhook"],
+      "input_schema": {
+        "fields": ["webhook_url_reference", "method", "headers_template", "payload_body", "content_type"],
+        "notes": "webhook_url_reference is a name/alias, never a raw URL with embedded secrets."
+      },
+      "output_schema": {
+        "fields": ["staged_payload_id", "payload_preview", "validation_result", "error"],
+        "notes": "No HTTP response is returned in staged mode — only the drafted payload."
+      },
+      "side_effects": ["none_in_staged_mode"],
+      "approval_required": true,
+      "approval_class": "webhook_staged",
+      "receipt_required": true,
+      "failure_modes": ["invalid_payload_schema", "missing_webhook_reference", "content_type_mismatch"],
+      "rollback_strategy": "Delete staged queue entry; no external state to reverse in staged mode.",
+      "status": "staged"
+    },
+    {
+      "tool_id": "zapier_manager_zap_lifecycle",
+      "name": "Zapier Manager — Zap Lifecycle",
+      "adapter": "Zapier Manager",
+      "queue": "Automation Queue",
+      "allowed_actions": ["list_zaps", "stage_zap_enable", "stage_zap_disable", "preview_zap_config"],
+      "input_schema": {
+        "fields": ["zap_id_or_name", "action", "dry_run"],
+        "notes": "All mutating actions default to dry_run: true. Listing is read-only."
+      },
+      "output_schema": {
+        "fields": ["zap_list", "staged_action_id", "current_status", "preview", "error"],
+        "notes": "Mutating results are staged; read-only results are returned directly."
+      },
+      "side_effects": ["none_in_dry_run", "zap_state_change_if_executed"],
+      "approval_required": true,
+      "approval_class": "workflow_activation_staged",
+      "receipt_required": true,
+      "failure_modes": ["zap_not_found", "auth_failure", "rate_limit", "invalid_action"],
+      "rollback_strategy": "Re-enable or re-disable the Zap to its previous state; log previous state in receipt.",
+      "status": "planned"
+    },
+    {
+      "tool_id": "n8n_workflow_activation",
+      "name": "n8n Workflow Activation",
+      "adapter": "n8n",
+      "queue": "Automation Queue",
+      "allowed_actions": ["stage_workflow_activation", "stage_workflow_deactivation", "preview_workflow_trigger", "list_workflows"],
+      "input_schema": {
+        "fields": ["workflow_id", "trigger_data_preview", "activation_mode", "dry_run"],
+        "notes": "activation_mode must be 'staged' or 'dry_run' in Operations Autopilot v0. Live activation is blocked."
+      },
+      "output_schema": {
+        "fields": ["staged_activation_id", "workflow_status", "trigger_preview", "error"],
+        "notes": "No execution occurs — only the activation intent and trigger preview are recorded."
+      },
+      "side_effects": ["none_in_staged_mode"],
+      "approval_required": true,
+      "approval_class": "workflow_activation_staged",
+      "receipt_required": true,
+      "failure_modes": ["workflow_not_found", "trigger_schema_mismatch", "n8n_unreachable", "activation_mode_invalid"],
+      "rollback_strategy": "Deactivate workflow if it was activated; restore previous trigger configuration.",
+      "status": "staged"
+    },
+    {
+      "tool_id": "gmail_send_staged",
+      "name": "Gmail Send (Staged)",
+      "adapter": "Zapier Gmail / Google Workspace",
+      "queue": "Approval Queue",
+      "allowed_actions": ["stage_email_draft", "preview_email_payload"],
+      "input_schema": {
+        "fields": ["to", "subject", "body_text", "body_html", "cc", "bcc", "attachments_manifest"],
+        "notes": "Email is drafted and previewed only. No send occurs in staged mode. Credential reference is by OAuth app name."
+      },
+      "output_schema": {
+        "fields": ["staged_email_id", "payload_preview", "validation_result", "error"],
+        "notes": "Returns the composed email for review; no message ID from Gmail."
+      },
+      "side_effects": ["none_in_staged_mode"],
+      "approval_required": true,
+      "approval_class": "approval_external_message",
+      "receipt_required": true,
+      "failure_modes": ["invalid_recipient", "body_too_large", "attachment_reference_missing", "credential_reference_not_found"],
+      "rollback_strategy": "Delete staged draft entry; no external email state to reverse.",
+      "status": "staged"
+    },
+    {
+      "tool_id": "outlook_send_staged",
+      "name": "Outlook Send (Staged)",
+      "adapter": "Zapier Outlook / Microsoft 365",
+      "queue": "Approval Queue",
+      "allowed_actions": ["stage_email_draft", "preview_email_payload"],
+      "input_schema": {
+        "fields": ["to", "subject", "body_text", "body_html", "cc", "bcc", "attachments_manifest"],
+        "notes": "Email is drafted and previewed only. No send occurs in staged mode. Credential reference is by OAuth app name."
+      },
+      "output_schema": {
+        "fields": ["staged_email_id", "payload_preview", "validation_result", "error"],
+        "notes": "Returns the composed email for review; no message ID from Outlook."
+      },
+      "side_effects": ["none_in_staged_mode"],
+      "approval_required": true,
+      "approval_class": "approval_external_message",
+      "receipt_required": true,
+      "failure_modes": ["invalid_recipient", "body_too_large", "attachment_reference_missing", "credential_reference_not_found"],
+      "rollback_strategy": "Delete staged draft entry; no external email state to reverse.",
+      "status": "staged"
+    },
+    {
+      "tool_id": "github_repo_operations_staged",
+      "name": "GitHub Repository Operations (Staged)",
+      "adapter": "GitHub API / Zapier GitHub",
+      "queue": "Engineering Queue",
+      "allowed_actions": ["stage_create_repo", "stage_update_repo_settings", "stage_create_branch", "stage_create_release", "stage_update_branch_protection", "preview_repo_operation"],
+      "input_schema": {
+        "fields": ["owner", "repo", "operation", "parameters", "dry_run"],
+        "notes": "All operations default to dry_run: true. Only owned repos (per scope map) are eligible. Credential reference is by GitHub App or PAT name."
+      },
+      "output_schema": {
+        "fields": ["staged_operation_id", "operation_preview", "scope_map_check", "error"],
+        "notes": "Returns the operation intent and scope validation; no GitHub API call is made in staged mode."
+      },
+      "side_effects": ["none_in_staged_mode"],
+      "approval_required": true,
+      "approval_class": "owned_asset_operation_staged",
+      "receipt_required": true,
+      "failure_modes": ["repo_not_in_scope_map", "owner_mismatch", "operation_not_supported", "parameter_validation_failed"],
+      "rollback_strategy": "Reverse the specific GitHub operation (e.g., delete created branch, restore previous settings); log previous state in receipt.",
+      "status": "staged"
+    }
+  ]
+}

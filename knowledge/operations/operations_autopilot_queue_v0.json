@@ -1,0 +1,38 @@
+{
+  "schema_version": "FATHIYA_OPERATIONS_AUTOPILOT_QUEUE_v0",
+  "status": "draft",
+  "purpose": "Staged operations queue for FATHIYA Operations Autopilot Mode. Tracks operations that are planned, staged, or previewed but not yet executed. Separate from runtime_queue_v0.json which tracks routed build work.",
+  "added_by": "ADR-003 — FATHIYA Operations Autopilot Mode",
+  "execution_policy": "All entries in this queue are staged by default. No entry may transition to 'executed' without satisfying the approval class requirements in approval_policy_registry_v0.json and a future live-execution policy ADR.",
+  "queues": {
+    "Operations Staging": {
+      "purpose": "Default queue for all staged operations before approval.",
+      "default_status": "staged",
+      "allowed_statuses": ["staged", "previewed", "waiting_approval", "approved", "blocked", "cancelled"]
+    },
+    "Operations Approved": {
+      "purpose": "Operations that have been approved but not yet executed (requires live-execution policy).",
+      "default_status": "approved",
+      "allowed_statuses": ["approved", "executing", "executed", "failed", "rolled_back"]
+    }
+  },
+  "entry_fields": [
+    "entry_id",
+    "timestamp",
+    "tool_contract_id",
+    "approval_class",
+    "operation_type",
+    "description",
+    "payload_preview",
+    "target_reference",
+    "credential_reference",
+    "scope_map_reference",
+    "status",
+    "approval_id",
+    "receipt_path",
+    "rollback_note_path",
+    "requested_by",
+    "notes"
+  ],
+  "entries": []
+}

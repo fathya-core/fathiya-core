@@ -93,6 +93,19 @@
       "error": null,
       "approval_reference": "none_required_validation_only",
       "next_step": "address pre-existing prettier formatting errors in a dedicated formatting PR; continue operating from canonical monorepo per ADR-001"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-operations-autopilot-bootstrap-v0",
+      "timestamp": "2026-05-16T17:01:00Z",
+      "source_request": "rt-2026-05-16-fathiya-operations-autopilot-bootstrap-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at 520750f + user-declared operations-autopilot requirements (ADR-003 scope)",
+      "output_artifact": "ADR-003 + extended approval_policy_registry_v0.json + operations_tool_contracts_v0.json + operations_autopilot_queue_v0.json + rollback_note_template_v0.md + knowledge/audit/FATHIYA_OPERATIONS_AUTOPILOT_BOOTSTRAP_REPORT_v0.md + this receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_framework_bootstrap_only",
+      "next_step": "PR review and merge into main; then formalize live-execution policy ADR before any staged operations transition to executed"
     }
   ],
   "required_receipt_fields": [
