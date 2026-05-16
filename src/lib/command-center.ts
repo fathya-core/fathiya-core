@@ -23,6 +23,14 @@ import playbook009Raw from "../../knowledge/playbooks/PLAYBOOK_009_MODEL_ROUTER_
 
 type StatusTone = "neutral" | "good" | "warn" | "danger" | "info";
 
+export type DataStatus = "live" | "empty" | "derived_from_backbone" | "planned";
+
+export type DataProvenance = {
+  source_file: string;
+  data_status: DataStatus;
+  notes: string;
+};
+
 type AwarenessState = {
   current_focus: string | null;
   last_updated: string | null;
@@ -227,6 +235,12 @@ export type CommandCenterSnapshot = {
   generatedAt: string;
   loaderMode: "bundled-knowledge-files" | "mock-fallback";
   loaderNote: string;
+  lineage: {
+    backbonePR: string;
+    commandCenterPR: string;
+    baseBranch: string;
+    note: string;
+  };
   overview: {
     currentFocus: string;
     activeQueueCount: number;
@@ -238,6 +252,7 @@ export type CommandCenterSnapshot = {
     validationStatus: string;
     warningsCount: number;
   };
+  sectionProvenance: Record<string, DataProvenance>;
   sources: Array<{
     label: string;
     path: string;
@@ -307,7 +322,7 @@ export type CommandCenterSnapshot = {
     blockers: string[];
     receipts: string[];
     nextActions: string[];
-    sourceType: "canonical" | "derived";
+    sourceType: "canonical" | "derived_from_backbone";
   }>;
   cryptoRadar: Array<{
     signalId: string;
@@ -319,7 +334,7 @@ export type CommandCenterSnapshot = {
     invalidation: string;
     confidence: string;
     status: string;
-    sourceType: "canonical" | "derived";
+    sourceType: "canonical" | "derived_from_backbone";
   }>;
   scopeAuthorization: Array<{
     targetId: string;
@@ -330,7 +345,7 @@ export type CommandCenterSnapshot = {
     blockedReason: string;
     nextArtifact: string;
     receipt: string;
-    sourceType: "canonical" | "derived";
+    sourceType: "canonical" | "derived_from_backbone";
   }>;
   approvalQueue: Array<{
     approvalId: string;
@@ -341,7 +356,7 @@ export type CommandCenterSnapshot = {
     rollbackOrRecovery: string;
     requester: string;
     status: string;
-    sourceType: "canonical" | "derived";
+    sourceType: "canonical" | "derived_from_backbone";
   }>;
   registriesSummary: {
     workflowCount: number;
@@ -477,11 +492,20 @@ function buildSnapshot(): CommandCenterSnapshot {
     queueEntries.filter((entry) => ["queued", "running", "waiting_approval"].includes(entry.status))
       .length;
 
+  const hasQueueEntries = queueEntries.length > 0;
+  const hasReceipts = receipts.length > 0;
+
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
     loaderNote:
-      "Command Center v0 is hydrated from bundled local knowledge files. Where live operational arrays are still empty, the adapter derives policy-aware fallback rows from the backbone playbooks and registries.",
+      "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+    lineage: {
+      backbonePR: "PR #5 — Validate Operating Backbone v0",
+      commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
+      baseBranch: "cursor/validate-backbone-v0",
+      note: "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint. The Backbone provides the canonical knowledge files that this UI reads.",
+    },
     overview: {
       currentFocus: awareness.current_focus ?? "Command Center v0 bootstrap",
       activeQueueCount,
@@ -494,6 +518,71 @@ function buildSnapshot(): CommandCenterSnapshot {
         "Create the first runtime queue entry, then record a receipt so the UI begins reflecting live state.",
       validationStatus: backboneValidation.overall_status,
       warningsCount: backboneValidation.warnings.length,
+    },
+    sectionProvenance: {
+      overview: {
+        source_file:
+          "knowledge/FATHIYA_AWARENESS_STATE.json, knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json",
+        data_status: "live",
+        notes: "Metrics computed from awareness state and backbone validation report.",
+      },
+      runtimeQueue: {
+        source_file: "knowledge/runtime/runtime_queue_v0.json",
+        data_status: hasQueueEntries ? "live" : "empty",
+        notes: hasQueueEntries
+          ? "Live queue entries present."
+          : "Queue catalog is populated but queue_entries array is empty. Schema is ready for first routed task.",
+      },
+      receiptLedger: {
+        source_file: "knowledge/runtime/receipt_ledger_v0.json",
+        data_status: hasReceipts ? "live" : "empty",
+        notes: hasReceipts
+          ? "Live receipts present."
+          : "Receipt policy and required fields are populated. Receipts array is empty until first task completes.",
+      },
+      agents: {
+        source_file:
+          "knowledge/registries/agent_registry_v0.json, knowledge/registries/workflow_registry_v0.json",
+        data_status: "live",
+        notes: "Agent and workflow registries are populated from validated backbone files.",
+      },
+      playbooks: {
+        source_file: "knowledge/playbooks/PLAYBOOK_*.md",
+        data_status: "live",
+        notes:
+          "Parsed from 9 markdown playbooks. Status, purpose, and chain links extracted at load time.",
+      },
+      toolContracts: {
+        source_file:
+          "knowledge/registries/tool_contract_registry_v0.json, knowledge/registries/model_router_registry_v0.json",
+        data_status: "live",
+        notes: "Tool contracts and model router lanes from validated registries.",
+      },
+      dailyIntake: {
+        source_file:
+          "knowledge/retrieval_index_summary.json, knowledge/retrieval_validation_report.json",
+        data_status: "derived_from_backbone",
+        notes:
+          "Row 1 uses canonical retrieval data. Row 2 is a derived summary from backbone validation. No live daily batch dataset exists yet.",
+      },
+      cryptoRadar: {
+        source_file: "—",
+        data_status: "planned",
+        notes:
+          "No live signal-card dataset exists. PB006 defines the intake process. Signals will appear once the first PB006 batch runs.",
+      },
+      scopeAuthorization: {
+        source_file: "—",
+        data_status: "planned",
+        notes: "No Target Cards or scope maps exist yet. PB005 defines the preparation process.",
+      },
+      approvalQueue: {
+        source_file:
+          "knowledge/registries/approval_policy_registry_v0.json, knowledge/registries/tool_contract_registry_v0.json",
+        data_status: "derived_from_backbone",
+        notes:
+          "Rows are derived from approval policy classes, not live approval requests. Shows which gates exist in policy.",
+      },
     },
     sources: [
       {
@@ -531,12 +620,6 @@ function buildSnapshot(): CommandCenterSnapshot {
         path: "knowledge/retrieval_index_summary.json",
         kind: "canonical",
         note: "Feeds Daily Intake counts and corpus coverage cards.",
-      },
-      {
-        label: "Derived fallback lanes",
-        path: "knowledge/playbooks/PLAYBOOK_005_*.md + PLAYBOOK_006_*.md + approval_policy_registry_v0.json",
-        kind: "derived",
-        note: "Used for Scope/Auth, Crypto Radar, and Approval Queue until live entries exist.",
       },
     ],
     queueEntries,
@@ -595,8 +678,8 @@ function buildSnapshot(): CommandCenterSnapshot {
       receiptLedger,
       backboneValidation,
     ),
-    cryptoRadar: buildCryptoRadarRows(retrievalSummary, approvalPolicyRegistry),
-    scopeAuthorization: buildScopeAuthorizationRows(),
+    cryptoRadar: [],
+    scopeAuthorization: [],
     approvalQueue: buildApprovalQueueRows(approvalPolicyRegistry, toolContractRegistry),
     registriesSummary: {
       workflowCount: workflowRegistry.workflows.length,
@@ -626,6 +709,12 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
     loaderMode: "mock-fallback",
     loaderNote:
       "The canonical knowledge bundle could not be parsed, so the adapter returned a documented fallback snapshot. Fix the parse error below to restore canonical file-backed rendering.",
+    lineage: {
+      backbonePR: "PR #5 — Validate Operating Backbone v0",
+      commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
+      baseBranch: "cursor/validate-backbone-v0",
+      note: "Loader error — lineage cannot be verified until knowledge files parse successfully.",
+    },
     overview: {
       currentFocus: "Knowledge loader recovery",
       activeQueueCount: 0,
@@ -636,6 +725,13 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
       nextRecommendedAction: "Repair the Command Center knowledge adapter parse failure.",
       validationStatus: "loader_error",
       warningsCount: 1,
+    },
+    sectionProvenance: {
+      overview: {
+        source_file: "—",
+        data_status: "empty",
+        notes: "Loader error: " + error,
+      },
     },
     sources: [
       {
@@ -665,7 +761,7 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
         blockers: [error],
         receipts: [],
         nextActions: ["Fix local knowledge imports or malformed JSON."],
-        sourceType: "derived",
+        sourceType: "derived_from_backbone",
       },
     ],
     cryptoRadar: [],
@@ -763,7 +859,7 @@ function buildDailyIntakeRows(
       nextActions: [
         "Promote live queue entries so the Command Center shifts from audit mode to runtime mode.",
       ],
-      sourceType: "derived" as const,
+      sourceType: "derived_from_backbone" as const,
     },
   ];
 }
@@ -858,7 +954,7 @@ function buildApprovalQueueRows(
       rollbackOrRecovery: inferRollback(approvalClass.class_id),
       requester: "policy_layer",
       status: approvalClass.status ?? "policy_ready",
-      sourceType: "derived" as const,
+      sourceType: "derived_from_backbone" as const,
     }));
 }
 
