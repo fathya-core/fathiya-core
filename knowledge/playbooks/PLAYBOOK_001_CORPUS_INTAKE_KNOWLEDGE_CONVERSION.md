@@ -160,5 +160,5 @@ A run is complete only when it produces at least one of:
 - relation update candidate
 - audit receipt
 
-## Next playbook candidate
-PLAYBOOK 002 — Target Preparation
+## Next playbook
+PLAYBOOK 002 — Agent / Machine / Workflow Intelligence Intake

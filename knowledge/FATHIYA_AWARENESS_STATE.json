@@ -1,0 +1,15 @@
+{
+  "schema_version": "FATHIYA_AWARENESS_STATE_v0",
+  "status": "draft",
+  "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
+  "current_focus": null,
+  "last_updated": null,
+  "active_queue_count": 0,
+  "blocked_items": [],
+  "latest_receipts": [],
+  "open_prs": [],
+  "active_agents": [],
+  "completed_artifacts": [],
+  "blockers": [],
+  "next_recommended_action": null
+}
