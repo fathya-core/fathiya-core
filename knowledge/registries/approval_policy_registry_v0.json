@@ -12,6 +12,38 @@
       "receipt_required": true
     },
     {
+      "class_id": "internal_autopilot",
+      "name": "Internal Autopilot Build",
+      "requires_approval": false,
+      "scope": "Internal, non-externally-visible work within the canonical repo",
+      "examples": [
+        "add_knowledge_artifact",
+        "update_registry_or_schema",
+        "append_queue_entry",
+        "append_receipt",
+        "create_workflow_scaffold",
+        "draft_adapter",
+        "update_command_center",
+        "local_build_lint_validation",
+        "create_branch_or_pr",
+        "add_audit_report",
+        "add_operator_note"
+      ],
+      "explicitly_excluded": [
+        "send_email",
+        "call_webhook",
+        "activate_external_workflow",
+        "trade_execution",
+        "portfolio_mutation",
+        "live_security_scan",
+        "credential_access",
+        "destructive_action",
+        "third_party_target_activity"
+      ],
+      "receipt_required": true,
+      "adr_reference": "ADR_002_FATHIYA_AUTOPILOT_INTERNAL_BUILD_MODE"
+    },
+    {
       "class_id": "approval_repo_write",
       "name": "Repository Write",
       "requires_approval": true,

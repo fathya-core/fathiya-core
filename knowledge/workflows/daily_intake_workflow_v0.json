@@ -1,0 +1,114 @@
+{
+  "schema_version": "FATHIYA_DAILY_INTAKE_WORKFLOW_v0",
+  "status": "scaffold",
+  "purpose": "Define the daily intake pipeline: source collection, raw archival, classification, queue routing, receipt generation, and Command Center update — within non-execution boundaries.",
+  "adr_reference": "ADR_002_FATHIYA_AUTOPILOT_INTERNAL_BUILD_MODE",
+  "approval_class": "internal_autopilot",
+  "trigger": {
+    "type": "daily",
+    "description": "Triggered once per operational day, or on-demand by operator. May run unattended within autopilot boundaries.",
+    "timezone": "UTC"
+  },
+  "stages": [
+    {
+      "stage_id": "S1_SOURCE_COLLECTION",
+      "name": "Source Collection",
+      "description": "Gather raw inputs from declared source channels. No external API calls — only sources already present in the repo or provided by the operator.",
+      "inputs": [
+        "operator-provided source briefs (knowledge/raw/)",
+        "existing radar batches (knowledge/crypto/radar/)",
+        "pending queue entries with status 'draft' or 'queued'"
+      ],
+      "outputs": ["source_manifest"],
+      "approval_required": false,
+      "boundary": "Read-only collection from local repo and operator-provided files. No external fetch."
+    },
+    {
+      "stage_id": "S2_RAW_ARCHIVE",
+      "name": "Raw Archive",
+      "description": "Persist raw source material into knowledge/raw/ with provenance metadata.",
+      "inputs": ["source_manifest"],
+      "outputs": ["archived_raw_files", "raw_index_update"],
+      "approval_required": false,
+      "boundary": "Append-only writes to knowledge/raw/. No deletion of existing raw files."
+    },
+    {
+      "stage_id": "S3_CLASSIFICATION",
+      "name": "Classification",
+      "description": "Classify each raw item by domain (crypto, security, engineering, knowledge), sensitivity, and target queue.",
+      "inputs": ["archived_raw_files"],
+      "outputs": ["classification_records"],
+      "approval_required": false,
+      "boundary": "Classification produces metadata only. No external side effects."
+    },
+    {
+      "stage_id": "S4_QUEUE_ENTRY",
+      "name": "Queue Entry Generation",
+      "description": "Create runtime queue entries for each classified item, routing to the appropriate queue (Knowledge, Research, Engineering, Automation, Model, or Approval).",
+      "inputs": ["classification_records"],
+      "outputs": ["queue_entries_appended_to_runtime_queue_v0"],
+      "approval_required": false,
+      "boundary": "Append-only to runtime_queue_v0.json. Items routed to Approval Queue remain in 'waiting_approval' status."
+    },
+    {
+      "stage_id": "S5_RECEIPT_GENERATION",
+      "name": "Receipt Generation",
+      "description": "Generate individual receipt files and append to the receipt ledger for each processed item.",
+      "inputs": ["queue_entries"],
+      "outputs": [
+        "individual_receipt_files (knowledge/runtime/receipts/)",
+        "receipt_ledger_entries (knowledge/runtime/receipt_ledger_v0.json)"
+      ],
+      "approval_required": false,
+      "boundary": "Append-only to receipt ledger and receipts directory."
+    },
+    {
+      "stage_id": "S6_COMMAND_CENTER_UPDATE",
+      "name": "Command Center Update",
+      "description": "Ensure Command Center snapshot loader reflects new queue entries, receipts, and any new knowledge artifacts.",
+      "inputs": ["queue_entries", "receipt_files", "new_knowledge_artifacts"],
+      "outputs": ["command_center_snapshot_updated"],
+      "approval_required": false,
+      "boundary": "Code changes to src/lib/command-center.ts or src/routes/command-center.tsx only if new data sources require import. No external deployment."
+    },
+    {
+      "stage_id": "S7_VALIDATION",
+      "name": "Build and Lint Validation",
+      "description": "Run npm run build and targeted eslint to confirm no regressions.",
+      "inputs": ["all_changed_files"],
+      "outputs": ["build_status", "lint_status", "json_parse_status"],
+      "approval_required": false,
+      "boundary": "Local validation only. No deployment or publish."
+    }
+  ],
+  "non_execution_boundaries": {
+    "description": "The daily intake workflow is a classification and archival pipeline. It does NOT execute any external actions.",
+    "forbidden_in_this_workflow": [
+      "send_email",
+      "call_webhook",
+      "activate_n8n_workflow",
+      "activate_zapier_action_with_side_effect",
+      "execute_trade",
+      "mutate_portfolio",
+      "scan_external_target",
+      "probe_external_system",
+      "access_credentials",
+      "delete_or_destroy_data",
+      "deploy_to_production"
+    ],
+    "approval_queue_items": "Items classified as requiring external execution are routed to Approval Queue with status 'waiting_approval' and do NOT proceed until explicit operator approval."
+  },
+  "output_artifacts": [
+    "knowledge/raw/ (archived sources)",
+    "knowledge/runtime/runtime_queue_v0.json (appended entries)",
+    "knowledge/runtime/receipt_ledger_v0.json (appended receipts)",
+    "knowledge/runtime/receipts/ (individual receipt files)",
+    "knowledge/audit/ (intake batch report)",
+    "Command Center snapshot (if imports updated)"
+  ],
+  "next_steps": [
+    "Implement adapter connectors for each source channel (future — requires separate policy)",
+    "Add scheduled trigger via n8n or Zapier (future — requires Automation Queue approval)",
+    "Integrate with retrieval indexes for semantic search over archived sources"
+  ]
+}
