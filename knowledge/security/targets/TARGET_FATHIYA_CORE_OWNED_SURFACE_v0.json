@@ -1,0 +1,110 @@
+{
+  "target_id": "target-fathiya-core-owned-surface-v0",
+  "name": "FATHIYA Core Owned Surface",
+  "program": "Internal / owned project preparation",
+  "policy_url": "not_public_policy_yet",
+  "authorization": "owned_project_context_from_user",
+  "authorized_scope": [
+    {
+      "asset": "https://fathiya-core.com/",
+      "asset_type": "web_application",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy",
+      "notes": "Owned surface declared by the user. Limited to documentation and scope preparation until a formal written policy exists."
+    },
+    {
+      "asset": "https://fathiya-ops-console-0jfl.bolt.host",
+      "asset_type": "ops_console",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy",
+      "notes": "Owned project console declared by the user. No active testing or automated probing is authorized yet."
+    },
+    {
+      "asset": "https://github.com/fathya-core/fathiya-core",
+      "asset_type": "source_repository",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy",
+      "notes": "Repository is in scope for preparation artifacts only; credential access and destructive repository actions are forbidden."
+    },
+    {
+      "asset": "https://github.com/fathya-core/fathiya-ops-console.git",
+      "asset_type": "source_repository",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy",
+      "notes": "Repository is in scope for owned-project preparation only until a formal policy is published."
+    }
+  ],
+  "forbidden_scope": [
+    "Any live external testing against the listed assets before a formal written policy is published.",
+    "Exploitation, vulnerability validation, destructive actions, or attempts to bypass controls.",
+    "Scanning, automated probing, or rate-based enumeration against live systems.",
+    "Credential access, secret retrieval, private data access, or account interaction.",
+    "Any third-party activity or action outside declared owned/project surfaces without explicit written policy."
+  ],
+  "asset_types": [
+    "web_application",
+    "ops_console",
+    "source_repository"
+  ],
+  "engagement_rules": [
+    "Mode stays in Lab/Internal Owned Surface Preparation until a formal written policy exists.",
+    "Allowed work in this batch is documentation and routing only: Target Card, Scope Map, Boundary Note, Report Draft Template, Queue Entry, and Receipt.",
+    "Do not perform live testing, exploitation, automation, or external side effects under this Target Card.",
+    "Treat all listed assets as owned_or_project_declared but not yet policy-authorized for active testing."
+  ],
+  "rate_limits": [
+    "No automated requests or probing are authorized under this draft Target Card.",
+    "Formal rate limits are unknown until written policy publication."
+  ],
+  "data_handling": [
+    "Do not access credentials, secrets, private repositories, user accounts, or non-public data.",
+    "Use only user-declared ownership context and repository-local knowledge artifacts during preparation."
+  ],
+  "reporting_channel": "not_public_reporting_yet__hold_findings_in_local_preparation_artifacts_only",
+  "allowed_artifacts": [
+    "Target Card",
+    "Scope Map",
+    "Boundary Note",
+    "Report Draft Template",
+    "Queue Entry",
+    "Receipt"
+  ],
+  "forbidden_actions": [
+    "any live external testing",
+    "exploitation",
+    "scanning",
+    "automated probing",
+    "credential access",
+    "destructive action",
+    "third-party activity without explicit written policy"
+  ],
+  "approval_required": "formal_written_policy_before_active_testing_or_external_action",
+  "status": "draft / needs_policy",
+  "mode": "Lab/Internal Owned Surface Preparation",
+  "assets": [
+    {
+      "url": "https://fathiya-core.com/",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy"
+    },
+    {
+      "url": "https://fathiya-ops-console-0jfl.bolt.host",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy"
+    },
+    {
+      "url": "https://github.com/fathya-core/fathiya-core",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy"
+    },
+    {
+      "url": "https://github.com/fathya-core/fathiya-ops-console.git",
+      "asset_status": "owned_or_project_declared",
+      "testing_status": "preparation_only_needs_policy"
+    }
+  ],
+  "asset_status": "owned_or_project_declared, needs formal policy before active testing",
+  "boundary_note": "Scope and authorization preparation only. No live testing, scanning, exploitation, credential workflows, destructive actions, or third-party activity are authorized under this draft Target Card.",
+  "playbook": "PLAYBOOK_005_SCOPE_AUTHORIZATION_PREPARATION",
+  "created_at": "2026-05-16T00:00:00Z"
+}

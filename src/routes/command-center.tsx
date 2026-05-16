@@ -8,13 +8,10 @@ import {
   BrainCircuit,
   ClipboardList,
   FileCheck2,
-  FileText,
   FolderKanban,
   GitPullRequest,
-  Radar,
   Receipt,
   ShieldCheck,
-  ShieldEllipsis,
   SquareStack,
   TriangleAlert,
   Workflow,
@@ -379,7 +376,7 @@ function CommandCenterPage() {
           <TabsContent value="queue" className="space-y-4">
             <SectionHeader
               title="Runtime Queue"
-              description="Every routed task should appear here before or during execution. The table below now renders the first real queue entry from PR #8 directly from runtime_queue_v0.json."
+              description="Every routed task should appear here before or during execution. The table below renders live canonical rows from runtime_queue_v0.json, including the hardening, Crypto Radar, and PB005 scope/auth preparation batches."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.runtimeQueue} />
             <Card className="border-border/60 bg-card/50">
@@ -475,7 +472,7 @@ function CommandCenterPage() {
           <TabsContent value="receipts" className="space-y-4">
             <SectionHeader
               title="Receipt Ledger"
-              description="No meaningful action is complete without a receipt. The table below now renders the first real receipt from PR #8 directly from receipt_ledger_v0.json."
+              description="No meaningful action is complete without a receipt. The table below renders live canonical receipts from receipt_ledger_v0.json for the hardening, Crypto Radar, and PB005 scope/auth preparation batches."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.receiptLedger} />
             <Card className="border-border/60 bg-card/50">
@@ -859,22 +856,158 @@ function CommandCenterPage() {
           <TabsContent value="scope" className="space-y-4">
             <SectionHeader
               title="Scope & Authorization"
-              description="Target Cards and scope maps are prepared through PLAYBOOK 005. No live target data exists in the current knowledge bundle."
+              description="PB005 now renders the first live owned-surface Target Card and Scope Map for FATHIYA Core. This section is explicitly preparation-only with status draft / needs_policy, and it does not authorize active testing."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.scopeAuthorization} />
+            {data.targetCards.length > 0 ? (
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Live target cards</CardTitle>
+                  <CardDescription>
+                    Canonical Target Cards define the named target, authorization context, allowed
+                    artifacts, and explicit no-testing boundary for PB005 preparation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {data.targetCards.map((card) => (
+                    <div
+                      key={card.targetId}
+                      className="space-y-4 rounded-xl border border-border/50 bg-muted/10 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-semibold">{card.name}</div>
+                          <div className="mt-1 text-sm text-muted-foreground">{card.program}</div>
+                        </div>
+                        <StatusBadge status={card.status} />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <OverviewField label="Target id" value={card.targetId} />
+                        <OverviewField label="Policy URL" value={card.policyUrl} />
+                        <OverviewField label="Authorization" value={card.authorization} />
+                        <OverviewField label="Mode" value={card.mode} />
+                        <OverviewField label="Asset status" value={card.assetStatus} />
+                        <OverviewField label="Approval required" value={card.approvalRequired} />
+                        <OverviewField label="Reporting channel" value={card.reportingChannel} />
+                        <OverviewField label="Created at" value={card.createdAt} />
+                      </div>
+                      <OverviewField label="Boundary note" value={card.boundaryNote} />
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <div className="space-y-4">
+                          <div>
+                            <div className="mb-2 text-sm font-medium">Allowed artifacts</div>
+                            <TagList items={card.allowedArtifacts} />
+                          </div>
+                          <StringListPanel title="Engagement rules" items={card.engagementRules} />
+                          <StringListPanel title="Rate limits" items={card.rateLimits} />
+                        </div>
+                        <div className="space-y-4">
+                          <StringListPanel title="Forbidden actions" items={card.forbiddenActions} />
+                          <StringListPanel title="Data handling" items={card.dataHandling} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-2 text-sm font-medium">Declared assets</div>
+                        <DataTable
+                          headers={["url", "asset status", "testing status"]}
+                          rows={card.assets.map((asset) => [
+                            <span key="url" className="font-mono text-[11px]">
+                              {asset.url}
+                            </span>,
+                            asset.assetStatus,
+                            asset.testingStatus,
+                          ])}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {data.scopeMaps.length > 0 ? (
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Live scope maps</CardTitle>
+                  <CardDescription>
+                    Scope maps classify what is in scope for preparation, what is out of scope, and
+                    what still requires policy clarification before any external activity.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {data.scopeMaps.map((scopeMap) => (
+                    <div
+                      key={scopeMap.scopeMapId}
+                      className="space-y-4 rounded-xl border border-border/50 bg-muted/10 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-semibold">{scopeMap.name}</div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {scopeMap.program}
+                          </div>
+                        </div>
+                        <StatusBadge status={scopeMap.status} />
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <OverviewField label="Scope map id" value={scopeMap.scopeMapId} />
+                        <OverviewField label="Target id" value={scopeMap.targetId} />
+                        <OverviewField label="Mode" value={scopeMap.mode} />
+                        <OverviewField label="Created at" value={scopeMap.createdAt} />
+                        <OverviewField
+                          label="Authorization status"
+                          value={scopeMap.authorizationStatus}
+                        />
+                        <OverviewField label="Policy status" value={scopeMap.policyStatus} />
+                        <OverviewField label="Playbook" value={scopeMap.playbook} />
+                        <OverviewField label="Status" value={scopeMap.status} />
+                      </div>
+                      <OverviewField label="Boundary note" value={scopeMap.boundaryNote} />
+                      <div>
+                        <div className="mb-2 text-sm font-medium">In-scope preparation rows</div>
+                        <DataTable
+                          headers={["asset", "asset status", "allowed activity", "notes"]}
+                          rows={scopeMap.inScope.map((item) => [
+                            <span key="asset" className="font-mono text-[11px]">
+                              {item.asset}
+                            </span>,
+                            item.assetStatus,
+                            item.allowedActivity,
+                            item.notes,
+                          ])}
+                        />
+                      </div>
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <StringListPanel title="Out of scope" items={scopeMap.outOfScope} />
+                        <StringListPanel title="Unknown scope" items={scopeMap.unknownScope} />
+                        <StringListPanel
+                          title="Requires clarification"
+                          items={scopeMap.requiresClarification}
+                        />
+                        <div>
+                          <div className="mb-2 text-sm font-medium">Next artifacts</div>
+                          <TagList items={scopeMap.nextArtifacts} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : null}
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
-                <CardTitle>Target preparation lanes</CardTitle>
+                <CardTitle>Scope & authorization summary rows</CardTitle>
                 <CardDescription>
-                  Target-specific work requires a Target Card + Scope Map before proceeding.
-                  Lab-mode work on owned local apps is self-authorized.
+                  Condensed rows for the canonical PB005 target-preparation state. The current
+                  target stays visible as live documentation only and does not unlock active
+                  testing.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {data.scopeAuthorization.length === 0 ? (
                   <EmptyState
                     title="No target cards or scope maps yet"
-                    description="This is a planned section. Target Cards and Scope Maps will appear once PLAYBOOK 005 preparation runs. Until then, lab-mode work on owned local apps is self-authorized and does not require this gate."
+                    description="This section stays empty until PLAYBOOK 005 preparation writes canonical Target Card and Scope Map files into the knowledge bundle."
                   />
                 ) : (
                   <DataTable
@@ -1032,6 +1165,21 @@ function EmptyState({ title, description }: { title: string; description: string
     <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-6 text-center">
       <div className="text-sm font-medium">{title}</div>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function StringListPanel({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <div className="mb-2 text-sm font-medium">{title}</div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li key={item} className="rounded-lg border border-border/50 bg-muted/20 p-3 text-sm">
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

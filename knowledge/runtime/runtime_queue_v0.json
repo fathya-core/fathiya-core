@@ -69,6 +69,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-crypto-radar-batch-v0.json",
       "next_step": "monitor future PB006 batches and preserve non-execution boundaries"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-pb005-target-preparation-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA Core owned-surface preparation brief v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "mode": "PB005 Scope/Auth target preparation batch",
+      "input_artifact": "User-declared owned FATHIYA Core assets + PLAYBOOK_005 scope/authorization preparation requirements",
+      "expected_output": "first live owned-surface Target Card + Scope Map + receipt-linked Command Center Scope & Authorization render with needs_policy boundary",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-pb005-target-preparation-batch-v0.json",
+      "next_step": "publish a formal written policy before any live testing, scanning, or external action"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

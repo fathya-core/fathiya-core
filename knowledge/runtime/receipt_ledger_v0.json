@@ -28,6 +28,19 @@
       "error": null,
       "approval_reference": "none_required_draft_and_monitoring_only",
       "next_step": "append future PB006 batches without adding trading or execution instructions"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-pb005-target-preparation-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source_request": "rt-2026-05-16-fathiya-pb005-target-preparation-batch-v0",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "User-declared owned FATHIYA Core assets + PLAYBOOK_005 scope/authorization preparation requirements",
+      "output_artifact": "knowledge/security/targets/TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json + knowledge/security/scope_maps/SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json + Command Center live Scope & Authorization",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_draft_and_preparation_only",
+      "next_step": "keep Scope & Authorization in needs_policy state until a formal written policy is published"
     }
   ],
   "required_receipt_fields": [
