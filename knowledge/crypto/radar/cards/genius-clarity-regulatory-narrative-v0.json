@@ -1,0 +1,26 @@
+{
+  "id": "crypto-radar-genius-clarity-regulatory-narrative-v0",
+  "title": "GENIUS Act / CLARITY Act regulatory narrative",
+  "asset_or_sector": "Broad Crypto Market / Stablecoins (USDC, USDT)",
+  "classification": ["Narrative Card"],
+  "source_file": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+  "source_urls": [
+    "https://www.banking.senate.gov/newsroom/majority/chairman-scott-senate-banking-committee-advance-clarity-act-in-historic-bipartisan-vote",
+    "https://assetwhisper.com/genius-act-stablecoin-regulation-2026/"
+  ],
+  "timeframe": "Long Term (Structural shift)",
+  "what_changed": "The Senate Banking Committee advanced the Digital Asset Market Clarity Act of 2025 in a 15-9 bipartisan vote on May 14, 2026. The source brief also cites the July 2025 passage of the GENIUS Act as the first comprehensive federal law governing payment stablecoins, including 1:1 backing and banking-regulator oversight.",
+  "why_it_matters": "The source brief frames the CLARITY Act as a step toward resolving jurisdictional ambiguity for the broader crypto market and describes the GENIUS Act as having already legitimized the $315+ billion stablecoin market and supported institutional adoption of compliant stablecoins such as USDC.",
+  "catalyst": "Bipartisan legislative progress plus ongoing 2026 rulemaking by the OCC, FDIC, and Treasury.",
+  "risks": [
+    "Delays in final rulemaking could slow the narrative shift.",
+    "Stringent implementation by banking regulators could burden non-compliant issuers or stifle innovation."
+  ],
+  "invalidation_conditions": [
+    "The CLARITY Act fails to pass the full Senate floor vote.",
+    "Major stablecoin issuers fail to comply with upcoming GENIUS Act banking regulations."
+  ],
+  "confidence": "high",
+  "status": "monitoring",
+  "boundary": "No trading execution, buy/sell instruction, or portfolio mutation. Research and monitoring only."
+}

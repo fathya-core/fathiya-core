@@ -54,6 +54,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-command-center-hardening-v0.json",
       "next_step": "use the first receipt to validate Command Center live data rendering"
+    },
+    {
+      "id": "rt-2026-05-16-fathiya-crypto-radar-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source": "FATHIYA Crypto Radar source brief v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "mode": "PB006 Crypto Radar intake batch",
+      "input_artifact": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+      "expected_output": "first live FATHIYA Crypto Radar batch with four monitoring cards and Command Center live render",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-crypto-radar-batch-v0.json",
+      "next_step": "monitor future PB006 batches and preserve non-execution boundaries"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

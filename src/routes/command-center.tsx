@@ -790,54 +790,67 @@ function CommandCenterPage() {
           <TabsContent value="radar" className="space-y-4">
             <SectionHeader
               title="Crypto Radar"
-              description="PB006 defines the signal intake process, but no live signal-card dataset exists yet."
+              description="PB006 now renders the first live monitoring batch from the preserved Manus source brief. This section stays explicitly research-only and does not authorize trading execution."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.cryptoRadar} />
-            <Card className="border-border/60 bg-card/50">
-              <CardHeader>
-                <CardTitle>Radar state</CardTitle>
-                <CardDescription>
-                  Explicitly non-executional: radar, narratives, watchlists, and policy gates only.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.cryptoRadar.length === 0 ? (
+            {data.cryptoRadarBatch ? (
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Live batch summary</CardTitle>
+                  <CardDescription>
+                    Canonical PB006 batch manifest and queue/receipt linkage for the first live Crypto
+                    Radar intake.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <OverviewField label="Batch id" value={data.cryptoRadarBatch.batchId} />
+                    <OverviewField label="Card count" value={String(data.cryptoRadarBatch.cardCount)} />
+                    <OverviewField
+                      label="Queue entry id"
+                      value={data.cryptoRadarBatch.queueEntryId}
+                    />
+                    <OverviewField label="Receipt id" value={data.cryptoRadarBatch.receiptId} />
+                    <OverviewField label="Mode" value={data.cryptoRadarBatch.mode} />
+                    <OverviewField label="Playbook" value={data.cryptoRadarBatch.playbook} />
+                    <OverviewField label="Status" value={data.cryptoRadarBatch.status} />
+                    <OverviewField label="Created at" value={data.cryptoRadarBatch.createdAt} />
+                  </div>
+                  <OverviewField
+                    label="Source file"
+                    value={data.cryptoRadarBatch.sourceFile}
+                  />
+                  <OverviewField label="Boundary" value={data.cryptoRadarBatch.boundary} />
+                  <div>
+                    <div className="mb-2 text-sm font-medium">Batch notes</div>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      {data.cryptoRadarBatch.notes.map((note) => (
+                        <li key={note} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {data.cryptoRadar.length === 0 ? (
+              <Card className="border-border/60 bg-card/50">
+                <CardContent className="p-6">
                   <EmptyState
                     title="No crypto radar signals yet"
                     description="This is a planned section. Signal cards will appear once the first PLAYBOOK 006 intake batch runs and routes signals into the runtime queue. The intake process, approval gates, and risk-factor requirements are defined in PB006 and the approval policy registry."
                   />
-                ) : (
-                  <DataTable
-                    headers={[
-                      "signal id",
-                      "asset / sector",
-                      "narrative",
-                      "catalyst",
-                      "timeframe",
-                      "risk factors",
-                      "invalidation",
-                      "confidence",
-                      "status",
-                      "source type",
-                    ]}
-                    rows={data.cryptoRadar.map((row) => [
-                      <code key="id">{row.signalId}</code>,
-                      row.assetOrSector,
-                      row.narrative,
-                      row.catalyst,
-                      row.timeframe,
-                      <TagList key="risk" items={row.riskFactors} />,
-                      row.invalidation,
-                      row.confidence,
-                      <StatusBadge key="status" status={row.status} />,
-                      <Badge key="type" variant="outline" className="text-[10px]">
-                        {row.sourceType}
-                      </Badge>,
-                    ])}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 xl:grid-cols-2">
+                {data.cryptoRadar.map((card) => (
+                  <RadarCard key={card.id} card={card} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="scope" className="space-y-4">
@@ -1017,6 +1030,90 @@ function EmptyState({ title, description }: { title: string; description: string
       <div className="text-sm font-medium">{title}</div>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
+  );
+}
+
+function RadarCard({ card }: { card: CommandCenterSnapshot["cryptoRadar"][number] }) {
+  return (
+    <Card className="border-border/60 bg-card/50">
+      <CardHeader className="space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-lg">{card.title}</CardTitle>
+            <CardDescription className="mt-1">{card.assetOrSector}</CardDescription>
+          </div>
+          <StatusBadge status={card.status} />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {card.classification.map((item) => (
+            <Badge key={item} variant="outline" className="text-[10px]">
+              {item}
+            </Badge>
+          ))}
+          <Badge variant="outline" className="text-[10px]">
+            {card.confidence}
+          </Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {card.timeframe}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        <OverviewField label="Card id" value={card.id} />
+        <OverviewField label="Source file" value={card.sourceFile} />
+        <OverviewField label="What changed" value={card.whatChanged} />
+        <OverviewField label="Why it matters" value={card.whyItMatters} />
+        <OverviewField label="Catalyst" value={card.catalyst} />
+
+        <div>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">Risks</div>
+          <ul className="space-y-2">
+            {card.risks.map((risk) => (
+              <li key={risk} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                {risk}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Invalidation conditions
+          </div>
+          <ul className="space-y-2">
+            {card.invalidationConditions.map((condition) => (
+              <li
+                key={condition}
+                className="rounded-lg border border-border/50 bg-muted/20 p-3"
+              >
+                {condition}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Source URLs
+          </div>
+          <div className="space-y-2">
+            {card.sourceUrls.map((url) => (
+              <a
+                key={url}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-lg border border-border/50 bg-muted/20 p-3 font-mono text-xs text-primary underline-offset-2 hover:underline"
+              >
+                {url}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <OverviewField label="Boundary" value={card.boundary} />
+      </CardContent>
+    </Card>
   );
 }
 

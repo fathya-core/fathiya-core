@@ -15,6 +15,19 @@
       "error": null,
       "approval_reference": "none_required_validation_only",
       "next_step": "validate Command Center renders live Runtime Queue and Receipt Ledger rows"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-crypto-radar-batch-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source_request": "rt-2026-05-16-fathiya-crypto-radar-batch-v0",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+      "output_artifact": "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json + Command Center live Crypto Radar",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_draft_and_monitoring_only",
+      "next_step": "append future PB006 batches without adding trading or execution instructions"
     }
   ],
   "required_receipt_fields": [

@@ -11,6 +11,7 @@ import runtimeQueueRaw from "../../knowledge/runtime/runtime_queue_v0.json?raw";
 import retrievalSummaryRaw from "../../knowledge/retrieval_index_summary.json?raw";
 import retrievalValidationRaw from "../../knowledge/retrieval_validation_report.json?raw";
 import backboneValidationRaw from "../../knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json?raw";
+import cryptoRadarBatchRaw from "../../knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json?raw";
 import playbook001Raw from "../../knowledge/playbooks/PLAYBOOK_001_CORPUS_INTAKE_KNOWLEDGE_CONVERSION.md?raw";
 import playbook002Raw from "../../knowledge/playbooks/PLAYBOOK_002_AGENT_MACHINE_WORKFLOW_INTELLIGENCE_INTAKE.md?raw";
 import playbook003Raw from "../../knowledge/playbooks/PLAYBOOK_003_RUNTIME_QUEUE_RECEIPT_LEDGER.md?raw";
@@ -20,6 +21,12 @@ import playbook006Raw from "../../knowledge/playbooks/PLAYBOOK_006_CRYPTO_RADAR_
 import playbook007Raw from "../../knowledge/playbooks/PLAYBOOK_007_DAILY_INTAKE_AUTOMATION.md?raw";
 import playbook008Raw from "../../knowledge/playbooks/PLAYBOOK_008_COMMAND_CENTER_UI_REQUIREMENTS.md?raw";
 import playbook009Raw from "../../knowledge/playbooks/PLAYBOOK_009_MODEL_ROUTER_COST_AWARE_INFERENCE.md?raw";
+
+const CRYPTO_RADAR_CARD_FILES = import.meta.glob("../../knowledge/crypto/radar/cards/*.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
 type StatusTone = "neutral" | "good" | "warn" | "danger" | "info";
 
@@ -93,6 +100,41 @@ type ReceiptEntry = {
   error?: string | null;
   approval_reference?: string | null;
   next_step: string;
+};
+
+type CryptoRadarBatch = {
+  batch_id: string;
+  created_at: string;
+  status: string;
+  mode: string;
+  playbook: string;
+  source_file: string;
+  source_brief_title: string;
+  queue_entry_id: string;
+  receipt_id: string;
+  card_ids: string[];
+  card_paths: string[];
+  card_count: number;
+  boundary: string;
+  notes: string[];
+};
+
+type CryptoRadarCard = {
+  id: string;
+  title: string;
+  asset_or_sector: string;
+  classification: string[];
+  source_file: string;
+  source_urls: string[];
+  timeframe: string;
+  what_changed: string;
+  why_it_matters: string;
+  catalyst: string;
+  risks: string[];
+  invalidation_conditions: string[];
+  confidence: string;
+  status: string;
+  boundary: string;
 };
 
 type AgentRegistry = {
@@ -324,17 +366,35 @@ export type CommandCenterSnapshot = {
     nextActions: string[];
     sourceType: "canonical" | "derived_from_backbone";
   }>;
+  cryptoRadarBatch: {
+    batchId: string;
+    createdAt: string;
+    status: string;
+    mode: string;
+    playbook: string;
+    sourceFile: string;
+    queueEntryId: string;
+    receiptId: string;
+    cardCount: number;
+    boundary: string;
+    notes: string[];
+  } | null;
   cryptoRadar: Array<{
-    signalId: string;
+    id: string;
+    title: string;
     assetOrSector: string;
-    narrative: string;
-    catalyst: string;
+    classification: string[];
+    sourceFile: string;
+    sourceUrls: string[];
     timeframe: string;
-    riskFactors: string[];
-    invalidation: string;
+    whatChanged: string;
+    whyItMatters: string;
+    catalyst: string;
+    risks: string[];
+    invalidationConditions: string[];
     confidence: string;
     status: string;
-    sourceType: "canonical" | "derived_from_backbone";
+    boundary: string;
   }>;
   scopeAuthorization: Array<{
     targetId: string;
@@ -477,6 +537,8 @@ function buildSnapshot(): CommandCenterSnapshot {
     backboneValidationRaw,
     "backbone validation",
   );
+  const cryptoRadarBatch = parseJson<CryptoRadarBatch>(cryptoRadarBatchRaw, "crypto radar batch");
+  const cryptoRadar = buildCryptoRadarCards(cryptoRadarBatch);
 
   const playbooks = PLAYBOOK_FILES.map((playbook) =>
     buildPlaybookView(playbook.path, playbook.raw, backboneValidation.validation_date),
@@ -496,20 +558,25 @@ function buildSnapshot(): CommandCenterSnapshot {
     : (awareness.latest_receipts?.length ?? 0);
   const activeQueueCount = hasQueueEntries ? liveActiveQueueCount : awareness.active_queue_count;
   const hasLiveRuntimeData = hasQueueEntries || hasReceipts;
+  const hasLiveCryptoRadarData = cryptoRadar.length > 0;
 
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
-    loaderNote: hasLiveRuntimeData
-      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger now render the first real runtime data from PR #8, while sections with no live data still show explicit empty states."
-      : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+    loaderNote: hasLiveCryptoRadarData
+      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, and Crypto Radar now render live canonical data, while sections with no target-specific artifacts still show explicit empty states."
+      : hasLiveRuntimeData
+        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger render live canonical data, while sections with no live data still show explicit empty states."
+        : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
     lineage: {
       backbonePR: "PR #5 — Validate Operating Backbone v0",
-      commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
-      baseBranch: "cursor/validate-backbone-v0",
-      note: hasLiveRuntimeData
-        ? "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint, and PR #8 added the first real runtime queue entry and receipt that this UI now renders live."
-        : "PR #6 Command Center is built on top of the validated PR #5 Backbone checkpoint. The Backbone provides the canonical knowledge files that this UI reads.",
+      commandCenterPR: "PB006 — FATHIYA Crypto Radar live batch v0",
+      baseBranch: "cursor/command-center-live-queue-v0",
+      note: hasLiveCryptoRadarData
+        ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger, then adds the first PB006 Crypto Radar batch so the Command Center renders four canonical monitoring cards."
+        : hasLiveRuntimeData
+          ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger."
+          : "The Backbone provides the canonical knowledge files that this UI reads.",
     },
     overview: {
       currentFocus:
@@ -541,14 +608,14 @@ function buildSnapshot(): CommandCenterSnapshot {
         source_file: "knowledge/runtime/runtime_queue_v0.json",
         data_status: hasQueueEntries ? "live" : "empty",
         notes: hasQueueEntries
-          ? "Live queue rows are read directly from queue_entries, including the first real routed task from PR #8: rt-2026-05-16-command-center-hardening-v0."
+          ? "Live queue rows are read directly from queue_entries, including the PB006 crypto radar intake batch and the earlier command-center-hardening task."
           : "Queue catalog is populated but queue_entries array is empty. Schema is ready for first routed task.",
       },
       receiptLedger: {
         source_file: "knowledge/runtime/receipt_ledger_v0.json",
         data_status: hasReceipts ? "live" : "empty",
         notes: hasReceipts
-          ? "Live receipt rows are read directly from receipts, including the first real receipt from PR #8: receipt-2026-05-16-command-center-hardening-v0."
+          ? "Live receipt rows are read directly from receipts, including the PB006 crypto radar batch receipt and the earlier command-center-hardening receipt."
           : "Receipt policy and required fields are populated. Receipts array is empty until first task completes.",
       },
       agents: {
@@ -577,10 +644,12 @@ function buildSnapshot(): CommandCenterSnapshot {
           "Row 1 uses canonical retrieval data. Row 2 is a derived summary from backbone validation. No live daily batch dataset exists yet.",
       },
       cryptoRadar: {
-        source_file: "—",
-        data_status: "planned",
-        notes:
-          "No live signal-card dataset exists. PB006 defines the intake process. Signals will appear once the first PB006 batch runs.",
+        source_file:
+          "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json, knowledge/crypto/radar/cards/*.json",
+        data_status: hasLiveCryptoRadarData ? "live" : "planned",
+        notes: hasLiveCryptoRadarData
+          ? "Canonical PB006 radar data now renders from the preserved Manus source brief, the batch manifest, and four card files. Boundaries remain research and monitoring only with no trading execution."
+          : "No live signal-card dataset exists. PB006 defines the intake process. Signals will appear once the first PB006 batch runs.",
       },
       scopeAuthorization: {
         source_file: "—",
@@ -631,6 +700,18 @@ function buildSnapshot(): CommandCenterSnapshot {
         path: "knowledge/retrieval_index_summary.json",
         kind: "canonical",
         note: "Feeds Daily Intake counts and corpus coverage cards.",
+      },
+      {
+        label: "Crypto Radar Batch",
+        path: "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json",
+        kind: "canonical",
+        note: "PB006 batch manifest with card ids, receipt linkage, and monitoring boundary.",
+      },
+      {
+        label: "Crypto Radar Source Brief",
+        path: "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
+        kind: "canonical",
+        note: "Preserved Manus brief used as the sole factual source for the first live radar batch.",
       },
     ],
     queueEntries,
@@ -689,7 +770,20 @@ function buildSnapshot(): CommandCenterSnapshot {
       receiptLedger,
       backboneValidation,
     ),
-    cryptoRadar: [],
+    cryptoRadarBatch: {
+      batchId: cryptoRadarBatch.batch_id,
+      createdAt: cryptoRadarBatch.created_at,
+      status: cryptoRadarBatch.status,
+      mode: cryptoRadarBatch.mode,
+      playbook: cryptoRadarBatch.playbook,
+      sourceFile: cryptoRadarBatch.source_file,
+      queueEntryId: cryptoRadarBatch.queue_entry_id,
+      receiptId: cryptoRadarBatch.receipt_id,
+      cardCount: cryptoRadarBatch.card_count,
+      boundary: cryptoRadarBatch.boundary,
+      notes: cryptoRadarBatch.notes,
+    },
+    cryptoRadar,
     scopeAuthorization: [],
     approvalQueue: buildApprovalQueueRows(approvalPolicyRegistry, toolContractRegistry),
     registriesSummary: {
@@ -775,6 +869,7 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
         sourceType: "derived_from_backbone",
       },
     ],
+    cryptoRadarBatch: null,
     cryptoRadar: [],
     scopeAuthorization: [],
     approvalQueue: [],
@@ -875,52 +970,34 @@ function buildDailyIntakeRows(
   ];
 }
 
-function buildCryptoRadarRows(
-  retrievalSummary: RetrievalSummary,
-  approvalPolicyRegistry: ApprovalPolicyRegistry,
-) {
-  const cryptoCount =
-    retrievalSummary.top_domains.find(([domain]) => domain === "crypto")?.[1] ?? 0;
-  const marketExecutionClass = approvalPolicyRegistry.approval_classes.find(
-    (approvalClass) => approvalClass.class_id === "approval_market_execution",
-  );
+function buildCryptoRadarCards(batch: CryptoRadarBatch): CommandCenterSnapshot["cryptoRadar"] {
+  const cardsById = Object.values(CRYPTO_RADAR_CARD_FILES)
+    .map((raw, index) => parseJson<CryptoRadarCard>(raw, `crypto radar card ${index + 1}`))
+    .reduce<Record<string, CryptoRadarCard>>((accumulator, card) => {
+      accumulator[card.id] = card;
+      return accumulator;
+    }, {});
 
-  return [
-    {
-      signalId: "signal_bootstrap_crypto_domain",
-      assetOrSector: "Crypto domain / watchlist bootstrap",
-      narrative:
-        cryptoCount > 0
-          ? `The retrieval indexes already contain ${cryptoCount} crypto-tagged records, but no live signal cards have been routed into the runtime queue yet.`
-          : "PLAYBOOK 006 is present, but the current knowledge bundle does not yet contain routed crypto signal cards.",
-      catalyst: "First PLAYBOOK 006 intake batch with preserved source material",
-      timeframe: "Daily monitoring",
-      riskFactors: [
-        "missing preserved source",
-        "missing catalyst or timeframe",
-        "direct market execution request",
-      ],
-      invalidation:
-        "Do not promote beyond radar mode without source preservation, risk factors, and invalidation criteria.",
-      confidence: cryptoCount > 0 ? "low_to_moderate" : "low",
-      status: cryptoCount > 0 ? "monitoring" : "awaiting_sources",
-      sourceType: "derived" as const,
-    },
-    {
-      signalId: "signal_policy_market_execution_gate",
-      assetOrSector: "External execution lane",
-      narrative:
-        "The policy layer allows radar, watchlists, and paper simulation artifacts, but blocks automated trading execution in v0.",
-      catalyst: marketExecutionClass?.status ?? "separate_execution_policy_required",
-      timeframe: "Until a separate execution policy exists",
-      riskFactors: ["external side effects", "capital risk", "approval missing"],
-      invalidation:
-        "Only proceed after explicit approval queue entry plus separate market execution policy.",
-      confidence: "high",
-      status: "blocked",
-      sourceType: "derived" as const,
-    },
-  ];
+  return batch.card_ids
+    .map((cardId) => cardsById[cardId])
+    .filter((card): card is CryptoRadarCard => Boolean(card))
+    .map((card) => ({
+      id: card.id,
+      title: card.title,
+      assetOrSector: card.asset_or_sector,
+      classification: card.classification,
+      sourceFile: card.source_file,
+      sourceUrls: card.source_urls,
+      timeframe: card.timeframe,
+      whatChanged: card.what_changed,
+      whyItMatters: card.why_it_matters,
+      catalyst: card.catalyst,
+      risks: card.risks,
+      invalidationConditions: card.invalidation_conditions,
+      confidence: card.confidence,
+      status: card.status,
+      boundary: card.boundary,
+    }));
 }
 
 function buildScopeAuthorizationRows() {
