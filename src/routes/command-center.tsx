@@ -23,7 +23,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
@@ -74,11 +81,14 @@ function CommandCenterPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold tracking-tight">FATHIYA Command Center v0</h1>
+                <h1 className="text-base font-semibold tracking-tight">
+                  FATHIYA Command Center v0
+                </h1>
                 <StatusBadge status={data.loaderMode} />
               </div>
               <p className="text-xs text-muted-foreground">
-                Operating Backbone control surface backed by local knowledge files and documented fallback lanes.
+                Operating Backbone control surface backed by local knowledge files and documented
+                fallback lanes.
               </p>
             </div>
           </div>
@@ -264,7 +274,9 @@ function CommandCenterPage() {
                               <div>Input: {receipt.input_artifact}</div>
                               <div>Output: {receipt.output_artifact}</div>
                             </div>
-                            <p className="mt-2 text-xs text-foreground">Next: {receipt.next_step}</p>
+                            <p className="mt-2 text-xs text-foreground">
+                              Next: {receipt.next_step}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -283,14 +295,19 @@ function CommandCenterPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {data.sources.map((source) => (
-                      <div key={source.path} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                      <div
+                        key={source.path}
+                        className="rounded-lg border border-border/50 bg-muted/20 p-3"
+                      >
                         <div className="mb-1 flex items-center justify-between gap-2">
                           <div className="text-sm font-medium">{source.label}</div>
                           <Badge variant="outline" className="text-[10px]">
                             {source.kind}
                           </Badge>
                         </div>
-                        <div className="font-mono text-[11px] text-muted-foreground">{source.path}</div>
+                        <div className="font-mono text-[11px] text-muted-foreground">
+                          {source.path}
+                        </div>
                         <p className="mt-2 text-xs text-muted-foreground">{source.note}</p>
                       </div>
                     ))}
@@ -348,7 +365,8 @@ function CommandCenterPage() {
               <CardHeader>
                 <CardTitle>Queue entries</CardTitle>
                 <CardDescription>
-                  Required columns from PLAYBOOK 003 are preserved even when no entries have been written yet.
+                  Required columns from PLAYBOOK 003 are preserved even when no entries have been
+                  written yet.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -404,13 +422,25 @@ function CommandCenterPage() {
               </CardHeader>
               <CardContent>
                 <DataTable
-                  headers={["queue", "purpose", "default approval", "allowed outputs", "allowed adapters"]}
+                  headers={[
+                    "queue",
+                    "purpose",
+                    "default approval",
+                    "allowed outputs",
+                    "allowed adapters",
+                  ]}
                   rows={data.queueCatalog.map((queue) => [
                     queue.name,
                     queue.purpose,
                     queue.defaultApproval,
-                    <TagList key="outputs" items={queue.outputs.length > 0 ? queue.outputs : ["—"]} />,
-                    <TagList key="adapters" items={queue.adapters.length > 0 ? queue.adapters : ["—"]} />,
+                    <TagList
+                      key="outputs"
+                      items={queue.outputs.length > 0 ? queue.outputs : ["—"]}
+                    />,
+                    <TagList
+                      key="adapters"
+                      items={queue.adapters.length > 0 ? queue.adapters : ["—"]}
+                    />,
                   ])}
                 />
               </CardContent>
@@ -530,7 +560,16 @@ function CommandCenterPage() {
               </CardHeader>
               <CardContent>
                 <DataTable
-                  headers={["workflow id", "name", "playbook", "trigger", "queue", "mode", "adapters", "status"]}
+                  headers={[
+                    "workflow id",
+                    "name",
+                    "playbook",
+                    "trigger",
+                    "queue",
+                    "mode",
+                    "adapters",
+                    "status",
+                  ]}
                   rows={data.workflows.map((workflow) => [
                     <code key="id">{workflow.workflowId}</code>,
                     workflow.name,
@@ -574,7 +613,10 @@ function CommandCenterPage() {
                     playbook.title,
                     <StatusBadge key="status" status={playbook.status} />,
                     playbook.purpose,
-                    <TagList key="files" items={playbook.requiredFiles.length > 0 ? playbook.requiredFiles : ["—"]} />,
+                    <TagList
+                      key="files"
+                      items={playbook.requiredFiles.length > 0 ? playbook.requiredFiles : ["—"]}
+                    />,
                     playbook.nextPlaybook,
                     playbook.lastValidation,
                   ])}
@@ -650,7 +692,9 @@ function CommandCenterPage() {
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
                   <CardTitle>Router guardrails</CardTitle>
-                  <CardDescription>Fallback rules and cost controls from the model router registry.</CardDescription>
+                  <CardDescription>
+                    Fallback rules and cost controls from the model router registry.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -675,7 +719,8 @@ function CommandCenterPage() {
               <CardHeader>
                 <CardTitle>Daily intake rows</CardTitle>
                 <CardDescription>
-                  Source-backed where files already exist; explicitly labeled as derived where the backbone has not yet produced live intake artifacts.
+                  Source-backed where files already exist; explicitly labeled as derived where the
+                  backbone has not yet produced live intake artifacts.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -806,7 +851,8 @@ function CommandCenterPage() {
               <CardHeader>
                 <CardTitle>Approval-required lanes</CardTitle>
                 <CardDescription>
-                  Derived from approval_policy_registry_v0.json and mapped to current tool-contract lanes where possible.
+                  Derived from approval_policy_registry_v0.json and mapped to current tool-contract
+                  lanes where possible.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -861,7 +907,9 @@ function MetricCard({
       <CardContent className="p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {label}
+            </div>
             <div className="mt-2 text-lg font-semibold leading-snug">{value}</div>
           </div>
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
@@ -921,13 +969,7 @@ function EmptyState({ title, description }: { title: string; description: string
   );
 }
 
-function DataTable({
-  headers,
-  rows,
-}: {
-  headers: string[];
-  rows: ReactNode[][];
-}) {
+function DataTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return (
     <ScrollArea className="w-full rounded-lg border border-border/50">
       <Table className="min-w-[920px] text-xs">

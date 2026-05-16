@@ -30,18 +30,18 @@ Sources
 
 The Command Center route maps those layers into the following screens:
 
-| Screen | Backbone layer | Primary data source(s) |
-|---|---|---|
-| Overview | Awareness State Update + validation summary | `knowledge/FATHIYA_AWARENESS_STATE.json`, `knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json` |
-| Runtime Queue | Runtime Queue | `knowledge/runtime/runtime_queue_v0.json` |
-| Receipt Ledger | Receipt Ledger | `knowledge/runtime/receipt_ledger_v0.json` |
-| Agents | Registries / routing operators | `knowledge/registries/agent_registry_v0.json`, `knowledge/registries/workflow_registry_v0.json` |
-| Playbooks | Playbook Layer | `knowledge/playbooks/PLAYBOOK_*.md`, `knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json` |
-| Tool Contracts | Tool Contract Resolver | `knowledge/registries/tool_contract_registry_v0.json` |
-| Daily Intake | Intake loop / corpus routing | `knowledge/retrieval_index_summary.json`, `knowledge/retrieval_validation_report.json`, `knowledge/FATHIYA_AWARENESS_STATE.json` |
-| Crypto Radar | Crypto Radar Mode | derived from `knowledge/playbooks/PLAYBOOK_006_CRYPTO_RADAR_SIGNAL_INTAKE.md`, `knowledge/retrieval_index_summary.json`, `knowledge/registries/approval_policy_registry_v0.json` |
-| Scope & Authorization | Scope / Target preparation | derived from `knowledge/playbooks/PLAYBOOK_005_SCOPE_AUTHORIZATION_PREPARATION.md` |
-| Approval Queue | Policy / Approval Gate | derived from `knowledge/registries/approval_policy_registry_v0.json` plus `knowledge/registries/tool_contract_registry_v0.json` |
+| Screen                | Backbone layer                              | Primary data source(s)                                                                                                                                                           |
+| --------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview              | Awareness State Update + validation summary | `knowledge/FATHIYA_AWARENESS_STATE.json`, `knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json`                                                                           |
+| Runtime Queue         | Runtime Queue                               | `knowledge/runtime/runtime_queue_v0.json`                                                                                                                                        |
+| Receipt Ledger        | Receipt Ledger                              | `knowledge/runtime/receipt_ledger_v0.json`                                                                                                                                       |
+| Agents                | Registries / routing operators              | `knowledge/registries/agent_registry_v0.json`, `knowledge/registries/workflow_registry_v0.json`                                                                                  |
+| Playbooks             | Playbook Layer                              | `knowledge/playbooks/PLAYBOOK_*.md`, `knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json`                                                                                |
+| Tool Contracts        | Tool Contract Resolver                      | `knowledge/registries/tool_contract_registry_v0.json`                                                                                                                            |
+| Daily Intake          | Intake loop / corpus routing                | `knowledge/retrieval_index_summary.json`, `knowledge/retrieval_validation_report.json`, `knowledge/FATHIYA_AWARENESS_STATE.json`                                                 |
+| Crypto Radar          | Crypto Radar Mode                           | derived from `knowledge/playbooks/PLAYBOOK_006_CRYPTO_RADAR_SIGNAL_INTAKE.md`, `knowledge/retrieval_index_summary.json`, `knowledge/registries/approval_policy_registry_v0.json` |
+| Scope & Authorization | Scope / Target preparation                  | derived from `knowledge/playbooks/PLAYBOOK_005_SCOPE_AUTHORIZATION_PREPARATION.md`                                                                                               |
+| Approval Queue        | Policy / Approval Gate                      | derived from `knowledge/registries/approval_policy_registry_v0.json` plus `knowledge/registries/tool_contract_registry_v0.json`                                                  |
 
 ## Data-loading adapter
 

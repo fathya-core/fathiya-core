@@ -10,21 +10,19 @@ import { ArtifactViewer } from "@/components/ops/ArtifactViewer";
 import { Toaster } from "@/components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useArtifactIndex } from "@/hooks/use-artifact-index";
+import { LAYERS, TASKS, type LayerId, type Owner, type Task } from "@/lib/ops/tasks";
 import {
-  LAYERS,
-  TASKS,
-  type LayerId,
-  type Owner,
-  type Task,
-} from "@/lib/ops/tasks";
-import { Activity, Database, Sparkles, CircleCheck as CheckCircle2, Clock, TriangleAlert as AlertTriangle, TrendingUp, Shield, SquareStack } from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-} from "recharts";
+  Activity,
+  Database,
+  Sparkles,
+  CircleCheck as CheckCircle2,
+  Clock,
+  TriangleAlert as AlertTriangle,
+  TrendingUp,
+  Shield,
+  SquareStack,
+} from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,7 +38,15 @@ export const Route = createFileRoute("/")({
   component: OpsConsole,
 });
 
-const OWNERS: Array<"All" | Owner> = ["All", "Claude", "GPT", "Perplexity", "Manus", "n8n", "Zapier"];
+const OWNERS: Array<"All" | Owner> = [
+  "All",
+  "Claude",
+  "GPT",
+  "Perplexity",
+  "Manus",
+  "n8n",
+  "Zapier",
+];
 
 const LAYER_CHART_COLORS: Record<LayerId, string> = {
   A: "#34d399",
@@ -62,11 +68,22 @@ function OpsConsole() {
   const overall = useMemo(() => {
     const total = TASKS.length;
     const done = TASKS.filter(
-      (t) => t.status === "done" || isDone(t.id, t.artifacts.map((a) => a.path)),
+      (t) =>
+        t.status === "done" ||
+        isDone(
+          t.id,
+          t.artifacts.map((a) => a.path),
+        ),
     ).length;
     const inProgress = TASKS.filter((t) => t.status === "in_progress").length;
     const highPriority = TASKS.filter((t) => t.priority === 3).length;
-    return { done, total, pct: total ? Math.round((done / total) * 100) : 0, inProgress, highPriority };
+    return {
+      done,
+      total,
+      pct: total ? Math.round((done / total) * 100) : 0,
+      inProgress,
+      highPriority,
+    };
   }, [isDone]);
 
   const ownerCounts = useMemo(() => {
@@ -79,7 +96,12 @@ function OpsConsole() {
     return LAYERS.map((l) => {
       const tasks = TASKS.filter((t) => t.layer === l.id);
       const done = tasks.filter(
-        (t) => t.status === "done" || isDone(t.id, t.artifacts.map((a) => a.path)),
+        (t) =>
+          t.status === "done" ||
+          isDone(
+            t.id,
+            t.artifacts.map((a) => a.path),
+          ),
       ).length;
       return { name: l.name, id: l.id, value: tasks.length, done };
     });
@@ -216,7 +238,9 @@ function OpsConsole() {
           {/* Chart + N8n side by side on desktop */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             <Card className="p-4 bg-card/40 border-border/60 animate-fade-in-up">
-              <h3 className="text-xs font-semibold text-foreground mb-3">توزيع المهام حسب الطبقة</h3>
+              <h3 className="text-xs font-semibold text-foreground mb-3">
+                توزيع المهام حسب الطبقة
+              </h3>
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -231,7 +255,11 @@ function OpsConsole() {
                       strokeWidth={0}
                     >
                       {layerChartData.map((entry) => (
-                        <Cell key={entry.id} fill={LAYER_CHART_COLORS[entry.id as LayerId]} fillOpacity={0.85} />
+                        <Cell
+                          key={entry.id}
+                          fill={LAYER_CHART_COLORS[entry.id as LayerId]}
+                          fillOpacity={0.85}
+                        />
                       ))}
                     </Pie>
                     <RechartsTooltip
@@ -242,17 +270,21 @@ function OpsConsole() {
                         fontSize: "11px",
                         direction: "rtl",
                       }}
-                      formatter={(value: number, _name: string, props: { payload: { name: string; done: number } }) => [
-                        `${value} مهمة (${props.payload.done} مكتملة)`,
-                        props.payload.name,
-                      ]}
+                      formatter={(
+                        value: number,
+                        _name: string,
+                        props: { payload: { name: string; done: number } },
+                      ) => [`${value} مهمة (${props.payload.done} مكتملة)`, props.payload.name]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                 {layerChartData.map((l) => (
-                  <div key={l.id} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <div
+                    key={l.id}
+                    className="flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                  >
                     <span
                       className="h-2 w-2 rounded-sm"
                       style={{ backgroundColor: LAYER_CHART_COLORS[l.id as LayerId] }}
@@ -276,7 +308,11 @@ function OpsConsole() {
                   كل الطبقات
                 </TabsTrigger>
                 {LAYERS.map((l) => (
-                  <TabsTrigger key={l.id} value={l.id} className="text-xs data-[state=active]:bg-background">
+                  <TabsTrigger
+                    key={l.id}
+                    value={l.id}
+                    className="text-xs data-[state=active]:bg-background"
+                  >
                     {l.id} -- {l.name}
                   </TabsTrigger>
                 ))}
@@ -287,7 +323,7 @@ function OpsConsole() {
               <span className="text-[10px] text-muted-foreground ml-1">المالك:</span>
               {OWNERS.map((o) => {
                 const active = ownerFilter === o;
-                const count = o === "All" ? TASKS.length : ownerCounts.get(o as Owner) ?? 0;
+                const count = o === "All" ? TASKS.length : (ownerCounts.get(o as Owner) ?? 0);
                 return (
                   <button
                     key={o}

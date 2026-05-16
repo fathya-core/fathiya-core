@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CommandCenterRouteImport } from './routes/command-center'
 import { Route as AiRunsRouteImport } from './routes/ai-runs'
 import { Route as AiConsoleRouteImport } from './routes/ai-console'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +22,11 @@ import { Route as ApiPublicSecScanRouteImport } from './routes/api/public/sec/sc
 import { Route as ApiPublicSecReportRouteImport } from './routes/api/public/sec/report'
 import { Route as ApiPublicSecNotifyRouteImport } from './routes/api/public/sec/notify'
 
+const CommandCenterRoute = CommandCenterRouteImport.update({
+  id: '/command-center',
+  path: '/command-center',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AiRunsRoute = AiRunsRouteImport.update({
   id: '/ai-runs',
   path: '/ai-runs',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
+  '/command-center': typeof CommandCenterRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
+  '/command-center': typeof CommandCenterRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
+  '/command-center': typeof CommandCenterRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-console'
     | '/ai-runs'
+    | '/command-center'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-console'
     | '/ai-runs'
+    | '/command-center'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ai-console'
     | '/ai-runs'
+    | '/command-center'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiConsoleRoute: typeof AiConsoleRoute
   AiRunsRoute: typeof AiRunsRoute
+  CommandCenterRoute: typeof CommandCenterRoute
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
   ApiArtifactsReadRoute: typeof ApiArtifactsReadRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
@@ -175,6 +188,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/command-center': {
+      id: '/command-center'
+      path: '/command-center'
+      fullPath: '/command-center'
+      preLoaderRoute: typeof CommandCenterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-runs': {
       id: '/ai-runs'
       path: '/ai-runs'
@@ -259,6 +279,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiConsoleRoute: AiConsoleRoute,
   AiRunsRoute: AiRunsRoute,
+  CommandCenterRoute: CommandCenterRoute,
   ApiAiGenerateRoute: ApiAiGenerateRoute,
   ApiArtifactsReadRoute: ApiArtifactsReadRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,

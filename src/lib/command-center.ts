@@ -381,7 +381,10 @@ const PLAYBOOK_FILES = [
   },
   { path: "knowledge/playbooks/PLAYBOOK_006_CRYPTO_RADAR_SIGNAL_INTAKE.md", raw: playbook006Raw },
   { path: "knowledge/playbooks/PLAYBOOK_007_DAILY_INTAKE_AUTOMATION.md", raw: playbook007Raw },
-  { path: "knowledge/playbooks/PLAYBOOK_008_COMMAND_CENTER_UI_REQUIREMENTS.md", raw: playbook008Raw },
+  {
+    path: "knowledge/playbooks/PLAYBOOK_008_COMMAND_CENTER_UI_REQUIREMENTS.md",
+    raw: playbook008Raw,
+  },
   {
     path: "knowledge/playbooks/PLAYBOOK_009_MODEL_ROUTER_COST_AWARE_INFERENCE.md",
     raw: playbook009Raw,
@@ -433,14 +436,32 @@ function buildSnapshot(): CommandCenterSnapshot {
   const receiptLedger = parseJson<ReceiptLedger>(receiptLedgerRaw, "receipt ledger");
   const agentRegistry = parseJson<AgentRegistry>(agentRegistryRaw, "agent registry");
   const workflowRegistry = parseJson<WorkflowRegistry>(workflowRegistryRaw, "workflow registry");
-  const toolContractRegistry = parseJson<ToolContractRegistry>(toolContractRegistryRaw, "tool contract registry");
+  const toolContractRegistry = parseJson<ToolContractRegistry>(
+    toolContractRegistryRaw,
+    "tool contract registry",
+  );
   const skillRegistry = parseJson<SkillRegistry>(skillRegistryRaw, "skill registry");
-  const machineTaskRegistry = parseJson<MachineTaskRegistry>(machineTaskRegistryRaw, "machine task registry");
-  const modelRouterRegistry = parseJson<ModelRouterRegistry>(modelRouterRegistryRaw, "model router registry");
-  const approvalPolicyRegistry = parseJson<ApprovalPolicyRegistry>(approvalPolicyRaw, "approval policy registry");
+  const machineTaskRegistry = parseJson<MachineTaskRegistry>(
+    machineTaskRegistryRaw,
+    "machine task registry",
+  );
+  const modelRouterRegistry = parseJson<ModelRouterRegistry>(
+    modelRouterRegistryRaw,
+    "model router registry",
+  );
+  const approvalPolicyRegistry = parseJson<ApprovalPolicyRegistry>(
+    approvalPolicyRaw,
+    "approval policy registry",
+  );
   const retrievalSummary = parseJson<RetrievalSummary>(retrievalSummaryRaw, "retrieval summary");
-  const retrievalValidation = parseJson<RetrievalValidation>(retrievalValidationRaw, "retrieval validation");
-  const backboneValidation = parseJson<BackboneValidation>(backboneValidationRaw, "backbone validation");
+  const retrievalValidation = parseJson<RetrievalValidation>(
+    retrievalValidationRaw,
+    "retrieval validation",
+  );
+  const backboneValidation = parseJson<BackboneValidation>(
+    backboneValidationRaw,
+    "backbone validation",
+  );
 
   const playbooks = PLAYBOOK_FILES.map((playbook) =>
     buildPlaybookView(playbook.path, playbook.raw, backboneValidation.validation_date),
@@ -453,7 +474,8 @@ function buildSnapshot(): CommandCenterSnapshot {
   const latestReceiptsCount = (awareness.latest_receipts?.length ?? 0) || receipts.length;
   const activeQueueCount =
     awareness.active_queue_count ||
-    queueEntries.filter((entry) => ["queued", "running", "waiting_approval"].includes(entry.status)).length;
+    queueEntries.filter((entry) => ["queued", "running", "waiting_approval"].includes(entry.status))
+      .length;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -528,7 +550,10 @@ function buildSnapshot(): CommandCenterSnapshot {
     runtimeRequiredFields: runtimeQueue.required_entry_fields,
     receipts,
     receiptRequiredFields: receiptLedger.required_receipt_fields,
-    receiptPolicy: Object.entries(receiptLedger.receipt_policy).map(([queue, policy]) => ({ queue, policy })),
+    receiptPolicy: Object.entries(receiptLedger.receipt_policy).map(([queue, policy]) => ({
+      queue,
+      policy,
+    })),
     agents: agentRegistry.agents.map((agent) => ({
       agentId: agent.agent_id,
       name: agent.name,
@@ -695,8 +720,11 @@ function buildDailyIntakeRows(
   receiptLedger: ReceiptLedger,
   backboneValidation: BackboneValidation,
 ) {
-  const topDomains = retrievalSummary.top_domains.slice(0, 3).map(([domain, count]) => `${domain} (${count})`);
-  const knowledgeCardCount = retrievalSummary.top_types.find(([type]) => type === "knowledge_card")?.[1] ?? 0;
+  const topDomains = retrievalSummary.top_domains
+    .slice(0, 3)
+    .map(([domain, count]) => `${domain} (${count})`);
+  const knowledgeCardCount =
+    retrievalSummary.top_types.find(([type]) => type === "knowledge_card")?.[1] ?? 0;
   return [
     {
       source: retrievalSummary.source_archive,
@@ -713,7 +741,8 @@ function buildDailyIntakeRows(
           ? receiptLedger.receipts.slice(0, 3).map((receipt) => receipt.receipt_id)
           : ["No intake receipts recorded yet."],
       nextActions: [
-        awareness.next_recommended_action ?? "Run the first PLAYBOOK 007 intake batch against new sources.",
+        awareness.next_recommended_action ??
+          "Run the first PLAYBOOK 007 intake batch against new sources.",
       ],
       sourceType: "canonical" as const,
     },
@@ -731,7 +760,9 @@ function buildDailyIntakeRows(
           ? backboneValidation.warnings.map((warning) => warning.warn_id)
           : ["No warnings"],
       receipts: ["knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.md"],
-      nextActions: ["Promote live queue entries so the Command Center shifts from audit mode to runtime mode."],
+      nextActions: [
+        "Promote live queue entries so the Command Center shifts from audit mode to runtime mode.",
+      ],
       sourceType: "derived" as const,
     },
   ];
@@ -741,7 +772,8 @@ function buildCryptoRadarRows(
   retrievalSummary: RetrievalSummary,
   approvalPolicyRegistry: ApprovalPolicyRegistry,
 ) {
-  const cryptoCount = retrievalSummary.top_domains.find(([domain]) => domain === "crypto")?.[1] ?? 0;
+  const cryptoCount =
+    retrievalSummary.top_domains.find(([domain]) => domain === "crypto")?.[1] ?? 0;
   const marketExecutionClass = approvalPolicyRegistry.approval_classes.find(
     (approvalClass) => approvalClass.class_id === "approval_market_execution",
   );
@@ -761,7 +793,8 @@ function buildCryptoRadarRows(
         "missing catalyst or timeframe",
         "direct market execution request",
       ],
-      invalidation: "Do not promote beyond radar mode without source preservation, risk factors, and invalidation criteria.",
+      invalidation:
+        "Do not promote beyond radar mode without source preservation, risk factors, and invalidation criteria.",
       confidence: cryptoCount > 0 ? "low_to_moderate" : "low",
       status: cryptoCount > 0 ? "monitoring" : "awaiting_sources",
       sourceType: "derived" as const,
@@ -774,7 +807,8 @@ function buildCryptoRadarRows(
       catalyst: marketExecutionClass?.status ?? "separate_execution_policy_required",
       timeframe: "Until a separate execution policy exists",
       riskFactors: ["external side effects", "capital risk", "approval missing"],
-      invalidation: "Only proceed after explicit approval queue entry plus separate market execution policy.",
+      invalidation:
+        "Only proceed after explicit approval queue entry plus separate market execution policy.",
       confidence: "high",
       status: "blocked",
       sourceType: "derived" as const,
