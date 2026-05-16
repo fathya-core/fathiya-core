@@ -54,6 +54,19 @@
       "error": null,
       "approval_reference": "none_required_data_correction_only",
       "next_step": "validate all future artifacts reference the correct repository identities per FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md"
+    },
+    {
+      "receipt_id": "receipt-2026-05-16-fathiya-monorepo-consolidation-v0",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "source_request": "rt-2026-05-16-fathiya-monorepo-consolidation-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "Two-repo architecture (fathya-core/fathiya-core + fathya-project/fathiya-ops-console) with split-brain risk",
+      "output_artifact": "ADR-001 + FATHIYA_REPOSITORY_IDENTITY_MAP_v0.md (updated) + TARGET_FATHIYA_CORE_OWNED_SURFACE_v0.json (updated) + SCOPE_MAP_FATHIYA_CORE_OWNED_SURFACE_v0.json (updated) + FATHIYA_MONOREPO_CONSOLIDATION_REPORT_v0.md + README_COMMAND_CENTER_v0.md (updated)",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_architecture_consolidation_only",
+      "next_step": "validate all future artifacts treat fathya-core/fathiya-core as single source of truth per ADR-001"
     }
   ],
   "required_receipt_fields": [

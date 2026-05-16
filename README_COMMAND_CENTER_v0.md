@@ -1,5 +1,9 @@
 # FATHIYA Command Center v0
 
+## Canonical Status
+
+This is the **active Command Center app** for the FATHIYA monorepo. It lives inside the canonical repository `fathya-core/fathiya-core` and is the single source of truth for the FATHIYA operational UI. There is no separate ops console repository that supersedes this — `fathya-project/fathiya-ops-console` is a legacy external mirror only (see ADR-001).
+
 ## Purpose
 
 This is the first Command Center v0 implementation for the validated FATHIYA Operating Backbone.
