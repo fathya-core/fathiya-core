@@ -1,0 +1,27 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_LEDGER_v0",
+  "status": "draft",
+  "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
+  "receipts": [],
+  "required_receipt_fields": [
+    "receipt_id",
+    "timestamp",
+    "source_request",
+    "queue",
+    "adapter",
+    "input_artifact",
+    "output_artifact",
+    "status",
+    "error",
+    "approval_reference",
+    "next_step"
+  ],
+  "status_values": ["draft", "queued", "running", "blocked", "completed", "failed", "needs_review"],
+  "receipt_policy": {
+    "knowledge_queue": "required_for_batch",
+    "research_queue": "required",
+    "engineering_queue": "required",
+    "automation_queue": "required_before_activation",
+    "approval_queue": "always_required"
+  }
+}
