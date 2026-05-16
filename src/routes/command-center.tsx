@@ -37,6 +37,7 @@ import {
   getStatusTone,
   loadCommandCenterSnapshot,
   type CommandCenterSnapshot,
+  type DataProvenance,
 } from "@/lib/command-center";
 
 export const Route = createFileRoute("/command-center")({
@@ -171,7 +172,7 @@ function CommandCenterPage() {
           />
         </div>
 
-        <Card className="mb-6 border-primary/20 bg-primary/5">
+        <Card className="mb-4 border-primary/20 bg-primary/5">
           <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="mb-1 text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">
@@ -183,6 +184,25 @@ function CommandCenterPage() {
               <div className="font-medium text-foreground">Next recommended action</div>
               <p className="mt-1">{data.overview.nextRecommendedAction}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6 border-sky-500/20 bg-sky-500/5">
+          <CardContent className="p-4">
+            <div className="mb-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400/80">
+              Build lineage
+            </div>
+            <div className="grid gap-2 text-sm md:grid-cols-2">
+              <div>
+                <span className="text-xs text-muted-foreground">Validated checkpoint:</span>
+                <div className="font-medium">{data.lineage.backbonePR}</div>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground">Current layer:</span>
+                <div className="font-medium">{data.lineage.commandCenterPR}</div>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{data.lineage.note}</p>
           </CardContent>
         </Card>
 
@@ -361,6 +381,7 @@ function CommandCenterPage() {
               title="Runtime Queue"
               description="Every routed task should appear here before or during execution. The schema file is live, but the v0 queue_entries array is still empty."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.runtimeQueue} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Queue entries</CardTitle>
@@ -452,6 +473,7 @@ function CommandCenterPage() {
               title="Receipt Ledger"
               description="No meaningful action is complete without a receipt. The ledger table is ready for live data, and the receipt policy is already visible."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.receiptLedger} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Receipts</CardTitle>
@@ -516,6 +538,7 @@ function CommandCenterPage() {
               title="Agents"
               description="Registered operators and their workflow context from the agent and workflow registries."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.agents} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Agent registry</CardTitle>
@@ -590,6 +613,7 @@ function CommandCenterPage() {
               title="Playbooks"
               description="Parsed from the markdown playbooks, with status, purpose, required files, next chain, and last validation date."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.playbooks} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Playbook chain</CardTitle>
@@ -630,6 +654,7 @@ function CommandCenterPage() {
               title="Tool Contracts"
               description="Adapter boundaries, approval flags, and failure modes from the tool contract registry, plus the model-router registry that guides cost-aware inference."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.toolContracts} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Tool contract registry</CardTitle>
@@ -715,6 +740,7 @@ function CommandCenterPage() {
               title="Daily Intake"
               description="This view uses retrieval summaries plus awareness state as the current canonical intake signal, and supplements them with one derived audit row until real daily batch reports exist."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.dailyIntake} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Daily intake rows</CardTitle>
@@ -757,8 +783,9 @@ function CommandCenterPage() {
           <TabsContent value="radar" className="space-y-4">
             <SectionHeader
               title="Crypto Radar"
-              description="PB006 is present, but no live signal-card dataset exists yet, so this screen renders policy-backed fallback radar rows derived from the retrieval summary and approval policy."
+              description="PB006 defines the signal intake process, but no live signal-card dataset exists yet."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.cryptoRadar} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Radar state</CardTitle>
@@ -767,34 +794,41 @@ function CommandCenterPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable
-                  headers={[
-                    "signal id",
-                    "asset / sector",
-                    "narrative",
-                    "catalyst",
-                    "timeframe",
-                    "risk factors",
-                    "invalidation",
-                    "confidence",
-                    "status",
-                    "source type",
-                  ]}
-                  rows={data.cryptoRadar.map((row) => [
-                    <code key="id">{row.signalId}</code>,
-                    row.assetOrSector,
-                    row.narrative,
-                    row.catalyst,
-                    row.timeframe,
-                    <TagList key="risk" items={row.riskFactors} />,
-                    row.invalidation,
-                    row.confidence,
-                    <StatusBadge key="status" status={row.status} />,
-                    <Badge key="type" variant="outline" className="text-[10px]">
-                      {row.sourceType}
-                    </Badge>,
-                  ])}
-                />
+                {data.cryptoRadar.length === 0 ? (
+                  <EmptyState
+                    title="No crypto radar signals yet"
+                    description="This is a planned section. Signal cards will appear once the first PLAYBOOK 006 intake batch runs and routes signals into the runtime queue. The intake process, approval gates, and risk-factor requirements are defined in PB006 and the approval policy registry."
+                  />
+                ) : (
+                  <DataTable
+                    headers={[
+                      "signal id",
+                      "asset / sector",
+                      "narrative",
+                      "catalyst",
+                      "timeframe",
+                      "risk factors",
+                      "invalidation",
+                      "confidence",
+                      "status",
+                      "source type",
+                    ]}
+                    rows={data.cryptoRadar.map((row) => [
+                      <code key="id">{row.signalId}</code>,
+                      row.assetOrSector,
+                      row.narrative,
+                      row.catalyst,
+                      row.timeframe,
+                      <TagList key="risk" items={row.riskFactors} />,
+                      row.invalidation,
+                      row.confidence,
+                      <StatusBadge key="status" status={row.status} />,
+                      <Badge key="type" variant="outline" className="text-[10px]">
+                        {row.sourceType}
+                      </Badge>,
+                    ])}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -802,42 +836,51 @@ function CommandCenterPage() {
           <TabsContent value="scope" className="space-y-4">
             <SectionHeader
               title="Scope & Authorization"
-              description="The current knowledge bundle does not yet contain live Target Cards, so this screen shows documented preparation lanes from PLAYBOOK 005 and the policy layer."
+              description="Target Cards and scope maps are prepared through PLAYBOOK 005. No live target data exists in the current knowledge bundle."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.scopeAuthorization} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Target preparation lanes</CardTitle>
                 <CardDescription>
-                  Explicitly separates ready lab-mode work from blocked target-specific work.
+                  Target-specific work requires a Target Card + Scope Map before proceeding.
+                  Lab-mode work on owned local apps is self-authorized.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable
-                  headers={[
-                    "target id",
-                    "name",
-                    "policy URL",
-                    "scope status",
-                    "authorization status",
-                    "blocked reason",
-                    "next artifact",
-                    "receipt",
-                    "source type",
-                  ]}
-                  rows={data.scopeAuthorization.map((row) => [
-                    <code key="id">{row.targetId}</code>,
-                    row.name,
-                    row.policyUrl,
-                    <StatusBadge key="scope" status={row.scopeStatus} />,
-                    <StatusBadge key="auth" status={row.authorizationStatus} />,
-                    row.blockedReason,
-                    row.nextArtifact,
-                    row.receipt,
-                    <Badge key="type" variant="outline" className="text-[10px]">
-                      {row.sourceType}
-                    </Badge>,
-                  ])}
-                />
+                {data.scopeAuthorization.length === 0 ? (
+                  <EmptyState
+                    title="No target cards or scope maps yet"
+                    description="This is a planned section. Target Cards and Scope Maps will appear once PLAYBOOK 005 preparation runs. Until then, lab-mode work on owned local apps is self-authorized and does not require this gate."
+                  />
+                ) : (
+                  <DataTable
+                    headers={[
+                      "target id",
+                      "name",
+                      "policy URL",
+                      "scope status",
+                      "authorization status",
+                      "blocked reason",
+                      "next artifact",
+                      "receipt",
+                      "source type",
+                    ]}
+                    rows={data.scopeAuthorization.map((row) => [
+                      <code key="id">{row.targetId}</code>,
+                      row.name,
+                      row.policyUrl,
+                      <StatusBadge key="scope" status={row.scopeStatus} />,
+                      <StatusBadge key="auth" status={row.authorizationStatus} />,
+                      row.blockedReason,
+                      row.nextArtifact,
+                      row.receipt,
+                      <Badge key="type" variant="outline" className="text-[10px]">
+                        {row.sourceType}
+                      </Badge>,
+                    ])}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -845,14 +888,15 @@ function CommandCenterPage() {
           <TabsContent value="approvals" className="space-y-4">
             <SectionHeader
               title="Approval Queue"
-              description="There are no live approval entries yet, so the view promotes approval policy classes into a policy-backed queue preview instead of hiding the gate."
+              description="No live approval requests exist yet. The rows below are derived from the backbone approval policy registry and show which gates are defined, not pending requests."
             />
+            <ProvenanceBanner provenance={data.sectionProvenance.approvalQueue} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
-                <CardTitle>Approval-required lanes</CardTitle>
+                <CardTitle>Approval-required policy lanes</CardTitle>
                 <CardDescription>
-                  Derived from approval_policy_registry_v0.json and mapped to current tool-contract
-                  lanes where possible.
+                  Derived from approval_policy_registry_v0.json — these are policy classes, not live
+                  approval requests. Labeled as <code>derived_from_backbone</code>.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -965,6 +1009,36 @@ function EmptyState({ title, description }: { title: string; description: string
     <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-6 text-center">
       <div className="text-sm font-medium">{title}</div>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function ProvenanceBanner({ provenance }: { provenance: DataProvenance | undefined }) {
+  if (!provenance) return null;
+
+  const statusColors: Record<string, string> = {
+    live: "border-emerald-500/30 bg-emerald-500/5 text-emerald-300",
+    empty: "border-amber-500/30 bg-amber-500/5 text-amber-300",
+    derived_from_backbone: "border-sky-500/30 bg-sky-500/5 text-sky-300",
+    planned: "border-violet-500/30 bg-violet-500/5 text-violet-300",
+  };
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-3 text-xs",
+        statusColors[provenance.data_status] ?? "border-border/60 bg-muted/10",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="font-semibold uppercase tracking-[0.16em]">
+          {provenance.data_status.replaceAll("_", " ")}
+        </span>
+        {provenance.source_file !== "—" && (
+          <span className="font-mono text-muted-foreground">{provenance.source_file}</span>
+        )}
+      </div>
+      <p className="mt-1 text-muted-foreground">{provenance.notes}</p>
     </div>
   );
 }
