@@ -175,6 +175,22 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-operations-autopilot-bootstrap-v0.json",
       "next_step": "PR review and merge into main; then formalize live-execution policy ADR before any staged operations transition to executed"
+    },
+    {
+      "id": "rt-2026-05-17-fathiya-autopilot-operations-integration-v0",
+      "timestamp": "2026-05-17T08:30:00Z",
+      "source": "FATHIYA Autopilot + Operations Integration — combines PR #18 (ADR-002) and PR #19 (ADR-003)",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Integration merge and validation",
+      "input_artifact": "PR #18 (cursor/autopilot-internal-build-v0) + PR #19 (cursor/operations-autopilot-v0) + main at 520750f",
+      "expected_output": "Single integration branch with all ADR-002 and ADR-003 artifacts, resolved conflicts, combined audit report, validated JSON and build",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-autopilot-operations-integration-v0.json",
+      "next_step": "merge integration PR into main; close PR #18 and PR #19 as superseded"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

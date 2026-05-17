@@ -1,0 +1,62 @@
+{
+  "receipt_id": "receipt-2026-05-17-fathiya-autopilot-operations-integration-v0",
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "timestamp": "2026-05-17T08:30:00Z",
+  "source_request": "rt-2026-05-17-fathiya-autopilot-operations-integration-v0",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "mode": "Integration merge and validation",
+  "input_artifact": "PR #18 (cursor/autopilot-internal-build-v0, 8 files, ADR-002) + PR #19 (cursor/operations-autopilot-v0, 9 files, ADR-003) + main at 520750f",
+  "output_artifact": "Integration branch cursor/autopilot-operations-integration-v0 with 17 changed files",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "internal_autopilot_adr_002",
+  "approval_class": "internal_autopilot",
+  "task_description": "Combine FATHIYA Autopilot Internal Build Mode (ADR-002) and FATHIYA Operations Autopilot Mode (ADR-003) into one integration branch, resolve merge conflicts, validate all JSON and build, and create combined audit report.",
+  "merge_strategy": {
+    "step_1": "Merged origin/cursor/autopilot-internal-build-v0 into integration branch (fast-forward from main)",
+    "step_2": "Merged origin/cursor/operations-autopilot-v0 — resolved conflicts in runtime_queue_v0.json and receipt_ledger_v0.json",
+    "step_3": "approval_policy_registry_v0.json auto-merged cleanly",
+    "conflicts_resolved": [
+      "knowledge/runtime/runtime_queue_v0.json",
+      "knowledge/runtime/receipt_ledger_v0.json"
+    ],
+    "auto_merged": [
+      "knowledge/registries/approval_policy_registry_v0.json"
+    ]
+  },
+  "artifacts_from_pr_18": [
+    "knowledge/decisions/ADR_002_FATHIYA_AUTOPILOT_INTERNAL_BUILD_MODE.md",
+    "knowledge/workflows/daily_intake_workflow_v0.json",
+    "knowledge/audit/FATHIYA_DAILY_INTAKE_WORKFLOW_BOOTSTRAP_REPORT_v0.md",
+    "knowledge/operations/FATHIYA_OVERNIGHT_AUTOPILOT_NOTE_v0.md",
+    "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-autopilot-internal-build-v0.json"
+  ],
+  "artifacts_from_pr_19": [
+    "knowledge/decisions/ADR_003_FATHIYA_OPERATIONS_AUTOPILOT_MODE.md",
+    "knowledge/registries/operations_tool_contracts_v0.json",
+    "knowledge/operations/operations_autopilot_queue_v0.json",
+    "knowledge/operations/rollback_note_template_v0.md",
+    "knowledge/audit/FATHIYA_OPERATIONS_AUTOPILOT_BOOTSTRAP_REPORT_v0.md",
+    "knowledge/runtime/receipts/receipt-2026-05-16-fathiya-operations-autopilot-bootstrap-v0.json"
+  ],
+  "artifacts_from_integration": [
+    "knowledge/audit/FATHIYA_AUTOPILOT_OPERATIONS_INTEGRATION_REPORT_v0.md",
+    "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-autopilot-operations-integration-v0.json"
+  ],
+  "shared_modified_files": [
+    "knowledge/registries/approval_policy_registry_v0.json",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json"
+  ],
+  "superseded_prs": ["#18", "#19"],
+  "non_execution_boundaries": {
+    "webhooks": "none_sent",
+    "email": "none_sent",
+    "trading": "none_executed",
+    "scanning": "none_executed",
+    "credentials": "none_exposed",
+    "destructive_actions": "none_performed"
+  },
+  "next_step": "merge integration PR into main; close PR #18 and PR #19 as superseded"
+}

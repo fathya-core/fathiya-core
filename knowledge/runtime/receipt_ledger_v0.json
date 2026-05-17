@@ -119,6 +119,19 @@
       "error": null,
       "approval_reference": "none_required_framework_bootstrap_only",
       "next_step": "PR review and merge into main; then formalize live-execution policy ADR before any staged operations transition to executed"
+    },
+    {
+      "receipt_id": "receipt-2026-05-17-fathiya-autopilot-operations-integration-v0",
+      "timestamp": "2026-05-17T08:30:00Z",
+      "source_request": "rt-2026-05-17-fathiya-autopilot-operations-integration-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "PR #18 (cursor/autopilot-internal-build-v0, 8 files) + PR #19 (cursor/operations-autopilot-v0, 9 files) + main at 520750f",
+      "output_artifact": "Integration branch cursor/autopilot-operations-integration-v0 with all ADR-002 and ADR-003 artifacts + FATHIYA_AUTOPILOT_OPERATIONS_INTEGRATION_REPORT_v0.md + this receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "internal_autopilot_adr_002",
+      "next_step": "merge integration PR into main; close PR #18 and PR #19 as superseded"
     }
   ],
   "required_receipt_fields": [
