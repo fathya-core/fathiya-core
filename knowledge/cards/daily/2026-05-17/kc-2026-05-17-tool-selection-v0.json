@@ -1,0 +1,26 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-tool-selection-v0",
+  "title": "FATHIYA Tool Selection and Routing",
+  "domain": "tool_selection",
+  "classification": ["tool_routing", "automatic_selection", "decision_tree"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["Tool_Selection_Map.md.docx", "الملف_07_Decision_Tree_اقتراح_الأدوات.docx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Tool selection is automatic within FATHIYA. The system routes tasks to the appropriate tool based on context, domain, and task classification without manual operator intervention.",
+  "key_principles": [
+    "Tool selection is context-driven, not menu-driven.",
+    "Decision tree logic maps task type to tool capabilities.",
+    "Routing considers domain, complexity, approval requirements, and adapter availability.",
+    "Unknown or ambiguous tasks route to the approval queue for operator decision.",
+    "Tool contracts define allowed actions, side effects, and receipt requirements per tool."
+  ],
+  "boundary": "Tool selection metadata only. Does not activate external tools or trigger side effects.",
+  "related_cards": [
+    "kc-2026-05-17-operating-rules-v0",
+    "kc-2026-05-17-session-workflow-v0",
+    "kc-2026-05-17-automation-architecture-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

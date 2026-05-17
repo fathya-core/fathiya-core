@@ -1,0 +1,27 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-automation-architecture-v0",
+  "title": "FATHIYA Automation Architecture — LLM as Transformation Layer",
+  "domain": "automation_architecture",
+  "classification": ["architecture_principles", "llm_transformation_layer", "multi_agent_design"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["المعمارية العامة_ نموذج لغة كطبقة تحويل وسطى.docx", "دليل شامل لقدرات ChatGPT وإعداداته وتطبيقاته وكيف تحصل على أقصى استفادة.docx", "deep-research-report.md"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Architecture principle: the LLM operates as a transformation layer. Orchestration, state management, receipts, adapters, and audit live outside the model. Multi-agent design uses adversarial selection then cooperative synthesis.",
+  "key_principles": [
+    "LLM as transformation layer: the model transforms input into structured output, but does not own state or orchestration.",
+    "Orchestration lives outside the model: queues, routing, scheduling, and execution control are system-level concerns.",
+    "State management is external: runtime queue, receipt ledger, and awareness state persist independently of any model session.",
+    "Adapters bridge the model to external tools: each adapter has a tool contract defining allowed actions and side effects.",
+    "Audit is a first-class concern: every transformation produces a receipt, and every receipt is ledger-linked.",
+    "Multi-agent learning/product design uses adversarial selection (challenge phase) then cooperative synthesis (build phase)."
+  ],
+  "boundary": "Architecture documentation only. Does not modify system architecture or deploy changes.",
+  "related_cards": [
+    "kc-2026-05-17-tool-selection-v0",
+    "kc-2026-05-17-execution-kernel-v0",
+    "kc-2026-05-17-operating-rules-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

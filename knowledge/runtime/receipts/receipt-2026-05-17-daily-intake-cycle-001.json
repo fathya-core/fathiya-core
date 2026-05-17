@@ -1,0 +1,57 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001",
+  "timestamp": "2026-05-17T09:18:00Z",
+  "cycle": "daily-intake-cycle-001",
+  "source_request": "rt-2026-05-17-daily-intake-cycle-001",
+  "queue": "Knowledge Queue",
+  "adapter": "cursor_agent",
+  "mode": "PB007 Daily Intake batch processing",
+  "approval_class": "internal_autopilot",
+  "adr_reference": "ADR_002_FATHIYA_AUTOPILOT_INTERNAL_BUILD_MODE",
+  "workflow_reference": "knowledge/workflows/daily_intake_workflow_v0.json",
+  "input": {
+    "source_count": 22,
+    "source_types": ["docx", "md", "pdf", "xlsx"],
+    "source_manifest": "knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json"
+  },
+  "output": {
+    "artifacts_created": [
+      "knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json",
+      "knowledge/intake/daily/2026-05-17/daily_intake_batch_001.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-operating-rules-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-tool-selection-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-session-workflow-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-kernel-trigger-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-data-gathering-kit-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-execution-kernel-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-failure-modes-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-usage-patterns-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-systemization-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-hidden-leverage-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-automation-architecture-v0.json",
+      "knowledge/cards/daily/2026-05-17/kc-2026-05-17-security-ai-knowledge-v0.json",
+      "knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_SOURCE_NOTE_v0.md",
+      "knowledge/audit/FATHIYA_DAILY_INTAKE_CYCLE_001_REPORT_v0.md"
+    ],
+    "knowledge_cards_count": 12,
+    "sources_ingested": 21,
+    "sources_pending": 1,
+    "pending_items": ["FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx — pending_structured_parse"]
+  },
+  "validation": {
+    "json_parse": "pass",
+    "build": "pass",
+    "lint": "pass",
+    "schema_conformance": "all cards follow FATHIYA_KNOWLEDGE_CARD_v0 schema"
+  },
+  "boundaries": {
+    "no_external_side_effects": true,
+    "no_live_exploit_workflows": true,
+    "security_material_scope_aware_only": true,
+    "spreadsheet_parse_deferred": true
+  },
+  "status": "completed",
+  "error": null,
+  "next_step": "Parse FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx; integrate knowledge cards into retrieval indexes for semantic search"
+}

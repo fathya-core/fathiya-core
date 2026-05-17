@@ -1,0 +1,25 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-kernel-trigger-v0",
+  "title": "FATHIYA Kernel Trigger Conditions",
+  "domain": "kernel_trigger",
+  "classification": ["activation_patterns", "trigger_conditions", "kernel_lifecycle"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["Kernel_Trigger.txt.docx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Documents the conditions under which the FATHIYA Kernel activates, including trigger types, activation patterns, and operational boundaries.",
+  "key_principles": [
+    "Kernel activates on operator-provided input, scheduled triggers, or queued task readiness.",
+    "Trigger conditions are evaluated against policy boundaries before execution begins.",
+    "Each trigger generates a queue entry with provenance tracking.",
+    "Kernel respects non-execution boundaries — classification and archival triggers do not produce external side effects."
+  ],
+  "boundary": "Trigger documentation only. Does not activate the kernel or produce side effects.",
+  "related_cards": [
+    "kc-2026-05-17-operating-rules-v0",
+    "kc-2026-05-17-execution-kernel-v0",
+    "kc-2026-05-17-session-workflow-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

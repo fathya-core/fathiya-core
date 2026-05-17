@@ -206,6 +206,22 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-post-pr20-recovery-validation-v0.json",
       "next_step": "review and merge validation-only PR; do not perform an agent merge directly to main"
+    },
+    {
+      "id": "rt-2026-05-17-daily-intake-cycle-001",
+      "timestamp": "2026-05-17T09:18:00Z",
+      "source": "FATHIYA Daily Intake Cycle 001 — first real daily intake with 22 operator-provided source files",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "mode": "PB007 Daily Intake batch processing",
+      "input_artifact": "22 operator-uploaded source files (docx, md, pdf, xlsx) covering operating rules, tool selection, session workflow, kernel trigger, data gathering, execution kernel, failure modes, usage patterns, systemization, hidden leverage, automation architecture, and security AI knowledge",
+      "expected_output": "source_manifest_batch_001.json + daily_intake_batch_001.json + 12 knowledge cards + routing map source note + audit report + receipt",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-daily-intake-cycle-001.json",
+      "next_step": "parse FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx; integrate knowledge cards into retrieval indexes for semantic search"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

@@ -145,6 +145,19 @@
       "error": null,
       "approval_reference": "none_required_validation_only",
       "next_step": "review and merge validation-only PR; no direct agent merge to main"
+    },
+    {
+      "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001",
+      "timestamp": "2026-05-17T09:18:00Z",
+      "source_request": "rt-2026-05-17-daily-intake-cycle-001",
+      "queue": "Knowledge Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "22 operator-uploaded source files (Operating_Rules.md.docx, Tool_Selection_Map.md.docx, Session_Workflow.md.docx, Kernel_Trigger.txt.docx, FATHIYA_CORE_Data_Gathering_Kit_v1.docx, FATHIYA CORE-key.docx, professional ChatGPT guides (Arabic), FATHIYA_CORE_Playbook_v1.docx, comprehensive ChatGPT guide, decision tree, internal playbooks, execution/failure/usage/systemization/reality/leverage markdown files, FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx, architecture guide, deep-research-report.md, final_report.pdf)",
+      "output_artifact": "knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json + knowledge/intake/daily/2026-05-17/daily_intake_batch_001.json + 12 knowledge cards under knowledge/cards/daily/2026-05-17/ + knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_SOURCE_NOTE_v0.md + knowledge/audit/FATHIYA_DAILY_INTAKE_CYCLE_001_REPORT_v0.md + this receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "internal_autopilot_adr_002",
+      "next_step": "parse FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx; integrate knowledge cards into retrieval indexes"
     }
   ],
   "required_receipt_fields": [

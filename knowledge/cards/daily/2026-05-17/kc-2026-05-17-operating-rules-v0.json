@@ -1,0 +1,27 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-operating-rules-v0",
+  "title": "FATHIYA Operating Rules",
+  "domain": "operating_rules",
+  "classification": ["core_rules", "execution_principles", "constraint_management"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["Operating_Rules.md.docx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Core operating rules that govern every FATHIYA session and output cycle.",
+  "key_principles": [
+    "Always produce a tangible Artifact — no session ends without a concrete deliverable.",
+    "Execution first, explanation after — action precedes justification.",
+    "Tool selection is automatic — the system selects tools based on context, not manual choice.",
+    "Any constraint becomes a bridge, not an excuse — limitations are reframed as design opportunities.",
+    "One output per run — each execution cycle produces exactly one well-defined artifact.",
+    "Multi-step execution continues until the decision edge — do not stop mid-chain unless a decision gate is reached."
+  ],
+  "boundary": "These rules are internal operating principles. They do not authorize external actions or side effects.",
+  "related_cards": [
+    "kc-2026-05-17-session-workflow-v0",
+    "kc-2026-05-17-execution-kernel-v0",
+    "kc-2026-05-17-tool-selection-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-failure-modes-v0",
+  "title": "FATHIYA Failure Modes and Anti-Patterns",
+  "domain": "failure_modes",
+  "classification": ["anti_patterns", "risk_awareness", "quality_control"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["04_Failure_Modes_v1_FULL.md"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Catalogues the failure modes and anti-patterns that degrade AI-assisted work quality, enabling FATHIYA to detect and avoid them in real-time.",
+  "key_principles": [
+    "False professionalism: producing polished but hollow output that lacks substance.",
+    "Reassurance addiction: seeking validation instead of actionable critique.",
+    "Time waste: spending cycles on low-value refinement instead of new artifacts.",
+    "Decision justification: using AI to confirm pre-made decisions rather than genuinely exploring alternatives.",
+    "Over-reliance: treating AI output as final rather than as raw material for human judgment.",
+    "ChatGPT is strongest as a thinking test, not a decision generator."
+  ],
+  "boundary": "Failure mode awareness and detection only. Does not modify system behavior automatically.",
+  "related_cards": [
+    "kc-2026-05-17-usage-patterns-v0",
+    "kc-2026-05-17-hidden-leverage-v0",
+    "kc-2026-05-17-execution-kernel-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}
