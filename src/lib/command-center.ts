@@ -3,9 +3,13 @@ import approvalPolicyRaw from "../../knowledge/registries/approval_policy_regist
 import agentRegistryRaw from "../../knowledge/registries/agent_registry_v0.json?raw";
 import machineTaskRegistryRaw from "../../knowledge/registries/machine_task_registry_v0.json?raw";
 import modelRouterRegistryRaw from "../../knowledge/registries/model_router_registry_v0.json?raw";
+import operationsToolContractsRaw from "../../knowledge/registries/operations_tool_contracts_v0.json?raw";
 import skillRegistryRaw from "../../knowledge/registries/skill_registry_v0.json?raw";
 import toolContractRegistryRaw from "../../knowledge/registries/tool_contract_registry_v0.json?raw";
 import workflowRegistryRaw from "../../knowledge/registries/workflow_registry_v0.json?raw";
+import operationsAutopilotQueueRaw from "../../knowledge/operations/operations_autopilot_queue_v0.json?raw";
+import appsGptsRoutingMapRaw from "../../knowledge/routing/apps_gpts_routing_map_v1.json?raw";
+import appsGptsRoutingRulesRaw from "../../knowledge/routing/apps_gpts_routing_rules_v1.json?raw";
 import receiptLedgerRaw from "../../knowledge/runtime/receipt_ledger_v0.json?raw";
 import runtimeQueueRaw from "../../knowledge/runtime/runtime_queue_v0.json?raw";
 import retrievalSummaryRaw from "../../knowledge/retrieval_index_summary.json?raw";
@@ -49,7 +53,22 @@ const DAILY_INTAKE_BATCH_FILES = import.meta.glob(
   },
 ) as Record<string, string>;
 
+const DAILY_SOURCE_MANIFEST_FILES = import.meta.glob(
+  "../../knowledge/intake/daily/*/source_manifest_batch_*.json",
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+) as Record<string, string>;
+
 const DAILY_KNOWLEDGE_CARD_FILES = import.meta.glob("../../knowledge/cards/daily/*/*.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const RECEIPT_FILES = import.meta.glob("../../knowledge/runtime/receipts/*.json", {
   query: "?raw",
   import: "default",
   eager: true,
@@ -242,7 +261,116 @@ type DailyKnowledgeCard = {
   title: string;
   domain: string;
   classification: string[];
+  created_at: string;
+  source_files: string[];
+  source_batch: string;
   status: string;
+  receipt_id: string;
+};
+
+type SourceManifest = {
+  batch_id: string;
+  created_at: string;
+  cycle: string;
+  source_count: number;
+  sources: Array<{
+    filename: string;
+    source_type: string;
+    primary_topic: string;
+    ingestion_status: string;
+    intended_artifact_class: string;
+    notes?: string;
+  }>;
+};
+
+type AppsGptsRoutingMap = {
+  status: string;
+  created_at: string;
+  source_file: {
+    filename: string;
+    source_manifest: string;
+    daily_intake_batch: string;
+  };
+  apps_summary: {
+    total_app_rows: number;
+  };
+  gpts_summary: {
+    total_gpt_rows: number;
+  };
+  workflow_templates: Array<{
+    workflow_id: string;
+    name: string;
+  }>;
+  receipts: {
+    source_daily_intake_receipt: string;
+    integration_receipt: string;
+  };
+};
+
+type AppsGptsRoutingRules = {
+  status: string;
+  global_hard_rules: Array<{
+    rule_id: string;
+    severity: string;
+    rule: string;
+  }>;
+  activation_requirements: string[];
+};
+
+type OperationsAutopilotQueue = {
+  status: string;
+  purpose: string;
+  queues: Record<
+    string,
+    {
+      purpose: string;
+      default_status: string;
+      allowed_statuses: string[];
+    }
+  >;
+  entry_fields: string[];
+  entries: Array<{
+    entry_id: string;
+    timestamp: string;
+    tool_contract_id: string;
+    approval_class: string;
+    operation_type: string;
+    description: string;
+    payload_preview: string;
+    target_reference: string;
+    credential_reference?: string | null;
+    scope_map_reference?: string | null;
+    status: string;
+    approval_id?: string | null;
+    receipt_path?: string | null;
+    rollback_note_path?: string | null;
+    requested_by: string;
+    notes?: string[];
+  }>;
+};
+
+type OperationsToolContractRegistry = {
+  status: string;
+  contracts: Array<{
+    tool_id: string;
+    name: string;
+    adapter: string;
+    queue: string;
+    approval_class: string;
+    status: string;
+  }>;
+};
+
+type IndividualReceipt = {
+  receipt_id: string;
+  timestamp: string;
+  source_request?: string;
+  queue: string;
+  adapter: string;
+  mode?: string;
+  output_artifact?: string;
+  status: string;
+  next_step: string;
 };
 
 type AgentRegistry = {
@@ -474,6 +602,70 @@ export type CommandCenterSnapshot = {
     nextActions: string[];
     sourceType: "canonical" | "derived_from_backbone";
   }>;
+  latestDailyIntake: {
+    batchId: string;
+    cycle: string;
+    createdAt: string;
+    sourceCount: number;
+    derivedCardCount: number;
+    pendingItems: string[];
+    receiptId: string;
+    queueId: string;
+    latestBatchDate: string;
+  } | null;
+  knowledgeCards: Array<{
+    cardId: string;
+    domain: string;
+    title: string;
+    status: string;
+    createdAt: string;
+    sourceCoverage: string;
+    sourceFiles: string[];
+    receiptId: string;
+  }>;
+  routingSummary: {
+    status: string;
+    sourceSpreadsheet: string;
+    sourceSpreadsheetStatus: string;
+    appRows: number;
+    gptRows: number;
+    sampleWorkflows: number;
+    highLevelRules: string[];
+    receiptIds: string[];
+  } | null;
+  operationsQueue: {
+    status: string;
+    purpose: string;
+    stagedEntriesCount: number;
+    totalEntries: number;
+    entryFields: string[];
+    statusBreakdown: Array<{
+      status: string;
+      count: number;
+    }>;
+    queueDefinitions: Array<{
+      name: string;
+      purpose: string;
+      defaultStatus: string;
+      allowedStatuses: string[];
+    }>;
+  } | null;
+  operationsToolContracts: Array<{
+    toolId: string;
+    name: string;
+    status: string;
+    category: string;
+    queue: string;
+    approvalClass: string;
+  }>;
+  recentIntakeRoutingReceipts: Array<{
+    receiptId: string;
+    timestamp: string;
+    queue: string;
+    status: string;
+    summary: string;
+    nextStep: string;
+  }>;
   cryptoRadarBatch: {
     batchId: string;
     createdAt: string;
@@ -678,6 +870,22 @@ function buildSnapshot(): CommandCenterSnapshot {
     machineTaskRegistryRaw,
     "machine task registry",
   );
+  const operationsToolContracts = parseJson<OperationsToolContractRegistry>(
+    operationsToolContractsRaw,
+    "operations tool contracts",
+  );
+  const operationsAutopilotQueue = parseJson<OperationsAutopilotQueue>(
+    operationsAutopilotQueueRaw,
+    "operations autopilot queue",
+  );
+  const appsGptsRoutingMap = parseJson<AppsGptsRoutingMap>(
+    appsGptsRoutingMapRaw,
+    "apps/gpts routing map",
+  );
+  const appsGptsRoutingRules = parseJson<AppsGptsRoutingRules>(
+    appsGptsRoutingRulesRaw,
+    "apps/gpts routing rules",
+  );
   const modelRouterRegistry = parseJson<ModelRouterRegistry>(
     modelRouterRegistryRaw,
     "model router registry",
@@ -699,6 +907,15 @@ function buildSnapshot(): CommandCenterSnapshot {
   const cryptoRadar = buildCryptoRadarCards(cryptoRadarBatch);
   const targetCards = buildTargetCards();
   const scopeMaps = buildScopeMaps();
+  const latestDailyIntake = buildLatestDailyIntake();
+  const knowledgeCards = buildLatestDailyKnowledgeCards();
+  const routingSummary = buildRoutingSummary(appsGptsRoutingMap, appsGptsRoutingRules);
+  const operationsQueue = buildOperationsQueueSummary(operationsAutopilotQueue);
+  const operationsToolContractRows = buildOperationsToolContractRows(operationsToolContracts);
+  const recentIntakeRoutingReceipts = buildRecentIntakeRoutingReceipts([
+    latestDailyIntake?.receiptId,
+    ...(routingSummary?.receiptIds ?? []),
+  ]);
 
   const playbooks = PLAYBOOK_FILES.map((playbook) =>
     buildPlaybookView(playbook.path, playbook.raw, backboneValidation.validation_date),
@@ -724,28 +941,13 @@ function buildSnapshot(): CommandCenterSnapshot {
   return {
     generatedAt: new Date().toISOString(),
     loaderMode: "bundled-knowledge-files",
-    loaderNote: hasLiveScopeAuthorizationData
-      ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, Crypto Radar, and Scope & Authorization now render live canonical data. The first PB005 target remains explicitly in draft / needs_policy state, and no active testing is authorized."
-      : hasLiveCryptoRadarData
-        ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue, Receipt Ledger, and Crypto Radar now render live canonical data, while sections with no target-specific artifacts still show explicit empty states."
-        : hasLiveRuntimeData
-          ? "Command Center v0 is hydrated from bundled local knowledge files. Runtime Queue and Receipt Ledger render live canonical data, while sections with no live data still show explicit empty states."
-          : "Command Center v0 is hydrated from bundled local knowledge files. Sections with no live data show explicit empty states. Approval Queue rows are derived from the backbone policy registry and labeled accordingly.",
+    loaderNote:
+      "Command Center Expansion v0 hydrates one overview surface from bundled local knowledge files across intake, daily knowledge cards, Apps/GPTs routing, staged operations, runtime queue, receipt ledger, and the validated backbone registries.",
     lineage: {
-      backbonePR: "PR #5 — Validate Operating Backbone v0",
-      commandCenterPR: hasLiveScopeAuthorizationData
-        ? "PB005 — FATHIYA Core owned-surface scope/auth live target prep + PR chain stabilization"
-        : "PB006 — FATHIYA Crypto Radar live batch v0",
-      baseBranch: hasLiveScopeAuthorizationData
-        ? "cursor/crypto-radar-live-v0"
-        : "cursor/command-center-live-queue-v0",
-      note: hasLiveScopeAuthorizationData
-        ? "This layer builds on the ordered PR chain through the live PB006 Crypto Radar batch, then adds the first canonical PB005 Target Card and Scope Map so Scope & Authorization renders live in preparation-only mode with a needs_policy boundary."
-        : hasLiveCryptoRadarData
-          ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger, then adds the first PB006 Crypto Radar batch so the Command Center renders four canonical monitoring cards."
-          : hasLiveRuntimeData
-            ? "This layer builds on the validated PR #5 Backbone checkpoint and the existing live runtime queue and receipt ledger."
-            : "The Backbone provides the canonical knowledge files that this UI reads.",
+      backbonePR: "main @ fd49d932258935aa35eb552e2c433277d6de9d24",
+      commandCenterPR: "FATHIYA Command Center Expansion v0",
+      baseBranch: "main",
+      note: "This layer builds from main after Daily Intake Cycle 001 and the Apps/GPTs Routing parse landed, then expands the Command Center so intake, knowledge cards, routing, operations staging, and recent receipts are readable from one UI while preserving existing detailed tabs.",
     },
     overview: {
       currentFocus:
@@ -811,13 +1013,45 @@ function buildSnapshot(): CommandCenterSnapshot {
       },
       dailyIntake: {
         source_file:
-          "knowledge/intake/daily/*/daily_intake_batch_*.json, knowledge/cards/daily/*/*.json, knowledge/retrieval_index_summary.json",
+          "knowledge/intake/daily/*/daily_intake_batch_*.json, knowledge/intake/daily/*/source_manifest_batch_*.json, knowledge/cards/daily/*/*.json",
         data_status:
           Object.keys(DAILY_INTAKE_BATCH_FILES).length > 0 ? "live" : "derived_from_backbone",
         notes:
           Object.keys(DAILY_INTAKE_BATCH_FILES).length > 0
-            ? `Live daily intake data from ${Object.keys(DAILY_INTAKE_BATCH_FILES).length} batch(es) and ${Object.keys(DAILY_KNOWLEDGE_CARD_FILES).length} knowledge card(s). Legacy retrieval data is preserved for historical context.`
+            ? `Live daily intake data from ${Object.keys(DAILY_INTAKE_BATCH_FILES).length} batch(es), ${Object.keys(DAILY_SOURCE_MANIFEST_FILES).length} source manifest(s), and ${Object.keys(DAILY_KNOWLEDGE_CARD_FILES).length} knowledge card(s).`
             : "Row 1 uses canonical retrieval data. Row 2 is a derived summary from backbone validation. No live daily batch dataset exists yet.",
+      },
+      routing: {
+        source_file:
+          "knowledge/routing/apps_gpts_routing_map_v1.json, knowledge/routing/apps_gpts_routing_rules_v1.json",
+        data_status: routingSummary ? "live" : "planned",
+        notes: routingSummary
+          ? "Structured routing map data is live, including the spreadsheet parse status, row counts, workflow templates, and hard routing rules."
+          : "Routing map parse has not been promoted yet.",
+      },
+      operationsQueue: {
+        source_file: "knowledge/operations/operations_autopilot_queue_v0.json",
+        data_status: operationsQueue && operationsQueue.totalEntries > 0 ? "live" : "empty",
+        notes:
+          operationsQueue && operationsQueue.totalEntries > 0
+            ? "Staged operations entries now render from the operations autopilot queue."
+            : "Operations queue schema and queue definitions are present, but no staged entries have been recorded yet.",
+      },
+      operationsToolContracts: {
+        source_file: "knowledge/registries/operations_tool_contracts_v0.json",
+        data_status: operationsToolContractRows.length > 0 ? "live" : "planned",
+        notes:
+          operationsToolContractRows.length > 0
+            ? "Operations-specific tool contracts now surface staged webhook, workflow, messaging, and repo-management adapters."
+            : "Operations-specific tool contracts have not been populated yet.",
+      },
+      runtimeAndReceipts: {
+        source_file:
+          "knowledge/runtime/runtime_queue_v0.json, knowledge/runtime/receipt_ledger_v0.json, knowledge/runtime/receipts/*.json",
+        data_status: hasLiveRuntimeData ? "live" : "empty",
+        notes: hasLiveRuntimeData
+          ? "Recent receipt linkage now highlights the daily intake and routing integration receipts alongside the live runtime queue and ledger."
+          : "Runtime queue and receipt ledger are wired, but no recent runtime or receipt rows are available yet.",
       },
       cryptoRadar: {
         source_file:
@@ -903,6 +1137,36 @@ function buildSnapshot(): CommandCenterSnapshot {
             : "No daily intake batches exist yet. PB007 defines the intake process.",
       },
       {
+        label: "Daily Intake Source Manifests",
+        path: "knowledge/intake/daily/*/source_manifest_batch_*.json",
+        kind: "canonical",
+        note: "Operator-provided source manifests used to compute pending items and parse status.",
+      },
+      {
+        label: "Daily Knowledge Cards",
+        path: "knowledge/cards/daily/*/*.json",
+        kind: "canonical",
+        note: "Latest daily knowledge cards used for the compact card table in Command Center.",
+      },
+      {
+        label: "Apps/GPTs Routing",
+        path: "knowledge/routing/apps_gpts_routing_map_v1.json, knowledge/routing/apps_gpts_routing_rules_v1.json",
+        kind: "canonical",
+        note: "Structured spreadsheet parse facts, workflow counts, and high-level routing rules.",
+      },
+      {
+        label: "Operations Queue",
+        path: "knowledge/operations/operations_autopilot_queue_v0.json",
+        kind: "canonical",
+        note: "Staged operations queue definitions and any staged entries awaiting approval or execution policy.",
+      },
+      {
+        label: "Operations Tool Contracts",
+        path: "knowledge/registries/operations_tool_contracts_v0.json",
+        kind: "canonical",
+        note: "Operations-layer contract drafts for webhook, workflow, messaging, and repository adapters.",
+      },
+      {
         label: "Security Targets",
         path: "knowledge/security/targets/*.json, knowledge/security/scope_maps/*.json",
         kind: "canonical",
@@ -967,6 +1231,12 @@ function buildSnapshot(): CommandCenterSnapshot {
       receiptLedger,
       backboneValidation,
     ),
+    latestDailyIntake,
+    knowledgeCards,
+    routingSummary,
+    operationsQueue,
+    operationsToolContracts: operationsToolContractRows,
+    recentIntakeRoutingReceipts,
     cryptoRadarBatch: {
       batchId: cryptoRadarBatch.batch_id,
       createdAt: cryptoRadarBatch.created_at,
@@ -1114,6 +1384,12 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
         sourceType: "derived_from_backbone",
       },
     ],
+    latestDailyIntake: null,
+    knowledgeCards: [],
+    routingSummary: null,
+    operationsQueue: null,
+    operationsToolContracts: [],
+    recentIntakeRoutingReceipts: [],
     cryptoRadarBatch: null,
     cryptoRadar: [],
     targetCards: [],
@@ -1163,15 +1439,10 @@ function buildPlaybookView(path: string, raw: string, validationDate: string) {
 }
 
 function buildDailyIntakeBatchRows(): CommandCenterSnapshot["dailyIntake"] {
-  const batches = Object.values(DAILY_INTAKE_BATCH_FILES)
-    .map((raw, index) => {
-      try {
-        return parseJson<DailyIntakeBatch>(raw, `daily intake batch ${index + 1}`);
-      } catch {
-        return null;
-      }
-    })
-    .filter((batch): batch is DailyIntakeBatch => batch !== null);
+  const batches = readJsonCollection<DailyIntakeBatch>(
+    DAILY_INTAKE_BATCH_FILES,
+    "daily intake batch",
+  ).map((entry) => entry.value);
 
   const cardCount = Object.values(DAILY_KNOWLEDGE_CARD_FILES).length;
   const cardDomains = Object.values(DAILY_KNOWLEDGE_CARD_FILES)
@@ -1202,6 +1473,168 @@ function buildDailyIntakeBatchRows(): CommandCenterSnapshot["dailyIntake"] {
     nextActions: batch.next_steps.slice(0, 2),
     sourceType: "canonical" as const,
   }));
+}
+
+function buildLatestDailyIntake(): CommandCenterSnapshot["latestDailyIntake"] {
+  const batches = readJsonCollection<DailyIntakeBatch>(
+    DAILY_INTAKE_BATCH_FILES,
+    "daily intake batch",
+  );
+  const manifests = readJsonCollection<SourceManifest>(
+    DAILY_SOURCE_MANIFEST_FILES,
+    "daily intake source manifest",
+  );
+  const manifestsByDate = manifests.reduce<Record<string, SourceManifest>>((accumulator, entry) => {
+    const dateKey = getDatedPathKey(entry.path);
+    if (dateKey) {
+      accumulator[dateKey] = entry.value;
+    }
+    return accumulator;
+  }, {});
+
+  const latestBatch = batches
+    .sort((left, right) => right.value.created_at.localeCompare(left.value.created_at))
+    .at(0);
+
+  if (!latestBatch) return null;
+
+  const latestDate = getDatedPathKey(latestBatch.path);
+  const manifest = latestDate ? manifestsByDate[latestDate] : undefined;
+  const pendingItems =
+    manifest?.sources
+      ?.filter(
+        (source) => !["ingested", "structured_parse_completed"].includes(source.ingestion_status),
+      )
+      .map((source) => `${source.filename} — ${source.ingestion_status}`) ?? [];
+
+  return {
+    batchId: latestBatch.value.batch_id,
+    cycle: latestBatch.value.cycle,
+    createdAt: latestBatch.value.created_at,
+    sourceCount: latestBatch.value.source_count,
+    derivedCardCount: latestBatch.value.derived_cards.length,
+    pendingItems,
+    receiptId: latestBatch.value.receipt_id,
+    queueId: latestBatch.value.queue_id,
+    latestBatchDate: latestBatch.value.created_at.slice(0, 10),
+  };
+}
+
+function buildLatestDailyKnowledgeCards(): CommandCenterSnapshot["knowledgeCards"] {
+  const latestDate = getLatestDatedPathKey(Object.keys(DAILY_KNOWLEDGE_CARD_FILES));
+  if (!latestDate) return [];
+
+  return readJsonCollection<DailyKnowledgeCard>(DAILY_KNOWLEDGE_CARD_FILES, "daily knowledge card")
+    .filter((entry) => getDatedPathKey(entry.path) === latestDate)
+    .sort(
+      (left, right) =>
+        right.value.created_at.localeCompare(left.value.created_at) ||
+        left.value.card_id.localeCompare(right.value.card_id),
+    )
+    .map(({ value }) => ({
+      cardId: value.card_id,
+      domain: value.domain,
+      title: value.title,
+      status: value.status,
+      createdAt: value.created_at,
+      sourceCoverage:
+        value.source_files.length === 1
+          ? "1 source file"
+          : `${value.source_files.length} source files`,
+      sourceFiles: value.source_files,
+      receiptId: value.receipt_id,
+    }));
+}
+
+function buildRoutingSummary(
+  routingMap: AppsGptsRoutingMap,
+  routingRules: AppsGptsRoutingRules,
+): CommandCenterSnapshot["routingSummary"] {
+  return {
+    status: routingRules.status,
+    sourceSpreadsheet: routingMap.source_file.filename,
+    sourceSpreadsheetStatus: routingMap.status,
+    appRows: routingMap.apps_summary.total_app_rows,
+    gptRows: routingMap.gpts_summary.total_gpt_rows,
+    sampleWorkflows: routingMap.workflow_templates.length,
+    highLevelRules: routingRules.global_hard_rules.map((rule) => rule.rule),
+    receiptIds: [
+      routingMap.receipts.source_daily_intake_receipt,
+      routingMap.receipts.integration_receipt,
+    ],
+  };
+}
+
+function buildOperationsQueueSummary(
+  operationsQueue: OperationsAutopilotQueue,
+): CommandCenterSnapshot["operationsQueue"] {
+  const statusCounts = operationsQueue.entries.reduce<Record<string, number>>(
+    (accumulator, entry) => {
+      accumulator[entry.status] = (accumulator[entry.status] ?? 0) + 1;
+      return accumulator;
+    },
+    {},
+  );
+
+  if (!("staged" in statusCounts)) {
+    statusCounts.staged = 0;
+  }
+
+  return {
+    status: operationsQueue.status,
+    purpose: operationsQueue.purpose,
+    stagedEntriesCount: statusCounts.staged ?? 0,
+    totalEntries: operationsQueue.entries.length,
+    entryFields: operationsQueue.entry_fields,
+    statusBreakdown: Object.entries(statusCounts)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([status, count]) => ({ status, count })),
+    queueDefinitions: Object.entries(operationsQueue.queues).map(([name, queue]) => ({
+      name,
+      purpose: queue.purpose,
+      defaultStatus: queue.default_status,
+      allowedStatuses: queue.allowed_statuses,
+    })),
+  };
+}
+
+function buildOperationsToolContractRows(
+  operationsContracts: OperationsToolContractRegistry,
+): CommandCenterSnapshot["operationsToolContracts"] {
+  return operationsContracts.contracts.map((contract) => ({
+    toolId: contract.tool_id,
+    name: contract.name,
+    status: contract.status,
+    category: inferOperationsToolCategory(contract.tool_id, contract.name),
+    queue: contract.queue,
+    approvalClass: contract.approval_class,
+  }));
+}
+
+function buildRecentIntakeRoutingReceipts(
+  receiptIds: Array<string | null | undefined>,
+): CommandCenterSnapshot["recentIntakeRoutingReceipts"] {
+  const wantedIds = new Set(
+    receiptIds.filter((receiptId): receiptId is string => Boolean(receiptId)),
+  );
+  if (wantedIds.size === 0) return [];
+
+  const individualReceipts = readJsonCollection<IndividualReceipt>(
+    RECEIPT_FILES,
+    "individual receipt",
+  );
+
+  return individualReceipts
+    .filter((entry) => wantedIds.has(entry.value.receipt_id))
+    .sort((left, right) => right.value.timestamp.localeCompare(left.value.timestamp))
+    .map(({ value }) => ({
+      receiptId: value.receipt_id,
+      timestamp: value.timestamp,
+      queue: value.queue,
+      status: value.status,
+      summary: value.mode ?? value.output_artifact ?? value.adapter,
+      nextStep: value.next_step,
+    }));
 }
 
 function buildDailyIntakeRows(
@@ -1393,6 +1826,49 @@ function parseJson<T>(raw: string, label: string): T {
   } catch (error) {
     throw new Error(`Failed to parse ${label}: ${String(error)}`);
   }
+}
+
+function safeParseJson<T>(raw: string, label: string): T | null {
+  try {
+    return parseJson<T>(raw, label);
+  } catch {
+    return null;
+  }
+}
+
+function readJsonCollection<T>(files: Record<string, string>, label: string) {
+  return Object.entries(files)
+    .map(([path, raw], index) => {
+      const value = safeParseJson<T>(raw, `${label} ${index + 1}`);
+      return value ? { path, value } : null;
+    })
+    .filter((entry): entry is { path: string; value: T } => entry !== null);
+}
+
+function getDatedPathKey(path: string) {
+  return path.match(/\/(\d{4}-\d{2}-\d{2})\//)?.[1] ?? null;
+}
+
+function getLatestDatedPathKey(paths: string[]) {
+  return (
+    [
+      ...new Set(
+        paths
+          .map((path) => getDatedPathKey(path))
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ]
+      .sort((left, right) => right.localeCompare(left))
+      .at(0) ?? null
+  );
+}
+
+function inferOperationsToolCategory(toolId: string, name: string) {
+  if (toolId.includes("webhook")) return "webhook";
+  if (toolId.includes("workflow") || name.toLowerCase().includes("workflow")) return "workflow";
+  if (toolId.includes("gmail") || toolId.includes("outlook")) return "messaging";
+  if (toolId.includes("github") || name.toLowerCase().includes("repository")) return "repository";
+  return "operations_adapter";
 }
 
 function getMarkdownHeading(raw: string) {

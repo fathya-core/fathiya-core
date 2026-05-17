@@ -44,7 +44,7 @@ export const Route = createFileRoute("/command-center")({
       {
         name: "description",
         content:
-          "Command Center v0 for the FATHIYA operating backbone. Surfaces overview, queue, receipts, agents, playbooks, tool contracts, intake, radar, scope, and approvals from local knowledge files.",
+          "Command Center v0 for the FATHIYA operating backbone. Surfaces overview, intake, knowledge cards, routing, operations staging, runtime queue, receipts, agents, playbooks, tool contracts, radar, scope, and approvals from local knowledge files.",
       },
     ],
   }),
@@ -217,6 +217,289 @@ function CommandCenterPage() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
+            <SectionHeader
+              title="Expansion surface"
+              description="Daily intake, knowledge cards, Apps/GPTs routing, staged operations, and recent receipts now render together in one compact overview while the existing detailed tabs remain available below."
+            />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Daily Intake</CardTitle>
+                      <CardDescription>
+                        Latest canonical batch summary from the intake batch and source manifest.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge
+                      status={data.sectionProvenance.dailyIntake?.data_status ?? "planned"}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {data.latestDailyIntake ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        <OverviewField
+                          label="Latest batch date"
+                          value={data.latestDailyIntake.latestBatchDate}
+                        />
+                        <OverviewField
+                          label="Source count"
+                          value={String(data.latestDailyIntake.sourceCount)}
+                        />
+                        <OverviewField
+                          label="Derived card count"
+                          value={String(data.latestDailyIntake.derivedCardCount)}
+                        />
+                        <OverviewField
+                          label="Receipt id"
+                          value={data.latestDailyIntake.receiptId}
+                        />
+                        <OverviewField label="Queue id" value={data.latestDailyIntake.queueId} />
+                        <OverviewField label="Cycle" value={data.latestDailyIntake.cycle} />
+                      </div>
+                      <div>
+                        <div className="mb-2 text-sm font-medium">Pending items</div>
+                        <TagList
+                          items={
+                            data.latestDailyIntake.pendingItems.length > 0
+                              ? data.latestDailyIntake.pendingItems
+                              : ["No pending items"]
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <EmptyState
+                      title="No daily intake batch detected"
+                      description="As soon as a canonical daily intake batch is bundled into knowledge/intake/daily, the latest batch summary will appear here."
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Apps/GPTs Routing</CardTitle>
+                      <CardDescription>
+                        Structured spreadsheet parse status, routing counts, and hard rules from the
+                        routing artifacts.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge
+                      status={data.sectionProvenance.routing?.data_status ?? "planned"}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {data.routingSummary ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <OverviewField
+                          label="Spreadsheet status"
+                          value={data.routingSummary.sourceSpreadsheetStatus}
+                        />
+                        <OverviewField
+                          label="App rows"
+                          value={String(data.routingSummary.appRows)}
+                        />
+                        <OverviewField
+                          label="GPT rows"
+                          value={String(data.routingSummary.gptRows)}
+                        />
+                        <OverviewField
+                          label="Sample workflows"
+                          value={String(data.routingSummary.sampleWorkflows)}
+                        />
+                      </div>
+                      <OverviewField
+                        label="Source spreadsheet"
+                        value={data.routingSummary.sourceSpreadsheet}
+                      />
+                      <StringListPanel
+                        title="High-level routing rules"
+                        items={data.routingSummary.highLevelRules}
+                      />
+                    </>
+                  ) : (
+                    <EmptyState
+                      title="No routing summary available"
+                      description="The Apps/GPTs routing map and rules files will populate this section once bundled into the knowledge layer."
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Operations Queue</CardTitle>
+                      <CardDescription>
+                        Staged operations status from operations_autopilot_queue_v0.json.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge
+                      status={data.sectionProvenance.operationsQueue?.data_status ?? "planned"}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {data.operationsQueue ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <OverviewField label="Queue status" value={data.operationsQueue.status} />
+                        <OverviewField
+                          label="Staged entries"
+                          value={String(data.operationsQueue.stagedEntriesCount)}
+                        />
+                        <OverviewField
+                          label="Total entries"
+                          value={String(data.operationsQueue.totalEntries)}
+                        />
+                        <OverviewField
+                          label="Queues defined"
+                          value={String(data.operationsQueue.queueDefinitions.length)}
+                        />
+                      </div>
+                      <OverviewField label="Purpose" value={data.operationsQueue.purpose} />
+                      <div>
+                        <div className="mb-2 text-sm font-medium">Status breakdown</div>
+                        <TagList
+                          items={data.operationsQueue.statusBreakdown.map(
+                            (entry) => `${entry.status}: ${entry.count}`,
+                          )}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <EmptyState
+                      title="No operations queue metadata"
+                      description="This section will render as soon as the operations staging queue file is available."
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Runtime & recent receipts</CardTitle>
+                      <CardDescription>
+                        Live runtime counts plus the most relevant recent intake and routing
+                        receipts.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge
+                      status={data.sectionProvenance.runtimeAndReceipts?.data_status ?? "empty"}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <OverviewField
+                      label="Active queue count"
+                      value={String(data.overview.activeQueueCount)}
+                    />
+                    <OverviewField
+                      label="Receipt ledger rows"
+                      value={String(data.receipts.length)}
+                    />
+                    <OverviewField
+                      label="Latest receipts"
+                      value={String(data.overview.latestReceiptsCount)}
+                    />
+                    <OverviewField
+                      label="Blocked items"
+                      value={String(data.overview.blockedItemsCount)}
+                    />
+                  </div>
+                  <RecentReceiptList receipts={data.recentIntakeRoutingReceipts} />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Knowledge Cards</CardTitle>
+                      <CardDescription>
+                        Latest daily cards from knowledge/cards/daily/2026-05-17 with source
+                        coverage.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge status={data.knowledgeCards.length > 0 ? "active" : "empty"} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {data.knowledgeCards.length === 0 ? (
+                    <EmptyState
+                      title="No daily knowledge cards found"
+                      description="The latest dated daily card folder will render here once card files exist."
+                    />
+                  ) : (
+                    <DataTable
+                      headers={["card id", "domain / title", "status", "source coverage"]}
+                      rows={data.knowledgeCards.map((card) => [
+                        <code key="id">{card.cardId}</code>,
+                        <div key="title">
+                          <div className="font-medium">{card.title}</div>
+                          <div className="text-[11px] text-muted-foreground">{card.domain}</div>
+                        </div>,
+                        <StatusBadge key="status" status={card.status} />,
+                        <div key="coverage" className="space-y-2">
+                          <div>{card.sourceCoverage}</div>
+                          <TagList items={card.sourceFiles} />
+                        </div>,
+                      ])}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>Tool Contracts</CardTitle>
+                      <CardDescription>
+                        Operations-layer contract drafts from operations_tool_contracts_v0.json.
+                      </CardDescription>
+                    </div>
+                    <StatusBadge
+                      status={
+                        data.sectionProvenance.operationsToolContracts?.data_status ?? "planned"
+                      }
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {data.operationsToolContracts.length === 0 ? (
+                    <EmptyState
+                      title="No operations tool contracts"
+                      description="This section will render once operations-specific contract drafts are available."
+                    />
+                  ) : (
+                    <DataTable
+                      headers={["id", "name", "status", "category"]}
+                      rows={data.operationsToolContracts.map((contract) => [
+                        <code key="id">{contract.toolId}</code>,
+                        contract.name,
+                        <StatusBadge key="status" status={contract.status} />,
+                        contract.category,
+                      ])}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
@@ -467,6 +750,59 @@ function CommandCenterPage() {
                 />
               </CardContent>
             </Card>
+
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Operations staging queue</CardTitle>
+                <CardDescription>
+                  Staged operations metadata from the separate operations autopilot queue.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ProvenanceBanner provenance={data.sectionProvenance.operationsQueue} />
+                {data.operationsQueue ? (
+                  <>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <OverviewField label="Status" value={data.operationsQueue.status} />
+                      <OverviewField
+                        label="Staged entries"
+                        value={String(data.operationsQueue.stagedEntriesCount)}
+                      />
+                      <OverviewField
+                        label="Total entries"
+                        value={String(data.operationsQueue.totalEntries)}
+                      />
+                      <OverviewField
+                        label="Defined queues"
+                        value={String(data.operationsQueue.queueDefinitions.length)}
+                      />
+                    </div>
+                    <OverviewField label="Purpose" value={data.operationsQueue.purpose} />
+                    <div>
+                      <div className="mb-2 text-sm font-medium">Queue definitions</div>
+                      <DataTable
+                        headers={["queue", "purpose", "default status", "allowed statuses"]}
+                        rows={data.operationsQueue.queueDefinitions.map((queue) => [
+                          queue.name,
+                          queue.purpose,
+                          queue.defaultStatus,
+                          <TagList key="statuses" items={queue.allowedStatuses} />,
+                        ])}
+                      />
+                    </div>
+                    <div>
+                      <div className="mb-2 text-sm font-medium">Required entry fields</div>
+                      <TagList items={data.operationsQueue.entryFields} />
+                    </div>
+                  </>
+                ) : (
+                  <EmptyState
+                    title="No operations staging queue"
+                    description="The operations staging queue file is not currently available."
+                  />
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="receipts" className="space-y-4">
@@ -475,6 +811,18 @@ function CommandCenterPage() {
               description="No meaningful action is complete without a receipt. The table below renders live canonical receipts from receipt_ledger_v0.json for the hardening, Crypto Radar, and PB005 scope/auth preparation batches."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.receiptLedger} />
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Recent intake and routing receipts</CardTitle>
+                <CardDescription>
+                  The latest receipts tied directly to Daily Intake Cycle 001 and the Apps/GPTs
+                  routing integration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecentReceiptList receipts={data.recentIntakeRoutingReceipts} />
+              </CardContent>
+            </Card>
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
                 <CardTitle>Receipts</CardTitle>
@@ -696,6 +1044,36 @@ function CommandCenterPage() {
               </CardContent>
             </Card>
 
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Operations tool contracts</CardTitle>
+                <CardDescription>
+                  Staged webhook, workflow, messaging, and repository-operation contracts.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ProvenanceBanner provenance={data.sectionProvenance.operationsToolContracts} />
+                {data.operationsToolContracts.length === 0 ? (
+                  <EmptyState
+                    title="No operations tool contracts"
+                    description="Operations-specific contract drafts will appear here when they are present in the knowledge registry."
+                  />
+                ) : (
+                  <DataTable
+                    headers={["tool id", "name", "category", "queue", "approval class", "status"]}
+                    rows={data.operationsToolContracts.map((contract) => [
+                      <code key="id">{contract.toolId}</code>,
+                      contract.name,
+                      contract.category,
+                      contract.queue,
+                      contract.approvalClass,
+                      <StatusBadge key="status" status={contract.status} />,
+                    ])}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
@@ -742,15 +1120,93 @@ function CommandCenterPage() {
           <TabsContent value="intake" className="space-y-4">
             <SectionHeader
               title="Daily Intake"
-              description="This view uses retrieval summaries plus awareness state as the current canonical intake signal, and supplements them with one derived audit row until real daily batch reports exist."
+              description="This view now surfaces the latest real daily intake batch, the current daily knowledge cards, and the historical intake rows that were already part of the Command Center loader."
             />
             <ProvenanceBanner provenance={data.sectionProvenance.dailyIntake} />
             <Card className="border-border/60 bg-card/50">
               <CardHeader>
-                <CardTitle>Daily intake rows</CardTitle>
+                <CardTitle>Latest batch summary</CardTitle>
                 <CardDescription>
-                  Source-backed where files already exist; explicitly labeled as derived where the
-                  backbone has not yet produced live intake artifacts.
+                  Canonical intake facts from daily_intake_batch_001.json and the matching source
+                  manifest.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data.latestDailyIntake ? (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <OverviewField
+                      label="Latest batch date"
+                      value={data.latestDailyIntake.latestBatchDate}
+                    />
+                    <OverviewField
+                      label="Source count"
+                      value={String(data.latestDailyIntake.sourceCount)}
+                    />
+                    <OverviewField
+                      label="Derived card count"
+                      value={String(data.latestDailyIntake.derivedCardCount)}
+                    />
+                    <OverviewField label="Cycle" value={data.latestDailyIntake.cycle} />
+                    <OverviewField label="Queue id" value={data.latestDailyIntake.queueId} />
+                    <OverviewField label="Receipt id" value={data.latestDailyIntake.receiptId} />
+                    <div className="md:col-span-2 xl:col-span-3">
+                      <div className="mb-2 text-sm font-medium">Pending items</div>
+                      <TagList
+                        items={
+                          data.latestDailyIntake.pendingItems.length > 0
+                            ? data.latestDailyIntake.pendingItems
+                            : ["No pending items"]
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="No live daily batch summary"
+                    description="The latest batch summary will render here once a daily intake batch file is present."
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Latest knowledge cards</CardTitle>
+                <CardDescription>
+                  Daily cards from the latest dated daily folder, including source coverage and
+                  receipt linkage.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data.knowledgeCards.length === 0 ? (
+                  <EmptyState
+                    title="No daily knowledge cards"
+                    description="Card files from the latest daily folder will appear here when present."
+                  />
+                ) : (
+                  <DataTable
+                    headers={["card id", "domain / title", "status", "source coverage", "receipt"]}
+                    rows={data.knowledgeCards.map((card) => [
+                      <code key="id">{card.cardId}</code>,
+                      <div key="title">
+                        <div className="font-medium">{card.title}</div>
+                        <div className="text-[11px] text-muted-foreground">{card.domain}</div>
+                      </div>,
+                      <StatusBadge key="status" status={card.status} />,
+                      <div key="coverage" className="space-y-2">
+                        <div>{card.sourceCoverage}</div>
+                        <TagList items={card.sourceFiles} />
+                      </div>,
+                      card.receiptId,
+                    ])}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Historical intake rows</CardTitle>
+                <CardDescription>
+                  Legacy retrieval-backed and derived audit rows preserved for historical context.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1168,6 +1624,40 @@ function EmptyState({ title, description }: { title: string; description: string
     <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-6 text-center">
       <div className="text-sm font-medium">{title}</div>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function RecentReceiptList({
+  receipts,
+}: {
+  receipts: CommandCenterSnapshot["recentIntakeRoutingReceipts"];
+}) {
+  if (receipts.length === 0) {
+    return (
+      <EmptyState
+        title="No recent intake or routing receipts"
+        description="Once the receipt files are present, their latest status and next step will appear here."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {receipts.map((receipt) => (
+        <div key={receipt.receiptId} className="rounded-lg border border-border/50 bg-muted/20 p-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="font-mono text-xs">{receipt.receiptId}</div>
+            <StatusBadge status={receipt.status} />
+          </div>
+          <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+            <div>Timestamp: {receipt.timestamp}</div>
+            <div>Queue: {receipt.queue}</div>
+          </div>
+          <p className="mt-2 text-sm text-foreground">{receipt.summary}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Next: {receipt.nextStep}</p>
+        </div>
+      ))}
     </div>
   );
 }
