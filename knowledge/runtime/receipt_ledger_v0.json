@@ -157,7 +157,20 @@
       "status": "completed",
       "error": null,
       "approval_reference": "internal_autopilot_adr_002",
-      "next_step": "parse FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx; integrate knowledge cards into retrieval indexes"
+      "next_step": "integrate Daily Intake Cycle 001 cards and the Apps/GPTs routing card into retrieval indexes"
+    },
+    {
+      "receipt_id": "receipt-2026-05-17-post-daily-intake-validation-routing-parse-v0",
+      "timestamp": "2026-05-17T10:25:00Z",
+      "source_request": "rt-2026-05-17-post-daily-intake-validation-routing-parse-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at 262f0516b75eb2f74023d862ad49983b56eef9e4 + Daily Intake Cycle 001 artifacts + operator-session parse facts for FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx",
+      "output_artifact": "knowledge/audit/FATHIYA_POST_DAILY_INTAKE_VALIDATION_REPORT_v0.md + knowledge/routing/apps_gpts_routing_map_v1.json + knowledge/routing/apps_gpts_routing_rules_v1.json + knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_PARSED_REPORT_v0.md + knowledge/cards/routing/kc-2026-05-17-apps-gpts-routing-v0.json + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "internal_autopilot_adr_002",
+      "next_step": "add a Command Center Routing Status panel and retrieval-index integration for the routing card"
     }
   ],
   "required_receipt_fields": [

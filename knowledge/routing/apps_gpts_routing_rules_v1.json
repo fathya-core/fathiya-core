@@ -1,0 +1,211 @@
+{
+  "schema_version": "FATHIYA_APPS_GPTS_ROUTING_RULES_v1",
+  "rule_set_id": "apps-gpts-routing-rules-v1",
+  "created_at": "2026-05-17T10:25:00Z",
+  "source_map": "knowledge/routing/apps_gpts_routing_map_v1.json",
+  "status": "active_guardrail_rules",
+  "routing_model": {
+    "pattern": "Y->X->Z",
+    "orchestration_layer_y": ["Zapier", "Make", "n8n"],
+    "transformation_layer_x": ["LLM", "GPT"],
+    "output_or_state_layer_z": ["Notion", "Slack", "Obsidian", "files/storage", "CRM", "logs", "receipt ledger"],
+    "principle": "The GPT transforms or analyzes; the orchestrator sequences; external systems store state and deliver outputs."
+  },
+  "global_hard_rules": [
+    {
+      "rule_id": "no_direct_trading_decisions",
+      "severity": "hard_block",
+      "rule": "Do not route any GPT or workflow to produce direct entry, exit, size, leverage, stop-loss, take-profit, or execution recommendations."
+    },
+    {
+      "rule_id": "no_hidden_execution",
+      "severity": "hard_block",
+      "rule": "Do not let GPT output trigger an execution-capable action without an explicit orchestrator step, approval gate, payload preview, and receipt."
+    },
+    {
+      "rule_id": "state_outside_llm",
+      "severity": "required_design",
+      "rule": "Persist memory, logs, queue state, task state, and source references outside the model."
+    },
+    {
+      "rule_id": "validation_logging_required",
+      "severity": "required_design",
+      "rule": "Every Apps/GPTs workflow must define validation, logging, and guardrail checks before activation."
+    },
+    {
+      "rule_id": "forbidden_external_actions_for_parse_task",
+      "severity": "hard_block",
+      "rule": "This integration task must not execute webhooks, emails, trading, scans, credential access, or destructive actions."
+    }
+  ],
+  "app_role_routing_rules": [
+    {
+      "role_group": "Connector/Tool",
+      "count": 151,
+      "default_queue": "Automation Queue",
+      "allowed_function": "Connect systems and pass validated payloads under an orchestrator.",
+      "requires": ["tool_contract", "payload_validation", "receipt_when_used"],
+      "blocked_if": ["credential_required_but_not_provided", "external_side_effect_without_approval"]
+    },
+    {
+      "role_group": "Connector + Notifications",
+      "count": 10,
+      "default_queue": "Automation Queue",
+      "allowed_function": "Send or post summaries only after validation and approval policy checks.",
+      "requires": ["idempotency_key", "delivery_log", "approval_if_external_message"],
+      "blocked_if": ["unreviewed_human_message", "duplicate_delivery_risk"]
+    },
+    {
+      "role_group": "State/Storage",
+      "count": 8,
+      "default_queue": "Knowledge Queue",
+      "allowed_function": "Store state, notes, files, task records, logs, and retrieval memory outside GPT.",
+      "requires": ["schema_or_folder_contract", "write_log"],
+      "blocked_if": ["destructive_write", "unclear_retention_policy"]
+    },
+    {
+      "role_group": "Input/Output Docs",
+      "count": 2,
+      "default_queue": "Knowledge Queue",
+      "allowed_function": "Provide source documents or receive structured notes, drafts, citations, and exports.",
+      "requires": ["chunking_for_long_docs", "citation_or_source_reference"],
+      "blocked_if": ["source_unavailable", "citation_required_but_missing"]
+    },
+    {
+      "role_group": "Connector Dev/API",
+      "count": 2,
+      "default_queue": "Engineering Queue",
+      "allowed_function": "Design, validate, or implement connector/API interfaces under repository and tool-contract controls.",
+      "requires": ["schema_validation", "non_destructive_test_mode", "code_review"],
+      "blocked_if": ["production_secret_needed", "unapproved_live_api_mutation"]
+    }
+  ],
+  "trading_relevance_rules": [
+    {
+      "relevance": "Low / منخفضة",
+      "count": 138,
+      "default_action": "route_normally",
+      "requirements": ["standard_validation", "standard_logging"]
+    },
+    {
+      "relevance": "Medium / متوسطة",
+      "count": 20,
+      "default_action": "route_with_finance_awareness",
+      "requirements": ["no_execution_language", "risk_context", "receipt"]
+    },
+    {
+      "relevance": "High / عالية",
+      "count": 12,
+      "default_action": "route_analysis_only",
+      "requirements": ["decision_block", "no_trading_recommendations", "human_review", "receipt"],
+      "blocked_outputs": ["entry", "exit", "trade_signal", "position_size", "order_payload"]
+    },
+    {
+      "relevance": "Header / blank / not classified",
+      "count": 3,
+      "default_action": "do_not_auto_route",
+      "requirements": ["classify_before_use"]
+    }
+  ],
+  "gpt_risk_group_rules": [
+    {
+      "risk_level": "منخفض",
+      "count": 10,
+      "default_mode": "assistive_transformation",
+      "allowed_outputs": ["summaries", "classifications", "drafts", "structured_extractions"],
+      "approval_required": false
+    },
+    {
+      "risk_level": "متوسط",
+      "count": 9,
+      "default_mode": "reviewed_analysis",
+      "allowed_outputs": ["analysis", "scenario_options", "checklists", "structured_json"],
+      "approval_required": "when_external_side_effect_or_sensitive_domain"
+    },
+    {
+      "risk_level": "مرتفع",
+      "count": 4,
+      "default_mode": "guarded_analysis_only",
+      "allowed_outputs": ["risk_factors", "scenario_map", "questions_for_human"],
+      "approval_required": true,
+      "decision_block_required": true
+    },
+    {
+      "risk_level": "مرتفع جدًا",
+      "count": 4,
+      "default_mode": "restricted_analysis_only",
+      "allowed_outputs": ["non_actionable_risk_review", "guardrail_check", "human_review_prompt"],
+      "approval_required": true,
+      "decision_block_required": true
+    },
+    {
+      "risk_level": "متغير",
+      "count": 2,
+      "default_mode": "classification_required",
+      "allowed_outputs": ["classification_pending", "safe_mode_prompt"],
+      "approval_required": "after_reclassification",
+      "decision_block_required": "until_configured"
+    }
+  ],
+  "decision_block_rules": [
+    {
+      "decision_blocked_label": "نعم",
+      "count": 18,
+      "rule": "GPT can analyze, transform, summarize, classify, and ask next questions, but cannot choose or execute a decision."
+    },
+    {
+      "decision_blocked_label": "لا",
+      "count": 9,
+      "rule": "GPT can assist within its declared low-risk or tool-boundary mode; external side effects still require orchestrator validation and applicable approval."
+    },
+    {
+      "decision_blocked_label": "حسب الضبط",
+      "count": 2,
+      "rule": "Configuration must explicitly set whether the GPT is decision-blocked before routing. Default to blocked until configured."
+    },
+    {
+      "decision_blocked_label": "trading_or_finance_gpt",
+      "count": "applies_by_domain",
+      "rule": "All trading or finance-like GPT uses default to decision-blocked analysis/scenario mode. They must not become execution decision makers."
+    }
+  ],
+  "workflow_template_rules": [
+    {
+      "workflow_id": "wf-template-trading-digest-v1",
+      "name": "Trading Digest",
+      "orchestrator": "Make/n8n",
+      "input": "market/conversation snapshot",
+      "gpt_transform": "Return JSON with bias, risk, scenarios, and next_questions.",
+      "required_guardrails": ["no_entry_exit_recommendations", "no_execution", "decision_block", "receipt"],
+      "allowed_output_schema": ["bias", "risk", "scenarios", "next_questions"]
+    },
+    {
+      "workflow_id": "wf-template-meeting-to-tasks-v1",
+      "name": "Meeting to Tasks",
+      "orchestrator": "Zapier/Make",
+      "input": "transcript",
+      "gpt_transform": "Summarize meeting and extract task payloads.",
+      "required_guardrails": ["idempotency", "logging", "payload_preview"],
+      "allowed_outputs": ["Notion tasks", "Slack summary"]
+    },
+    {
+      "workflow_id": "wf-template-docs-to-knowledge-v1",
+      "name": "Docs to Knowledge",
+      "orchestrator": "n8n",
+      "input": "docs/PDF",
+      "gpt_transform": "Extract structured knowledge notes with citations.",
+      "required_guardrails": ["chunking", "citations", "source_reference_logging"],
+      "allowed_outputs": ["Obsidian notes", "Notion notes"]
+    }
+  ],
+  "activation_requirements": [
+    "Map each concrete app or GPT row to an explicit rule before activation.",
+    "Attach tool contracts for apps that perform external side effects.",
+    "Attach approval gates for notifications, workflow activation, market-sensitive actions, credential access, and destructive actions.",
+    "Record runtime queue entry and receipt for every activated routing workflow."
+  ],
+  "command_center_status": {
+    "loader_update_performed": false,
+    "reason": "No existing low-risk routing status section was present in src/lib/command-center.ts; routing status UI expansion is documented as pending instead of adding a new UI surface in this task."
+  }
+}

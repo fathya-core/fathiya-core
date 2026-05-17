@@ -15,7 +15,7 @@
 
 ## What Was Ingested
 
-22 operator-provided source files were registered in the source manifest. 21 files were fully ingested and converted into knowledge cards. 1 file (`FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx`) remains pending structured spreadsheet parse.
+22 operator-provided source files were registered in the source manifest. 21 files were fully ingested and converted into daily knowledge cards during the original cycle. The remaining file (`FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx`) has now been completed through the post-daily-intake structured routing parse.
 
 ### Source Categories
 
@@ -61,12 +61,15 @@
 - **Source Manifest**: `knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json`
 - **Daily Intake Batch**: `knowledge/intake/daily/2026-05-17/daily_intake_batch_001.json`
 - **Routing Map Source Note**: `knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_SOURCE_NOTE_v0.md`
+- **Routing Map JSON**: `knowledge/routing/apps_gpts_routing_map_v1.json`
+- **Routing Rules JSON**: `knowledge/routing/apps_gpts_routing_rules_v1.json`
+- **Routing Parsed Report**: `knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_PARSED_REPORT_v0.md`
 
 ## What Remains Pending
 
 | Item | Status | Reason | Next Step |
 |------|--------|--------|-----------|
-| FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx | `pending_structured_parse` | Raw spreadsheet cell extraction not available in this cycle | Parse with spreadsheet tool in future cycle |
+| FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx | `structured_parse_completed` | Operator-session parse facts integrated into routing artifacts | Add Command Center routing status UI when approved |
 | Retrieval index integration | `planned` | Knowledge cards need to be added to semantic search indexes | Run retrieval index update in next engineering cycle |
 | Command Center Daily Intake live rendering | `updated` | Daily Intake tab now shows live batch data | Verify in next build |
 
@@ -84,7 +87,7 @@
 - No external side effects were produced.
 - No webhooks, emails, trades, or scans were executed.
 - Security material was ingested as scope-aware knowledge only — no live exploit/testing workflows created.
-- Spreadsheet parse was deferred rather than fabricated.
+- Spreadsheet parse is now captured from the operator-session structured parse facts; row-level app/GPT names remain unavailable and were not inferred.
 - All artifacts are classification and archival outputs per ADR-002 and the daily intake workflow.
 
 ## Validation
@@ -98,4 +101,4 @@
 
 ## Next Recommended Task
 
-Parse `FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx` using structured spreadsheet extraction, then integrate all 12 knowledge cards into the retrieval index for semantic search.
+Add a Command Center Routing Status panel for `apps_gpts_routing_map_v1.json` and `apps_gpts_routing_rules_v1.json`, then integrate the original 12 daily knowledge cards plus the routing card into the retrieval index for semantic search.
