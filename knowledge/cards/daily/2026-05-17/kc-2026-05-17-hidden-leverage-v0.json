@@ -1,0 +1,26 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-hidden-leverage-v0",
+  "title": "FATHIYA Hidden Leverage Techniques",
+  "domain": "hidden_leverage",
+  "classification": ["adversarial_roles", "self_critique", "advanced_techniques"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["03_Hidden_Leverage_v1_FULL.md"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Hidden leverage techniques that unlock deeper AI-assisted value through adversarial thinking, self-critique, and structured challenge patterns.",
+  "key_principles": [
+    "Adversarial roles: assign the AI to argue against your position to surface blind spots.",
+    "Self-critique: force the model to evaluate its own output before accepting it.",
+    "Opponent mode: simulate a hostile reviewer or competitor to stress-test ideas.",
+    "Dump-then-rebuild: generate a first draft, destroy it systematically, then rebuild from the strongest fragments.",
+    "Time simulation: project outcomes across different timeframes to reveal hidden dependencies and risks."
+  ],
+  "boundary": "Technique documentation only. Does not activate adversarial modes or modify system behavior.",
+  "related_cards": [
+    "kc-2026-05-17-failure-modes-v0",
+    "kc-2026-05-17-usage-patterns-v0",
+    "kc-2026-05-17-execution-kernel-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

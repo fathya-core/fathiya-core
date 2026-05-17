@@ -1,0 +1,25 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-session-workflow-v0",
+  "title": "FATHIYA Session Workflow",
+  "domain": "session_workflow",
+  "classification": ["workflow_structure", "session_lifecycle", "artifact_output"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["Session_Workflow.md.docx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Defines the structured flow of a FATHIYA session from input through processing to artifact output, ensuring every session produces a traceable deliverable.",
+  "key_principles": [
+    "Every session follows: input collection → classification → processing → artifact generation → receipt.",
+    "Session state is tracked through queue entries and receipt ledger records.",
+    "Multi-step sessions continue until a decision edge or artifact completion.",
+    "Session outputs are always linked to source provenance and batch metadata."
+  ],
+  "boundary": "Workflow definition only. Does not trigger session execution or external actions.",
+  "related_cards": [
+    "kc-2026-05-17-operating-rules-v0",
+    "kc-2026-05-17-execution-kernel-v0",
+    "kc-2026-05-17-systemization-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}

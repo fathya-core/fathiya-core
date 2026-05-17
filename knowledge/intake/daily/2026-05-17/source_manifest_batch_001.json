@@ -1,0 +1,186 @@
+{
+  "schema_version": "FATHIYA_SOURCE_MANIFEST_v0",
+  "batch_id": "source-manifest-batch-001-2026-05-17",
+  "created_at": "2026-05-17T09:18:00Z",
+  "operator": "FATHIYA Kernel",
+  "cycle": "daily-intake-cycle-001",
+  "source_count": 22,
+  "sources": [
+    {
+      "filename": "Operating_Rules.md.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "operating_rules",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Core operating rules: artifact-first, execution-first, constraint-as-bridge."
+    },
+    {
+      "filename": "Tool_Selection_Map.md.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "tool_selection",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Automatic tool selection logic and routing map for FATHIYA sessions."
+    },
+    {
+      "filename": "Session_Workflow.md.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "session_workflow",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Session workflow structure: input, processing, artifact output."
+    },
+    {
+      "filename": "Kernel_Trigger.txt.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "kernel_trigger",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Kernel trigger conditions and activation patterns."
+    },
+    {
+      "filename": "FATHIYA_CORE_Data_Gathering_Kit_v1.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "data_gathering",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Data gathering kit: structured intake templates and collection protocols."
+    },
+    {
+      "filename": "FATHIYA CORE-key.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "core_key_reference",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "reference_note",
+      "notes": "FATHIYA CORE key reference document."
+    },
+    {
+      "filename": "دليل احترافي لاستخدام تطبيق ChatGPT — كيف تصبح محترفًا 2.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "professional_chatgpt_usage",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Professional ChatGPT usage guide (Arabic, part 2). Covers usage patterns, failure modes, systemization."
+    },
+    {
+      "filename": "دليل احترافي لاستخدام تطبيق ChatGPT — كيف تصبح محترفًا.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "professional_chatgpt_usage",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Professional ChatGPT usage guide (Arabic, part 1). Covers thinking-test principle and decision-pressure modes."
+    },
+    {
+      "filename": "FATHIYA_CORE_Playbook_v1.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "execution_playbook",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "FATHIYA CORE execution playbook v1."
+    },
+    {
+      "filename": "دليل شامل لقدرات ChatGPT وإعداداته وتطبيقاته وكيف تحصل على أقصى استفادة.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "comprehensive_chatgpt_capabilities",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Comprehensive ChatGPT capabilities guide (Arabic). Architecture principles and LLM as transformation layer."
+    },
+    {
+      "filename": "الملف_07_Decision_Tree_اقتراح_الأدوات.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "decision_tree_tool_suggestion",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Decision tree for tool suggestion logic."
+    },
+    {
+      "filename": "الملف_06_Playbooks_تشغيلية_داخلية_لفتحية.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "internal_operational_playbooks",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Internal operational playbooks for FATHIYA (Arabic)."
+    },
+    {
+      "filename": "06_FATHIYA_Execution_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "execution_kernel",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Execution kernel v1: multi-step execution continues until the decision edge."
+    },
+    {
+      "filename": "04_Failure_Modes_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "failure_modes",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Failure modes: false professionalism, reassurance addiction, time waste, decision justification, over-reliance."
+    },
+    {
+      "filename": "02_Usage_Patterns_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "usage_patterns",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Usage patterns: researcher, analyst, entrepreneur, programmer, decision-pressure modes."
+    },
+    {
+      "filename": "05_Systemization_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "systemization",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Systemization: every session ends with a clear artifact and learning loop."
+    },
+    {
+      "filename": "01_Reality_Map_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "reality_map",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Reality map v1: foundational context and operational landscape."
+    },
+    {
+      "filename": "03_Hidden_Leverage_v1_FULL.md",
+      "source_type": "operator_upload",
+      "primary_topic": "hidden_leverage",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Hidden leverage: adversarial roles, self-critique, opponent mode, dump-then-rebuild, time simulation."
+    },
+    {
+      "filename": "FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx",
+      "source_type": "operator_upload",
+      "primary_topic": "apps_gpts_routing_map",
+      "ingestion_status": "pending_structured_parse",
+      "intended_artifact_class": "routing_map",
+      "notes": "Spreadsheet routing map for FATHIYA apps and GPTs. Requires structured spreadsheet parse — raw cell extraction not available in this cycle."
+    },
+    {
+      "filename": "المعمارية العامة_ نموذج لغة كطبقة تحويل وسطى.docx",
+      "source_type": "operator_upload",
+      "primary_topic": "automation_architecture",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Architecture principle: LLM as transformation layer; orchestration, state, receipts, adapters, and audit live outside the model."
+    },
+    {
+      "filename": "deep-research-report.md",
+      "source_type": "operator_upload",
+      "primary_topic": "deep_research",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "reference_note",
+      "notes": "Deep research report. Multi-agent learning/product design: adversarial selection then cooperative synthesis."
+    },
+    {
+      "filename": "final_report.pdf",
+      "source_type": "operator_upload",
+      "primary_topic": "security_ai_report",
+      "ingestion_status": "ingested",
+      "intended_artifact_class": "knowledge_card",
+      "notes": "Security/cyber report. Source material for scope-aware, policy-gated security knowledge only. Do not create live exploit/testing workflows."
+    }
+  ]
+}

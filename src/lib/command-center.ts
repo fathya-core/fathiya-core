@@ -40,6 +40,21 @@ const SCOPE_MAP_FILES = import.meta.glob("../../knowledge/security/scope_maps/*.
   eager: true,
 }) as Record<string, string>;
 
+const DAILY_INTAKE_BATCH_FILES = import.meta.glob(
+  "../../knowledge/intake/daily/*/daily_intake_batch_*.json",
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+) as Record<string, string>;
+
+const DAILY_KNOWLEDGE_CARD_FILES = import.meta.glob("../../knowledge/cards/daily/*/*.json", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
 type StatusTone = "neutral" | "good" | "warn" | "danger" | "info";
 
 export type DataStatus = "live" | "empty" | "derived_from_backbone" | "planned";
@@ -206,6 +221,28 @@ type ScopeMap = {
   boundary_note: string;
   playbook: string;
   created_at: string;
+};
+
+type DailyIntakeBatch = {
+  batch_id: string;
+  cycle: string;
+  created_at: string;
+  source_count: number;
+  ingested_count: number;
+  pending_count: number;
+  themes: string[];
+  derived_cards: string[];
+  queue_id: string;
+  receipt_id: string;
+  next_steps: string[];
+};
+
+type DailyKnowledgeCard = {
+  card_id: string;
+  title: string;
+  domain: string;
+  classification: string[];
+  status: string;
 };
 
 type AgentRegistry = {
@@ -774,10 +811,13 @@ function buildSnapshot(): CommandCenterSnapshot {
       },
       dailyIntake: {
         source_file:
-          "knowledge/retrieval_index_summary.json, knowledge/retrieval_validation_report.json",
-        data_status: "derived_from_backbone",
+          "knowledge/intake/daily/*/daily_intake_batch_*.json, knowledge/cards/daily/*/*.json, knowledge/retrieval_index_summary.json",
+        data_status:
+          Object.keys(DAILY_INTAKE_BATCH_FILES).length > 0 ? "live" : "derived_from_backbone",
         notes:
-          "Row 1 uses canonical retrieval data. Row 2 is a derived summary from backbone validation. No live daily batch dataset exists yet.",
+          Object.keys(DAILY_INTAKE_BATCH_FILES).length > 0
+            ? `Live daily intake data from ${Object.keys(DAILY_INTAKE_BATCH_FILES).length} batch(es) and ${Object.keys(DAILY_KNOWLEDGE_CARD_FILES).length} knowledge card(s). Legacy retrieval data is preserved for historical context.`
+            : "Row 1 uses canonical retrieval data. Row 2 is a derived summary from backbone validation. No live daily batch dataset exists yet.",
       },
       cryptoRadar: {
         source_file:
@@ -852,6 +892,15 @@ function buildSnapshot(): CommandCenterSnapshot {
         path: "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
         kind: "canonical",
         note: "Preserved Manus brief used as the sole factual source for the first live radar batch.",
+      },
+      {
+        label: "Daily Intake Batches",
+        path: "knowledge/intake/daily/*/daily_intake_batch_*.json",
+        kind: "canonical",
+        note:
+          Object.keys(DAILY_INTAKE_BATCH_FILES).length > 0
+            ? `${Object.keys(DAILY_INTAKE_BATCH_FILES).length} live daily intake batch(es) with ${Object.keys(DAILY_KNOWLEDGE_CARD_FILES).length} derived knowledge cards.`
+            : "No daily intake batches exist yet. PB007 defines the intake process.",
       },
       {
         label: "Security Targets",
@@ -1113,6 +1162,48 @@ function buildPlaybookView(path: string, raw: string, validationDate: string) {
   };
 }
 
+function buildDailyIntakeBatchRows(): CommandCenterSnapshot["dailyIntake"] {
+  const batches = Object.values(DAILY_INTAKE_BATCH_FILES)
+    .map((raw, index) => {
+      try {
+        return parseJson<DailyIntakeBatch>(raw, `daily intake batch ${index + 1}`);
+      } catch {
+        return null;
+      }
+    })
+    .filter((batch): batch is DailyIntakeBatch => batch !== null);
+
+  const cardCount = Object.values(DAILY_KNOWLEDGE_CARD_FILES).length;
+  const cardDomains = Object.values(DAILY_KNOWLEDGE_CARD_FILES)
+    .map((raw, index) => {
+      try {
+        return parseJson<DailyKnowledgeCard>(raw, `knowledge card ${index + 1}`);
+      } catch {
+        return null;
+      }
+    })
+    .filter((card): card is DailyKnowledgeCard => card !== null)
+    .map((card) => card.domain);
+
+  const uniqueDomains = [...new Set(cardDomains)];
+
+  return batches.map((batch) => ({
+    source: `Daily Intake ${batch.cycle} (${batch.created_at.slice(0, 10)})`,
+    capturedCount: batch.source_count,
+    duplicates: 0,
+    classifiedDomains:
+      uniqueDomains.length > 0 ? uniqueDomains.slice(0, 6) : batch.themes.slice(0, 6),
+    cardsDrafted: cardCount,
+    blockers:
+      batch.pending_count > 0
+        ? [`${batch.pending_count} source(s) pending structured parse`]
+        : ["No blockers"],
+    receipts: [batch.receipt_id],
+    nextActions: batch.next_steps.slice(0, 2),
+    sourceType: "canonical" as const,
+  }));
+}
+
 function buildDailyIntakeRows(
   retrievalSummary: RetrievalSummary,
   retrievalValidation: RetrievalValidation,
@@ -1120,12 +1211,15 @@ function buildDailyIntakeRows(
   receiptLedger: ReceiptLedger,
   backboneValidation: BackboneValidation,
 ) {
+  const liveBatchRows = buildDailyIntakeBatchRows();
+
   const topDomains = retrievalSummary.top_domains
     .slice(0, 3)
     .map(([domain, count]) => `${domain} (${count})`);
   const knowledgeCardCount =
     retrievalSummary.top_types.find(([type]) => type === "knowledge_card")?.[1] ?? 0;
-  return [
+
+  const legacyRows = [
     {
       source: retrievalSummary.source_archive,
       capturedCount: retrievalValidation.records_created,
@@ -1166,6 +1260,8 @@ function buildDailyIntakeRows(
       sourceType: "derived_from_backbone" as const,
     },
   ];
+
+  return [...liveBatchRows, ...legacyRows];
 }
 
 function buildCryptoRadarCards(batch: CryptoRadarBatch): CommandCenterSnapshot["cryptoRadar"] {

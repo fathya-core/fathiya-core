@@ -1,0 +1,25 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-data-gathering-kit-v0",
+  "title": "FATHIYA Data Gathering Kit",
+  "domain": "data_gathering",
+  "classification": ["intake_templates", "collection_protocols", "structured_input"],
+  "created_at": "2026-05-17T09:18:00Z",
+  "source_files": ["FATHIYA_CORE_Data_Gathering_Kit_v1.docx", "FATHIYA CORE-key.docx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Structured data gathering kit defining intake templates, collection protocols, and classification schemas for FATHIYA source material processing.",
+  "key_principles": [
+    "Every source enters through a structured intake template with provenance metadata.",
+    "Collection protocols define what to capture, how to classify, and where to route.",
+    "Source material is archived before processing — raw input is never discarded.",
+    "Classification drives routing: each source maps to a domain, queue, and intended artifact class."
+  ],
+  "boundary": "Data gathering templates and protocols only. Does not access external data sources.",
+  "related_cards": [
+    "kc-2026-05-17-operating-rules-v0",
+    "kc-2026-05-17-session-workflow-v0",
+    "kc-2026-05-17-systemization-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-daily-intake-cycle-001"
+}
