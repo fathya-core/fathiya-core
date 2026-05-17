@@ -1,0 +1,47 @@
+{
+  "schema_version": "FATHIYA_KNOWLEDGE_CARD_v0",
+  "card_id": "kc-2026-05-17-apps-gpts-routing-v0",
+  "title": "FATHIYA Apps/GPTs Routing Map v1",
+  "domain": "apps_gpts_routing",
+  "classification": ["routing_map", "apps_gpts", "guardrails", "automation_architecture"],
+  "created_at": "2026-05-17T10:25:00Z",
+  "source_files": ["FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx"],
+  "source_batch": "daily-intake-batch-001-2026-05-17",
+  "status": "active",
+  "summary": "Structured parse of the Apps/GPTs routing spreadsheet: GPT/LLM is the transformation layer, Zapier/Make/n8n orchestrate Y->X->Z, state lives outside the model, and validation/logging/guardrails are required. The map captures 173 app rows, 29 GPT rows, and 3 workflow templates.",
+  "key_principles": [
+    "Route GPTs to transformation, extraction, analysis, scenario generation, and structured output; do not route them as execution decision makers.",
+    "Use Zapier, Make, or n8n for orchestration, triggers, delivery, and tool sequencing.",
+    "Keep state, memory, queue status, logs, receipts, tasks, and source references outside the model.",
+    "Trading/finance-like GPTs must remain analysis/scenario-only with explicit decision blocks.",
+    "Every activated workflow requires validation, logging, and guardrails before side effects."
+  ],
+  "structured_artifacts": [
+    "knowledge/routing/apps_gpts_routing_map_v1.json",
+    "knowledge/routing/apps_gpts_routing_rules_v1.json",
+    "knowledge/routing/FATHIYA_APPS_GPTS_ROUTING_MAP_PARSED_REPORT_v0.md"
+  ],
+  "summary_counts": {
+    "app_rows": 173,
+    "gpt_rows": 29,
+    "workflow_rows": 3,
+    "top_app_role": {
+      "role": "Connector/Tool",
+      "count": 151
+    },
+    "highest_trading_relevance_rows": 12,
+    "decision_blocked_gpt_rows": 18
+  },
+  "workflow_templates": [
+    "Trading Digest",
+    "Meeting to Tasks",
+    "Docs to Knowledge"
+  ],
+  "boundary": "Routing knowledge and guardrail artifact only. No webhooks, emails, trades, scans, credentials, destructive actions, or workflow activations are performed.",
+  "related_cards": [
+    "kc-2026-05-17-automation-architecture-v0",
+    "kc-2026-05-17-tool-selection-v0",
+    "kc-2026-05-17-execution-kernel-v0"
+  ],
+  "receipt_id": "receipt-2026-05-17-post-daily-intake-validation-routing-parse-v0"
+}

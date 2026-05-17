@@ -154,9 +154,9 @@
       "filename": "FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx",
       "source_type": "operator_upload",
       "primary_topic": "apps_gpts_routing_map",
-      "ingestion_status": "pending_structured_parse",
+      "ingestion_status": "structured_parse_completed",
       "intended_artifact_class": "routing_map",
-      "notes": "Spreadsheet routing map for FATHIYA apps and GPTs. Requires structured spreadsheet parse — raw cell extraction not available in this cycle."
+      "notes": "Spreadsheet routing map for FATHIYA apps and GPTs. Operator-session parse integrated into knowledge/routing/apps_gpts_routing_map_v1.json and knowledge/routing/apps_gpts_routing_rules_v1.json."
     },
     {
       "filename": "المعمارية العامة_ نموذج لغة كطبقة تحويل وسطى.docx",

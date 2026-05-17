@@ -1,0 +1,242 @@
+{
+  "schema_version": "FATHIYA_APPS_GPTS_ROUTING_MAP_v1",
+  "artifact_id": "apps-gpts-routing-map-v1",
+  "created_at": "2026-05-17T10:25:00Z",
+  "status": "structured_parse_integrated_from_operator_session",
+  "canonical_repo": "fathya-core/fathiya-core",
+  "baseline_commit_before_task": "262f0516b75eb2f74023d862ad49983b56eef9e4",
+  "source_file": {
+    "filename": "FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx",
+    "source_type": "operator_upload",
+    "source_manifest": "knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json",
+    "daily_intake_batch": "knowledge/intake/daily/2026-05-17/daily_intake_batch_001.json",
+    "parse_source": "locally parsed in operator session; this artifact records the provided structured parse facts",
+    "raw_workbook_committed": false
+  },
+  "sheets": [
+    {
+      "name": "Architecture_Principle",
+      "range": "A1:A6",
+      "interpreted_data_rows": 5,
+      "content_type": "architecture_principles"
+    },
+    {
+      "name": "Apps_Full_Mapped",
+      "range": "A1:I174",
+      "interpreted_data_rows": 173,
+      "content_type": "app_routing_rows"
+    },
+    {
+      "name": "GPTs_Full_Mapped",
+      "range": "A1:K30",
+      "interpreted_data_rows": 29,
+      "content_type": "gpt_routing_rows"
+    },
+    {
+      "name": "Sample_Workflows",
+      "range": "A1:F4",
+      "interpreted_data_rows": 3,
+      "content_type": "workflow_templates"
+    }
+  ],
+  "architecture_principles": [
+    {
+      "id": "llm_transformation_layer",
+      "principle": "LLM/GPT is transformation and analysis layer X.",
+      "routing_implication": "Route GPT calls to analysis, extraction, synthesis, classification, scenario generation, and JSON transformation only."
+    },
+    {
+      "id": "orchestration_external",
+      "principle": "Zapier, Make, and n8n provide orchestration Y->X->Z.",
+      "routing_implication": "Keep triggers, scheduling, tool calls, delivery, and adapter sequencing outside the GPT."
+    },
+    {
+      "id": "state_outside_model",
+      "principle": "State and memory belong outside the model.",
+      "routing_implication": "Persist queue state, receipts, logs, vector memory, CRM rows, notes, and workflow state in external systems."
+    },
+    {
+      "id": "validation_logging_guardrails_required",
+      "principle": "Validation, logging, and guardrails are required.",
+      "routing_implication": "Every routed workflow must define validation checks, logs or receipts, and explicit forbidden actions."
+    }
+  ],
+  "apps_summary": {
+    "total_app_rows": 173,
+    "row_level_app_names_available": false,
+    "top_role_groups": [
+      {
+        "role": "Connector/Tool",
+        "count": 151,
+        "routing_lane": "adapter_connector",
+        "allowed_use": "Connect systems, fetch or pass data, and expose tool capability through an orchestrator."
+      },
+      {
+        "role": "Connector + Notifications",
+        "count": 10,
+        "routing_lane": "adapter_connector_notification",
+        "allowed_use": "Deliver summaries or status updates after orchestration validation."
+      },
+      {
+        "role": "State/Storage",
+        "count": 8,
+        "routing_lane": "external_state_store",
+        "allowed_use": "Persist memory, files, records, logs, tasks, or workflow state outside the LLM."
+      },
+      {
+        "role": "Input/Output Docs",
+        "count": 2,
+        "routing_lane": "document_io",
+        "allowed_use": "Supply source documents or receive structured notes, drafts, and citations."
+      },
+      {
+        "role": "Connector Dev/API",
+        "count": 2,
+        "routing_lane": "developer_api_connector",
+        "allowed_use": "Support API or connector development under explicit tool contracts and approval policy."
+      }
+    ],
+    "trading_relevance_groups": [
+      {
+        "label": "Low / منخفضة",
+        "count": 138,
+        "routing_note": "Default to non-trading productivity, storage, communication, content, or generic connector use."
+      },
+      {
+        "label": "Medium / متوسطة",
+        "count": 20,
+        "routing_note": "Allow market-adjacent research, monitoring, or business workflow support; require no-execution guardrails."
+      },
+      {
+        "label": "High / عالية",
+        "count": 12,
+        "routing_note": "Treat as finance/trading-sensitive; require analysis-only boundaries, decision blocking, and explicit approval for any external side effect."
+      },
+      {
+        "label": "Header / blank / not classified",
+        "count": 3,
+        "routing_note": "Do not route automatically until classified."
+      }
+    ],
+    "categories": [
+      "services/tools",
+      "travel/leisure",
+      "design/media",
+      "productivity",
+      "market/finance",
+      "CRM/marketing",
+      "learning/lifestyle",
+      "dev/security",
+      "communication",
+      "files/storage",
+      "payments"
+    ]
+  },
+  "gpts_summary": {
+    "total_gpt_rows": 29,
+    "row_level_gpt_names_available": false,
+    "risk_level_groups": [
+      {
+        "risk_level": "منخفض",
+        "count": 10,
+        "default_mode": "assistive_transformation",
+        "allowed_outputs": ["summary", "classification", "draft", "explanation", "structured_extract"]
+      },
+      {
+        "risk_level": "متوسط",
+        "count": 9,
+        "default_mode": "reviewed_analysis",
+        "allowed_outputs": ["analysis", "scenario_options", "checklist", "structured_json"],
+        "required_controls": ["validation", "logging"]
+      },
+      {
+        "risk_level": "مرتفع",
+        "count": 4,
+        "default_mode": "guarded_analysis_only",
+        "allowed_outputs": ["risk_factors", "scenario_map", "questions_for_human"],
+        "required_controls": ["decision_block", "no_execution", "receipt"]
+      },
+      {
+        "risk_level": "مرتفع جدًا",
+        "count": 4,
+        "default_mode": "restricted_analysis_only",
+        "allowed_outputs": ["non_actionable_risk_review", "guardrail_check", "human_review_prompt"],
+        "required_controls": ["decision_block", "no_execution", "approval_policy_review", "receipt"]
+      },
+      {
+        "risk_level": "متغير",
+        "count": 2,
+        "default_mode": "context_dependent",
+        "allowed_outputs": ["classification_pending", "guardrail_recommendation"],
+        "required_controls": ["risk_reclassification_before_use"]
+      }
+    ],
+    "decision_blocked_groups": [
+      {
+        "label": "نعم",
+        "count": 18,
+        "routing_rule": "GPT may transform or analyze information but must not recommend or perform decisions."
+      },
+      {
+        "label": "لا",
+        "count": 9,
+        "routing_rule": "GPT may assist within its tool contract, still subject to logging and external side-effect approval."
+      },
+      {
+        "label": "حسب الضبط",
+        "count": 2,
+        "routing_rule": "Decision boundary depends on configuration; require explicit mode selection before use."
+      }
+    ],
+    "trading_like_gpt_boundary": "GPT use modes must preserve analysis/scenario-only boundaries for trading-like GPTs and must never turn GPTs into execution decision makers."
+  },
+  "workflow_templates": [
+    {
+      "workflow_id": "wf-template-trading-digest-v1",
+      "name": "Trading Digest",
+      "input": "market/conversation snapshot",
+      "orchestrator": "Make or n8n",
+      "gpt_role": "Transform snapshot into structured analysis JSON.",
+      "output": {
+        "format": "json",
+        "schema": {
+          "bias": "string",
+          "risk": "string",
+          "scenarios": ["string"],
+          "next_questions": ["string"]
+        }
+      },
+      "guardrail": "No entry or exit recommendations. No trading execution. Human decision remains outside the GPT."
+    },
+    {
+      "workflow_id": "wf-template-meeting-to-tasks-v1",
+      "name": "Meeting to Tasks",
+      "input": "meeting transcript",
+      "orchestrator": "Zapier or Make",
+      "gpt_role": "Summarize, extract decisions, and draft task payloads.",
+      "output": "Notion tasks plus Slack summary",
+      "guardrail": "Idempotency and logging required before creating or updating downstream tasks."
+    },
+    {
+      "workflow_id": "wf-template-docs-to-knowledge-v1",
+      "name": "Docs to Knowledge",
+      "input": "docs or PDF",
+      "orchestrator": "n8n",
+      "gpt_role": "Extract structured notes and citations from chunked source material.",
+      "output": "Obsidian or Notion notes",
+      "guardrail": "Chunking and citations required; state and source references remain outside the GPT."
+    }
+  ],
+  "global_guardrails": [
+    "No direct trading decisions.",
+    "No hidden execution.",
+    "No external webhooks, emails, trading actions, scans, credential access, or destructive actions from this parse task.",
+    "State and memory live outside the LLM/GPT.",
+    "Validation, logging, receipts, and guardrails are required for routed workflows.",
+    "Trading and finance GPTs are analysis/scenario-only unless a separate human-approved execution policy exists."
+  ],
+  "receipts": {
+    "source_daily_intake_receipt": "receipt-2026-05-17-daily-intake-cycle-001",
+    "integration_receipt": "receipt-2026-05-17-post-daily-intake-validation-routing-parse-v0"
+  }
+}

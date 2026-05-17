@@ -6,8 +6,8 @@
   "operator": "FATHIYA Kernel",
   "source_manifest": "knowledge/intake/daily/2026-05-17/source_manifest_batch_001.json",
   "source_count": 22,
-  "ingested_count": 21,
-  "pending_count": 1,
+  "ingested_count": 22,
+  "pending_count": 0,
   "themes": [
     "operating_rules_and_constraints",
     "tool_selection_and_routing",
@@ -44,7 +44,8 @@
     "no_external_side_effects": true,
     "no_live_exploit_workflows": true,
     "security_material_scope_aware_only": true,
-    "spreadsheet_parse_deferred": true,
+    "spreadsheet_parse_deferred": false,
+    "spreadsheet_parse_integrated": true,
     "forbidden_actions": [
       "send_email",
       "call_webhook",
@@ -60,7 +61,7 @@
     ]
   },
   "next_steps": [
-    "Structured parse of FATHIYA_Apps_GPTs_Routing_Map_v1.xlsx when tooling supports spreadsheet extraction",
+    "Integrate Apps/GPTs routing status into Command Center UI when a dedicated routing section is approved",
     "Integrate knowledge cards into retrieval indexes for semantic search",
     "Run next daily intake cycle with new operator sources",
     "Update Command Center Daily Intake tab to reflect live batch data"
