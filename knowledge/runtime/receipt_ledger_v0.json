@@ -171,6 +171,19 @@
       "error": null,
       "approval_reference": "internal_autopilot_adr_002",
       "next_step": "add a Command Center Routing Status panel and retrieval-index integration for the routing card"
+    },
+    {
+      "receipt_id": "receipt-2026-05-17-command-center-expansion-v0",
+      "timestamp": "2026-05-17T12:15:00Z",
+      "source_request": "rt-2026-05-17-command-center-expansion-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at fd49d932258935aa35eb552e2c433277d6de9d24 + Daily Intake Cycle 001 artifacts + Apps/GPTs Routing parse artifacts + operations queue/contracts registries",
+      "output_artifact": "src/lib/command-center.ts + src/routes/command-center.tsx + knowledge/audit/FATHIYA_COMMAND_CENTER_EXPANSION_REPORT_v0.md + updated runtime queue + updated receipt ledger + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_repo_ui_expansion_only",
+      "next_step": "Add row-level Apps/GPTs browse/filter views once structured per-row app/GPT exports or workbook contents are committed"
     }
   ],
   "required_receipt_fields": [

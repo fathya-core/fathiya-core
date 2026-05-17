@@ -1,0 +1,33 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-05-17-command-center-expansion-v0",
+  "timestamp": "2026-05-17T12:15:00Z",
+  "source_request": "rt-2026-05-17-command-center-expansion-v0",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "mode": "Command Center expansion",
+  "input_artifact": "main at fd49d932258935aa35eb552e2c433277d6de9d24 + Daily Intake Cycle 001 artifacts + Apps/GPTs Routing parse artifacts + operations queue/contracts registries",
+  "output_artifact": "Expanded Command Center overview + enriched Queue/Receipts/Tools/Intake tabs + knowledge/audit/FATHIYA_COMMAND_CENTER_EXPANSION_REPORT_v0.md + runtime queue entry + receipt ledger entry + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_repo_ui_expansion_only",
+  "task_description": "Expand the FATHIYA Command Center so existing JSON data is visible in one UI, covering Daily Intake, Knowledge Cards, Apps/GPTs Routing, Operations Queue, Tool Contracts, and recent runtime receipts.",
+  "artifacts_created": [
+    "src/lib/command-center.ts",
+    "src/routes/command-center.tsx",
+    "knowledge/audit/FATHIYA_COMMAND_CENTER_EXPANSION_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-05-17-command-center-expansion-v0.json"
+  ],
+  "receipts_surfaced": [
+    "receipt-2026-05-17-daily-intake-cycle-001",
+    "receipt-2026-05-17-post-daily-intake-validation-routing-parse-v0"
+  ],
+  "validation": {
+    "json_parse": "pass",
+    "build": "pass",
+    "lint": "pass"
+  },
+  "next_step": "Add row-level Apps/GPTs browse/filter views once structured per-row app/GPT exports or workbook contents are committed."
+}
