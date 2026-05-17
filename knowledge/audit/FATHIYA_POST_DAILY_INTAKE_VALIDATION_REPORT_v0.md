@@ -89,9 +89,9 @@ No existing routing status section was present. The loader was not expanded in t
 
 | Check | Command | Status | Notes |
 |-------|---------|--------|-------|
-| Knowledge JSON parse | `node --input-type=module JSON.parse over knowledge/**/*.json` | pending final local run | Will be updated after post-commit validation. |
-| Build | `npm run build` | pending final local run | Will be updated after post-commit validation. |
-| Targeted ESLint | `npx eslint src/lib/command-center.ts` | pending final local run | Will be updated after post-commit validation. |
+| Knowledge JSON parse | `node --input-type=module JSON.parse over knowledge/**/*.json` | passed | 53 knowledge JSON files parsed successfully. |
+| Build | `npm run build` | passed | Initial attempt failed because local dependencies were not installed (`vite: not found`). After `npm ci`, build passed with non-blocking Vite chunk-size and Node `punycode` deprecation warnings. |
+| Targeted ESLint | `npx eslint src/lib/command-center.ts` | passed | No issues reported. |
 
 ## Boundaries
 
