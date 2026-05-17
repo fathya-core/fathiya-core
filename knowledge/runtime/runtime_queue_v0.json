@@ -11,7 +11,13 @@
     "Knowledge Queue": {
       "purpose": "Convert sources into vault memory.",
       "default_approval": false,
-      "allowed_outputs": ["raw_archive", "triage_record", "card_candidate", "relation_candidate", "audit_receipt"]
+      "allowed_outputs": [
+        "raw_archive",
+        "triage_record",
+        "card_candidate",
+        "relation_candidate",
+        "audit_receipt"
+      ]
     },
     "Research Queue": {
       "purpose": "Deep synthesis and comparison.",
@@ -238,7 +244,37 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-post-daily-intake-validation-routing-parse-v0.json",
       "next_step": "add a Command Center Routing Status panel and retrieval-index integration for the routing card"
+    },
+    {
+      "id": "rt-2026-05-17-command-center-expansion-v0",
+      "timestamp": "2026-05-17T12:15:00Z",
+      "source": "FATHIYA Command Center Expansion v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Command Center expansion",
+      "input_artifact": "main at fd49d932258935aa35eb552e2c433277d6de9d24 + Daily Intake Cycle 001 artifacts + Apps/GPTs Routing parse artifacts + operations queue/contracts registries",
+      "expected_output": "Expanded Command Center overview + compact intake/cards/routing/operations sections + recent receipt surfacing + audit report + receipt linkage",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-command-center-expansion-v0.json",
+      "next_step": "Add row-level Apps/GPTs browse/filter views once structured per-row app/GPT exports or workbook contents are committed"
     }
   ],
-  "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]
+  "required_entry_fields": [
+    "id",
+    "timestamp",
+    "source",
+    "requested_by",
+    "queue",
+    "adapter",
+    "mode",
+    "input_artifact",
+    "expected_output",
+    "approval_required",
+    "status",
+    "receipt_path",
+    "next_step"
+  ]
 }
