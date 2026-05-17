@@ -191,6 +191,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-autopilot-operations-integration-v0.json",
       "next_step": "merge integration PR into main; close PR #18 and PR #19 as superseded"
+    },
+    {
+      "id": "rt-2026-05-17-fathiya-post-pr20-recovery-validation-v0",
+      "timestamp": "2026-05-17T09:03:43Z",
+      "source": "Post-recovery validation after PR #20 content was recovered directly to main",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Post-PR20 recovery validation",
+      "input_artifact": "main at deae898a51ca60478e8e840b838f9b0e6ac3e3e5 + PR #20 recovery context from Cursor agent bc-153c33ac-cf63-4542-94cf-5b73784bea19",
+      "expected_output": "knowledge/audit/FATHIYA_POST_PR20_RECOVERY_VALIDATION_REPORT_v0.md + appended runtime queue + appended receipt ledger + linked receipt file",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-post-pr20-recovery-validation-v0.json",
+      "next_step": "review and merge validation-only PR; do not perform an agent merge directly to main"
     }
   ],
   "required_entry_fields": ["id", "timestamp", "source", "requested_by", "queue", "adapter", "mode", "input_artifact", "expected_output", "approval_required", "status", "receipt_path", "next_step"]

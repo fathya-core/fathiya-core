@@ -132,6 +132,19 @@
       "error": null,
       "approval_reference": "internal_autopilot_adr_002",
       "next_step": "merge integration PR into main; close PR #18 and PR #19 as superseded"
+    },
+    {
+      "receipt_id": "receipt-2026-05-17-fathiya-post-pr20-recovery-validation-v0",
+      "timestamp": "2026-05-17T09:03:43Z",
+      "source_request": "rt-2026-05-17-fathiya-post-pr20-recovery-validation-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at deae898a51ca60478e8e840b838f9b0e6ac3e3e5 after PR #20 recovery was applied directly to main",
+      "output_artifact": "knowledge/audit/FATHIYA_POST_PR20_RECOVERY_VALIDATION_REPORT_v0.md + runtime queue entry + this ledger entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_validation_only",
+      "next_step": "review and merge validation-only PR; no direct agent merge to main"
     }
   ],
   "required_receipt_fields": [

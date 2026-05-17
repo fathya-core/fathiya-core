@@ -1,0 +1,81 @@
+{
+  "receipt_id": "receipt-2026-05-17-fathiya-post-pr20-recovery-validation-v0",
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "timestamp": "2026-05-17T09:03:43Z",
+  "source_request": "rt-2026-05-17-fathiya-post-pr20-recovery-validation-v0",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "mode": "Post-PR20 recovery validation",
+  "input_artifact": "main at deae898a51ca60478e8e840b838f9b0e6ac3e3e5 after PR #20 content was recovered directly to main by Cursor agent bc-153c33ac-cf63-4542-94cf-5b73784bea19",
+  "output_artifact": "knowledge/audit/FATHIYA_POST_PR20_RECOVERY_VALIDATION_REPORT_v0.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_validation_only",
+  "task_description": "Validate that the PR #20 recovery artifacts are present on main, all JSON under knowledge/ parses, npm run build succeeds, targeted Command Center eslint passes, and runtime queue plus receipt ledger provenance is recorded without merging to main.",
+  "validated_main_commit": "deae898a51ca60478e8e840b838f9b0e6ac3e3e5",
+  "required_files": [
+    {
+      "path": "knowledge/decisions/ADR_002_FATHIYA_AUTOPILOT_INTERNAL_BUILD_MODE.md",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/decisions/ADR_003_FATHIYA_OPERATIONS_AUTOPILOT_MODE.md",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/workflows/daily_intake_workflow_v0.json",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/registries/operations_tool_contracts_v0.json",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/operations/operations_autopilot_queue_v0.json",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/audit/FATHIYA_AUTOPILOT_OPERATIONS_INTEGRATION_REPORT_v0.md",
+      "status": "present"
+    },
+    {
+      "path": "knowledge/audit/FATHIYA_PR20_RECOVERY_NOTE_v0.md",
+      "status": "present"
+    }
+  ],
+  "validation": {
+    "knowledge_json_parse": {
+      "command": "python3 json.loads over knowledge/**/*.json",
+      "files_checked": 34,
+      "status": "passed"
+    },
+    "build": {
+      "command": "npm run build",
+      "status": "passed",
+      "notes": "Initial build attempt failed because dependencies were not installed locally (vite: not found). After npm ci, build passed with non-blocking Vite chunk-size and Node punycode deprecation warnings."
+    },
+    "targeted_command_center_eslint": {
+      "command": "npx eslint src/lib/command-center.ts src/routes/command-center.tsx",
+      "status": "passed",
+      "notes": "Validation PR did not modify Command Center files; targeted check was run for assurance."
+    }
+  },
+  "changed_files": [
+    "knowledge/audit/FATHIYA_POST_PR20_RECOVERY_VALIDATION_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-05-17-fathiya-post-pr20-recovery-validation-v0.json"
+  ],
+  "blockers": [],
+  "non_execution_boundaries": {
+    "merge_to_main": "not_performed",
+    "webhooks": "none_sent",
+    "email": "none_sent",
+    "trading": "none_executed",
+    "scanning": "none_executed",
+    "credentials": "none_exposed",
+    "destructive_actions": "none_performed"
+  },
+  "next_step": "review and merge validation-only PR if accepted; do not perform an agent merge directly to main",
+  "final_recommendation": "Merge the validation-only PR after review to record that PR #20 direct-to-main recovery is present, JSON-valid, build-valid, eslint-valid, and covered by runtime provenance."
+}
