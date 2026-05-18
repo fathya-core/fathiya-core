@@ -7,7 +7,7 @@ import {
   type ModelSlot,
   type OpenRouterMessage,
   type OpenRouterResponse,
-} from "./openrouter.ts";
+} from "./openrouter";
 
 // ─── Task Classes ─────────────────────────────────────────────────────────────
 export type TaskClass =
