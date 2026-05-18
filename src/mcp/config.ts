@@ -2,9 +2,9 @@
 
 export const MCP_CONFIG = {
   // Server identity
-  server_name: 'fathiya-core-mcp',
-  server_version: '0.1.0',
-  protocol_version: '2024-11-05',
+  server_name: "fathiya-core-mcp",
+  server_version: "0.1.0",
+  protocol_version: "2024-11-05",
 
   // Limits
   max_items_per_call: 10,
@@ -20,7 +20,7 @@ export const MCP_CONFIG = {
 
   // Audit
   audit_enabled: true,
-  audit_path: 'knowledge/audit',
+  audit_path: "knowledge/audit",
 
   // Forbidden output patterns (Crypto Quality Gate)
   forbidden_output_patterns: [
@@ -40,18 +40,16 @@ export const MCP_CONFIG = {
   ],
 
   // Allowed output patterns (Crypto Quality Gate)
-  allowed_signal_directions: [
-    'supportive', 'negative', 'mixed', 'unclear', 'noise'
-  ],
+  allowed_signal_directions: ["supportive", "negative", "mixed", "unclear", "noise"],
 
   // Knowledge paths
-  knowledge_base_path: 'knowledge',
-  cards_path: 'knowledge/cards',
-  crypto_path: 'knowledge/crypto',
-  raw_path: 'knowledge/raw',
-  decisions_path: 'knowledge/decisions',
-  retrieval_path: 'knowledge/retrieval',
-  awareness_state_file: 'knowledge/FATHIYA_AWARENESS_STATE.json',
+  knowledge_base_path: "knowledge",
+  cards_path: "knowledge/cards",
+  crypto_path: "knowledge/crypto",
+  raw_path: "knowledge/raw",
+  decisions_path: "knowledge/decisions",
+  retrieval_path: "knowledge/retrieval",
+  awareness_state_file: "knowledge/FATHIYA_AWARENESS_STATE.json",
 } as const;
 
 export type MCPConfig = typeof MCP_CONFIG;

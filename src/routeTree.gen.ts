@@ -13,6 +13,7 @@ import { Route as CommandCenterRouteImport } from './routes/command-center'
 import { Route as AiRunsRouteImport } from './routes/ai-runs'
 import { Route as AiConsoleRouteImport } from './routes/ai-console'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiArtifactsIndexRouteImport } from './routes/api/artifacts.index'
 import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
 import { Route as ApiArtifactsReadRouteImport } from './routes/api/artifacts.read'
@@ -40,6 +41,11 @@ const AiConsoleRoute = AiConsoleRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiArtifactsIndexRoute = ApiArtifactsIndexRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
+    | '/api/mcp'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
+    | '/api/mcp'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
+    | '/api/mcp'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   AiConsoleRoute: typeof AiConsoleRoute
   AiRunsRoute: typeof AiRunsRoute
   CommandCenterRoute: typeof CommandCenterRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
   ApiArtifactsReadRoute: typeof ApiArtifactsReadRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/artifacts/': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiConsoleRoute: AiConsoleRoute,
   AiRunsRoute: AiRunsRoute,
   CommandCenterRoute: CommandCenterRoute,
+  ApiMcpRoute: ApiMcpRoute,
   ApiAiGenerateRoute: ApiAiGenerateRoute,
   ApiArtifactsReadRoute: ApiArtifactsReadRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,

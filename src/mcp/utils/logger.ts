@@ -1,7 +1,7 @@
 // FATHIYA CORE — MCP Execution Logger v0
 // كل استدعاء MCP يُسجَّل في knowledge/audit
 
-import type { MCPToolResult } from '../types.ts';
+import type { MCPToolResult } from "../types.ts";
 
 export interface MCPAuditEntry {
   receipt_id: string;
@@ -18,7 +18,10 @@ export interface MCPAuditEntry {
 export function generateReceiptId(tool: string): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  const toolSlug = tool.replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase();
+  const toolSlug = tool
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 8)
+    .toUpperCase();
   return `MCP-${toolSlug}-${ts}-${rand}`;
 }
 
@@ -34,7 +37,7 @@ export function buildAuditEntry<T>(result: MCPToolResult<T>): MCPAuditEntry {
     error: result.error,
     summary: result.success
       ? `Tool "${result.tool}" executed successfully.`
-      : `Tool "${result.tool}" failed: ${result.error ?? 'unknown error'}`,
+      : `Tool "${result.tool}" failed: ${result.error ?? "unknown error"}`,
   };
 }
 
@@ -46,20 +49,22 @@ export function formatAuditMarkdown(entry: MCPAuditEntry): string {
     `- **Receipt ID:** ${entry.receipt_id}`,
     `- **Timestamp:** ${entry.timestamp}`,
     `- **Tool:** ${entry.tool}`,
-    `- **Success:** ${entry.success ? '✅' : '❌'}`,
-    `- **Quality Gate:** ${entry.quality_gate_passed === undefined ? 'N/A' : entry.quality_gate_passed ? '✅ Passed' : '❌ Failed'}`,
-    `- **Requires Approval:** ${entry.requires_approval ? '⚠️ Yes' : 'No'}`,
-    entry.error ? `- **Error:** ${entry.error}` : '',
+    `- **Success:** ${entry.success ? "✅" : "❌"}`,
+    `- **Quality Gate:** ${entry.quality_gate_passed === undefined ? "N/A" : entry.quality_gate_passed ? "✅ Passed" : "❌ Failed"}`,
+    `- **Requires Approval:** ${entry.requires_approval ? "⚠️ Yes" : "No"}`,
+    entry.error ? `- **Error:** ${entry.error}` : "",
     ``,
     `## Summary`,
     entry.summary,
-  ].filter(line => line !== undefined).join('\n');
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
 }
 
 // ─── Console Logger (for development) ───────────────────────────────────────────
 export function logMCPCall(tool: string, success: boolean, note?: string): void {
-  const icon = success ? '✅' : '❌';
-  const msg = `[FATHIYA MCP] ${icon} ${tool}${note ? ` — ${note}` : ''}`;
+  const icon = success ? "✅" : "❌";
+  const msg = `[FATHIYA MCP] ${icon} ${tool}${note ? ` — ${note}` : ""}`;
   if (success) {
     console.log(msg);
   } else {

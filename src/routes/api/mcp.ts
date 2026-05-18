@@ -124,7 +124,17 @@ export const Route = createFileRoute("/api/mcp")({
           // قواعد Quality Gate
           quality_gate: {
             enforced: true,
-            forbidden: ["buy", "sell", "enter", "exit", "long", "short", "leverage", "target price as instruction", "stop loss as instruction"],
+            forbidden: [
+              "buy",
+              "sell",
+              "enter",
+              "exit",
+              "long",
+              "short",
+              "leverage",
+              "target price as instruction",
+              "stop loss as instruction",
+            ],
             allowed_signal_directions: ["supportive", "negative", "mixed", "unclear", "noise"],
           },
 
@@ -148,19 +158,19 @@ export const Route = createFileRoute("/api/mcp")({
         try {
           body = (await request.json()) as MCPRequest;
         } catch {
-          return new Response(
-            JSON.stringify({ success: false, error: "Invalid JSON body" }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ success: false, error: "Invalid JSON body" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         const { tool, params = {} } = body;
 
         if (!tool) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Missing 'tool' field" }),
-            { status: 400, headers: { "Content-Type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ success: false, error: "Missing 'tool' field" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         let result;
@@ -175,18 +185,18 @@ export const Route = createFileRoute("/api/mcp")({
           case "knowledge_search":
             result = tool_knowledge_search(
               retrievalIndexRaw as never,
-              params as { query?: string; category?: string; type?: string; limit?: number }
+              params as { query?: string; category?: string; type?: string; limit?: number },
             );
             break;
           case "knowledge_list_cards":
             result = tool_knowledge_list_cards(
               retrievalIndexRaw as never,
-              params as { category?: string; type?: string; status?: string; limit?: number }
+              params as { category?: string; type?: string; status?: string; limit?: number },
             );
             break;
           case "intake_submit_raw":
             result = tool_intake_submit_raw(
-              params as { content?: string; source?: string; category?: string }
+              params as { content?: string; source?: string; category?: string },
             );
             break;
           case "crypto_create_signal_card":
@@ -204,7 +214,7 @@ export const Route = createFileRoute("/api/mcp")({
                 success: false,
                 error: `Unknown tool: "${tool}". Available: ${Object.keys(TOOL_REGISTRY).join(", ")}.`,
               }),
-              { status: 404, headers: { "Content-Type": "application/json" } }
+              { status: 404, headers: { "Content-Type": "application/json" } },
             );
         }
 

@@ -13,17 +13,38 @@ export interface MCPToolResult<T = unknown> {
 }
 
 export type KnowledgeCardType =
-  | 'article' | 'tool' | 'skill' | 'signal' | 'risk'
-  | 'playbook' | 'target' | 'report' | 'decision' | 'workflow' | 'narrative';
+  | "article"
+  | "tool"
+  | "skill"
+  | "signal"
+  | "risk"
+  | "playbook"
+  | "target"
+  | "report"
+  | "decision"
+  | "workflow"
+  | "narrative";
 
-export type CardStatus = 'draft' | 'review' | 'approved' | 'archived' | 'rejected';
+export type CardStatus = "draft" | "review" | "approved" | "archived" | "rejected";
 
-export type SignalDirection = 'supportive' | 'negative' | 'mixed' | 'unclear' | 'noise';
+export type SignalDirection = "supportive" | "negative" | "mixed" | "unclear" | "noise";
 
 export type CryptoSector =
-  | 'Macro' | 'Bitcoin' | 'Ethereum' | 'Solana' | 'AI tokens'
-  | 'DeFi' | 'RWA' | 'Memecoins' | 'Stablecoins' | 'Regulation'
-  | 'Exchange Risk' | 'Security / Exploit' | 'On-chain Flow' | 'Sentiment' | 'Noise';
+  | "Macro"
+  | "Bitcoin"
+  | "Ethereum"
+  | "Solana"
+  | "AI tokens"
+  | "DeFi"
+  | "RWA"
+  | "Memecoins"
+  | "Stablecoins"
+  | "Regulation"
+  | "Exchange Risk"
+  | "Security / Exploit"
+  | "On-chain Flow"
+  | "Sentiment"
+  | "Noise";
 
 export interface KnowledgeCard {
   id: string;
@@ -38,8 +59,8 @@ export interface KnowledgeCard {
   summary: string;
   core_idea: string;
   why_it_matters: string;
-  actionability: 'none' | 'low' | 'medium' | 'high';
-  risk_level: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  actionability: "none" | "low" | "medium" | "high";
+  risk_level: "none" | "low" | "medium" | "high" | "critical";
   confidence: number;
   related_tools?: string[];
   related_domains?: string[];
@@ -60,7 +81,7 @@ export interface SignalCard {
   sector: CryptoSector;
   event_type: string;
   signal_direction: SignalDirection;
-  time_horizon: 'immediate' | 'short' | 'medium' | 'long';
+  time_horizon: "immediate" | "short" | "medium" | "long";
   impact_score: number;
   confidence_score: number;
   what_changed: string;
@@ -87,7 +108,7 @@ export interface CoinCard {
   liquidity_profile: string;
   volatility_profile: string;
   dependency_map: string[];
-  macro_sensitivity: 'low' | 'medium' | 'high';
+  macro_sensitivity: "low" | "medium" | "high";
   security_risks: string[];
   regulatory_risks: string[];
   watch_signals: string[];
@@ -103,7 +124,7 @@ export interface DecisionCard {
   alternatives_rejected: string[];
   risk: string;
   owner: string;
-  status: 'active' | 'superseded' | 'archived';
+  status: "active" | "superseded" | "archived";
   review_date?: string;
 }
 
@@ -114,7 +135,7 @@ export interface ToolCard {
   not_for: string[];
   inputs: string[];
   outputs: string[];
-  risk_level: 'low' | 'medium' | 'high';
+  risk_level: "low" | "medium" | "high";
   requires_approval: boolean;
   adapter_type: string;
   fallback: string;
@@ -150,7 +171,7 @@ export interface ApprovalQueueItem {
   tool_called: string;
   payload: unknown;
   quality_gate_result: QualityGateResult;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   reviewed_at?: string;
   reviewer_note?: string;
 }
@@ -160,7 +181,7 @@ export interface IntakeItem {
   raw_content: string;
   source: string;
   submitted_at: string;
-  clean_status: 'clean' | 'partial' | 'corrupted' | 'duplicate' | 'needs_review';
+  clean_status: "clean" | "partial" | "corrupted" | "duplicate" | "needs_review";
   classified_as?: KnowledgeCardType;
   category?: string;
   tags?: string[];
@@ -170,7 +191,7 @@ export interface MCPToolDefinition {
   name: string;
   description: string;
   inputSchema: {
-    type: 'object';
+    type: "object";
     properties: Record<string, unknown>;
     required?: string[];
   };
