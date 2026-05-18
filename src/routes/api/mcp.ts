@@ -19,8 +19,8 @@ import {
 import awarenessStateRaw from "../../../knowledge/FATHIYA_AWARENESS_STATE.json";
 import retrievalIndexRaw from "../../../knowledge/retrieval_index_summary.json";
 
-// ─── Tool Schemas (for manifest) ───────────────────────────────────────────────────────
-const TOOL_SCHEMAS: Record<string, object> = {
+// ─── Tool Schemas (for manifest) ──────────────────────────────────────────────────────
+const TOOL_SCHEMAS: Record<string, Record<string, unknown>> = {
   ping: {},
   knowledge_get_awareness_state: {},
   knowledge_search: {
@@ -68,7 +68,6 @@ export const Route = createFileRoute("/api/mcp")({
   server: {
     handlers: {
       // GET /api/mcp — Tool manifest + server info
-      // يستخدمه Zapier لاكتشاف الأدوات
       GET: async () => {
         const manifest = {
           server: "fathiya-core-mcp",
@@ -80,7 +79,6 @@ export const Route = createFileRoute("/api/mcp")({
             "See supported_modes for current capabilities.",
           ].join(" "),
 
-          // وضوح كامل عن ما هو مدعوم وما ليس
           supported_modes: {
             webhook_dispatcher_v0: true,
             mcp_protocol_full: false,
@@ -92,7 +90,6 @@ export const Route = createFileRoute("/api/mcp")({
             tool_discovery_protocol: false,
           },
 
-          // مسار v1
           future_mcp_protocol_layer: {
             planned: true,
             features: [
@@ -105,14 +102,12 @@ export const Route = createFileRoute("/api/mcp")({
             ],
           },
 
-          // الأدوات المتاحة
           tools: Object.entries(TOOL_REGISTRY).map(([name, meta]) => ({
             name,
             ...meta,
             schema: TOOL_SCHEMAS[name] ?? {},
           })),
 
-          // كيفية الاستخدام مع Zapier
           zapier_usage: {
             action: "Webhooks by Zapier",
             method: "POST",
@@ -121,7 +116,6 @@ export const Route = createFileRoute("/api/mcp")({
             example: { tool: "ping" },
           },
 
-          // قواعد Quality Gate
           quality_gate: {
             enforced: true,
             forbidden: [
@@ -138,7 +132,6 @@ export const Route = createFileRoute("/api/mcp")({
             allowed_signal_directions: ["supportive", "negative", "mixed", "unclear", "noise"],
           },
 
-          // OpenRouter model routing
           model_routing: {
             enabled: true,
             registry: "knowledge/registries/model_routing_registry_v0.json",
@@ -167,10 +160,10 @@ export const Route = createFileRoute("/api/mcp")({
         const { tool, params = {} } = body;
 
         if (!tool) {
-          return new Response(JSON.stringify({ success: false, error: "Missing 'tool' field" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ success: false, error: "Missing 'tool' field" }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
         }
 
         let result;
