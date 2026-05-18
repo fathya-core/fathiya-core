@@ -1,0 +1,121 @@
+{
+  "schema_version": "model_routing_registry_v0",
+  "description": "FATHIYA CORE — OpenRouter multi-model routing contract. Maps task classes to model slots. No direct trading decisions allowed.",
+  "last_updated": "2026-05-18",
+  "status": "active",
+
+  "model_slots": {
+    "default": {
+      "env_var": "OPENROUTER_DEFAULT_MODEL",
+      "fallback": "openai/gpt-4o-mini",
+      "purpose": "General fallback for unclassified tasks"
+    },
+    "fast": {
+      "env_var": "OPENROUTER_FAST_MODEL",
+      "fallback": "openai/gpt-4o-mini",
+      "purpose": "Fast tasks: formatting, classification, keyword extraction"
+    },
+    "reasoning": {
+      "env_var": "OPENROUTER_REASONING_MODEL",
+      "fallback": "openai/o3-mini",
+      "purpose": "Complex reasoning: scenario analysis, planning, crypto intelligence"
+    },
+    "critic": {
+      "env_var": "OPENROUTER_CRITIC_MODEL",
+      "fallback": "anthropic/claude-3-5-sonnet",
+      "purpose": "Critique: quality gate, failure modes, risk review, bias detection"
+    },
+    "structured": {
+      "env_var": "OPENROUTER_STRUCTURED_MODEL",
+      "fallback": "openai/gpt-4o-mini",
+      "purpose": "Structured output: JSON extraction, schema filling"
+    }
+  },
+
+  "task_classes": [
+    {
+      "class": "formatting",
+      "slot": "fast",
+      "description": "Small text transforms, markdown cleanup, output formatting",
+      "requires_receipt": false,
+      "requires_approval": false
+    },
+    {
+      "class": "knowledge_search",
+      "slot": "fast",
+      "description": "Keyword matching, tag extraction, retrieval ranking",
+      "requires_receipt": false,
+      "requires_approval": false
+    },
+    {
+      "class": "intake_classification",
+      "slot": "fast",
+      "description": "Classify raw content: category, type, tags",
+      "requires_receipt": true,
+      "requires_approval": false
+    },
+    {
+      "class": "crypto_analysis",
+      "slot": "reasoning",
+      "description": "Scenario building, narrative analysis, signal card generation",
+      "requires_receipt": true,
+      "requires_approval": true,
+      "quality_gate_required": true
+    },
+    {
+      "class": "quality_gate",
+      "slot": "critic",
+      "description": "Detect forbidden trading commands, FOMO, certainty claims",
+      "requires_receipt": true,
+      "requires_approval": false
+    },
+    {
+      "class": "critic_review",
+      "slot": "critic",
+      "description": "Failure modes, hidden risks, bias review, invalidation conditions",
+      "requires_receipt": true,
+      "requires_approval": true
+    },
+    {
+      "class": "structured_extraction",
+      "slot": "structured",
+      "description": "JSON extraction, schema filling from unstructured text",
+      "requires_receipt": true,
+      "requires_approval": false
+    }
+  ],
+
+  "fallback_rules": [
+    "If model slot env var is missing, use fallback model.",
+    "If OpenRouter API key is missing, return error with receipt_id.",
+    "If task class is unknown, route to default slot.",
+    "If quality_gate fails, block output and return blocked receipt."
+  ],
+
+  "quality_gate_rules": {
+    "forbidden_outputs": [
+      "buy", "sell", "enter", "exit", "long", "short",
+      "leverage", "target price as instruction", "stop loss as instruction",
+      "\u0627\u0634\u062a\u0631\u064a", "\u0628\u0639", "\u0627\u062f\u062e\u0644", "\u0627\u062e\u0631\u062c",
+      "\u0636\u0627\u0631\u0628 \u0627\u0644\u0622\u0646", "\u0627\u0641\u062a\u062d \u0635\u0641\u0642\u0629", "\u0647\u062f\u0641 \u0633\u0639\u0631\u064a \u0642\u0637\u0639\u064a"
+    ],
+    "allowed_signal_directions": [
+      "supportive", "negative", "mixed", "unclear", "noise"
+    ],
+    "allowed_outputs": [
+      "analysis", "scenario", "risk", "invalidation_conditions",
+      "source_backed_signal_card", "hypothesis", "watchlist_item"
+    ]
+  },
+
+  "receipt_requirement": {
+    "all_llm_calls": true,
+    "format": "OR-{SLOT}-{TIMESTAMP_BASE36}",
+    "stored_in": "knowledge/audit/"
+  },
+
+  "no_direct_trading_decision_rule": {
+    "enforced": true,
+    "description": "No model output may contain a direct trading decision. All crypto outputs must pass quality_gate before being stored or returned."
+  }
+}
