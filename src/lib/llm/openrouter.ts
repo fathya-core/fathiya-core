@@ -4,22 +4,22 @@
 
 // ─── Env Contract ───────────────────────────────────────────────────────────────
 // Required env vars (set in .env / deployment secrets):
-//   OPENROUTER_API_KEY           — your OpenRouter API key
-//   OPENROUTER_BASE_URL          — default: https://openrouter.ai/api/v1
-//   OPENROUTER_DEFAULT_MODEL     — fallback model
-//   OPENROUTER_FAST_MODEL        — fast / formatting / small transforms
-//   OPENROUTER_REASONING_MODEL   — reasoning / planning / complex analysis
-//   OPENROUTER_CRITIC_MODEL      — critique / failure modes / risk review
-//   OPENROUTER_STRUCTURED_MODEL  — JSON / schema / extraction
+//   VITE_OPENROUTER_API_KEY           — your OpenRouter API key
+//   VITE_OPENROUTER_BASE_URL          — default: https://openrouter.ai/api/v1
+//   VITE_OPENROUTER_DEFAULT_MODEL     — fallback model
+//   VITE_OPENROUTER_FAST_MODEL        — fast / formatting / small transforms
+//   VITE_OPENROUTER_REASONING_MODEL   — reasoning / planning / complex analysis
+//   VITE_OPENROUTER_CRITIC_MODEL      — critique / failure modes / risk review
+//   VITE_OPENROUTER_STRUCTURED_MODEL  — JSON / schema / extraction
 
 export const OPENROUTER_ENV = {
-  API_KEY: "OPENROUTER_API_KEY",
-  BASE_URL: "OPENROUTER_BASE_URL",
-  DEFAULT_MODEL: "OPENROUTER_DEFAULT_MODEL",
-  FAST_MODEL: "OPENROUTER_FAST_MODEL",
-  REASONING_MODEL: "OPENROUTER_REASONING_MODEL",
-  CRITIC_MODEL: "OPENROUTER_CRITIC_MODEL",
-  STRUCTURED_MODEL: "OPENROUTER_STRUCTURED_MODEL",
+  API_KEY: "VITE_OPENROUTER_API_KEY",
+  BASE_URL: "VITE_OPENROUTER_BASE_URL",
+  DEFAULT_MODEL: "VITE_OPENROUTER_DEFAULT_MODEL",
+  FAST_MODEL: "VITE_OPENROUTER_FAST_MODEL",
+  REASONING_MODEL: "VITE_OPENROUTER_REASONING_MODEL",
+  CRITIC_MODEL: "VITE_OPENROUTER_CRITIC_MODEL",
+  STRUCTURED_MODEL: "VITE_OPENROUTER_STRUCTURED_MODEL",
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -50,17 +50,18 @@ export interface OpenRouterResponse {
 
 // ─── Resolve model from env ──────────────────────────────────────────────────────
 export function resolveModel(slot: ModelSlot): string {
+  const env = import.meta.env;
   const slotMap: Record<ModelSlot, string> = {
-    default: process.env[OPENROUTER_ENV.DEFAULT_MODEL] ?? "openai/gpt-4o-mini",
-    fast: process.env[OPENROUTER_ENV.FAST_MODEL] ?? "openai/gpt-4o-mini",
-    reasoning: process.env[OPENROUTER_ENV.REASONING_MODEL] ?? "openai/o3-mini",
-    critic: process.env[OPENROUTER_ENV.CRITIC_MODEL] ?? "anthropic/claude-3-5-sonnet",
-    structured: process.env[OPENROUTER_ENV.STRUCTURED_MODEL] ?? "openai/gpt-4o-mini",
+    default: (env[OPENROUTER_ENV.DEFAULT_MODEL] as string) ?? "openai/gpt-4o-mini",
+    fast: (env[OPENROUTER_ENV.FAST_MODEL] as string) ?? "openai/gpt-4o-mini",
+    reasoning: (env[OPENROUTER_ENV.REASONING_MODEL] as string) ?? "openai/o3-mini",
+    critic: (env[OPENROUTER_ENV.CRITIC_MODEL] as string) ?? "anthropic/claude-3-5-sonnet",
+    structured: (env[OPENROUTER_ENV.STRUCTURED_MODEL] as string) ?? "openai/gpt-4o-mini",
   };
   return slotMap[slot];
 }
 
-// ─── Core call ──────────────────────────────────────────────────────────────────
+// ─── Core call ─────────────────────────────────────────────────────────────────
 export async function callOpenRouter(
   slot: ModelSlot,
   messages: OpenRouterMessage[],
@@ -70,8 +71,9 @@ export async function callOpenRouter(
     json_mode?: boolean;
   },
 ): Promise<OpenRouterResponse> {
-  const apiKey = process.env[OPENROUTER_ENV.API_KEY];
-  const baseUrl = process.env[OPENROUTER_ENV.BASE_URL] ?? "https://openrouter.ai/api/v1";
+  const env = import.meta.env;
+  const apiKey = env[OPENROUTER_ENV.API_KEY] as string | undefined;
+  const baseUrl = (env[OPENROUTER_ENV.BASE_URL] as string | undefined) ?? "https://openrouter.ai/api/v1";
   const model = resolveModel(slot);
 
   const receiptId = `OR-${slot.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
@@ -92,7 +94,7 @@ export async function callOpenRouter(
     messages,
     temperature: opts?.temperature ?? 0.3,
     max_tokens: opts?.max_tokens ?? 2048,
-    ...(opts?.json_mode ? { response_format: { type: "json_object" } } : {}),
+    ...(opts?.json_mode ? { response_format: { type: "json_object" as const } } : {}),
   };
 
   try {
