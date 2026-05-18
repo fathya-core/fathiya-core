@@ -1,3 +1,7 @@
+// FATHIYA CORE — MCP API Route v0
+// /api/mcp في v0 هو: Webhook-compatible tool endpoint
+// وليس MCP protocol كامل — انظر supported_modes في GET response
+
 import { createFileRoute } from "@tanstack/react-router";
 import {
   tool_ping,
@@ -12,33 +16,134 @@ import {
   type MCPRequest,
 } from "@/lib/mcp/tools";
 
-// ─── Knowledge files (imported at build time) ────────────────────────────────
 import awarenessStateRaw from "../../../knowledge/FATHIYA_AWARENESS_STATE.json";
 import retrievalIndexRaw from "../../../knowledge/retrieval_index_summary.json";
 
+// ─── Tool Schemas (for manifest) ───────────────────────────────────────────────────────
+const TOOL_SCHEMAS: Record<string, object> = {
+  ping: {},
+  knowledge_get_awareness_state: {},
+  knowledge_search: {
+    query: { type: "string", required: true },
+    category: { type: "string", required: false },
+    type: { type: "string", required: false },
+    limit: { type: "number", required: false, default: 5, max: 10 },
+  },
+  knowledge_list_cards: {
+    category: { type: "string", required: false },
+    type: { type: "string", required: false },
+    status: { type: "string", required: false },
+    limit: { type: "number", required: false, default: 10, max: 10 },
+  },
+  intake_submit_raw: {
+    content: { type: "string", required: true, max_length: 50000 },
+    source: { type: "string", required: false, default: "zapier" },
+    category: { type: "string", required: false },
+  },
+  crypto_create_signal_card: {
+    source: { type: "string", required: true },
+    asset: { type: "string", required: true },
+    sector: { type: "string", required: true },
+    what_changed: { type: "string", required: true },
+    signal_direction: {
+      type: "string",
+      required: true,
+      enum: ["supportive", "negative", "mixed", "unclear", "noise"],
+    },
+    impact_score: { type: "number", required: false, min: 0, max: 10 },
+    confidence_score: { type: "number", required: false, min: 0, max: 1 },
+    hidden_risk: { type: "string", required: true },
+    invalidation_conditions: { type: "array", required: false },
+    bullish_scenario: { type: "string", required: false },
+    bearish_scenario: { type: "string", required: false },
+  },
+  queue_get_pending: {},
+  quality_gate_check: {
+    text: { type: "string", required: true },
+  },
+};
+
 // ─── Route ───────────────────────────────────────────────────────────────────
-export const Route = createFileRoute("/api/mcp")({ 
+export const Route = createFileRoute("/api/mcp")({
   server: {
     handlers: {
-      // GET /api/mcp — returns tool registry (for Zapier discovery)
+      // GET /api/mcp — Tool manifest + server info
+      // يستخدمه Zapier لاكتشاف الأدوات
       GET: async () => {
-        return new Response(
-          JSON.stringify({
-            server: "fathiya-core-mcp",
-            version: "0.1.0",
-            description: "FATHIYA CORE MCP Server — Knowledge Vault + Quality Gate",
-            tools: Object.entries(TOOL_REGISTRY).map(([name, meta]) => ({
-              name,
-              ...meta,
-            })),
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        );
+        const manifest = {
+          server: "fathiya-core-mcp",
+          version: "0.1.0",
+          description: [
+            "FATHIYA CORE MCP Server v0.",
+            "This endpoint is a Webhook-compatible tool dispatcher.",
+            "It is NOT a full MCP protocol implementation.",
+            "See supported_modes for current capabilities.",
+          ].join(" "),
+
+          // وضوح كامل عن ما هو مدعوم وما ليس
+          supported_modes: {
+            webhook_dispatcher_v0: true,
+            mcp_protocol_full: false,
+            openrouter_model_routing: true,
+            json_rpc_2_0: false,
+            streamable_http: false,
+            mcp_client_zapier_native: false,
+            auth_boundary: false,
+            tool_discovery_protocol: false,
+          },
+
+          // مسار v1
+          future_mcp_protocol_layer: {
+            planned: true,
+            features: [
+              "JSON-RPC 2.0 envelope: { jsonrpc, id, method, params }",
+              "tools/list method",
+              "tools/call method",
+              "Auth: Bearer token / API key header",
+              "Streamable HTTP (SSE) for long-running tools",
+              "MCP Client by Zapier native compatibility",
+            ],
+          },
+
+          // الأدوات المتاحة
+          tools: Object.entries(TOOL_REGISTRY).map(([name, meta]) => ({
+            name,
+            ...meta,
+            schema: TOOL_SCHEMAS[name] ?? {},
+          })),
+
+          // كيفية الاستخدام مع Zapier
+          zapier_usage: {
+            action: "Webhooks by Zapier",
+            method: "POST",
+            url: "https://your-domain.com/api/mcp",
+            body_format: { tool: "<tool_name>", params: { "...": "..." } },
+            example: { tool: "ping" },
+          },
+
+          // قواعد Quality Gate
+          quality_gate: {
+            enforced: true,
+            forbidden: ["buy", "sell", "enter", "exit", "long", "short", "leverage", "target price as instruction", "stop loss as instruction"],
+            allowed_signal_directions: ["supportive", "negative", "mixed", "unclear", "noise"],
+          },
+
+          // OpenRouter model routing
+          model_routing: {
+            enabled: true,
+            registry: "knowledge/registries/model_routing_registry_v0.json",
+            slots: ["default", "fast", "reasoning", "critic", "structured"],
+          },
+        };
+
+        return new Response(JSON.stringify(manifest, null, 2), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
       },
 
-      // POST /api/mcp — main tool dispatcher
+      // POST /api/mcp — Tool dispatcher
       POST: async ({ request }) => {
-        // ── Parse body ──
         let body: MCPRequest;
         try {
           body = (await request.json()) as MCPRequest;
@@ -58,52 +163,41 @@ export const Route = createFileRoute("/api/mcp")({
           );
         }
 
-        // ── Dispatch ──
         let result;
 
         switch (tool) {
           case "ping":
             result = tool_ping();
             break;
-
           case "knowledge_get_awareness_state":
             result = tool_knowledge_get_awareness_state(awarenessStateRaw);
             break;
-
           case "knowledge_search":
             result = tool_knowledge_search(
               retrievalIndexRaw as never,
               params as { query?: string; category?: string; type?: string; limit?: number }
             );
             break;
-
           case "knowledge_list_cards":
             result = tool_knowledge_list_cards(
               retrievalIndexRaw as never,
               params as { category?: string; type?: string; status?: string; limit?: number }
             );
             break;
-
           case "intake_submit_raw":
             result = tool_intake_submit_raw(
               params as { content?: string; source?: string; category?: string }
             );
             break;
-
           case "crypto_create_signal_card":
             result = tool_crypto_create_signal_card(params as never);
             break;
-
           case "queue_get_pending":
             result = tool_queue_get_pending({ items: [] });
             break;
-
           case "quality_gate_check":
-            result = tool_quality_gate_check(
-              params as { text?: string }
-            );
+            result = tool_quality_gate_check(params as { text?: string });
             break;
-
           default:
             return new Response(
               JSON.stringify({
