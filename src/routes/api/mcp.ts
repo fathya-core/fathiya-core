@@ -161,8 +161,14 @@ export const Route = createFileRoute("/api/mcp")({
 
         if (!tool) {
           return new Response(
-            JSON.stringify({ success: false, error: "Missing 'tool' field" }),
-            { status: 400, headers: { "Content-Type": "application/json" } },
+            JSON.stringify({
+              success: false,
+              error: "Missing 'tool' field",
+            }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            },
           );
         }
 

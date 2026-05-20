@@ -73,7 +73,8 @@ export async function callOpenRouter(
 ): Promise<OpenRouterResponse> {
   const env = import.meta.env;
   const apiKey = env[OPENROUTER_ENV.API_KEY] as string | undefined;
-  const baseUrl = (env[OPENROUTER_ENV.BASE_URL] as string | undefined) ?? "https://openrouter.ai/api/v1";
+  const baseUrl =
+    (env[OPENROUTER_ENV.BASE_URL] as string | undefined) ?? "https://openrouter.ai/api/v1";
   const model = resolveModel(slot);
 
   const receiptId = `OR-${slot.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
