@@ -1,0 +1,145 @@
+{
+  "schema_version": "domain_routing_plan_v0",
+  "description": "FATHIYA CORE domain routing plan. Architecture only -- no live DNS. No secrets.",
+  "last_updated": "2026-05-18",
+  "status": "planned",
+  "adr": "ADR-004",
+
+  "domains": [
+    {
+      "domain": "fathya-core.com",
+      "role": "landing",
+      "description": "Public landing page and system status",
+      "status": "planned",
+      "routes": [
+        { "path": "/", "handler": "landing page" },
+        { "path": "/status", "handler": "public deployment status" }
+      ],
+      "auth_required": false,
+      "env_vars": ["FATHIYA_PUBLIC_APP_URL", "FATHIYA_PUBLIC_API_URL", "FATHIYA_PUBLIC_MCP_URL", "FATHIYA_PUBLIC_DOCS_URL"]
+    },
+    {
+      "domain": "app.fathya-core.com",
+      "role": "command_center_ui",
+      "description": "Command Center UI -- TanStack Start application",
+      "status": "planned",
+      "routes": [
+        { "path": "/", "handler": "Command Center overview" },
+        { "path": "/command-center", "handler": "Command Center dashboard" },
+        { "path": "/api/mcp", "handler": "MCP tool dispatcher (same app)" }
+      ],
+      "auth_required": true,
+      "command_center_panels": [
+        "domain_topology",
+        "deployment_readiness",
+        "mcp_status",
+        "sdk_api_status",
+        "webhook_ingress_status",
+        "openrouter_model_slots",
+        "missing_env_vars",
+        "receipts"
+      ],
+      "env_vars": [
+        "VITE_OPENROUTER_API_KEY",
+        "VITE_OPENROUTER_BASE_URL",
+        "VITE_OPENROUTER_DEFAULT_MODEL",
+        "VITE_OPENROUTER_FAST_MODEL",
+        "VITE_OPENROUTER_REASONING_MODEL",
+        "VITE_OPENROUTER_CRITIC_MODEL",
+        "VITE_OPENROUTER_STRUCTURED_MODEL",
+        "FATHIYA_PUBLIC_APP_URL",
+        "FATHIYA_PUBLIC_API_URL",
+        "FATHIYA_PUBLIC_MCP_URL",
+        "FATHIYA_PUBLIC_HOOKS_URL",
+        "FATHIYA_PUBLIC_DOCS_URL"
+      ]
+    },
+    {
+      "domain": "api.fathya-core.com",
+      "role": "sdk_api_gateway",
+      "description": "SDK/API Gateway -- primary MCP endpoint for Zapier and external clients",
+      "status": "planned",
+      "routes": [
+        { "path": "GET /api/mcp", "handler": "tool manifest", "auth": false },
+        { "path": "POST /api/mcp", "handler": "tool dispatcher", "auth": false },
+        { "path": "GET /api/health", "handler": "health check", "auth": false }
+      ],
+      "auth_required": false,
+      "auth_v1_planned": true,
+      "env_vars": [
+        "VITE_OPENROUTER_API_KEY",
+        "VITE_OPENROUTER_BASE_URL",
+        "VITE_OPENROUTER_DEFAULT_MODEL",
+        "VITE_OPENROUTER_FAST_MODEL",
+        "VITE_OPENROUTER_REASONING_MODEL",
+        "VITE_OPENROUTER_CRITIC_MODEL",
+        "VITE_OPENROUTER_STRUCTURED_MODEL"
+      ]
+    },
+    {
+      "domain": "mcp.fathya-core.com",
+      "role": "mcp_server",
+      "description": "MCP server endpoint. v0: placeholder redirect. v1: full JSON-RPC 2.0 protocol layer.",
+      "status": "planned_v1",
+      "v0_behavior": "redirect to api.fathya-core.com/api/mcp",
+      "v1_routes": [
+        { "path": "GET /", "handler": "MCP manifest" },
+        { "path": "POST /", "handler": "JSON-RPC 2.0 dispatcher" },
+        { "path": "POST /stream", "handler": "Streamable HTTP (SSE)" }
+      ],
+      "v1_features": [
+        "JSON-RPC 2.0 envelope: { jsonrpc, id, method, params }",
+        "tools/list method",
+        "tools/call method",
+        "Auth: Bearer token / API key header",
+        "Streamable HTTP (SSE) for long-running tools",
+        "MCP Client by Zapier native compatibility"
+      ],
+      "auth_required": true,
+      "env_vars": ["FATHIYA_PUBLIC_MCP_URL"]
+    },
+    {
+      "domain": "hooks.fathya-core.com",
+      "role": "webhook_ingress",
+      "description": "Inbound webhook receiver for Zapier. Validates and forwards to /api/mcp.",
+      "status": "planned",
+      "routes": [
+        { "path": "POST /inbound", "handler": "webhook ingress", "auth": false },
+        { "path": "GET /health", "handler": "health check", "auth": false }
+      ],
+      "ingress_contract": "knowledge/hooks/webhook_ingress_contract_v0.json",
+      "auth_required": false,
+      "env_vars": ["FATHIYA_PUBLIC_HOOKS_URL", "FATHIYA_PUBLIC_API_URL"]
+    },
+    {
+      "domain": "docs.fathya-core.com",
+      "role": "sdk_docs",
+      "description": "SDK documentation, tool contracts, schemas, Zapier integration guide",
+      "status": "planned",
+      "content": [
+        "knowledge/mcp/mcp_server_contract_v0.json",
+        "knowledge/sdk/sdk_gateway_contract_v0.json",
+        "knowledge/hooks/webhook_ingress_contract_v0.json",
+        "knowledge/registries/model_routing_registry_v0.json",
+        "knowledge/workflows/ZAPIER_MCP_INTEGRATION_GUIDE_v0.md"
+      ],
+      "auth_required": false,
+      "env_vars": ["FATHIYA_PUBLIC_DOCS_URL"]
+    }
+  ],
+
+  "no_live_dns_rule": {
+    "enforced": true,
+    "description": "No DNS changes in this PR. Architecture artifacts only."
+  },
+
+  "no_live_webhooks_rule": {
+    "enforced": true,
+    "description": "No live webhooks activated in this PR."
+  },
+
+  "no_secrets_rule": {
+    "enforced": true,
+    "description": "No secret values in any artifact. Env var names only."
+  }
+}
