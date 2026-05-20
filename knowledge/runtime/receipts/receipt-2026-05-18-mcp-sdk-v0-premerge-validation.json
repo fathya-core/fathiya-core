@@ -1,0 +1,71 @@
+{
+  "receipt_id": "receipt-2026-05-18-mcp-sdk-v0-premerge-validation",
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "timestamp": "2026-05-18T10:43:00Z",
+  "source_request": "rt-2026-05-18-mcp-sdk-v0-premerge-validation",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "mode": "Pre-merge validation",
+  "input_artifact": "PR #26 (zapier/mcp-sdk-v0) at head 342a6eddd8c618d048fa614712797a41922fe20c, base main fcc8374d8fb249a6b25e6f7930415909ec37e0f5, 13 changed files",
+  "output_artifact": "knowledge/audit/FATHIYA_MCP_SDK_V0_PREMERGE_VALIDATION_REPORT_v0.md + lint fix commit + appended runtime queue + appended receipt ledger + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_validation_only",
+  "task_description": "Validate PR #26 before merge: JSON parse, npm run build, targeted eslint for 9 changed TS files, secret scan, GET /api/mcp manifest verification, quality gate logic verification. Fix 264 prettier formatting errors. Create validation report.",
+  "validated_pr": {
+    "number": 26,
+    "branch": "zapier/mcp-sdk-v0",
+    "base_main_sha": "fcc8374d8fb249a6b25e6f7930415909ec37e0f5",
+    "head_sha_original": "342a6eddd8c618d048fa614712797a41922fe20c"
+  },
+  "validation": {
+    "json_parse": {
+      "files_checked": 1,
+      "status": "passed"
+    },
+    "build": {
+      "command": "npm run build",
+      "status": "passed"
+    },
+    "eslint": {
+      "command": "npx eslint (9 changed TS files)",
+      "pre_fix_errors": 264,
+      "post_fix_errors": 0,
+      "error_type": "prettier/prettier formatting only",
+      "status": "passed_after_fix"
+    },
+    "secret_scan": {
+      "status": "passed",
+      "hardcoded_secrets_found": 0
+    },
+    "manifest_verification": {
+      "webhook_dispatcher_v0": true,
+      "mcp_protocol_full": false,
+      "openrouter_model_routing": true,
+      "status": "passed"
+    },
+    "quality_gate_verification": {
+      "blocks_trading_commands": true,
+      "allows_analysis_wording": true,
+      "status": "passed"
+    }
+  },
+  "changed_files": [
+    "knowledge/audit/FATHIYA_MCP_SDK_V0_PREMERGE_VALIDATION_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-05-18-mcp-sdk-v0-premerge-validation.json"
+  ],
+  "blockers": [],
+  "non_execution_boundaries": {
+    "merge_to_main": "not_performed",
+    "webhooks": "none_sent",
+    "email": "none_sent",
+    "trading": "none_executed",
+    "scanning": "none_executed",
+    "credentials": "none_exposed",
+    "destructive_actions": "none_performed"
+  },
+  "next_step": "review and merge PR #26 after reviewer approval; do not perform an agent merge directly to main",
+  "final_recommendation": "RECOMMEND MERGE — all checks pass, no secrets, no blockers."
+}

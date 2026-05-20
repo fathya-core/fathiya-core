@@ -197,6 +197,19 @@
       "error": null,
       "approval_reference": "none_required_validation_only",
       "next_step": "Review the validation-only PR; then implement row-level Apps/GPTs browse/filter views once per-row exports or committed workbook contents are available"
+    },
+    {
+      "receipt_id": "receipt-2026-05-18-mcp-sdk-v0-premerge-validation",
+      "timestamp": "2026-05-18T10:43:00Z",
+      "source_request": "rt-2026-05-18-mcp-sdk-v0-premerge-validation",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "PR #26 (zapier/mcp-sdk-v0) at head 342a6eddd8c618d048fa614712797a41922fe20c, 13 changed files",
+      "output_artifact": "knowledge/audit/FATHIYA_MCP_SDK_V0_PREMERGE_VALIDATION_REPORT_v0.md + lint fix commit + this ledger entry + runtime queue entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_validation_only",
+      "next_step": "review and merge PR #26 after reviewer approval; do not perform an agent merge directly to main"
     }
   ],
   "required_receipt_fields": [

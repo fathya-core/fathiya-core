@@ -275,6 +275,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-18-post-command-center-expansion-validation-v0.json",
       "next_step": "Review the validation-only PR, then add row-level Apps/GPTs browse/filter views once per-row exports or committed workbook contents are available"
+    },
+    {
+      "id": "rt-2026-05-18-mcp-sdk-v0-premerge-validation",
+      "timestamp": "2026-05-18T10:43:00Z",
+      "source": "PR #26 (zapier/mcp-sdk-v0) pre-merge validation",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "mode": "Pre-merge validation",
+      "input_artifact": "PR #26 (zapier/mcp-sdk-v0) at head 342a6eddd8c618d048fa614712797a41922fe20c, 13 changed files",
+      "expected_output": "validation report + lint fix commit + runtime queue + receipt ledger + receipt file",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-18-mcp-sdk-v0-premerge-validation.json",
+      "next_step": "review and merge PR #26 after reviewer approval; do not perform an agent merge directly to main"
     }
   ],
   "required_entry_fields": [
