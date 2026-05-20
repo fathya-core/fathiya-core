@@ -1,0 +1,55 @@
+{
+  "schema_version": "webhook_ingress_contract_v0",
+  "description": "FATHIYA CORE webhook ingress contract. Defines how Zapier sends payloads to hooks.fathya-core.com.",
+  "last_updated": "2026-05-18",
+  "adr": "ADR-004",
+  "ingress": {
+    "name": "fathiya-core-webhook-ingress",
+    "version": "0.1.0",
+    "base_url_env": "FATHIYA_PUBLIC_HOOKS_URL",
+    "planned_domain": "hooks.fathya-core.com"
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/inbound",
+      "description": "Receives Zapier webhook payloads. Validates source. Forwards to /api/mcp.",
+      "auth_required": false,
+      "request_body": {
+        "tool": "string (required)",
+        "params": "object (optional)",
+        "zapier_source": "string (optional)"
+      },
+      "response_example": { "success": true, "receipt_id": "MCP-INTAKE-...", "forwarded_to": "api.fathya-core.com/api/mcp" }
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "description": "Health check",
+      "auth_required": false,
+      "response_example": { "status": "ok" }
+    }
+  ],
+  "zapier_setup": {
+    "trigger": "Any Zapier trigger (Gmail, RSS, Schedule, etc.)",
+    "action": "Webhooks by Zapier -- POST",
+    "url": "https://hooks.fathya-core.com/inbound",
+    "example_zaps": [
+      { "name": "Zap 1: Gmail -> Intake", "tool": "intake_submit_raw", "params": { "content": "{{email_body}}", "source": "gmail" } },
+      { "name": "Zap 2: RSS -> Crypto Signal", "tool": "crypto_create_signal_card", "params": { "source": "rss", "asset": "BTC", "sector": "crypto", "what_changed": "{{item_title}}", "signal_direction": "unclear", "hidden_risk": "unverified RSS source" } }
+    ]
+  },
+  "validation_rules": {
+    "required_fields": ["tool"],
+    "quality_gate": "enforced on all payloads before forwarding",
+    "no_trading_commands": true,
+    "max_content_length": 50000
+  },
+  "forwarding": {
+    "target_env": "FATHIYA_PUBLIC_API_URL",
+    "target_path": "/api/mcp",
+    "method": "POST",
+    "passes_receipt_id": true
+  },
+  "no_live_webhooks_rule": { "enforced": true, "description": "No live webhooks activated in this PR. Contract only." }
+}

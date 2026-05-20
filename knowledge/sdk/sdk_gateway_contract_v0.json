@@ -1,0 +1,81 @@
+{
+  "schema_version": "sdk_gateway_contract_v0",
+  "description": "FATHIYA CORE SDK/API Gateway contract. Defines the public API surface for api.fathya-core.com.",
+  "last_updated": "2026-05-18",
+  "adr": "ADR-004",
+
+  "gateway": {
+    "name": "fathiya-core-api-gateway",
+    "version": "0.1.0",
+    "base_url_env": "FATHIYA_PUBLIC_API_URL",
+    "planned_domain": "api.fathya-core.com"
+  },
+
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/mcp",
+      "description": "Tool manifest -- lists all available tools, schemas, supported modes, quality gate rules",
+      "auth_required": false,
+      "response_content_type": "application/json",
+      "response_example": {
+        "server": "fathiya-core-mcp",
+        "version": "0.1.0",
+        "supported_modes": { "webhook_dispatcher_v0": true, "mcp_protocol_full": false },
+        "tools": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/mcp",
+      "description": "Tool dispatcher -- executes a named tool with params",
+      "auth_required": false,
+      "request_content_type": "application/json",
+      "request_body": {
+        "tool": "string (required)",
+        "params": "object (optional)",
+        "zapier_source": "string (optional)"
+      },
+      "response_content_type": "application/json",
+      "response_codes": {
+        "200": "Tool executed successfully",
+        "400": "Missing tool field or invalid JSON",
+        "404": "Unknown tool",
+        "422": "Tool executed but quality gate blocked or validation failed"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "description": "Health check endpoint",
+      "auth_required": false,
+      "response_example": { "status": "ok", "server": "fathiya-core-mcp", "version": "0.1.0" }
+    }
+  ],
+
+  "zapier_integration": {
+    "action": "Webhooks by Zapier",
+    "method": "POST",
+    "url_env": "FATHIYA_PUBLIC_API_URL",
+    "url_path": "/api/mcp",
+    "body_format": { "tool": "<tool_name>", "params": {} },
+    "examples": [
+      { "tool": "ping" },
+      { "tool": "intake_submit_raw", "params": { "content": "...", "source": "zapier" } },
+      { "tool": "crypto_create_signal_card", "params": { "asset": "BTC", "signal_direction": "supportive", "source": "zapier", "sector": "crypto", "what_changed": "...", "hidden_risk": "..." } }
+    ]
+  },
+
+  "rate_limits": {
+    "v0": "none enforced",
+    "v1_planned": "per-API-key rate limiting"
+  },
+
+  "auth": {
+    "v0": "none -- public endpoint",
+    "v1_planned": "Bearer token / API key header"
+  },
+
+  "no_supabase": true,
+  "state_source": "knowledge/ files (read at build time)"
+}

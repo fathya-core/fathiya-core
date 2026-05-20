@@ -1,0 +1,147 @@
+{
+  "schema_version": "env_contract_v0",
+  "description": "FATHIYA CORE environment variable contract. Names only -- no values. Set in deployment platform secrets.",
+  "last_updated": "2026-05-18",
+  "adr": "ADR-004",
+
+  "rules": {
+    "no_secret_values": true,
+    "names_only": true,
+    "vite_prefix_for_client": "VITE_ prefix required for client-side vars (import.meta.env)",
+    "no_prefix_for_server": "Server-side vars have no VITE_ prefix"
+  },
+
+  "env_vars": [
+    {
+      "name": "VITE_OPENROUTER_API_KEY",
+      "scope": "client",
+      "required": true,
+      "description": "OpenRouter API key for LLM calls",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": null,
+      "secret": true
+    },
+    {
+      "name": "VITE_OPENROUTER_BASE_URL",
+      "scope": "client",
+      "required": false,
+      "description": "OpenRouter API base URL",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "https://openrouter.ai/api/v1",
+      "secret": false
+    },
+    {
+      "name": "VITE_OPENROUTER_DEFAULT_MODEL",
+      "scope": "client",
+      "required": false,
+      "description": "Default/fallback model slot",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "openai/gpt-4o-mini",
+      "secret": false
+    },
+    {
+      "name": "VITE_OPENROUTER_FAST_MODEL",
+      "scope": "client",
+      "required": false,
+      "description": "Fast model slot -- formatting, classification, small transforms",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "openai/gpt-4o-mini",
+      "secret": false
+    },
+    {
+      "name": "VITE_OPENROUTER_REASONING_MODEL",
+      "scope": "client",
+      "required": false,
+      "description": "Reasoning model slot -- crypto analysis, scenario building",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "openai/o3-mini",
+      "secret": false
+    },
+    {
+      "name": "VITE_OPENROUTER_CRITIC_MODEL",
+      "scope": "client",
+      "required": false,
+      "description": "Critic model slot -- quality gate, risk review, failure modes",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "anthropic/claude-3-5-sonnet",
+      "secret": false
+    },
+    {
+      "name": "VITE_OPENROUTER_STRUCTURED_MODEL",
+      "scope": "client",
+      "required": false,
+      "description": "Structured model slot -- JSON extraction, schema filling",
+      "used_by": ["src/lib/llm/openrouter.ts"],
+      "default": "openai/gpt-4o-mini",
+      "secret": false
+    },
+    {
+      "name": "FATHIYA_PUBLIC_APP_URL",
+      "scope": "server",
+      "required": true,
+      "description": "Public URL for Command Center UI",
+      "used_by": ["deployment", "command-center"],
+      "default": "https://app.fathya-core.com",
+      "secret": false
+    },
+    {
+      "name": "FATHIYA_PUBLIC_API_URL",
+      "scope": "server",
+      "required": true,
+      "description": "Public URL for SDK/API Gateway",
+      "used_by": ["deployment", "hooks"],
+      "default": "https://api.fathya-core.com",
+      "secret": false
+    },
+    {
+      "name": "FATHIYA_PUBLIC_MCP_URL",
+      "scope": "server",
+      "required": true,
+      "description": "Public URL for MCP server endpoint",
+      "used_by": ["deployment", "docs"],
+      "default": "https://mcp.fathya-core.com",
+      "secret": false
+    },
+    {
+      "name": "FATHIYA_PUBLIC_HOOKS_URL",
+      "scope": "server",
+      "required": true,
+      "description": "Public URL for webhook ingress receiver",
+      "used_by": ["deployment", "zapier"],
+      "default": "https://hooks.fathya-core.com",
+      "secret": false
+    },
+    {
+      "name": "FATHIYA_PUBLIC_DOCS_URL",
+      "scope": "server",
+      "required": true,
+      "description": "Public URL for SDK docs",
+      "used_by": ["deployment", "landing"],
+      "default": "https://docs.fathya-core.com",
+      "secret": false
+    }
+  ],
+
+  "deployment_checklist": [
+    "Set VITE_OPENROUTER_API_KEY in deployment secrets",
+    "Set FATHIYA_PUBLIC_APP_URL",
+    "Set FATHIYA_PUBLIC_API_URL",
+    "Set FATHIYA_PUBLIC_MCP_URL",
+    "Set FATHIYA_PUBLIC_HOOKS_URL",
+    "Set FATHIYA_PUBLIC_DOCS_URL",
+    "Optional: override model slots with preferred models",
+    "Run npm run build to verify"
+  ],
+
+  "command_center_display": {
+    "description": "Command Center will show missing env vars at runtime",
+    "required_vars": [
+      "VITE_OPENROUTER_API_KEY",
+      "FATHIYA_PUBLIC_APP_URL",
+      "FATHIYA_PUBLIC_API_URL",
+      "FATHIYA_PUBLIC_MCP_URL",
+      "FATHIYA_PUBLIC_HOOKS_URL",
+      "FATHIYA_PUBLIC_DOCS_URL"
+    ]
+  }
+}

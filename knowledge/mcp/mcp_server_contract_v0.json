@@ -1,0 +1,177 @@
+{
+  "schema_version": "mcp_server_contract_v0",
+  "description": "FATHIYA CORE MCP Server contract. Defines capabilities, tools, and protocol boundaries for v0.",
+  "last_updated": "2026-05-18",
+  "adr": "ADR-004",
+
+  "server": {
+    "name": "fathiya-core-mcp",
+    "version": "0.1.0",
+    "base_url_env": "FATHIYA_PUBLIC_API_URL",
+    "endpoint": "/api/mcp"
+  },
+
+  "protocol": {
+    "type": "webhook_dispatcher_v0",
+    "description": "Webhook-compatible tool dispatcher. NOT full MCP protocol.",
+    "supported_modes": {
+      "webhook_dispatcher_v0": true,
+      "mcp_protocol_full": false,
+      "openrouter_model_routing": true,
+      "json_rpc_2_0": false,
+      "streamable_http": false,
+      "mcp_client_zapier_native": false,
+      "auth_boundary": false,
+      "tool_discovery_protocol": false
+    },
+    "future_v1": {
+      "planned": true,
+      "features": [
+        "JSON-RPC 2.0 envelope",
+        "tools/list method",
+        "tools/call method",
+        "Auth: Bearer token",
+        "Streamable HTTP (SSE)",
+        "MCP Client by Zapier native"
+      ]
+    }
+  },
+
+  "request_format": {
+    "method": "POST",
+    "content_type": "application/json",
+    "body": {
+      "tool": "string (required) -- tool name",
+      "params": "object (optional) -- tool parameters",
+      "zapier_source": "string (optional) -- source identifier"
+    },
+    "example": {
+      "tool": "ping"
+    }
+  },
+
+  "response_format": {
+    "success": {
+      "success": true,
+      "tool": "string",
+      "timestamp": "ISO 8601",
+      "data": "object",
+      "quality_gate_passed": true,
+      "quality_warnings": [],
+      "requires_approval": false,
+      "receipt_id": "MCP-{TOOL}-{TS}-{RAND}"
+    },
+    "error": {
+      "success": false,
+      "tool": "string",
+      "timestamp": "ISO 8601",
+      "error": "string",
+      "quality_gate_passed": false,
+      "receipt_id": "MCP-{TOOL}-{TS}-{RAND}"
+    }
+  },
+
+  "tools": [
+    {
+      "name": "ping",
+      "description": "Check if MCP server is alive",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {}
+    },
+    {
+      "name": "knowledge_get_awareness_state",
+      "description": "Get current FATHIYA awareness state from knowledge/FATHIYA_AWARENESS_STATE.json",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {}
+    },
+    {
+      "name": "knowledge_search",
+      "description": "Search knowledge vault by query, category, or type",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {
+        "query": { "type": "string", "required": true },
+        "category": { "type": "string", "required": false },
+        "type": { "type": "string", "required": false },
+        "limit": { "type": "number", "required": false, "default": 5, "max": 10 }
+      }
+    },
+    {
+      "name": "knowledge_list_cards",
+      "description": "List knowledge cards filtered by category, type, or status",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {
+        "category": { "type": "string", "required": false },
+        "type": { "type": "string", "required": false },
+        "status": { "type": "string", "required": false },
+        "limit": { "type": "number", "required": false, "default": 10, "max": 10 }
+      }
+    },
+    {
+      "name": "intake_submit_raw",
+      "description": "Submit raw content for intake. Returns receipt + suggested path. Write via Zapier GitHub action.",
+      "read_only": false,
+      "requires_approval": true,
+      "params": {
+        "content": { "type": "string", "required": true, "max_length": 50000 },
+        "source": { "type": "string", "required": false, "default": "zapier" },
+        "category": { "type": "string", "required": false }
+      }
+    },
+    {
+      "name": "crypto_create_signal_card",
+      "description": "Create a crypto Signal Card draft. Passes Quality Gate. No trading commands allowed.",
+      "read_only": false,
+      "requires_approval": true,
+      "params": {
+        "source": { "type": "string", "required": true },
+        "asset": { "type": "string", "required": true },
+        "sector": { "type": "string", "required": true },
+        "what_changed": { "type": "string", "required": true },
+        "signal_direction": {
+          "type": "string",
+          "required": true,
+          "enum": ["supportive", "negative", "mixed", "unclear", "noise"]
+        },
+        "impact_score": { "type": "number", "required": false, "min": 0, "max": 10 },
+        "confidence_score": { "type": "number", "required": false, "min": 0, "max": 1 },
+        "hidden_risk": { "type": "string", "required": true },
+        "invalidation_conditions": { "type": "array", "required": false },
+        "bullish_scenario": { "type": "string", "required": false },
+        "bearish_scenario": { "type": "string", "required": false }
+      }
+    },
+    {
+      "name": "queue_get_pending",
+      "description": "Get pending items from runtime queue",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {}
+    },
+    {
+      "name": "quality_gate_check",
+      "description": "Run Quality Gate on any text. Returns pass/fail.",
+      "read_only": true,
+      "requires_approval": false,
+      "params": {
+        "text": { "type": "string", "required": true }
+      }
+    }
+  ],
+
+  "quality_gate": {
+    "enforced": true,
+    "forbidden_patterns": ["buy", "sell", "enter", "exit", "long", "short", "leverage", "target price as instruction", "stop loss as instruction"],
+    "arabic_forbidden": true,
+    "allowed_signal_directions": ["supportive", "negative", "mixed", "unclear", "noise"]
+  },
+
+  "model_routing": {
+    "enabled": true,
+    "registry": "knowledge/registries/model_routing_registry_v0.json",
+    "slots": ["default", "fast", "reasoning", "critic", "structured"]
+  }
+}
