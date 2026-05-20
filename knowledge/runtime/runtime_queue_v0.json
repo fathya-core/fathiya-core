@@ -290,6 +290,22 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-18-mcp-sdk-v0-premerge-validation.json",
       "next_step": "review and merge PR #26 after reviewer approval; do not perform an agent merge directly to main"
+    },
+    {
+      "id": "rt-2026-05-20-deployment-architecture-mcp-sdk-v0",
+      "timestamp": "2026-05-20T09:00:00Z",
+      "source": "FATHIYA Deployment Architecture MCP SDK v0 — ADR-004",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "zapier_agent",
+      "mode": "Deployment architecture bootstrap",
+      "input_artifact": "main at 833b4b9b79b868927d162dc99f9614b70966d267 (MCP SDK v0 applied) + operator deployment topology requirements",
+      "expected_output": "ADR-004 + FATHIYA_DEPLOYMENT_TOPOLOGY_v0.md + domain_routing_plan_v0.json + env_contract_v0.json + mcp_server_contract_v0.json + sdk_gateway_contract_v0.json + webhook_ingress_contract_v0.json + bootstrap audit report + runtime queue entry + receipt ledger entry + individual receipt",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-20-deployment-architecture-mcp-sdk-v0.json",
+      "next_step": "review and merge PR into main; then implement Command Center Deployment Panel in follow-up Cursor task"
     }
   ],
   "required_entry_fields": [
