@@ -1,0 +1,75 @@
+{
+  "receipt_id": "receipt-2026-05-20-deployment-architecture-mcp-sdk-v0",
+  "timestamp": "2026-05-20T09:00:00Z",
+  "source_request": "rt-2026-05-20-deployment-architecture-mcp-sdk-v0",
+  "queue": "Engineering Queue",
+  "adapter": "zapier_agent",
+  "approval_class": "internal_autopilot",
+  "input_artifact": "main at 833b4b9b79b868927d162dc99f9614b70966d267 (MCP SDK v0 applied to main) + operator deployment topology requirements (ADR-004 scope)",
+  "output_artifact": {
+    "adr": "knowledge/decisions/ADR_004_FATHIYA_DEPLOYMENT_ARCHITECTURE_MCP_SDK.md",
+    "topology": "knowledge/deployment/FATHIYA_DEPLOYMENT_TOPOLOGY_v0.md",
+    "domain_routing": "knowledge/deployment/domain_routing_plan_v0.json",
+    "env_contract": "knowledge/deployment/env_contract_v0.json",
+    "mcp_contract": "knowledge/mcp/mcp_server_contract_v0.json",
+    "sdk_contract": "knowledge/sdk/sdk_gateway_contract_v0.json",
+    "hooks_contract": "knowledge/hooks/webhook_ingress_contract_v0.json",
+    "audit_report": "knowledge/audit/FATHIYA_DEPLOYMENT_MCP_SDK_BOOTSTRAP_REPORT_v0.md",
+    "runtime_queue_entry": "rt-2026-05-20-deployment-architecture-mcp-sdk-v0",
+    "receipt_ledger_entry": "receipt-2026-05-20-deployment-architecture-mcp-sdk-v0",
+    "individual_receipt": "knowledge/runtime/receipts/receipt-2026-05-20-deployment-architecture-mcp-sdk-v0.json"
+  },
+  "status": "completed",
+  "error": null,
+  "approval_reference": "internal_autopilot_adr_002",
+
+  "boundaries_enforced": {
+    "no_live_dns": true,
+    "no_live_webhooks": true,
+    "no_secrets_in_artifacts": true,
+    "no_supabase": true,
+    "no_live_deploy": true,
+    "env_var_names_only": true
+  },
+
+  "domain_topology": [
+    { "domain": "fathya-core.com", "role": "landing", "status": "planned" },
+    { "domain": "app.fathya-core.com", "role": "command_center_ui", "status": "planned" },
+    { "domain": "api.fathya-core.com", "role": "sdk_api_gateway", "status": "planned" },
+    { "domain": "mcp.fathya-core.com", "role": "mcp_server", "status": "planned_v1" },
+    { "domain": "hooks.fathya-core.com", "role": "webhook_ingress", "status": "planned" },
+    { "domain": "docs.fathya-core.com", "role": "sdk_docs", "status": "planned" }
+  ],
+
+  "env_vars_defined": [
+    "VITE_OPENROUTER_API_KEY",
+    "VITE_OPENROUTER_BASE_URL",
+    "VITE_OPENROUTER_DEFAULT_MODEL",
+    "VITE_OPENROUTER_FAST_MODEL",
+    "VITE_OPENROUTER_REASONING_MODEL",
+    "VITE_OPENROUTER_CRITIC_MODEL",
+    "VITE_OPENROUTER_STRUCTURED_MODEL",
+    "FATHIYA_PUBLIC_APP_URL",
+    "FATHIYA_PUBLIC_API_URL",
+    "FATHIYA_PUBLIC_MCP_URL",
+    "FATHIYA_PUBLIC_HOOKS_URL",
+    "FATHIYA_PUBLIC_DOCS_URL"
+  ],
+
+  "json_validation": {
+    "domain_routing_plan_v0.json": "pass",
+    "env_contract_v0.json": "pass",
+    "mcp_server_contract_v0.json": "pass",
+    "sdk_gateway_contract_v0.json": "pass",
+    "webhook_ingress_contract_v0.json": "pass"
+  },
+
+  "build_lint": {
+    "note": "No source code changes in this PR. All artifacts are knowledge/ files only.",
+    "npm_run_build": "not_required",
+    "eslint": "not_required",
+    "json_parse": "pass"
+  },
+
+  "next_step": "review and merge PR into main; then implement Command Center Deployment Panel in follow-up Cursor task"
+}
