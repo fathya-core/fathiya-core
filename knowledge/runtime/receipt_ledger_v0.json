@@ -223,6 +223,19 @@
       "error": null,
       "approval_reference": "internal_autopilot_adr_002",
       "next_step": "review and merge PR into main; then implement Command Center Deployment Panel in follow-up Cursor task"
+    },
+    {
+      "receipt_id": "receipt-2026-05-22-deployment-panel-command-center-v0",
+      "timestamp": "2026-05-22T14:42:00Z",
+      "source_request": "rt-2026-05-22-deployment-panel-command-center-v0",
+      "queue": "Engineering Queue",
+      "adapter": "cursor_agent",
+      "input_artifact": "main at f112931ff7ea1f9668521a3786fbb7bcafd4efb7 + deployment, env, MCP, SDK/API, webhook ingress, runtime queue, and receipt ledger contracts",
+      "output_artifact": "src/lib/command-center.ts + src/routes/command-center.tsx + knowledge/audit/FATHIYA_DEPLOYMENT_PANEL_COMMAND_CENTER_REPORT_v0.md + runtime queue entry + receipt ledger entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_read_only_command_center_panel",
+      "next_step": "review and merge PR into main; do not deploy, change DNS, add secrets, or activate live webhooks from this panel PR"
     }
   ],
   "required_receipt_fields": [

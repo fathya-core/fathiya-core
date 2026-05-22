@@ -44,7 +44,7 @@ export const Route = createFileRoute("/command-center")({
       {
         name: "description",
         content:
-          "Command Center v0 for the FATHIYA operating backbone. Surfaces overview, intake, knowledge cards, routing, operations staging, runtime queue, receipts, agents, playbooks, tool contracts, radar, scope, and approvals from local knowledge files.",
+          "Command Center v0 for the FATHIYA operating backbone. Surfaces overview, deployment readiness, intake, knowledge cards, routing, operations staging, runtime queue, receipts, agents, playbooks, tool contracts, radar, scope, and approvals from local knowledge files.",
       },
     ],
   }),
@@ -54,6 +54,7 @@ export const Route = createFileRoute("/command-center")({
 
 const SCREEN_TABS = [
   { value: "overview", label: "Overview" },
+  { value: "deployment", label: "Deployment" },
   { value: "queue", label: "Runtime Queue" },
   { value: "receipts", label: "Receipt Ledger" },
   { value: "agents", label: "Agents" },
@@ -653,6 +654,341 @@ function CommandCenterPage() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="deployment" className="space-y-4">
+            <SectionHeader
+              title="Deployment Panel"
+              description="Read-only Deployment Panel v0 for planned domain routing, deployment readiness, MCP/API/webhook contract status, OpenRouter slots, env visibility, and recent deployment receipts."
+            />
+            <ProvenanceBanner provenance={data.sectionProvenance.deploymentPanel} />
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+              <SmallStat
+                label="Domains"
+                value={String(data.deploymentPanel.domainTopology.length)}
+                icon={SquareStack}
+              />
+              <SmallStat
+                label="Readiness checks"
+                value={String(data.deploymentPanel.deploymentReadiness.length)}
+                icon={FileCheck2}
+              />
+              <SmallStat
+                label="MCP tools"
+                value={String(data.deploymentPanel.mcpStatus.toolCount)}
+                icon={Workflow}
+              />
+              <SmallStat
+                label="API endpoints"
+                value={String(data.deploymentPanel.sdkApiStatus.endpoints.length)}
+                icon={Activity}
+              />
+              <SmallStat
+                label="Hook endpoints"
+                value={String(data.deploymentPanel.webhookIngressStatus.endpoints.length)}
+                icon={GitPullRequest}
+              />
+              <SmallStat
+                label="Missing env"
+                value={String(data.deploymentPanel.missingEnvVars.length)}
+                icon={TriangleAlert}
+              />
+            </div>
+
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Domain Topology</CardTitle>
+                <CardDescription>
+                  Planned domains, route handlers, auth boundary, and env names from the domain
+                  routing plan. This view does not change DNS.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DataTable
+                  headers={["domain", "role", "status", "auth", "routes", "env vars"]}
+                  rows={data.deploymentPanel.domainTopology.map((domain) => [
+                    <code key="domain">{domain.domain}</code>,
+                    <div key="role">
+                      <div className="font-medium">{domain.role}</div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        {domain.description}
+                      </div>
+                    </div>,
+                    <StatusBadge key="status" status={domain.status} />,
+                    domain.authRequired ? "required" : "not required",
+                    <TagList
+                      key="routes"
+                      items={domain.routes.length > 0 ? domain.routes : ["No routes declared"]}
+                    />,
+                    <TagList
+                      key="env"
+                      items={domain.envVars.length > 0 ? domain.envVars : ["No env names declared"]}
+                    />,
+                  ])}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 bg-card/50">
+              <CardHeader>
+                <CardTitle>Deployment Readiness</CardTitle>
+                <CardDescription>
+                  Contract-backed gates for architecture status, DNS safety, webhook safety,
+                  secrets, env names, MCP boundaries, and state source.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DataTable
+                  headers={["check", "status", "detail", "source"]}
+                  rows={data.deploymentPanel.deploymentReadiness.map((check) => [
+                    check.check,
+                    <StatusBadge key="status" status={check.status} />,
+                    check.detail,
+                    <code key="source">{check.source}</code>,
+                  ])}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-4 xl:grid-cols-3">
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>MCP Status</CardTitle>
+                  <CardDescription>
+                    Contract state for the v0 webhook dispatcher boundary and future v1 protocol.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+                    <OverviewField label="Server" value={data.deploymentPanel.mcpStatus.name} />
+                    <OverviewField label="Version" value={data.deploymentPanel.mcpStatus.version} />
+                    <OverviewField
+                      label="Endpoint"
+                      value={data.deploymentPanel.mcpStatus.endpoint}
+                    />
+                    <OverviewField
+                      label="Base URL env"
+                      value={data.deploymentPanel.mcpStatus.baseUrlEnv}
+                    />
+                    <OverviewField
+                      label="Protocol"
+                      value={data.deploymentPanel.mcpStatus.protocolType}
+                    />
+                    <OverviewField
+                      label="Quality gate"
+                      value={data.deploymentPanel.mcpStatus.qualityGateStatus}
+                    />
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-1">
+                    <SmallStat
+                      label="Read-only tools"
+                      value={String(data.deploymentPanel.mcpStatus.readOnlyToolCount)}
+                      icon={ShieldCheck}
+                    />
+                    <SmallStat
+                      label="Write tools"
+                      value={String(data.deploymentPanel.mcpStatus.writeToolCount)}
+                      icon={TriangleAlert}
+                    />
+                    <SmallStat
+                      label="Modes"
+                      value={String(data.deploymentPanel.mcpStatus.supportedModes.length)}
+                      icon={Workflow}
+                    />
+                  </div>
+                  <DataTable
+                    headers={["mode", "status"]}
+                    rows={data.deploymentPanel.mcpStatus.supportedModes.map((mode) => [
+                      mode.mode,
+                      <StatusBadge key="status" status={mode.status} />,
+                    ])}
+                  />
+                  <StringListPanel
+                    title="Future MCP v1 features"
+                    items={data.deploymentPanel.mcpStatus.futureFeatures}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>SDK/API Status</CardTitle>
+                  <CardDescription>
+                    Public API gateway contract for the planned api domain and local knowledge state
+                    source.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+                    <OverviewField label="Gateway" value={data.deploymentPanel.sdkApiStatus.name} />
+                    <OverviewField
+                      label="Planned domain"
+                      value={data.deploymentPanel.sdkApiStatus.plannedDomain}
+                    />
+                    <OverviewField
+                      label="Base URL env"
+                      value={data.deploymentPanel.sdkApiStatus.baseUrlEnv}
+                    />
+                    <OverviewField
+                      label="Auth v0"
+                      value={data.deploymentPanel.sdkApiStatus.authStatus}
+                    />
+                    <OverviewField
+                      label="Rate limits v0"
+                      value={data.deploymentPanel.sdkApiStatus.rateLimitStatus}
+                    />
+                    <OverviewField
+                      label="State source"
+                      value={data.deploymentPanel.sdkApiStatus.stateSource}
+                    />
+                    <OverviewField
+                      label="Supabase"
+                      value={data.deploymentPanel.sdkApiStatus.noSupabase ? "not used" : "review"}
+                    />
+                  </div>
+                  <DataTable
+                    headers={["method", "path", "auth", "description"]}
+                    rows={data.deploymentPanel.sdkApiStatus.endpoints.map((endpoint) => [
+                      endpoint.method,
+                      <code key="path">{endpoint.path}</code>,
+                      endpoint.authRequired ? "required" : "not required",
+                      endpoint.description,
+                    ])}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Webhook Ingress Status</CardTitle>
+                  <CardDescription>
+                    Planned inbound webhook receiver contract. This panel does not activate live
+                    webhooks.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+                    <OverviewField
+                      label="Ingress"
+                      value={data.deploymentPanel.webhookIngressStatus.name}
+                    />
+                    <OverviewField
+                      label="Planned domain"
+                      value={data.deploymentPanel.webhookIngressStatus.plannedDomain}
+                    />
+                    <OverviewField
+                      label="Base URL env"
+                      value={data.deploymentPanel.webhookIngressStatus.baseUrlEnv}
+                    />
+                    <OverviewField
+                      label="Forwarding target"
+                      value={data.deploymentPanel.webhookIngressStatus.forwardingTarget}
+                    />
+                    <OverviewField
+                      label="Live webhooks"
+                      value={data.deploymentPanel.webhookIngressStatus.noLiveWebhooksStatus}
+                    />
+                  </div>
+                  <DataTable
+                    headers={["method", "path", "auth", "description"]}
+                    rows={data.deploymentPanel.webhookIngressStatus.endpoints.map((endpoint) => [
+                      endpoint.method,
+                      <code key="path">{endpoint.path}</code>,
+                      endpoint.authRequired ? "required" : "not required",
+                      endpoint.description,
+                    ])}
+                  />
+                  <StringListPanel
+                    title="Validation rules"
+                    items={data.deploymentPanel.webhookIngressStatus.validationRules}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>OpenRouter Model Slots</CardTitle>
+                  <CardDescription>
+                    Slot names, env names, defaults, and runtime source status. Values are not
+                    displayed.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    headers={["slot", "env var", "status", "source", "default", "required"]}
+                    rows={data.deploymentPanel.openRouterModelSlots.map((slot) => [
+                      slot.slot,
+                      <code key="env">{slot.envVar}</code>,
+                      <StatusBadge key="status" status={slot.status} />,
+                      slot.valueSource,
+                      slot.defaultModel,
+                      slot.required ? "yes" : "no",
+                    ])}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Missing Env Vars</CardTitle>
+                  <CardDescription>
+                    Required Command Center env names not visible to the current runtime. Secret
+                    values are never rendered.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {data.deploymentPanel.missingEnvVars.length === 0 ? (
+                    <EmptyState
+                      title="No missing env vars detected"
+                      description="All required Command Center env names are visible to the current runtime."
+                    />
+                  ) : (
+                    <DataTable
+                      headers={["name", "scope", "status", "default", "secret", "description"]}
+                      rows={data.deploymentPanel.missingEnvVars.map((envVar) => [
+                        <code key="name">{envVar.name}</code>,
+                        envVar.scope,
+                        <StatusBadge key="status" status={envVar.status} />,
+                        envVar.defaultValue,
+                        envVar.secret ? "yes" : "no",
+                        envVar.description,
+                      ])}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Recent Deployment Receipts</CardTitle>
+                  <CardDescription>
+                    Deployment-related proof rows from the receipt ledger, including this panel
+                    implementation receipt once committed.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RecentReceiptList receipts={data.deploymentPanel.recentDeploymentReceipts} />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader>
+                  <CardTitle>Blockers</CardTitle>
+                  <CardDescription>
+                    Current blockers for deployment readiness. The read-only panel itself has no
+                    external side effects.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TagList items={data.deploymentPanel.blockers} />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 

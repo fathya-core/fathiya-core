@@ -1,0 +1,39 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-05-22-deployment-panel-command-center-v0",
+  "timestamp": "2026-05-22T14:42:00Z",
+  "source_request": "rt-2026-05-22-deployment-panel-command-center-v0",
+  "queue": "Engineering Queue",
+  "adapter": "cursor_agent",
+  "mode": "Command Center deployment panel",
+  "input_artifact": "main at f112931ff7ea1f9668521a3786fbb7bcafd4efb7 + knowledge/deployment/domain_routing_plan_v0.json + knowledge/deployment/env_contract_v0.json + knowledge/mcp/mcp_server_contract_v0.json + knowledge/sdk/sdk_gateway_contract_v0.json + knowledge/hooks/webhook_ingress_contract_v0.json + knowledge/runtime/receipt_ledger_v0.json",
+  "output_artifact": "Deployment Panel v0 in src/lib/command-center.ts and src/routes/command-center.tsx + knowledge/audit/FATHIYA_DEPLOYMENT_PANEL_COMMAND_CENTER_REPORT_v0.md + runtime queue entry + receipt ledger entry + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_read_only_command_center_panel",
+  "task_description": "Build a read-only Command Center Deployment Panel v0 that displays Domain Topology, Deployment Readiness, MCP Status, SDK/API Status, Webhook Ingress Status, OpenRouter Model Slots, Missing Env Vars, and Recent Deployment Receipts from existing knowledge contracts.",
+  "boundaries_enforced": {
+    "no_zapier_mcp_sdk_v0_usage": true,
+    "no_mcp_sdk_file_edits": true,
+    "no_mcp_tools_created": true,
+    "no_deploy": true,
+    "no_dns_changes": true,
+    "no_secrets_added": true,
+    "no_live_webhooks_activated": true,
+    "no_supabase_added": true
+  },
+  "artifacts_created_or_updated": [
+    "src/lib/command-center.ts",
+    "src/routes/command-center.tsx",
+    "knowledge/audit/FATHIYA_DEPLOYMENT_PANEL_COMMAND_CENTER_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-05-22-deployment-panel-command-center-v0.json"
+  ],
+  "validation": {
+    "json_parse": "pass",
+    "npm_run_build": "pass",
+    "eslint_target_files": "pass"
+  },
+  "next_step": "review and merge PR into main; do not deploy, change DNS, add secrets, or activate live webhooks from this panel PR"
+}
