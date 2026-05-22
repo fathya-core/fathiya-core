@@ -7,11 +7,16 @@ import operationsToolContractsRaw from "../../knowledge/registries/operations_to
 import skillRegistryRaw from "../../knowledge/registries/skill_registry_v0.json?raw";
 import toolContractRegistryRaw from "../../knowledge/registries/tool_contract_registry_v0.json?raw";
 import workflowRegistryRaw from "../../knowledge/registries/workflow_registry_v0.json?raw";
+import domainRoutingPlanRaw from "../../knowledge/deployment/domain_routing_plan_v0.json?raw";
+import envContractRaw from "../../knowledge/deployment/env_contract_v0.json?raw";
+import webhookIngressContractRaw from "../../knowledge/hooks/webhook_ingress_contract_v0.json?raw";
+import mcpServerContractRaw from "../../knowledge/mcp/mcp_server_contract_v0.json?raw";
 import operationsAutopilotQueueRaw from "../../knowledge/operations/operations_autopilot_queue_v0.json?raw";
 import appsGptsRoutingMapRaw from "../../knowledge/routing/apps_gpts_routing_map_v1.json?raw";
 import appsGptsRoutingRulesRaw from "../../knowledge/routing/apps_gpts_routing_rules_v1.json?raw";
 import receiptLedgerRaw from "../../knowledge/runtime/receipt_ledger_v0.json?raw";
 import runtimeQueueRaw from "../../knowledge/runtime/runtime_queue_v0.json?raw";
+import sdkGatewayContractRaw from "../../knowledge/sdk/sdk_gateway_contract_v0.json?raw";
 import retrievalSummaryRaw from "../../knowledge/retrieval_index_summary.json?raw";
 import retrievalValidationRaw from "../../knowledge/retrieval_validation_report.json?raw";
 import backboneValidationRaw from "../../knowledge/audit/FATHIYA_BACKBONE_VALIDATION_REPORT_v0.json?raw";
@@ -509,6 +514,174 @@ type BackboneValidation = {
   };
 };
 
+type DomainRoutingPlan = {
+  schema_version: string;
+  description: string;
+  last_updated: string;
+  status: string;
+  adr: string;
+  domains: Array<{
+    domain: string;
+    role: string;
+    description: string;
+    status: string;
+    routes?: Array<{
+      path: string;
+      handler: string;
+      auth?: boolean;
+    }>;
+    v1_routes?: Array<{
+      path: string;
+      handler: string;
+    }>;
+    command_center_panels?: string[];
+    auth_required: boolean;
+    env_vars?: string[];
+  }>;
+  no_live_dns_rule: {
+    enforced: boolean;
+    description: string;
+  };
+  no_live_webhooks_rule: {
+    enforced: boolean;
+    description: string;
+  };
+  no_secrets_rule: {
+    enforced: boolean;
+    description: string;
+  };
+};
+
+type EnvContract = {
+  schema_version: string;
+  description: string;
+  last_updated: string;
+  adr: string;
+  rules: {
+    no_secret_values: boolean;
+    names_only: boolean;
+    vite_prefix_for_client: string;
+    no_prefix_for_server: string;
+  };
+  env_vars: Array<{
+    name: string;
+    scope: "client" | "server";
+    required: boolean;
+    description: string;
+    used_by: string[];
+    default: string | null;
+    secret: boolean;
+  }>;
+  deployment_checklist: string[];
+  command_center_display: {
+    description: string;
+    required_vars: string[];
+  };
+};
+
+type McpServerContract = {
+  schema_version: string;
+  description: string;
+  last_updated: string;
+  adr: string;
+  server: {
+    name: string;
+    version: string;
+    base_url_env: string;
+    endpoint: string;
+  };
+  protocol: {
+    type: string;
+    description: string;
+    supported_modes: Record<string, boolean>;
+    future_v1: {
+      planned: boolean;
+      features: string[];
+    };
+  };
+  tools: Array<{
+    name: string;
+    description: string;
+    read_only: boolean;
+    requires_approval: boolean;
+  }>;
+  quality_gate: {
+    enforced: boolean;
+    forbidden_patterns: string[];
+    arabic_forbidden: boolean;
+    allowed_signal_directions: string[];
+  };
+  model_routing: {
+    enabled: boolean;
+    registry: string;
+    slots: string[];
+  };
+};
+
+type SdkGatewayContract = {
+  schema_version: string;
+  description: string;
+  last_updated: string;
+  adr: string;
+  gateway: {
+    name: string;
+    version: string;
+    base_url_env: string;
+    planned_domain: string;
+  };
+  endpoints: Array<{
+    method: string;
+    path: string;
+    description: string;
+    auth_required: boolean;
+  }>;
+  rate_limits: {
+    v0: string;
+    v1_planned: string;
+  };
+  auth: {
+    v0: string;
+    v1_planned: string;
+  };
+  no_supabase: boolean;
+  state_source: string;
+};
+
+type WebhookIngressContract = {
+  schema_version: string;
+  description: string;
+  last_updated: string;
+  adr: string;
+  ingress: {
+    name: string;
+    version: string;
+    base_url_env: string;
+    planned_domain: string;
+  };
+  endpoints: Array<{
+    method: string;
+    path: string;
+    description: string;
+    auth_required: boolean;
+  }>;
+  validation_rules: {
+    required_fields: string[];
+    quality_gate: string;
+    no_trading_commands: boolean;
+    max_content_length: number;
+  };
+  forwarding: {
+    target_env: string;
+    target_path: string;
+    method: string;
+    passes_receipt_id: boolean;
+  };
+  no_live_webhooks_rule: {
+    enforced: boolean;
+    description: string;
+  };
+};
+
 export type CommandCenterSnapshot = {
   generatedAt: string;
   loaderMode: "bundled-knowledge-files" | "mock-fallback";
@@ -666,6 +839,100 @@ export type CommandCenterSnapshot = {
     summary: string;
     nextStep: string;
   }>;
+  deploymentPanel: {
+    domainTopology: Array<{
+      domain: string;
+      role: string;
+      description: string;
+      status: string;
+      authRequired: boolean;
+      routes: string[];
+      envVars: string[];
+    }>;
+    deploymentReadiness: Array<{
+      check: string;
+      status: string;
+      detail: string;
+      source: string;
+    }>;
+    mcpStatus: {
+      name: string;
+      version: string;
+      endpoint: string;
+      baseUrlEnv: string;
+      protocolType: string;
+      protocolDescription: string;
+      supportedModes: Array<{
+        mode: string;
+        status: string;
+      }>;
+      toolCount: number;
+      readOnlyToolCount: number;
+      writeToolCount: number;
+      qualityGateStatus: string;
+      futureFeatures: string[];
+    };
+    sdkApiStatus: {
+      name: string;
+      version: string;
+      plannedDomain: string;
+      baseUrlEnv: string;
+      endpoints: Array<{
+        method: string;
+        path: string;
+        authRequired: boolean;
+        description: string;
+      }>;
+      authStatus: string;
+      rateLimitStatus: string;
+      stateSource: string;
+      noSupabase: boolean;
+    };
+    webhookIngressStatus: {
+      name: string;
+      version: string;
+      plannedDomain: string;
+      baseUrlEnv: string;
+      endpoints: Array<{
+        method: string;
+        path: string;
+        authRequired: boolean;
+        description: string;
+      }>;
+      validationRules: string[];
+      forwardingTarget: string;
+      noLiveWebhooksStatus: string;
+    };
+    openRouterModelSlots: Array<{
+      slot: string;
+      envVar: string;
+      required: boolean;
+      status: string;
+      valueSource: string;
+      defaultModel: string;
+      secret: boolean;
+      description: string;
+    }>;
+    missingEnvVars: Array<{
+      name: string;
+      scope: string;
+      required: boolean;
+      secret: boolean;
+      defaultValue: string;
+      description: string;
+      status: string;
+    }>;
+    recentDeploymentReceipts: Array<{
+      receiptId: string;
+      timestamp: string;
+      queue: string;
+      adapter: string;
+      status: string;
+      summary: string;
+      nextStep: string;
+    }>;
+    blockers: string[];
+  };
   cryptoRadarBatch: {
     batchId: string;
     createdAt: string;
@@ -831,7 +1098,11 @@ export function getStatusTone(status: string): StatusTone {
     value.includes("active") ||
     value.includes("approved") ||
     value.includes("core") ||
-    value.includes("ready")
+    value.includes("ready") ||
+    value.includes("enforced") ||
+    value.includes("enabled") ||
+    value.includes("present") ||
+    value.includes("contract")
   ) {
     return "good";
   }
@@ -846,7 +1117,12 @@ export function getStatusTone(status: string): StatusTone {
   ) {
     return "warn";
   }
-  if (value.includes("block") || value.includes("fail") || value.includes("reject")) {
+  if (
+    value.includes("block") ||
+    value.includes("fail") ||
+    value.includes("reject") ||
+    value.includes("missing_required")
+  ) {
     return "danger";
   }
   if (value.includes("run") || value.includes("queue") || value.includes("monitor")) {
@@ -859,6 +1135,23 @@ function buildSnapshot(): CommandCenterSnapshot {
   const awareness = parseJson<AwarenessState>(awarenessRaw, "awareness");
   const runtimeQueue = parseJson<RuntimeQueue>(runtimeQueueRaw, "runtime queue");
   const receiptLedger = parseJson<ReceiptLedger>(receiptLedgerRaw, "receipt ledger");
+  const domainRoutingPlan = parseJson<DomainRoutingPlan>(
+    domainRoutingPlanRaw,
+    "domain routing plan",
+  );
+  const envContract = parseJson<EnvContract>(envContractRaw, "environment contract");
+  const mcpServerContract = parseJson<McpServerContract>(
+    mcpServerContractRaw,
+    "mcp server contract",
+  );
+  const sdkGatewayContract = parseJson<SdkGatewayContract>(
+    sdkGatewayContractRaw,
+    "sdk gateway contract",
+  );
+  const webhookIngressContract = parseJson<WebhookIngressContract>(
+    webhookIngressContractRaw,
+    "webhook ingress contract",
+  );
   const agentRegistry = parseJson<AgentRegistry>(agentRegistryRaw, "agent registry");
   const workflowRegistry = parseJson<WorkflowRegistry>(workflowRegistryRaw, "workflow registry");
   const toolContractRegistry = parseJson<ToolContractRegistry>(
@@ -916,6 +1209,14 @@ function buildSnapshot(): CommandCenterSnapshot {
     latestDailyIntake?.receiptId,
     ...(routingSummary?.receiptIds ?? []),
   ]);
+  const deploymentPanel = buildDeploymentPanel(
+    domainRoutingPlan,
+    envContract,
+    mcpServerContract,
+    sdkGatewayContract,
+    webhookIngressContract,
+    receiptLedger,
+  );
 
   const playbooks = PLAYBOOK_FILES.map((playbook) =>
     buildPlaybookView(playbook.path, playbook.raw, backboneValidation.validation_date),
@@ -1053,6 +1354,13 @@ function buildSnapshot(): CommandCenterSnapshot {
           ? "Recent receipt linkage now highlights the daily intake and routing integration receipts alongside the live runtime queue and ledger."
           : "Runtime queue and receipt ledger are wired, but no recent runtime or receipt rows are available yet.",
       },
+      deploymentPanel: {
+        source_file:
+          "knowledge/deployment/domain_routing_plan_v0.json, knowledge/deployment/env_contract_v0.json, knowledge/mcp/mcp_server_contract_v0.json, knowledge/sdk/sdk_gateway_contract_v0.json, knowledge/hooks/webhook_ingress_contract_v0.json",
+        data_status: "planned",
+        notes:
+          "Deployment Panel v0 is contract-backed only. It surfaces planned domains, readiness gates, MCP/API/webhook boundaries, OpenRouter model slots, missing runtime env names, and deployment receipts without deploying or changing DNS.",
+      },
       cryptoRadar: {
         source_file:
           "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json, knowledge/crypto/radar/cards/*.json",
@@ -1167,6 +1475,12 @@ function buildSnapshot(): CommandCenterSnapshot {
         note: "Operations-layer contract drafts for webhook, workflow, messaging, and repository adapters.",
       },
       {
+        label: "Deployment Contracts",
+        path: "knowledge/deployment/domain_routing_plan_v0.json, knowledge/deployment/env_contract_v0.json, knowledge/mcp/mcp_server_contract_v0.json, knowledge/sdk/sdk_gateway_contract_v0.json, knowledge/hooks/webhook_ingress_contract_v0.json",
+        kind: "canonical",
+        note: "Read-only deployment panel inputs for topology, readiness, MCP/API/webhook status, OpenRouter slots, and missing env names. No DNS, deployment, secrets, or live webhooks are changed.",
+      },
+      {
         label: "Security Targets",
         path: "knowledge/security/targets/*.json, knowledge/security/scope_maps/*.json",
         kind: "canonical",
@@ -1237,6 +1551,7 @@ function buildSnapshot(): CommandCenterSnapshot {
     operationsQueue,
     operationsToolContracts: operationsToolContractRows,
     recentIntakeRoutingReceipts,
+    deploymentPanel,
     cryptoRadarBatch: {
       batchId: cryptoRadarBatch.batch_id,
       createdAt: cryptoRadarBatch.created_at,
@@ -1390,6 +1705,56 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
     operationsQueue: null,
     operationsToolContracts: [],
     recentIntakeRoutingReceipts: [],
+    deploymentPanel: {
+      domainTopology: [],
+      deploymentReadiness: [
+        {
+          check: "Deployment contract loader",
+          status: "blocked",
+          detail: error,
+          source: "src/lib/command-center.ts",
+        },
+      ],
+      mcpStatus: {
+        name: "unavailable",
+        version: "unavailable",
+        endpoint: "unavailable",
+        baseUrlEnv: "unavailable",
+        protocolType: "loader_error",
+        protocolDescription: error,
+        supportedModes: [],
+        toolCount: 0,
+        readOnlyToolCount: 0,
+        writeToolCount: 0,
+        qualityGateStatus: "loader_error",
+        futureFeatures: [],
+      },
+      sdkApiStatus: {
+        name: "unavailable",
+        version: "unavailable",
+        plannedDomain: "unavailable",
+        baseUrlEnv: "unavailable",
+        endpoints: [],
+        authStatus: "loader_error",
+        rateLimitStatus: "loader_error",
+        stateSource: "unavailable",
+        noSupabase: false,
+      },
+      webhookIngressStatus: {
+        name: "unavailable",
+        version: "unavailable",
+        plannedDomain: "unavailable",
+        baseUrlEnv: "unavailable",
+        endpoints: [],
+        validationRules: [],
+        forwardingTarget: "unavailable",
+        noLiveWebhooksStatus: "loader_error",
+      },
+      openRouterModelSlots: [],
+      missingEnvVars: [],
+      recentDeploymentReceipts: [],
+      blockers: [error],
+    },
     cryptoRadarBatch: null,
     cryptoRadar: [],
     targetCards: [],
@@ -1421,6 +1786,243 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
       next_recommended_action: "Repair the Command Center knowledge adapter parse failure.",
     },
   };
+}
+
+function buildDeploymentPanel(
+  domainRoutingPlan: DomainRoutingPlan,
+  envContract: EnvContract,
+  mcpServerContract: McpServerContract,
+  sdkGatewayContract: SdkGatewayContract,
+  webhookIngressContract: WebhookIngressContract,
+  receiptLedger: ReceiptLedger,
+): CommandCenterSnapshot["deploymentPanel"] {
+  const missingEnvVars = buildMissingEnvVars(envContract);
+  const missingRequiredNoDefault = missingEnvVars.filter(
+    (envVar) => envVar.required && envVar.defaultValue === "—",
+  );
+  const openRouterModelSlots = buildOpenRouterModelSlots(
+    mcpServerContract.model_routing.slots,
+    envContract,
+  );
+  const recentDeploymentReceipts = buildRecentDeploymentReceipts(receiptLedger);
+
+  return {
+    domainTopology: domainRoutingPlan.domains.map((domain) => ({
+      domain: domain.domain,
+      role: domain.role,
+      description: domain.description,
+      status: domain.status,
+      authRequired: domain.auth_required,
+      routes: [...(domain.routes ?? []), ...(domain.v1_routes ?? [])].map(
+        (route) => `${route.path} -> ${route.handler}`,
+      ),
+      envVars: domain.env_vars ?? [],
+    })),
+    deploymentReadiness: [
+      {
+        check: "Domain routing plan",
+        status: domainRoutingPlan.status,
+        detail: `${domainRoutingPlan.domains.length} domains documented under ${domainRoutingPlan.adr}; architecture only.`,
+        source: "knowledge/deployment/domain_routing_plan_v0.json",
+      },
+      {
+        check: "No live DNS changes",
+        status: domainRoutingPlan.no_live_dns_rule.enforced ? "enforced" : "blocked",
+        detail: domainRoutingPlan.no_live_dns_rule.description,
+        source: "knowledge/deployment/domain_routing_plan_v0.json",
+      },
+      {
+        check: "No live webhook activation",
+        status:
+          domainRoutingPlan.no_live_webhooks_rule.enforced &&
+          webhookIngressContract.no_live_webhooks_rule.enforced
+            ? "enforced"
+            : "blocked",
+        detail: webhookIngressContract.no_live_webhooks_rule.description,
+        source: "knowledge/hooks/webhook_ingress_contract_v0.json",
+      },
+      {
+        check: "No secret values",
+        status:
+          domainRoutingPlan.no_secrets_rule.enforced &&
+          envContract.rules.no_secret_values &&
+          envContract.rules.names_only
+            ? "enforced"
+            : "needs_review",
+        detail: `${envContract.rules.vite_prefix_for_client}; ${envContract.rules.no_prefix_for_server}.`,
+        source: "knowledge/deployment/env_contract_v0.json",
+      },
+      {
+        check: "Required runtime env",
+        status: missingRequiredNoDefault.length === 0 ? "ready" : "blocked",
+        detail:
+          missingRequiredNoDefault.length === 0
+            ? "Required Command Center env names are either present or have documented contract defaults."
+            : `Missing required env with no default: ${missingRequiredNoDefault
+                .map((envVar) => envVar.name)
+                .join(", ")}.`,
+        source: "knowledge/deployment/env_contract_v0.json",
+      },
+      {
+        check: "MCP v0 boundary",
+        status: mcpServerContract.protocol.supported_modes.mcp_protocol_full
+          ? "needs_review"
+          : "contract_ready",
+        detail: `${mcpServerContract.protocol.type}; full MCP protocol remains planned for v1.`,
+        source: "knowledge/mcp/mcp_server_contract_v0.json",
+      },
+      {
+        check: "SDK state source",
+        status: sdkGatewayContract.no_supabase ? "ready" : "blocked",
+        detail: `${sdkGatewayContract.state_source}; no_supabase=${String(
+          sdkGatewayContract.no_supabase,
+        )}.`,
+        source: "knowledge/sdk/sdk_gateway_contract_v0.json",
+      },
+    ],
+    mcpStatus: {
+      name: mcpServerContract.server.name,
+      version: mcpServerContract.server.version,
+      endpoint: mcpServerContract.server.endpoint,
+      baseUrlEnv: mcpServerContract.server.base_url_env,
+      protocolType: mcpServerContract.protocol.type,
+      protocolDescription: mcpServerContract.protocol.description,
+      supportedModes: Object.entries(mcpServerContract.protocol.supported_modes).map(
+        ([mode, enabled]) => ({
+          mode,
+          status: enabled ? "enabled" : "disabled_v0",
+        }),
+      ),
+      toolCount: mcpServerContract.tools.length,
+      readOnlyToolCount: mcpServerContract.tools.filter((tool) => tool.read_only).length,
+      writeToolCount: mcpServerContract.tools.filter((tool) => !tool.read_only).length,
+      qualityGateStatus: mcpServerContract.quality_gate.enforced ? "enforced" : "not_enforced",
+      futureFeatures: mcpServerContract.protocol.future_v1.features,
+    },
+    sdkApiStatus: {
+      name: sdkGatewayContract.gateway.name,
+      version: sdkGatewayContract.gateway.version,
+      plannedDomain: sdkGatewayContract.gateway.planned_domain,
+      baseUrlEnv: sdkGatewayContract.gateway.base_url_env,
+      endpoints: sdkGatewayContract.endpoints.map((endpoint) => ({
+        method: endpoint.method,
+        path: endpoint.path,
+        authRequired: endpoint.auth_required,
+        description: endpoint.description,
+      })),
+      authStatus: sdkGatewayContract.auth.v0,
+      rateLimitStatus: sdkGatewayContract.rate_limits.v0,
+      stateSource: sdkGatewayContract.state_source,
+      noSupabase: sdkGatewayContract.no_supabase,
+    },
+    webhookIngressStatus: {
+      name: webhookIngressContract.ingress.name,
+      version: webhookIngressContract.ingress.version,
+      plannedDomain: webhookIngressContract.ingress.planned_domain,
+      baseUrlEnv: webhookIngressContract.ingress.base_url_env,
+      endpoints: webhookIngressContract.endpoints.map((endpoint) => ({
+        method: endpoint.method,
+        path: endpoint.path,
+        authRequired: endpoint.auth_required,
+        description: endpoint.description,
+      })),
+      validationRules: [
+        `Required fields: ${webhookIngressContract.validation_rules.required_fields.join(", ")}`,
+        `Quality gate: ${webhookIngressContract.validation_rules.quality_gate}`,
+        `No trading commands: ${webhookIngressContract.validation_rules.no_trading_commands ? "yes" : "no"}`,
+        `Max content length: ${webhookIngressContract.validation_rules.max_content_length}`,
+      ],
+      forwardingTarget: `${webhookIngressContract.forwarding.method} ${webhookIngressContract.forwarding.target_env}${webhookIngressContract.forwarding.target_path}`,
+      noLiveWebhooksStatus: webhookIngressContract.no_live_webhooks_rule.enforced
+        ? "enforced"
+        : "blocked",
+    },
+    openRouterModelSlots,
+    missingEnvVars,
+    recentDeploymentReceipts,
+    blockers:
+      missingRequiredNoDefault.length > 0
+        ? missingRequiredNoDefault.map(
+            (envVar) => `${envVar.name} is required and has no contract default.`,
+          )
+        : [
+            "No blockers for the read-only deployment panel. Production deployment still requires operator-managed platform configuration.",
+          ],
+  };
+}
+
+function buildOpenRouterModelSlots(slots: string[], envContract: EnvContract) {
+  return slots.map((slot) => {
+    const envVarName = getOpenRouterModelEnvName(slot);
+    const envVar = envContract.env_vars.find((candidate) => candidate.name === envVarName);
+    const runtimeValue = getRuntimeEnvValue(envVarName);
+    const hasDefault = Boolean(envVar?.default);
+
+    return {
+      slot,
+      envVar: envVarName,
+      required: envVar?.required ?? false,
+      status: runtimeValue ? "env_present" : hasDefault ? "using_contract_default" : "unset",
+      valueSource: runtimeValue ? "runtime_env" : hasDefault ? "contract_default" : "unset",
+      defaultModel: envVar?.default ?? "—",
+      secret: envVar?.secret ?? false,
+      description: envVar?.description ?? "OpenRouter model slot",
+    };
+  });
+}
+
+function buildMissingEnvVars(envContract: EnvContract) {
+  const requiredDisplayVars = new Set(envContract.command_center_display.required_vars);
+
+  return envContract.env_vars
+    .filter((envVar) => requiredDisplayVars.has(envVar.name) && !getRuntimeEnvValue(envVar.name))
+    .map((envVar) => ({
+      name: envVar.name,
+      scope: envVar.scope,
+      required: envVar.required,
+      secret: envVar.secret,
+      defaultValue: envVar.default ?? "—",
+      description: envVar.description,
+      status: envVar.default ? "missing_runtime_uses_default" : "missing_required",
+    }));
+}
+
+function buildRecentDeploymentReceipts(
+  receiptLedger: ReceiptLedger,
+): CommandCenterSnapshot["deploymentPanel"]["recentDeploymentReceipts"] {
+  return receiptLedger.receipts
+    .filter((receipt) =>
+      [
+        receipt.receipt_id,
+        receipt.source_request ?? "",
+        receipt.input_artifact,
+        receipt.output_artifact,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes("deployment"),
+    )
+    .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
+    .slice(0, 5)
+    .map((receipt) => ({
+      receiptId: receipt.receipt_id,
+      timestamp: receipt.timestamp,
+      queue: receipt.queue,
+      adapter: receipt.adapter,
+      status: receipt.status,
+      summary: receipt.output_artifact,
+      nextStep: receipt.next_step,
+    }));
+}
+
+function getOpenRouterModelEnvName(slot: string) {
+  const normalizedSlot = slot === "default" ? "DEFAULT" : slot.toUpperCase();
+  return `VITE_OPENROUTER_${normalizedSlot}_MODEL`;
+}
+
+function getRuntimeEnvValue(name: string) {
+  const value = import.meta.env[name];
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 
 function buildPlaybookView(path: string, raw: string, validationDate: string) {
