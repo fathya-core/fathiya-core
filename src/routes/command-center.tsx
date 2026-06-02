@@ -55,6 +55,7 @@ export const Route = createFileRoute("/command-center")({
 const SCREEN_TABS = [
   { value: "overview", label: "Overview" },
   { value: "deployment", label: "Deployment" },
+  { value: "routing", label: "Routing Status" },
   { value: "queue", label: "Runtime Queue" },
   { value: "receipts", label: "Receipt Ledger" },
   { value: "agents", label: "Agents" },
@@ -990,6 +991,324 @@ function CommandCenterPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="routing" className="space-y-4">
+            <SectionHeader
+              title="Apps/GPTs Routing Status"
+              description="Read-only status for the parsed Apps/GPTs routing map, guardrails, decision boundaries, and workflow templates. This view does not activate downstream systems."
+            />
+            <ProvenanceBanner provenance={data.sectionProvenance.routingStatus} />
+
+            {data.routingStatus ? (
+              <>
+                <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <CardTitle>Routing map state</CardTitle>
+                          <CardDescription>
+                            Structured parse coverage from the operator-provided Apps/GPTs workbook.
+                          </CardDescription>
+                        </div>
+                        <StatusBadge status={data.routingStatus.status} />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        <OverviewField
+                          label="Source spreadsheet"
+                          value={data.routingStatus.sourceSpreadsheet}
+                        />
+                        <OverviewField label="Created" value={data.routingStatus.createdAt} />
+                        <OverviewField
+                          label="Raw workbook committed"
+                          value={data.routingStatus.rawWorkbookCommitted ? "yes" : "no"}
+                        />
+                        <OverviewField
+                          label="App rows"
+                          value={String(data.routingStatus.totals.appRows)}
+                        />
+                        <OverviewField
+                          label="GPT rows"
+                          value={String(data.routingStatus.totals.gptRows)}
+                        />
+                        <OverviewField
+                          label="Workflow templates"
+                          value={String(data.routingStatus.totals.workflowTemplates)}
+                        />
+                      </div>
+                      <OverviewField
+                        label="Routing model"
+                        value={`${data.routingStatus.routingModel.pattern}: ${data.routingStatus.routingModel.principle}`}
+                      />
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <SmallStat
+                          label="Sheets parsed"
+                          value={String(data.routingStatus.totals.sheets)}
+                          icon={FileCheck2}
+                        />
+                        <SmallStat
+                          label="Categories"
+                          value={String(data.routingStatus.totals.categories)}
+                          icon={FolderKanban}
+                        />
+                        <SmallStat
+                          label="Receipts linked"
+                          value={String(data.routingStatus.receipts.length)}
+                          icon={Receipt}
+                        />
+                      </div>
+                      <div>
+                        <div className="mb-2 text-sm font-medium">Categories</div>
+                        <TagList items={data.routingStatus.categories} />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>Command Center promotion</CardTitle>
+                      <CardDescription>
+                        Tracks the previous pending loader state and the row-level limits of the
+                        parsed source.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <OverviewField
+                        label="Loader status before this PR"
+                        value={data.routingStatus.commandCenterLoaderStatus}
+                      />
+                      <OverviewField
+                        label="Prior reason"
+                        value={data.routingStatus.commandCenterReason}
+                      />
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <OverviewField
+                          label="App row names"
+                          value={
+                            data.routingStatus.rowLevelAvailability.apps
+                              ? "available"
+                              : "not available"
+                          }
+                        />
+                        <OverviewField
+                          label="GPT row names"
+                          value={
+                            data.routingStatus.rowLevelAvailability.gpts
+                              ? "available"
+                              : "not available"
+                          }
+                        />
+                      </div>
+                      <OverviewField label="Boundary" value={data.routingStatus.boundary} />
+                      <StringListPanel
+                        title="Activation requirements"
+                        items={data.routingStatus.activationRequirements}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>App role routing</CardTitle>
+                      <CardDescription>
+                        Role groups, queue lanes, required controls, and blocking conditions.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        headers={["role", "count", "queue", "lane", "requires", "blocked if"]}
+                        rows={data.routingStatus.appRoleGroups.map((group) => [
+                          group.role,
+                          String(group.count),
+                          group.defaultQueue,
+                          group.routingLane,
+                          <TagList key="requires" items={group.requires} />,
+                          <TagList key="blocked" items={group.blockedIf} />,
+                        ])}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>Trading relevance gates</CardTitle>
+                      <CardDescription>
+                        Finance-sensitive routing posture and blocked output categories.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        headers={[
+                          "relevance",
+                          "count",
+                          "default",
+                          "requirements",
+                          "blocked outputs",
+                        ]}
+                        rows={data.routingStatus.tradingRelevance.map((group) => [
+                          group.label,
+                          String(group.count),
+                          group.defaultAction,
+                          <TagList key="requirements" items={group.requirements} />,
+                          group.blockedOutputs.length > 0 ? (
+                            <TagList key="blocked" items={group.blockedOutputs} />
+                          ) : (
+                            "none"
+                          ),
+                        ])}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>GPT risk groups</CardTitle>
+                      <CardDescription>
+                        Default GPT modes and control requirements by parsed risk level.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        headers={[
+                          "risk",
+                          "count",
+                          "mode",
+                          "approval",
+                          "decision block",
+                          "allowed outputs",
+                        ]}
+                        rows={data.routingStatus.gptRiskGroups.map((group) => [
+                          group.riskLevel,
+                          String(group.count),
+                          group.defaultMode,
+                          group.approvalRequired,
+                          group.decisionBlockRequired,
+                          <TagList key="allowed" items={group.allowedOutputs} />,
+                        ])}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>Decision boundaries</CardTitle>
+                      <CardDescription>
+                        Explicit decision-block labels from the routing rules.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        headers={["label", "count", "rule"]}
+                        rows={data.routingStatus.decisionBlocks.map((rule) => [
+                          rule.label,
+                          rule.count,
+                          rule.rule,
+                        ])}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader>
+                    <CardTitle>Workflow templates</CardTitle>
+                    <CardDescription>
+                      Parsed workflow examples with guardrails and allowed output shapes.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DataTable
+                      headers={[
+                        "workflow",
+                        "orchestrator",
+                        "input",
+                        "GPT role",
+                        "output",
+                        "guardrails",
+                      ]}
+                      rows={data.routingStatus.workflowTemplates.map((workflow) => [
+                        <div key="workflow">
+                          <div className="font-medium">{workflow.name}</div>
+                          <code className="text-[11px] text-muted-foreground">
+                            {workflow.workflowId}
+                          </code>
+                        </div>,
+                        workflow.orchestrator,
+                        workflow.input,
+                        workflow.gptRole,
+                        workflow.output,
+                        <TagList
+                          key="guardrails"
+                          items={
+                            workflow.requiredGuardrails.length > 0
+                              ? workflow.requiredGuardrails
+                              : [workflow.guardrail]
+                          }
+                        />,
+                      ])}
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>Hard guardrails</CardTitle>
+                      <CardDescription>
+                        Rules that block hidden execution, direct trading decisions, and unsafe
+                        external actions.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        headers={["id", "severity", "rule"]}
+                        rows={data.routingStatus.hardRules.map((rule) => [
+                          <code key="id">{rule.ruleId}</code>,
+                          <StatusBadge key="severity" status={rule.severity} />,
+                          rule.rule,
+                        ])}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/60 bg-card/50">
+                    <CardHeader>
+                      <CardTitle>Source sheets and receipts</CardTitle>
+                      <CardDescription>
+                        Workbook coverage and proof receipts linked to the routing parse.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <DataTable
+                        headers={["sheet", "range", "rows", "content"]}
+                        rows={data.routingStatus.sheets.map((sheet) => [
+                          sheet.name,
+                          sheet.range,
+                          String(sheet.rows),
+                          sheet.contentType,
+                        ])}
+                      />
+                      <div>
+                        <div className="mb-2 text-sm font-medium">Receipts</div>
+                        <TagList items={data.routingStatus.receipts} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="No routing status available"
+                description="The dedicated routing status view will render once the Apps/GPTs routing map and rules artifacts are bundled."
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="queue" className="space-y-4">

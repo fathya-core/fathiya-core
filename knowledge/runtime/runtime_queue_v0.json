@@ -321,6 +321,21 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-05-22-deployment-panel-command-center-v0.json",
       "next_step": "review and merge PR into main; do not deploy, change DNS, add secrets, or activate live webhooks from this panel PR"
+    },
+    {
+      "id": "rt-2026-06-02-routing-status-command-center-v0",
+      "timestamp": "2026-06-02T18:13:33Z",
+      "source": "Command Center Routing Status panel v0",
+      "requested_by": "FATHIYA Kernel",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "mode": "Command Center routing status panel",
+      "input_artifact": "main at 6e67c9dae553344c23cd6159e4e8cd3d82b63a62 + Apps/GPTs routing map and rules artifacts",
+      "expected_output": "Routing Status tab in Command Center + audit report + runtime queue entry + receipt ledger entry + individual receipt",
+      "approval_required": false,
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-06-02-routing-status-command-center-v0.json",
+      "next_step": "review and merge PR into main; then commit structured per-row Apps/GPT exports or the raw workbook before building row-level browse/filter views"
     }
   ],
   "required_entry_fields": [

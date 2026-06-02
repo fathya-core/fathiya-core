@@ -236,6 +236,19 @@
       "error": null,
       "approval_reference": "none_required_read_only_command_center_panel",
       "next_step": "review and merge PR into main; do not deploy, change DNS, add secrets, or activate live webhooks from this panel PR"
+    },
+    {
+      "receipt_id": "receipt-2026-06-02-routing-status-command-center-v0",
+      "timestamp": "2026-06-02T18:13:33Z",
+      "source_request": "rt-2026-06-02-routing-status-command-center-v0",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "input_artifact": "main at 6e67c9dae553344c23cd6159e4e8cd3d82b63a62 + knowledge/routing/apps_gpts_routing_map_v1.json + knowledge/routing/apps_gpts_routing_rules_v1.json",
+      "output_artifact": "src/lib/command-center.ts + src/routes/command-center.tsx + knowledge/audit/FATHIYA_ROUTING_STATUS_COMMAND_CENTER_REPORT_v0.md + runtime queue entry + receipt ledger entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "none_required_read_only_command_center_panel",
+      "next_step": "review and merge PR into main; then commit structured per-row Apps/GPT exports or the raw workbook before building row-level browse/filter views"
     }
   ],
   "required_receipt_fields": [
