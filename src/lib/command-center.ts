@@ -289,23 +289,68 @@ type SourceManifest = {
 };
 
 type AppsGptsRoutingMap = {
-  status: string;
   created_at: string;
+  status: string;
   source_file: {
     filename: string;
     source_manifest: string;
     daily_intake_batch: string;
+    raw_workbook_committed: boolean;
   };
+  sheets: Array<{
+    name: string;
+    range: string;
+    interpreted_data_rows: number;
+    content_type: string;
+  }>;
+  architecture_principles: Array<{
+    id: string;
+    principle: string;
+    routing_implication: string;
+  }>;
   apps_summary: {
     total_app_rows: number;
+    row_level_app_names_available: boolean;
+    top_role_groups: Array<{
+      role: string;
+      count: number;
+      routing_lane: string;
+      allowed_use: string;
+    }>;
+    trading_relevance_groups: Array<{
+      label: string;
+      count: number;
+      routing_note: string;
+    }>;
+    categories: string[];
   };
   gpts_summary: {
     total_gpt_rows: number;
+    row_level_gpt_names_available: boolean;
+    risk_level_groups: Array<{
+      risk_level: string;
+      count: number;
+      default_mode: string;
+      allowed_outputs: string[];
+      required_controls?: string[];
+    }>;
+    decision_blocked_groups: Array<{
+      label: string;
+      count: number;
+      routing_rule: string;
+    }>;
+    trading_like_gpt_boundary: string;
   };
   workflow_templates: Array<{
     workflow_id: string;
     name: string;
+    input: string;
+    orchestrator: string;
+    gpt_role: string;
+    output: string | { format?: string; schema?: Record<string, unknown> };
+    guardrail: string;
   }>;
+  global_guardrails: string[];
   receipts: {
     source_daily_intake_receipt: string;
     integration_receipt: string;
@@ -314,12 +359,61 @@ type AppsGptsRoutingMap = {
 
 type AppsGptsRoutingRules = {
   status: string;
+  routing_model: {
+    pattern: string;
+    orchestration_layer_y: string[];
+    transformation_layer_x: string[];
+    output_or_state_layer_z: string[];
+    principle: string;
+  };
   global_hard_rules: Array<{
     rule_id: string;
     severity: string;
     rule: string;
   }>;
+  app_role_routing_rules: Array<{
+    role_group: string;
+    count: number;
+    default_queue: string;
+    allowed_function: string;
+    requires: string[];
+    blocked_if: string[];
+  }>;
+  trading_relevance_rules: Array<{
+    relevance: string;
+    count: number;
+    default_action: string;
+    requirements: string[];
+    blocked_outputs?: string[];
+  }>;
+  gpt_risk_group_rules: Array<{
+    risk_level: string;
+    count: number;
+    default_mode: string;
+    allowed_outputs: string[];
+    approval_required: boolean | string;
+    decision_block_required?: boolean | string;
+  }>;
+  decision_block_rules: Array<{
+    decision_blocked_label: string;
+    count: number | string;
+    rule: string;
+  }>;
+  workflow_template_rules: Array<{
+    workflow_id: string;
+    name: string;
+    orchestrator: string;
+    input: string;
+    gpt_transform: string;
+    required_guardrails: string[];
+    allowed_output_schema?: string[];
+    allowed_outputs?: string[];
+  }>;
   activation_requirements: string[];
+  command_center_status: {
+    loader_update_performed: boolean;
+    reason: string;
+  };
 };
 
 type OperationsAutopilotQueue = {
@@ -806,6 +900,97 @@ export type CommandCenterSnapshot = {
     highLevelRules: string[];
     receiptIds: string[];
   } | null;
+  routingStatus: {
+    status: string;
+    createdAt: string;
+    sourceSpreadsheet: string;
+    sourceManifest: string;
+    dailyIntakeBatch: string;
+    rawWorkbookCommitted: boolean;
+    commandCenterLoaderStatus: string;
+    commandCenterReason: string;
+    routingModel: {
+      pattern: string;
+      orchestrators: string[];
+      transformationLayer: string[];
+      outputLayer: string[];
+      principle: string;
+    };
+    totals: {
+      appRows: number;
+      gptRows: number;
+      workflowTemplates: number;
+      sheets: number;
+      categories: number;
+    };
+    sheets: Array<{
+      name: string;
+      range: string;
+      rows: number;
+      contentType: string;
+    }>;
+    architecturePrinciples: Array<{
+      id: string;
+      principle: string;
+      routingImplication: string;
+    }>;
+    appRoleGroups: Array<{
+      role: string;
+      count: number;
+      routingLane: string;
+      defaultQueue: string;
+      allowedUse: string;
+      requires: string[];
+      blockedIf: string[];
+    }>;
+    tradingRelevance: Array<{
+      label: string;
+      count: number;
+      defaultAction: string;
+      routingNote: string;
+      requirements: string[];
+      blockedOutputs: string[];
+    }>;
+    gptRiskGroups: Array<{
+      riskLevel: string;
+      count: number;
+      defaultMode: string;
+      allowedOutputs: string[];
+      requiredControls: string[];
+      approvalRequired: string;
+      decisionBlockRequired: string;
+    }>;
+    decisionBlocks: Array<{
+      label: string;
+      count: string;
+      rule: string;
+    }>;
+    workflowTemplates: Array<{
+      workflowId: string;
+      name: string;
+      orchestrator: string;
+      input: string;
+      gptRole: string;
+      output: string;
+      guardrail: string;
+      requiredGuardrails: string[];
+      allowedOutputs: string[];
+    }>;
+    hardRules: Array<{
+      ruleId: string;
+      severity: string;
+      rule: string;
+    }>;
+    activationRequirements: string[];
+    categories: string[];
+    globalGuardrails: string[];
+    receipts: string[];
+    boundary: string;
+    rowLevelAvailability: {
+      apps: boolean;
+      gpts: boolean;
+    };
+  } | null;
   operationsQueue: {
     status: string;
     purpose: string;
@@ -1203,6 +1388,7 @@ function buildSnapshot(): CommandCenterSnapshot {
   const latestDailyIntake = buildLatestDailyIntake();
   const knowledgeCards = buildLatestDailyKnowledgeCards();
   const routingSummary = buildRoutingSummary(appsGptsRoutingMap, appsGptsRoutingRules);
+  const routingStatus = buildRoutingStatus(appsGptsRoutingMap, appsGptsRoutingRules);
   const operationsQueue = buildOperationsQueueSummary(operationsAutopilotQueue);
   const operationsToolContractRows = buildOperationsToolContractRows(operationsToolContracts);
   const recentIntakeRoutingReceipts = buildRecentIntakeRoutingReceipts([
@@ -1329,6 +1515,14 @@ function buildSnapshot(): CommandCenterSnapshot {
         notes: routingSummary
           ? "Structured routing map data is live, including the spreadsheet parse status, row counts, workflow templates, and hard routing rules."
           : "Routing map parse has not been promoted yet.",
+      },
+      routingStatus: {
+        source_file:
+          "knowledge/routing/apps_gpts_routing_map_v1.json, knowledge/routing/apps_gpts_routing_rules_v1.json",
+        data_status: routingStatus ? "live" : "planned",
+        notes: routingStatus
+          ? "Dedicated Routing Status view is backed by parsed Apps/GPTs role groups, GPT risk groups, workflow templates, activation requirements, and hard guardrails. It does not activate external systems."
+          : "Routing status has not been promoted into a dedicated Command Center view yet.",
       },
       operationsQueue: {
         source_file: "knowledge/operations/operations_autopilot_queue_v0.json",
@@ -1460,7 +1654,7 @@ function buildSnapshot(): CommandCenterSnapshot {
         label: "Apps/GPTs Routing",
         path: "knowledge/routing/apps_gpts_routing_map_v1.json, knowledge/routing/apps_gpts_routing_rules_v1.json",
         kind: "canonical",
-        note: "Structured spreadsheet parse facts, workflow counts, and high-level routing rules.",
+        note: "Structured spreadsheet parse facts, workflow counts, hard rules, role groups, GPT risk groups, decision boundaries, and workflow templates for the Routing Status view.",
       },
       {
         label: "Operations Queue",
@@ -1548,6 +1742,7 @@ function buildSnapshot(): CommandCenterSnapshot {
     latestDailyIntake,
     knowledgeCards,
     routingSummary,
+    routingStatus,
     operationsQueue,
     operationsToolContracts: operationsToolContractRows,
     recentIntakeRoutingReceipts,
@@ -2167,6 +2362,135 @@ function buildRoutingSummary(
   };
 }
 
+function buildRoutingStatus(
+  routingMap: AppsGptsRoutingMap,
+  routingRules: AppsGptsRoutingRules,
+): CommandCenterSnapshot["routingStatus"] {
+  const workflowRuleById = new Map(
+    routingRules.workflow_template_rules.map((workflow) => [workflow.workflow_id, workflow]),
+  );
+  const appRoleRuleByRole = new Map(
+    routingRules.app_role_routing_rules.map((rule) => [rule.role_group, rule]),
+  );
+  const tradingRuleByLabel = new Map(
+    routingRules.trading_relevance_rules.map((rule) => [rule.relevance, rule]),
+  );
+  const gptRiskRuleByLevel = new Map(
+    routingRules.gpt_risk_group_rules.map((rule) => [rule.risk_level, rule]),
+  );
+
+  return {
+    status: routingRules.status,
+    createdAt: routingMap.created_at,
+    sourceSpreadsheet: routingMap.source_file.filename,
+    sourceManifest: routingMap.source_file.source_manifest,
+    dailyIntakeBatch: routingMap.source_file.daily_intake_batch,
+    rawWorkbookCommitted: routingMap.source_file.raw_workbook_committed,
+    commandCenterLoaderStatus: routingRules.command_center_status.loader_update_performed
+      ? "complete"
+      : "pending_before_this_pr",
+    commandCenterReason: routingRules.command_center_status.reason,
+    routingModel: {
+      pattern: routingRules.routing_model.pattern,
+      orchestrators: routingRules.routing_model.orchestration_layer_y,
+      transformationLayer: routingRules.routing_model.transformation_layer_x,
+      outputLayer: routingRules.routing_model.output_or_state_layer_z,
+      principle: routingRules.routing_model.principle,
+    },
+    totals: {
+      appRows: routingMap.apps_summary.total_app_rows,
+      gptRows: routingMap.gpts_summary.total_gpt_rows,
+      workflowTemplates: routingMap.workflow_templates.length,
+      sheets: routingMap.sheets.length,
+      categories: routingMap.apps_summary.categories.length,
+    },
+    sheets: routingMap.sheets.map((sheet) => ({
+      name: sheet.name,
+      range: sheet.range,
+      rows: sheet.interpreted_data_rows,
+      contentType: sheet.content_type,
+    })),
+    architecturePrinciples: routingMap.architecture_principles.map((principle) => ({
+      id: principle.id,
+      principle: principle.principle,
+      routingImplication: principle.routing_implication,
+    })),
+    appRoleGroups: routingMap.apps_summary.top_role_groups.map((group) => {
+      const rule = appRoleRuleByRole.get(group.role);
+      return {
+        role: group.role,
+        count: group.count,
+        routingLane: group.routing_lane,
+        defaultQueue: rule?.default_queue ?? "not specified",
+        allowedUse: rule?.allowed_function ?? group.allowed_use,
+        requires: rule?.requires ?? [],
+        blockedIf: rule?.blocked_if ?? [],
+      };
+    }),
+    tradingRelevance: routingMap.apps_summary.trading_relevance_groups.map((group) => {
+      const rule = tradingRuleByLabel.get(group.label);
+      return {
+        label: group.label,
+        count: group.count,
+        defaultAction: rule?.default_action ?? "not specified",
+        routingNote: group.routing_note,
+        requirements: rule?.requirements ?? [],
+        blockedOutputs: rule?.blocked_outputs ?? [],
+      };
+    }),
+    gptRiskGroups: routingMap.gpts_summary.risk_level_groups.map((group) => {
+      const rule = gptRiskRuleByLevel.get(group.risk_level);
+      return {
+        riskLevel: group.risk_level,
+        count: group.count,
+        defaultMode: rule?.default_mode ?? group.default_mode,
+        allowedOutputs: rule?.allowed_outputs ?? group.allowed_outputs,
+        requiredControls: group.required_controls ?? [],
+        approvalRequired: formatRoutingControl(rule?.approval_required ?? "not specified"),
+        decisionBlockRequired: formatRoutingControl(
+          rule?.decision_block_required ?? "not specified",
+        ),
+      };
+    }),
+    decisionBlocks: routingRules.decision_block_rules.map((rule) => ({
+      label: rule.decision_blocked_label,
+      count: formatRoutingCount(rule.count),
+      rule: rule.rule,
+    })),
+    workflowTemplates: routingMap.workflow_templates.map((workflow) => {
+      const rule = workflowRuleById.get(workflow.workflow_id);
+      return {
+        workflowId: workflow.workflow_id,
+        name: workflow.name,
+        orchestrator: workflow.orchestrator,
+        input: workflow.input,
+        gptRole: workflow.gpt_role,
+        output: formatWorkflowOutput(workflow.output),
+        guardrail: workflow.guardrail,
+        requiredGuardrails: rule?.required_guardrails ?? [],
+        allowedOutputs: rule?.allowed_output_schema ?? rule?.allowed_outputs ?? [],
+      };
+    }),
+    hardRules: routingRules.global_hard_rules.map((rule) => ({
+      ruleId: rule.rule_id,
+      severity: rule.severity,
+      rule: rule.rule,
+    })),
+    activationRequirements: routingRules.activation_requirements,
+    categories: routingMap.apps_summary.categories,
+    globalGuardrails: routingMap.global_guardrails,
+    receipts: [
+      routingMap.receipts.source_daily_intake_receipt,
+      routingMap.receipts.integration_receipt,
+    ],
+    boundary: routingMap.gpts_summary.trading_like_gpt_boundary,
+    rowLevelAvailability: {
+      apps: routingMap.apps_summary.row_level_app_names_available,
+      gpts: routingMap.gpts_summary.row_level_gpt_names_available,
+    },
+  };
+}
+
 function buildOperationsQueueSummary(
   operationsQueue: OperationsAutopilotQueue,
 ): CommandCenterSnapshot["operationsQueue"] {
@@ -2524,6 +2848,25 @@ function normalizeTextList(values: Array<string | Record<string, unknown>>) {
       .filter((item) => typeof item === "string" && item.length > 0)
       .join(" — ");
   });
+}
+
+function formatRoutingCount(value: number | string) {
+  return String(value);
+}
+
+function formatRoutingControl(value: boolean | string) {
+  if (typeof value === "boolean") {
+    return value ? "required" : "not required";
+  }
+  return value.replaceAll("_", " ");
+}
+
+function formatWorkflowOutput(
+  output: string | { format?: string; schema?: Record<string, unknown> },
+) {
+  if (typeof output === "string") return output;
+  const schemaKeys = output.schema ? Object.keys(output.schema).join(", ") : "schema unspecified";
+  return [output.format, schemaKeys].filter(Boolean).join(": ");
 }
 
 function formatApprovalValue(value: boolean | string) {

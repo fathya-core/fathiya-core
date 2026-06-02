@@ -1,0 +1,39 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-02-routing-status-command-center-v0",
+  "timestamp": "2026-06-02T18:13:33Z",
+  "source_request": "rt-2026-06-02-routing-status-command-center-v0",
+  "queue": "Engineering Queue",
+  "adapter": "codex_agent",
+  "mode": "Command Center routing status panel",
+  "input_artifact": "main at 6e67c9dae553344c23cd6159e4e8cd3d82b63a62 + knowledge/routing/apps_gpts_routing_map_v1.json + knowledge/routing/apps_gpts_routing_rules_v1.json + runtime queue and receipt ledger contracts",
+  "output_artifact": "Routing Status tab in src/lib/command-center.ts and src/routes/command-center.tsx + knowledge/audit/FATHIYA_ROUTING_STATUS_COMMAND_CENTER_REPORT_v0.md + runtime queue entry + receipt ledger entry + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "none_required_read_only_command_center_panel",
+  "task_description": "Build a read-only Command Center Routing Status panel that displays Apps/GPTs parse status, app role groups, trading relevance gates, GPT risk groups, decision boundaries, workflow templates, hard guardrails, activation requirements, source sheet coverage, and routing receipts from existing knowledge artifacts.",
+  "boundaries_enforced": {
+    "no_external_workflow_activation": true,
+    "no_webhooks_or_messages_sent": true,
+    "no_credentials_or_secrets_added": true,
+    "no_trading_execution": true,
+    "no_security_scanning_or_third_party_activity": true,
+    "no_destructive_actions": true,
+    "no_row_level_name_inference": true
+  },
+  "artifacts_created_or_updated": [
+    "src/lib/command-center.ts",
+    "src/routes/command-center.tsx",
+    "knowledge/audit/FATHIYA_ROUTING_STATUS_COMMAND_CENTER_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-06-02-routing-status-command-center-v0.json"
+  ],
+  "validation": {
+    "json_parse": "pass",
+    "npm_run_build": "pass",
+    "eslint_target_files": "pass",
+    "browser_smoke": "pass"
+  },
+  "next_step": "review and merge PR into main; then commit structured per-row Apps/GPT exports or the raw workbook before building row-level browse/filter views"
+}
