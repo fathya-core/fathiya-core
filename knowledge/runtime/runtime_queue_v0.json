@@ -353,6 +353,22 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-06-03-site-agentic-profile-activation-v0.json",
       "next_step": "merge draft PR and request explicit production deployment approval before deploying to fathya-core.com"
+    },
+    {
+      "id": "rt-2026-06-03-netlify-agentic-api-activation-v0",
+      "timestamp": "2026-06-03T11:06:10Z",
+      "source": "Netlify function bridge for fathya-core.com agentic APIs",
+      "requested_by": "Operator all-permissions request to make the system work now",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "mode": "Netlify agentic API activation",
+      "input_artifact": "Merged PR #31 + live Netlify static API behavior returning HTML for /api/artifacts",
+      "expected_output": "Netlify function routes for artifact index, artifact read, and learning status with audit report, runtime queue entry, receipt ledger entry, and individual receipt",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-06-03-netlify-agentic-api-activation-v0.json",
+      "next_step": "merge branch and verify https://fathya-core.com/api/learning/status returns learning_foundation_active"
     }
   ],
   "required_entry_fields": [

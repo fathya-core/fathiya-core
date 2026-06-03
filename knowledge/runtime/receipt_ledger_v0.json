@@ -262,6 +262,19 @@
       "error": null,
       "approval_reference": "internal_autopilot_adr_002",
       "next_step": "merge draft PR and request explicit production deployment approval before deploying to fathya-core.com"
+    },
+    {
+      "receipt_id": "receipt-2026-06-03-netlify-agentic-api-activation-v0",
+      "timestamp": "2026-06-03T11:06:10Z",
+      "source_request": "rt-2026-06-03-netlify-agentic-api-activation-v0",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "input_artifact": "Merged PR #31 + live Netlify static API behavior returning HTML for /api/artifacts + operator all-permissions request",
+      "output_artifact": "netlify.toml + netlify/functions artifact and learning endpoints + audit report + runtime queue entry + this ledger entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_all_permissions_internal_and_site_activation",
+      "next_step": "merge branch and verify https://fathya-core.com/api/learning/status returns learning_foundation_active"
     }
   ],
   "required_receipt_fields": [
