@@ -236,6 +236,19 @@
       "error": null,
       "approval_reference": "none_required_read_only_command_center_panel",
       "next_step": "review and merge PR into main; do not deploy, change DNS, add secrets, or activate live webhooks from this panel PR"
+    },
+    {
+      "receipt_id": "receipt-2026-06-03-agentic-operating-system-plan-v0",
+      "timestamp": "2026-06-03T10:20:31Z",
+      "source_request": "rt-2026-06-03-agentic-operating-system-plan-v0",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "input_artifact": "Operator clarification + src/lib/ops/tasks.ts + ADR-002/003/004 + model router and routing registry artifacts + Zapier/GitHub/browser/computer-use readiness checks",
+      "output_artifact": "knowledge/decisions/ADR_005_FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN.md + knowledge/audit/FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN_REPORT_v0.md + runtime queue entry + this ledger entry + individual receipt",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "internal_autopilot_adr_002",
+      "next_step": "implement T05 and T06: account registry schema, example registry, and customization profile pack for security, crypto, research, and code agents"
     }
   ],
   "required_receipt_fields": [

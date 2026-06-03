@@ -1,0 +1,44 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-03-agentic-operating-system-plan-v0",
+  "timestamp": "2026-06-03T10:20:31Z",
+  "source_request": "rt-2026-06-03-agentic-operating-system-plan-v0",
+  "queue": "Engineering Queue",
+  "adapter": "codex_agent",
+  "mode": "Agentic operating system plan recovery",
+  "input_artifact": "Operator clarification + src/lib/ops/tasks.ts + ADR-002/003/004 + model router and routing registry artifacts + Zapier/GitHub/browser/computer-use readiness checks",
+  "output_artifact": "ADR-005 + FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN_REPORT_v0.md + runtime queue entry + receipt ledger entry + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "internal_autopilot_adr_002",
+  "task_description": "Recover and formalize the full FATHIYA project objective as an agentic operating system plan that coordinates multiple model/provider agents, OpenRouter slots, shared knowledge/RAG, crypto intelligence, security lab work, account orchestration, automation tooling, and eval-driven understanding.",
+  "tools_used": {
+    "github_connector": "Read-only PR #30 changed-files and comment inspection.",
+    "zapier_mcp": "Read-only enabled-actions and saved-skills inventory.",
+    "browser_plugin": "Read-only current tab URL/title inspection.",
+    "computer_use_plugin": "Passive Windows app inventory readiness check.",
+    "local_repo": "Branch creation and internal knowledge artifact edits."
+  },
+  "boundaries_enforced": {
+    "no_external_workflow_activation": true,
+    "no_webhooks_or_messages_sent": true,
+    "no_credentials_or_secrets_added": true,
+    "no_trading_execution": true,
+    "no_security_scanning_or_third_party_activity": true,
+    "no_destructive_actions": true,
+    "no_browser_state_mutation": true,
+    "no_windows_app_mutation": true
+  },
+  "artifacts_created_or_updated": [
+    "knowledge/decisions/ADR_005_FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN.md",
+    "knowledge/audit/FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-06-03-agentic-operating-system-plan-v0.json"
+  ],
+  "validation": {
+    "json_parse": "pass",
+    "docs_only": true
+  },
+  "next_step": "Implement T05 and T06: account registry schema, example registry, and customization profile pack for security, crypto, research, and code agents."
+}
