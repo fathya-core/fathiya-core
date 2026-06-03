@@ -337,6 +337,22 @@
       "status": "completed",
       "receipt_path": "knowledge/runtime/receipts/receipt-2026-06-03-agentic-operating-system-plan-v0.json",
       "next_step": "implement T05 and T06: account registry schema, example registry, and customization profile pack before deeper crypto/security routing"
+    },
+    {
+      "id": "rt-2026-06-03-site-agentic-profile-activation-v0",
+      "timestamp": "2026-06-03T10:45:52Z",
+      "source": "FATHIYA website-backed T05/T06 activation",
+      "requested_by": "Operator request to work through fathya-core.com",
+      "queue": "Engineering Queue",
+      "adapter": "codex_agent",
+      "mode": "Site agentic profile activation",
+      "input_artifact": "ADR-005 + existing artifacts/registry and artifacts/profiles stubs + /api/artifacts routes",
+      "expected_output": "Active T05/T06 artifacts visible through the site with local artifact fallback, audit report, runtime queue entry, receipt ledger entry, and individual receipt",
+      "approval_required": false,
+      "approval_class": "internal_autopilot",
+      "status": "completed",
+      "receipt_path": "knowledge/runtime/receipts/receipt-2026-06-03-site-agentic-profile-activation-v0.json",
+      "next_step": "merge draft PR and request explicit production deployment approval before deploying to fathya-core.com"
     }
   ],
   "required_entry_fields": [
