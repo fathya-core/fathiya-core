@@ -1,0 +1,31 @@
+[build]
+command = "npm run build"
+publish = "dist/client"
+
+[functions]
+directory = "netlify/functions"
+included_files = ["artifacts/**", "knowledge/**"]
+
+[[redirects]]
+from = "/api/artifacts"
+to = "/.netlify/functions/artifacts-index"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/artifacts/"
+to = "/.netlify/functions/artifacts-index"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/artifacts/read"
+to = "/.netlify/functions/artifacts-read"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/learning/status"
+to = "/.netlify/functions/learning-status"
+status = 200
+force = true
