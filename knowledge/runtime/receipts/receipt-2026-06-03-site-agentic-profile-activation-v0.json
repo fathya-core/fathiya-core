@@ -1,0 +1,56 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-03-site-agentic-profile-activation-v0",
+  "timestamp": "2026-06-03T10:45:52Z",
+  "source_request": "rt-2026-06-03-site-agentic-profile-activation-v0",
+  "queue": "Engineering Queue",
+  "adapter": "codex_agent",
+  "mode": "Site agentic profile activation",
+  "input_artifact": "Operator request to start implementation through fathya-core.com + existing T05/T06 artifacts + artifacts API routes + ADR-005",
+  "output_artifact": "Active account/profile artifacts + local artifact API fallback + task status updates + audit report + runtime queue entry + receipt ledger entry + this receipt",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "internal_autopilot_adr_002",
+  "task_description": "Activate the first practical website-backed layer of FATHIYA by making account registry and customization profile artifacts visible through the site even when Supabase artifact storage is unavailable.",
+  "tools_used": {
+    "zapier_mcp": "Readiness/inventory context only; no write actions.",
+    "github": "PR #31 context and branch workflow.",
+    "browser": "Live domain inspection and pending local smoke.",
+    "chrome": "Checked but unavailable because Codex Chrome Extension is not installed/enabled in the active Chrome profile.",
+    "local_repo": "Artifact, API, task, receipt, and validation changes."
+  },
+  "boundaries_enforced": {
+    "no_production_deploy": true,
+    "no_dns_change": true,
+    "no_cloudflare_route_change": true,
+    "no_credentials_or_secrets_added": true,
+    "no_trading_execution": true,
+    "no_security_scanning_or_third_party_activity": true,
+    "no_webhooks_or_messages_sent": true,
+    "no_external_workflow_activation": true,
+    "no_destructive_actions": true
+  },
+  "artifacts_created_or_updated": [
+    "artifacts/_index.json",
+    "artifacts/registry/accounts.example.json",
+    "artifacts/profiles/FATHIYA_SECURITY_BASE.json",
+    "artifacts/profiles/FATHIYA_CRYPTO_BASE.json",
+    "artifacts/profiles/FATHIYA_RESEARCH_BASE.json",
+    "artifacts/profiles/FATHIYA_CODE_BASE.json",
+    "src/lib/artifacts/local-artifacts.ts",
+    "src/lib/ops/tasks.ts",
+    "src/routes/api/artifacts.index.ts",
+    "src/routes/api/artifacts.read.ts",
+    "knowledge/audit/FATHIYA_SITE_AGENTIC_PROFILE_ACTIVATION_REPORT_v0.md",
+    "knowledge/runtime/runtime_queue_v0.json",
+    "knowledge/runtime/receipt_ledger_v0.json",
+    "knowledge/runtime/receipts/receipt-2026-06-03-site-agentic-profile-activation-v0.json"
+  ],
+  "validation": {
+    "json_parse": "pass",
+    "npm_run_build": "pass",
+    "eslint_target_files": "pass",
+    "browser_smoke": "pass"
+  },
+  "next_step": "Merge and deploy after explicit production deployment approval; then continue with routing/evals for security and crypto agents."
+}

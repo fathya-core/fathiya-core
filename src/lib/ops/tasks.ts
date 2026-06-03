@@ -34,7 +34,11 @@ export interface Layer {
 export const LAYERS: Layer[] = [
   { id: "A", name: "Security Ops Layer", subtitle: "النواة الأمنية فوق فتحية" },
   { id: "B", name: "Account Orchestration Layer", subtitle: "إدارة الحسابات وملفات التخصيص" },
-  { id: "C", name: "Intelligence Harvest Layer", subtitle: "حصاد الاستخبارات قبل اختفاء الاشتراكات" },
+  {
+    id: "C",
+    name: "Intelligence Harvest Layer",
+    subtitle: "حصاد الاستخبارات قبل اختفاء الاشتراكات",
+  },
   { id: "D", name: "Crypto Engine Preparation", subtitle: "تجهيز محرك الكريبتو" },
   { id: "E", name: "Knowledge Base / RAG", subtitle: "الأصول الدائمة بعد الاشتراكات" },
 ];
@@ -53,7 +57,11 @@ export const TASKS: Task[] = [
     priority: 1,
     artifacts: [
       { path: "playbooks/security.surface.md", kind: "md", description: "هيكل الـ 5 مداخل" },
-      { path: "playbooks/security.surface.entries.json", kind: "json", description: "تعريف كل مدخل بصيغة قابلة للتشغيل" },
+      {
+        path: "playbooks/security.surface.entries.json",
+        kind: "json",
+        description: "تعريف كل مدخل بصيغة قابلة للتشغيل",
+      },
     ],
     depends_on: [],
   },
@@ -74,7 +82,8 @@ export const TASKS: Task[] = [
     id: "T03",
     code: "SEC_ROUTING",
     title: "Security Routing Matrix",
-    description: "أي مهمة أمنية → أي مزود (primary / fallback / cheap / premium). يُحوَّل إلى JSON policy.",
+    description:
+      "أي مهمة أمنية → أي مزود (primary / fallback / cheap / premium). يُحوَّل إلى JSON policy.",
     layer: "A",
     owners: ["Claude", "GPT"],
     status: "todo",
@@ -111,14 +120,14 @@ export const TASKS: Task[] = [
       "سجل حسابات موحد: provider, account_id, status, balance_state, customization_profile, domain_pool, last_success/failure, fallback_group.",
     layer: "B",
     owners: ["GPT"],
-    status: "todo",
+    status: "done",
     priority: 3,
     artifacts: [
       { path: "registry/accounts.schema.json", kind: "json", description: "JSON Schema" },
       { path: "registry/accounts.example.json", kind: "json", description: "مثال مملوء" },
     ],
     depends_on: [],
-    notes: "أولوية مباشرة #1 — كل الباقي يعتمد عليه.",
+    notes: "أولوية مباشرة #1 — أُغلقت كبنية schema + example قابلة للعرض من الموقع.",
   },
   {
     id: "T06",
@@ -128,22 +137,39 @@ export const TASKS: Task[] = [
       "ملفات profiles جاهزة للحقن: SECURITY_BASE, CRYPTO_BASE, RESEARCH_BASE, CODE_BASE.",
     layer: "B",
     owners: ["Claude", "GPT"],
-    status: "in_progress",
+    status: "done",
     priority: 3,
     artifacts: [
-      { path: "profiles/FATHIYA_SECURITY_BASE.json", kind: "json", description: "Security base (stub موجود)" },
-      { path: "profiles/FATHIYA_CRYPTO_BASE.json", kind: "json", description: "Crypto base (stub موجود)" },
-      { path: "profiles/FATHIYA_RESEARCH_BASE.json", kind: "json", description: "Research base (stub موجود)" },
-      { path: "profiles/FATHIYA_CODE_BASE.json", kind: "json", description: "Code base (stub موجود)" },
+      {
+        path: "profiles/FATHIYA_SECURITY_BASE.json",
+        kind: "json",
+        description: "Security base (stub موجود)",
+      },
+      {
+        path: "profiles/FATHIYA_CRYPTO_BASE.json",
+        kind: "json",
+        description: "Crypto base (stub موجود)",
+      },
+      {
+        path: "profiles/FATHIYA_RESEARCH_BASE.json",
+        kind: "json",
+        description: "Research base (stub موجود)",
+      },
+      {
+        path: "profiles/FATHIYA_CODE_BASE.json",
+        kind: "json",
+        description: "Code base (stub موجود)",
+      },
     ],
     depends_on: [],
-    notes: "Stubs منشورة. ينتظر Claude يملأها بمحتوى نهائي.",
+    notes: "Profiles التشغيلية منشورة تحت artifacts/profiles وتبقى بلا أسرار أو مفاتيح API.",
   },
   {
     id: "T07",
     code: "ACCT_VALIDATOR",
     title: "Account Readiness Validator",
-    description: "فحص جاهزية كل حساب: customized? warm? valid output? assigned pool? draining/exhausted?",
+    description:
+      "فحص جاهزية كل حساب: customized? warm? valid output? assigned pool? draining/exhausted?",
     layer: "B",
     owners: ["GPT", "Claude"],
     status: "todo",
@@ -158,13 +184,18 @@ export const TASKS: Task[] = [
     id: "T08",
     code: "ACCT_ZAPIER",
     title: "Zapier Account Control Plane",
-    description: "Tables, Forms, alerts, approval flows, draining/exhausted notifications, intake للحسابات الجديدة.",
+    description:
+      "Tables, Forms, alerts, approval flows, draining/exhausted notifications, intake للحسابات الجديدة.",
     layer: "B",
     owners: ["Zapier", "GPT", "Claude"],
     status: "todo",
     priority: 1,
     artifacts: [
-      { path: "workflows/zapier.control_plane.md", kind: "md", description: "مخطط الـ control plane" },
+      {
+        path: "workflows/zapier.control_plane.md",
+        kind: "md",
+        description: "مخطط الـ control plane",
+      },
       { path: "workflows/zapier.intake.json", kind: "workflow", description: "intake flow" },
     ],
     depends_on: ["T05", "T07"],
@@ -186,7 +217,11 @@ export const TASKS: Task[] = [
       { path: "dossiers/vuln_tools.md", kind: "md", description: "خريطة أدوات الثغرات" },
       { path: "dossiers/crypto_research.md", kind: "md", description: "خريطة أبحاث الكريبتو" },
       { path: "dossiers/market_intel.md", kind: "md", description: "استخبارات سوقية" },
-      { path: "dossiers/premium_sources.json", kind: "json", description: "Taxonomy للمصادر المدفوعة" },
+      {
+        path: "dossiers/premium_sources.json",
+        kind: "json",
+        description: "Taxonomy للمصادر المدفوعة",
+      },
     ],
     depends_on: [],
   },
@@ -194,12 +229,15 @@ export const TASKS: Task[] = [
     id: "T10",
     code: "INTEL_CAPMAP",
     title: "Competitive Capability Map",
-    description: "مقارنة عملية: Manus / Claude / Perplexity / GPT / OpenRouter — لأي مهمة، بأي تكلفة، بأي مخاطر.",
+    description:
+      "مقارنة عملية: Manus / Claude / Perplexity / GPT / OpenRouter — لأي مهمة، بأي تكلفة، بأي مخاطر.",
     layer: "C",
     owners: ["Claude", "Perplexity", "GPT"],
     status: "todo",
     priority: 1,
-    artifacts: [{ path: "capability_map.json", kind: "json", description: "matrix قابلة للاستخدام" }],
+    artifacts: [
+      { path: "capability_map.json", kind: "json", description: "matrix قابلة للاستخدام" },
+    ],
     depends_on: ["T09"],
   },
   {
@@ -211,7 +249,9 @@ export const TASKS: Task[] = [
     owners: ["Claude", "Perplexity", "GPT"],
     status: "todo",
     priority: 2,
-    artifacts: [{ path: "failures/failure_library.json", kind: "json", description: "سجل الإخفاقات" }],
+    artifacts: [
+      { path: "failures/failure_library.json", kind: "json", description: "سجل الإخفاقات" },
+    ],
     depends_on: ["T09"],
   },
 
@@ -220,14 +260,19 @@ export const TASKS: Task[] = [
     id: "T12",
     code: "CRYPTO_PLAYBOOK",
     title: "Crypto Intelligence Playbook",
-    description: "playbook منظم: catalyst scan, narrative analysis, thesis review, invalidation map, watchlist output.",
+    description:
+      "playbook منظم: catalyst scan, narrative analysis, thesis review, invalidation map, watchlist output.",
     layer: "D",
     owners: ["Claude", "Perplexity", "Manus"],
     status: "todo",
     priority: 3,
     artifacts: [
       { path: "playbooks/crypto.intelligence.md", kind: "md", description: "الـ playbook الكبير" },
-      { path: "playbooks/crypto.intelligence.entries.json", kind: "json", description: "إدخالات قابلة للتشغيل" },
+      {
+        path: "playbooks/crypto.intelligence.entries.json",
+        kind: "json",
+        description: "إدخالات قابلة للتشغيل",
+      },
     ],
     depends_on: [],
   },
@@ -240,14 +285,17 @@ export const TASKS: Task[] = [
     owners: ["Claude", "GPT"],
     status: "todo",
     priority: 1,
-    artifacts: [{ path: "routing/crypto.matrix.json", kind: "json", description: "policy للكريبتو" }],
+    artifacts: [
+      { path: "routing/crypto.matrix.json", kind: "json", description: "policy للكريبتو" },
+    ],
     depends_on: ["T05", "T12"],
   },
   {
     id: "T14",
     code: "CRYPTO_EVALS",
     title: "Crypto Evals Set",
-    description: "false narrative, conflicting signals, hype vs evidence, invalid thesis, missing data, no-trade cases.",
+    description:
+      "false narrative, conflicting signals, hype vs evidence, invalid thesis, missing data, no-trade cases.",
     layer: "D",
     owners: ["Claude", "GPT"],
     status: "todo",
@@ -277,7 +325,8 @@ export const TASKS: Task[] = [
     id: "T16",
     code: "PROMPTS",
     title: "Distilled Prompt Packs",
-    description: "router / reviewer / critic / synthesizer / report / fail-closed prompts — نهائية وتبقى بعد الاشتراكات.",
+    description:
+      "router / reviewer / critic / synthesizer / report / fail-closed prompts — نهائية وتبقى بعد الاشتراكات.",
     layer: "E",
     owners: ["Claude", "GPT"],
     status: "todo",

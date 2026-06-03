@@ -1,0 +1,16 @@
+{
+  "provider": "openrouter",
+  "account_id": "openrouter_primary_slot_pool",
+  "status": "active",
+  "balance_state": {
+    "kind": "unknown",
+    "updated_at": null,
+    "expires_at": null
+  },
+  "customization_profile": "profiles/FATHIYA_CRYPTO_BASE",
+  "domain_pool": ["fathya-core.com", "app.fathya-core.com", "api.fathya-core.com"],
+  "last_success_at": null,
+  "last_failure_at": null,
+  "fallback_group": "llm_core",
+  "notes": "Example only. No API key, token, secret value, billing data, or real credential is stored here."
+}

@@ -7,13 +7,26 @@
       "task_id": "T01",
       "title": "n8n Security Workflows",
       "status": "done",
-      "artifacts": [
-        "artifacts/workflows/n8n.security.spec.json"
-      ],
+      "artifacts": ["artifacts/workflows/n8n.security.spec.json"],
       "deployed_workflows": [
-        { "id": "iPV8TN7Km0jHCbny", "name": "FATHIYA V2 — Security Scan Runner", "url": "https://fathya.app.n8n.cloud/workflow/iPV8TN7Km0jHCbny", "calls": ["/api/public/sec/scan", "/api/public/sec/report", "/api/public/sec/notify"] },
-        { "id": "xZRmZLLITqQtZgOj", "name": "FATHIYA V2 — Security Report Generator", "url": "https://fathya.app.n8n.cloud/workflow/xZRmZLLITqQtZgOj", "calls": ["/api/public/sec/report", "/api/public/sec/notify"] },
-        { "id": "xSsJtwKx3knogXYZ", "name": "FATHIYA V2 — Security Alerter", "url": "https://fathya.app.n8n.cloud/workflow/xSsJtwKx3knogXYZ", "calls": ["/api/public/sec/scan", "/api/public/sec/notify"] }
+        {
+          "id": "iPV8TN7Km0jHCbny",
+          "name": "FATHIYA V2 — Security Scan Runner",
+          "url": "https://fathya.app.n8n.cloud/workflow/iPV8TN7Km0jHCbny",
+          "calls": ["/api/public/sec/scan", "/api/public/sec/report", "/api/public/sec/notify"]
+        },
+        {
+          "id": "xZRmZLLITqQtZgOj",
+          "name": "FATHIYA V2 — Security Report Generator",
+          "url": "https://fathya.app.n8n.cloud/workflow/xZRmZLLITqQtZgOj",
+          "calls": ["/api/public/sec/report", "/api/public/sec/notify"]
+        },
+        {
+          "id": "xSsJtwKx3knogXYZ",
+          "name": "FATHIYA V2 — Security Alerter",
+          "url": "https://fathya.app.n8n.cloud/workflow/xSsJtwKx3knogXYZ",
+          "calls": ["/api/public/sec/scan", "/api/public/sec/notify"]
+        }
       ],
       "backend_endpoints": [
         "src/routes/api/public/sec/scan.ts",
@@ -23,6 +36,54 @@
       ],
       "database": "public.security_scans",
       "closed_at": "2026-04-25T06:22:00Z"
+    },
+    {
+      "task_id": "T05",
+      "path": "artifacts/registry/accounts.schema.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
+    },
+    {
+      "task_id": "T05",
+      "path": "artifacts/registry/accounts.example.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
+    },
+    {
+      "task_id": "T06",
+      "path": "artifacts/profiles/FATHIYA_SECURITY_BASE.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
+    },
+    {
+      "task_id": "T06",
+      "path": "artifacts/profiles/FATHIYA_CRYPTO_BASE.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
+    },
+    {
+      "task_id": "T06",
+      "path": "artifacts/profiles/FATHIYA_RESEARCH_BASE.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
+    },
+    {
+      "task_id": "T06",
+      "path": "artifacts/profiles/FATHIYA_CODE_BASE.json",
+      "kind": "json",
+      "saved_at": "2026-06-03T10:20:31Z",
+      "bytes": 0,
+      "model": "codex"
     }
   ]
 }
