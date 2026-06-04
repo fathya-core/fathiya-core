@@ -298,16 +298,20 @@ export async function handler(event) {
     const user = await requireUser(event, config);
     const segments = routeSegments(event);
 
-    if (segments.length === 0 && event.httpMethod === "GET") return listTasks(config, user);
-    if (segments.length === 0 && event.httpMethod === "POST") return createTask(config, user, event);
+    if (segments.length === 0 && event.httpMethod === "GET") {
+      return await listTasks(config, user);
+    }
+    if (segments.length === 0 && event.httpMethod === "POST") {
+      return await createTask(config, user, event);
+    }
     if (segments.length === 1 && event.httpMethod === "GET") {
-      return taskDetail(config, user, segments[0]);
+      return await taskDetail(config, user, segments[0]);
     }
     if (segments.length === 2 && segments[1] === "approve" && event.httpMethod === "POST") {
-      return approveTask(config, user, segments[0]);
+      return await approveTask(config, user, segments[0]);
     }
     if (segments.length === 2 && segments[1] === "cancel" && event.httpMethod === "POST") {
-      return cancelTask(config, user, segments[0]);
+      return await cancelTask(config, user, segments[0]);
     }
     throw new HttpError(404, "Agent task route not found");
   } catch (error) {
