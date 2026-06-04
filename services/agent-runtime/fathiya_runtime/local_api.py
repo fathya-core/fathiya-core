@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from .config import RuntimeConfig
 from .integrations import build_integration_readiness
+from .knowledge_mission import operator_request
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
 from .trading import PaperTradingAgent
@@ -191,12 +192,16 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     HTTPStatus.BAD_REQUEST,
                     "Prompt exceeds 20,000 characters",
                 )
-            clean_title = (
-                title.strip()[:120]
-                if isinstance(title, str) and title.strip()
-                else " ".join(prompt.split())[:120]
-            )
-            task = self.server.store.enqueue(clean_title, prompt, "local-operator")
+            try:
+                operator_prompt = operator_request(prompt)
+                clean_title = (
+                    title.strip()[:120]
+                    if isinstance(title, str) and title.strip()
+                    else " ".join(operator_prompt.split())[:120]
+                )
+                task = self.server.store.enqueue(clean_title, prompt, "local-operator")
+            except ValueError as exc:
+                return self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
             return self._send_json({"task": task}, HTTPStatus.CREATED)
 
         match = TASK_PATH.fullmatch(path)

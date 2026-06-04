@@ -53,10 +53,13 @@ at `http://127.0.0.1:8765`.
 2. Open `/agent-tasks`.
 3. Submit an internal task such as:
    `اعرض حالة المستودع وسجل إيصال التنفيذ`
-4. Confirm the worker claims the task within 30 seconds.
-5. Confirm progress events show every selected tool, heartbeat, model trace,
+4. Use `تقرير إلى تنفيذ` to submit a named report plus an operator objective.
+   Confirm `استيعاب التقرير` appears before retrieval and planning, and confirm
+   the final receipt includes the persisted source path and SHA-256.
+5. Confirm the worker claims the task within 30 seconds.
+6. Confirm progress events show every selected tool, heartbeat, model trace,
    final result, and receipt.
-6. Confirm the local connector panel shows `n8n_health` ready and external
+7. Confirm the local connector panel shows `n8n_health` ready and external
    connector profiles as requiring setup or approval as appropriate.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
@@ -82,7 +85,8 @@ cd services/agent-runtime
 
 ## Current External Blockers
 
-- OpenRouter currently returns HTTP 402 for the configured local key.
+- OpenRouter is not configured in the local worker; Hugging Face and
+  deterministic fallbacks remain active.
 - n8n `2.23.2` is active locally and responds on port `5678`.
 - n8n API workflow listing requires `N8N_API_KEY`. The local n8n CLI currently
   fails migrations with `temporary_webhook_entity already exists`; back up and

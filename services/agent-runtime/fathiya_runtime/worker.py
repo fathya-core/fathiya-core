@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .config import RuntimeConfig
+from .knowledge_mission import parse_knowledge_mission, persist_knowledge_mission
 from .models import AgentModelRouter
 from .planner import (
     DETERMINISTIC_SYNTHESIS_TOOLS,
@@ -15,6 +16,7 @@ from .planner import (
     fast_control_steps,
 )
 from .retrieval import KnowledgeRetriever
+from .retrieval import RetrievedSource
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
 
@@ -84,8 +86,36 @@ class AgentWorker:
             self.store.heartbeat_worker(self.config.worker_id, "busy")
             self._progress(task, 5, "بدء التنفيذ", "started", "بدأ المشغّل المحلي المهمة.")
 
+            mission = parse_knowledge_mission(task["prompt"])
+            mission_evidence: dict[str, Any] | None = None
+            execution_task = task
+            mission_source: RetrievedSource | None = None
+            if mission:
+                mission_evidence = persist_knowledge_mission(
+                    self.config.knowledge_root,
+                    mission,
+                )
+                execution_task = {
+                    **task,
+                    "prompt": mission.objective,
+                    "knowledge_mission": True,
+                }
+                mission_source = RetrievedSource(
+                    path=mission_evidence["path"],
+                    score=1.0,
+                    excerpt=mission.content[:500].replace("\n", " "),
+                )
+                self._progress(
+                    task,
+                    10,
+                    "استيعاب التقرير",
+                    "knowledge_intake",
+                    "حُفظ التقرير كدليل غير موثوق قبل بناء خطة التنفيذ.",
+                    mission_evidence,
+                )
+
             tool_catalog = self.tools.catalog()
-            direct_control = fast_control_steps(task["prompt"], tool_catalog)
+            direct_control = fast_control_steps(execution_task["prompt"], tool_catalog)
             if direct_control:
                 sources = []
                 self._progress(
@@ -97,7 +127,18 @@ class AgentWorker:
                     {"tools": [step["tool"] for step in direct_control]},
                 )
             else:
-                sources = self.retriever.search(task["prompt"], limit=5)
+                query = execution_task["prompt"]
+                if mission_evidence:
+                    query = (
+                        f"{query}\n{mission_evidence['source_name']}\n"
+                        f"{mission_evidence['path']}"
+                    )
+                sources = self.retriever.search(query, limit=4 if mission_source else 5)
+                if mission_source:
+                    sources = [
+                        mission_source,
+                        *[source for source in sources if source.path != mission_source.path],
+                    ][:5]
                 self._progress(
                     task,
                     20,
@@ -112,7 +153,7 @@ class AgentWorker:
                 )
 
             plan = build_plan(
-                task,
+                execution_task,
                 sources,
                 self.model,
                 tool_catalog,
@@ -155,7 +196,7 @@ class AgentWorker:
                 )
                 tool_result = self.tools.execute(
                     execution_step["tool"],
-                    task["prompt"],
+                    execution_task["prompt"],
                     execution_step.get("args", {}),
                     tool_results,
                 )
@@ -193,7 +234,7 @@ class AgentWorker:
                     else "local_deterministic_tool_summary"
                 )
             else:
-                synthesis = self._synthesize(task, sources, tool_results)
+                synthesis = self._synthesize(execution_task, sources, tool_results)
             self._progress(
                 task,
                 85,
@@ -203,7 +244,7 @@ class AgentWorker:
                 {"synthesis": synthesis},
             )
             evaluation = self.model.evaluate(
-                task["prompt"],
+                execution_task["prompt"],
                 {"tool_results": tool_results, "synthesis": synthesis},
             )
             model_trace = {
@@ -220,6 +261,7 @@ class AgentWorker:
                 "evaluation": evaluation,
                 "model_trace": model_trace,
                 "sources": [source.__dict__ for source in sources],
+                "knowledge_mission": mission_evidence,
             }
 
             self._ensure_not_canceled(task)
@@ -233,6 +275,8 @@ class AgentWorker:
                     "evaluation": evaluation,
                     "model_trace": model_trace,
                     "source_count": len(sources),
+                    "source_paths": [source.path for source in sources],
+                    "knowledge_mission": mission_evidence,
                     "completed_at": now_iso(),
                 },
             )

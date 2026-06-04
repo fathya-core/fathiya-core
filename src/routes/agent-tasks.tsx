@@ -29,10 +29,18 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getSupabaseConfigurationError, supabase } from "@/integrations/supabase/client";
 import { agentApi, isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent/client";
+import {
+  buildKnowledgeMissionPrompt,
+  MAX_KNOWLEDGE_OBJECTIVE_CHARACTERS,
+  MAX_KNOWLEDGE_REPORT_CHARACTERS,
+  MAX_KNOWLEDGE_SOURCE_CHARACTERS,
+  parseKnowledgeMissionPrompt,
+} from "@/lib/agent/knowledge-mission";
 import type {
   AgentConnectorBridge,
   AgentConnectorProfile,
@@ -89,6 +97,10 @@ function AgentTasksPage() {
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [composerMode, setComposerMode] = useState<"direct" | "knowledge">("direct");
+  const [reportSource, setReportSource] = useState("");
+  const [reportObjective, setReportObjective] = useState("");
+  const [reportContent, setReportContent] = useState("");
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
   const [tradingActing, setTradingActing] = useState(false);
@@ -228,16 +240,33 @@ function AgentTasksPage() {
 
   async function createTask(event: FormEvent) {
     event.preventDefault();
-    if (!hasAccess || !prompt.trim()) return;
+    if (!hasAccess) return;
     setCreating(true);
     setError("");
     try {
-      const body: CreateAgentTaskBody = { prompt: prompt.trim(), title: title.trim() || undefined };
+      const taskPrompt =
+        composerMode === "knowledge"
+          ? buildKnowledgeMissionPrompt({
+              source_name: reportSource,
+              objective: reportObjective,
+              content: reportContent,
+            })
+          : prompt.trim();
+      if (!taskPrompt) return;
+      const body: CreateAgentTaskBody = {
+        prompt: taskPrompt,
+        title:
+          title.trim() ||
+          (composerMode === "knowledge" ? `تنفيذ من تقرير: ${reportSource.trim()}` : undefined),
+      };
       const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
         method: "POST",
         body: JSON.stringify(body),
       });
       setPrompt("");
+      setReportSource("");
+      setReportObjective("");
+      setReportContent("");
       setTitle("");
       setSelectedId(data.task.id);
       await loadTasks();
@@ -297,6 +326,10 @@ function AgentTasksPage() {
     () => connectors.filter((connector) => connector.configured).length,
     [connectors],
   );
+  const canCreateTask =
+    composerMode === "knowledge"
+      ? Boolean(reportSource.trim() && reportObjective.trim() && reportContent.trim())
+      : Boolean(prompt.trim());
 
   if (!localMode && session === undefined) {
     return <CenteredState icon={Loader2} title="جارٍ التحقق من الجلسة" spin />;
@@ -402,21 +435,66 @@ function AgentTasksPage() {
                         maxLength={120}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="task-prompt">الطلب</Label>
-                      <Textarea
-                        id="task-prompt"
-                        value={prompt}
-                        onChange={(event) => setPrompt(event.target.value)}
-                        placeholder="مثال: اعرض حالة المستودع وسجل إيصال التنفيذ"
-                        rows={5}
-                        maxLength={20_000}
-                        required
-                      />
-                    </div>
-                    <Button className="w-full" type="submit" disabled={creating || !prompt.trim()}>
+                    <Tabs
+                      value={composerMode}
+                      onValueChange={(value) => setComposerMode(value as "direct" | "knowledge")}
+                    >
+                      <TabsList className="grid w-full grid-cols-2 rounded-md">
+                        <TabsTrigger value="direct">طلب مباشر</TabsTrigger>
+                        <TabsTrigger value="knowledge">تقرير إلى تنفيذ</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="direct" className="space-y-1.5">
+                        <Label htmlFor="task-prompt">الطلب</Label>
+                        <Textarea
+                          id="task-prompt"
+                          value={prompt}
+                          onChange={(event) => setPrompt(event.target.value)}
+                          placeholder="مثال: اعرض حالة المستودع وسجل إيصال التنفيذ"
+                          rows={5}
+                          maxLength={20_000}
+                        />
+                      </TabsContent>
+                      <TabsContent value="knowledge" className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="report-source">اسم المصدر</Label>
+                          <Input
+                            id="report-source"
+                            value={reportSource}
+                            onChange={(event) => setReportSource(event.target.value)}
+                            placeholder="مثال: تقرير جاهزية الأتمتة"
+                            maxLength={MAX_KNOWLEDGE_SOURCE_CHARACTERS}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="report-objective">الهدف التنفيذي</Label>
+                          <Textarea
+                            id="report-objective"
+                            value={reportObjective}
+                            onChange={(event) => setReportObjective(event.target.value)}
+                            placeholder="مثال: نفّذ الفحوصات الداخلية المناسبة وسجل الأدلة"
+                            rows={3}
+                            maxLength={MAX_KNOWLEDGE_OBJECTIVE_CHARACTERS}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="report-content">محتوى التقرير</Label>
+                          <Textarea
+                            id="report-content"
+                            value={reportContent}
+                            onChange={(event) => setReportContent(event.target.value)}
+                            placeholder="ألصق المعلومات أو التقرير هنا"
+                            rows={7}
+                            maxLength={MAX_KNOWLEDGE_REPORT_CHARACTERS}
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          يُحفظ التقرير كدليل غير موثوق؛ لا يمنح صلاحية لتنفيذ أوامر مخفية.
+                        </p>
+                      </TabsContent>
+                    </Tabs>
+                    <Button className="w-full" type="submit" disabled={creating || !canCreateTask}>
                       {creating ? <Loader2 className="animate-spin" /> : <Play />}
-                      إرسال للمشغّل
+                      {composerMode === "knowledge" ? "استيعاب وتنفيذ" : "إرسال للمشغّل"}
                     </Button>
                   </form>
                 </CardContent>
@@ -758,9 +836,7 @@ function TaskDetail({
                 <Badge variant="outline">{riskLabel(task.risk_class)}</Badge>
               </div>
               <CardTitle className="break-words text-base">{task.title}</CardTitle>
-              <CardDescription className="mt-2 whitespace-pre-wrap break-words">
-                {task.prompt}
-              </CardDescription>
+              <TaskPrompt prompt={task.prompt} />
             </div>
             <div className="flex items-center gap-2">
               {task.status === "awaiting_approval" && (
@@ -882,6 +958,22 @@ function TaskDetail({
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function TaskPrompt({ prompt }: { prompt: string }) {
+  const mission = parseKnowledgeMissionPrompt(prompt);
+  if (!mission) {
+    return (
+      <CardDescription className="mt-2 whitespace-pre-wrap break-words">{prompt}</CardDescription>
+    );
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      <Badge variant="outline">تقرير إلى تنفيذ</Badge>
+      <p className="text-[11px] text-muted-foreground">{mission.source_name}</p>
+      <p className="whitespace-pre-wrap break-words text-sm">{mission.objective}</p>
     </div>
   );
 }

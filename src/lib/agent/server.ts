@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { AgentRiskClass, AgentTask, AgentTaskDetail, CreateAgentTaskBody } from "./contracts";
+import { agentOperatorPrompt } from "./knowledge-mission";
 
 const STALLED_AFTER_MS = 2 * 60 * 1000;
 
@@ -42,7 +43,7 @@ export function classifyAgentRisk(prompt: string): {
   riskClass: AgentRiskClass;
   requiresApproval: boolean;
 } {
-  const value = prompt.toLowerCase();
+  const value = agentOperatorPrompt(prompt).toLowerCase();
 
   if (/(delete|remove|drop|wipe|format|حذف|مسح|تهيئة)/i.test(value)) {
     return { riskClass: "destructive", requiresApproval: true };
@@ -61,7 +62,7 @@ export function classifyAgentRisk(prompt: string): {
 
 export function taskTitle(body: CreateAgentTaskBody): string {
   if (body.title?.trim()) return body.title.trim().slice(0, 120);
-  return body.prompt.trim().replace(/\s+/g, " ").slice(0, 80);
+  return agentOperatorPrompt(body.prompt).trim().replace(/\s+/g, " ").slice(0, 80);
 }
 
 export async function createAgentTask(

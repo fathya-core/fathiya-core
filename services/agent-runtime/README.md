@@ -77,6 +77,16 @@ multi-tool planner routes the task by capability. A plan that selects a
 sensitive tool is moved back to `awaiting_approval` before that tool runs, even
 when the original request was not classified as sensitive.
 
+The task composer also supports a `FATHIYA_KNOWLEDGE_MISSION_V1` envelope for
+report-to-execution work. The worker persists the report into local knowledge
+before retrieval and planning, pins that exact source into the evidence set,
+then lets the report guide safe read-only inspections. Report content is always
+treated as untrusted evidence: it cannot originate trading, deletion, external
+writes, command profiles, or other non-read-only actions. Those actions must be
+explicitly requested by the operator and still pass the normal approval gate.
+The final receipt records the source path and SHA-256 without copying the raw
+report into the receipt.
+
 The built-in catalog can fetch and ingest reports into local knowledge, search
 and inspect the canonical repository, read authenticated GitHub metadata, read
 n8n health/workflows, call an approved n8n webhook, inspect connected tools,

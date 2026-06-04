@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .knowledge_mission import operator_request
+
 
 @dataclass(frozen=True)
 class RiskDecision:
@@ -37,6 +39,7 @@ RISK_PATTERNS = (
 
 
 def classify_risk(prompt: str) -> RiskDecision:
+    prompt = operator_request(prompt)
     for risk_class, pattern in RISK_PATTERNS:
         if pattern.search(prompt):
             return RiskDecision(risk_class=risk_class, requires_approval=True)

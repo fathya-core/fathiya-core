@@ -1,6 +1,6 @@
 const STALLED_AFTER_MS = 2 * 60 * 1000;
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const KNOWLEDGE_MISSION_PREFIX = "FATHIYA_KNOWLEDGE_MISSION_V1:";
 
 class HttpError extends Error {
   constructor(statusCode, message) {
@@ -78,6 +78,7 @@ async function supabaseRest(config, method, path, body, prefer) {
 }
 
 function classifyRisk(prompt) {
+  prompt = operatorPrompt(prompt);
   if (/(delete|remove|drop|wipe|format|حذف|مسح|تهيئة)/i.test(prompt)) {
     return { riskClass: "destructive", requiresApproval: true };
   }
@@ -91,6 +92,16 @@ function classifyRisk(prompt) {
     return { riskClass: "external", requiresApproval: true };
   }
   return { riskClass: "internal_owned", requiresApproval: false };
+}
+
+function operatorPrompt(prompt) {
+  if (!prompt.startsWith(KNOWLEDGE_MISSION_PREFIX)) return prompt;
+  try {
+    const payload = JSON.parse(prompt.slice(KNOWLEDGE_MISSION_PREFIX.length));
+    return typeof payload?.objective === "string" ? payload.objective : prompt;
+  } catch {
+    return prompt;
+  }
 }
 
 function parseBody(event) {
@@ -167,16 +178,14 @@ async function createTask(config, user, event) {
 
   const { riskClass, requiresApproval } = classifyRisk(prompt);
   const status = requiresApproval ? "awaiting_approval" : "queued";
-  const currentStep = requiresApproval
-    ? "بانتظار موافقة المشغل"
-    : "بانتظار المشغّل المحلي";
+  const currentStep = requiresApproval ? "بانتظار موافقة المشغل" : "بانتظار المشغّل المحلي";
   const rows = await supabaseRest(
     config,
     "POST",
     "agent_tasks",
     {
       user_id: user.id,
-      title: (requestedTitle || prompt.replace(/\s+/g, " ")).slice(0, 120),
+      title: (requestedTitle || operatorPrompt(prompt).replace(/\s+/g, " ")).slice(0, 120),
       prompt,
       status,
       progress: 0,
