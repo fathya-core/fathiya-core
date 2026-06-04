@@ -322,6 +322,17 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             "trading_stop",
             [step["tool"] for step in stop_loss_plan if step.get("kind") == "tool"],
         )
+        refresh_plan = build_plan(
+            {"prompt": "حدّث مستشار استراتيجية وكيل التداول"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertEqual(
+            [step["tool"] for step in refresh_plan if step.get("kind") == "tool"],
+            ["trading_strategy_refresh"],
+        )
 
     def test_trading_tools_share_one_paper_agent(self) -> None:
         executor = ToolExecutor(self.config)
@@ -368,6 +379,66 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             "local_deterministic_fast_control",
         )
         self.assertEqual(len(detail["receipts"]), 1)
+
+    def test_trading_strategy_refresh_uses_model_and_validates_advisory(self) -> None:
+        executor = ToolExecutor(self.config)
+        model = Mock()
+        model.available = True
+        model.last_provider = "openrouter"
+        model.complete.return_value = (
+            '{"action":"sell","confidence":0.82,"rationale":"measured downside risk"}'
+        )
+        executor.set_model_router(model)
+
+        result = executor.execute(
+            "trading_strategy_refresh",
+            "حدّث مستشار استراتيجية وكيل التداول",
+        )
+        status = executor.execute("trading_status", "اعرض حالة وكيل التداول")
+
+        self.assertFalse(result["fallback"])
+        self.assertEqual(result["model_provider"], "openrouter")
+        self.assertEqual(result["advisory"]["action"], "sell")
+        self.assertEqual(result["advisory"]["confidence"], 0.82)
+        self.assertTrue(status["trading"]["strategy_advisory"]["active"])
+        self.assertEqual(
+            status["trading"]["strategy_advisory_policy"]["mode"],
+            "veto_only",
+        )
+        model.complete.assert_called_once()
+
+    def test_trading_strategy_refresh_falls_back_without_model(self) -> None:
+        result = ToolExecutor(self.config).execute(
+            "trading_strategy_refresh",
+            "حدّث مستشار استراتيجية وكيل التداول",
+        )
+
+        self.assertTrue(result["fallback"])
+        self.assertEqual(result["model_provider"], "deterministic_fallback")
+        self.assertEqual(result["advisory"]["action"], "hold")
+        self.assertEqual(result["advisory"]["confidence"], 0.0)
+
+    def test_trading_strategy_refresh_task_completes_with_safe_fallback(self) -> None:
+        task = self.store.enqueue(
+            "تحديث مستشار التداول",
+            "حدّث مستشار استراتيجية وكيل التداول",
+        )
+
+        processed = AgentWorker(self.config, self.store).start(once=True)
+        detail = self.store.get_detail(task["id"])
+        result = detail["task"]["result"]["tool_results"][0]["result"]
+
+        self.assertEqual(processed, 1)
+        self.assertEqual(detail["task"]["status"], "completed")
+        self.assertEqual(result["tool"], "trading_strategy_refresh")
+        self.assertTrue(result["fallback"])
+        self.assertEqual(result["advisory"]["confidence"], 0.0)
+        self.assertFalse(result["policy"]["can_originate_orders"])
+        self.assertFalse(result["live_execution_enabled"])
+        self.assertEqual(
+            detail["task"]["result"]["model_trace"]["synthesis_provider"],
+            "local_deterministic_tool_summary",
+        )
 
     def test_kali_inventory_uses_wsl_safe_explicit_commands(self) -> None:
         executor = ToolExecutor(self.config)

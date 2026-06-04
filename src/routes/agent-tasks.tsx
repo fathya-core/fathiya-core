@@ -447,6 +447,14 @@ function AgentTasksPage() {
                           trading.prediction_quality.cumulative_strategy_return_bps,
                         )} bps`}
                       />
+                      <InfoField
+                        label="مستشار النموذج"
+                        value={trading.strategy_advisory?.provider || "لم يُحدّث"}
+                      />
+                      <InfoField
+                        label="إشارة المستشار"
+                        value={advisoryLabel(trading.strategy_advisory)}
+                      />
                       <InfoField label="الرصيد" value={formatNumber(trading.portfolio.equity)} />
                       <InfoField label="صافي PnL" value={formatNumber(trading.portfolio.net_pnl)} />
                     </div>
@@ -898,4 +906,10 @@ function marketNotice(source: string | null) {
     return "بيانات محاكاة للاختبار، والتنفيذ Paper فقط.";
   }
   return "بيانات سوق عامة مباشرة، والتنفيذ Paper فقط. التداول الحقيقي يبقى مقفلاً حتى ربط حساب تجريبي واعتماده.";
+}
+
+function advisoryLabel(advisory: AgentTradingStatus["strategy_advisory"]) {
+  if (!advisory) return "--";
+  const state = advisory.active ? "نشطة" : "منتهية";
+  return `${advisory.action} · ${formatPercent(advisory.confidence)} · ${state}`;
 }

@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 import requests
 
 from .config import RuntimeConfig
+from .models import ModelClient
 from .trading import PaperTradingAgent
 
 
@@ -55,9 +56,11 @@ class ToolExecutor:
         config: RuntimeConfig,
         *,
         trading_agent: PaperTradingAgent | None = None,
+        model_router: ModelClient | None = None,
     ):
         self.config = config
         self._trading = trading_agent
+        self._model_router = model_router
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
             "internal_echo": self._internal_echo,
@@ -79,6 +82,7 @@ class ToolExecutor:
             "trading_start": self._trading_start,
             "trading_stop": self._trading_stop,
             "trading_tick": self._trading_tick,
+            "trading_strategy_refresh": self._trading_strategy_refresh,
         }
         self._specs = {
             spec.name: spec
@@ -200,8 +204,17 @@ class ToolExecutor:
                     "trading",
                     read_only=False,
                 ),
+                ToolSpec(
+                    "trading_strategy_refresh",
+                    "Refresh the short-lived paper-trading strategy advisory through OpenRouter or local Hugging Face.",
+                    "trading",
+                    read_only=False,
+                ),
             )
         }
+
+    def set_model_router(self, model_router: ModelClient) -> None:
+        self._model_router = model_router
 
     def catalog(self) -> list[dict[str, Any]]:
         profiles = self._command_profiles()
@@ -386,6 +399,95 @@ class ToolExecutor:
             "executed": True,
             "action": "tick",
             "cycle": self._trading_agent().tick_once(),
+        }
+
+    def _trading_strategy_refresh(
+        self,
+        prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        trading = self._trading_agent()
+        status = trading.status()
+        compact_status = {
+            "symbol": status["symbol"],
+            "running": status["running"],
+            "mode": status["mode"],
+            "current_market_source": status["current_market_source"],
+            "latest_prediction": (
+                status["latest_cycle"]["prediction"] if status["latest_cycle"] else None
+            ),
+            "portfolio": status["portfolio"],
+            "prediction_quality": status["prediction_quality"],
+            "risk_limits": status["risk_limits"],
+            "live_execution_enabled": status["live_execution_enabled"],
+        }
+        provider = "deterministic_fallback"
+        fallback = True
+        error_type: str | None = None
+        action = "hold"
+        confidence = 0.0
+        rationale = "No configured model produced a valid advisory; no veto is applied."
+        model = self._model_router
+        if model and model.available:
+            try:
+                raw = model.complete(
+                    (
+                        "You are the FATHIYA paper-trading strategy advisor. "
+                        "Return one JSON object only with action, confidence, and rationale. "
+                        "action must be buy, sell, or hold. confidence must be 0 through 1. "
+                        "Use only the supplied snapshot, choose hold when uncertain, and do not "
+                        "claim live execution or invent evidence."
+                    ),
+                    json.dumps(
+                        {
+                            "operator_request": prompt[:1000],
+                            "trading_snapshot": compact_status,
+                            "policy": {
+                                "mode": "veto_only",
+                                "can_originate_orders": False,
+                                "live_execution_enabled": False,
+                            },
+                        },
+                        ensure_ascii=False,
+                    ),
+                    json_mode=True,
+                    max_new_tokens=180,
+                )
+                payload = _json_object(raw)
+                requested_action = str(payload.get("action") or "").strip().lower()
+                requested_confidence = float(payload.get("confidence"))
+                requested_rationale = " ".join(
+                    str(payload.get("rationale") or "").split()
+                )
+                if requested_action not in {"buy", "sell", "hold"}:
+                    raise ValueError("model returned an unsupported advisory action")
+                if not requested_rationale:
+                    raise ValueError("model returned an empty advisory rationale")
+                action = requested_action
+                confidence = max(0.0, min(1.0, requested_confidence))
+                rationale = requested_rationale[:400]
+                provider = str(getattr(model, "last_provider", "model"))[:120]
+                fallback = False
+            except Exception as exc:
+                error_type = type(exc).__name__
+        advisory = trading.update_advisory(
+            action=action,
+            confidence=confidence,
+            rationale=rationale,
+            provider=provider,
+            ttl_seconds=self.config.trading_advisory_ttl_seconds,
+        )
+        return {
+            "available": True,
+            "executed": True,
+            "action": "strategy_refresh",
+            "model_provider": provider,
+            "fallback": fallback,
+            "error_type": error_type,
+            "advisory": advisory,
+            "policy": status["strategy_advisory_policy"],
+            "live_execution_enabled": False,
         }
 
     @staticmethod
@@ -948,3 +1050,13 @@ class ToolExecutor:
                 "stdout": (exc.stdout or "")[:20_000],
                 "stderr": f"Command timed out after {timeout} seconds",
             }
+
+
+def _json_object(raw: str) -> dict[str, Any]:
+    start = raw.find("{")
+    if start < 0:
+        raise ValueError("Model advisory did not contain a JSON object")
+    payload, _end = json.JSONDecoder().raw_decode(raw[start:])
+    if not isinstance(payload, dict):
+        raise ValueError("Model advisory must be a JSON object")
+    return payload

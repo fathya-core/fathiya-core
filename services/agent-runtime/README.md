@@ -143,6 +143,7 @@ control it. Example local website requests:
 - `شغّل وكيل التداول الورقي`
 - `أوقف وكيل التداول الورقي`
 - `نفّذ نبضة واحدة لوكيل التداول`
+- `حدّث مستشار استراتيجية وكيل التداول`
 
 The local control plane shares one trading-agent instance between the direct
 trading API and the task worker. A task-started loop therefore appears
@@ -151,6 +152,14 @@ surface. Explicit status, start, stop, and single-tick requests use a
 deterministic fast-control path: they bypass knowledge retrieval and model
 generation, while broader trading research requests continue through the full
 knowledge and model pipeline.
+
+`trading_strategy_refresh` runs outside the one-second loop and asks OpenRouter
+first, then local Hugging Face, for a short-lived structured advisory. The
+advisory uses a deterministic `veto_only` policy: it may confirm an existing
+paper signal or downgrade a conflicting paper signal to `hold`, but it cannot
+originate an order, bypass risk checks, or enable live execution. Invalid or
+unavailable model output becomes a zero-confidence deterministic fallback with
+no trading effect.
 
 This version is deliberately paper-only and long-only. By default it observes
 the public Coinbase spot price for `BTC-USD` once per second, records the

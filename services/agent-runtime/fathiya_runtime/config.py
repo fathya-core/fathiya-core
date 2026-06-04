@@ -53,6 +53,8 @@ class RuntimeConfig:
     trading_signal_window: int
     trading_signal_threshold: float
     trading_evaluation_deadband: float
+    trading_advisory_ttl_seconds: float
+    trading_advisory_min_confidence: float
     trading_max_receipts: int
 
     @classmethod
@@ -206,6 +208,20 @@ class RuntimeConfig:
                 min(
                     0.1,
                     float(os.getenv("FATHIYA_TRADING_EVALUATION_DEADBAND", "0.00005")),
+                ),
+            ),
+            trading_advisory_ttl_seconds=max(
+                10.0,
+                min(
+                    86_400.0,
+                    float(os.getenv("FATHIYA_TRADING_ADVISORY_TTL_SECONDS", "300")),
+                ),
+            ),
+            trading_advisory_min_confidence=max(
+                0.0,
+                min(
+                    1.0,
+                    float(os.getenv("FATHIYA_TRADING_ADVISORY_MIN_CONFIDENCE", "0.7")),
                 ),
             ),
             trading_max_receipts=max(

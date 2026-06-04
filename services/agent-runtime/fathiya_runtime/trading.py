@@ -83,6 +83,53 @@ class Prediction:
 
 
 @dataclass(frozen=True)
+class StrategyAdvisory:
+    action: str
+    confidence: float
+    rationale: str
+    provider: str
+    generated_at: str
+    expires_at: str
+
+    def active(self) -> bool:
+        try:
+            return datetime.fromisoformat(self.expires_at) > datetime.now(UTC)
+        except ValueError:
+            return False
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "confidence": self.confidence,
+            "rationale": self.rationale,
+            "provider": self.provider,
+            "generated_at": self.generated_at,
+            "expires_at": self.expires_at,
+            "active": self.active(),
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any] | None) -> "StrategyAdvisory | None":
+        if not state:
+            return None
+        action = str(state.get("action") or "")
+        if action not in {"buy", "sell", "hold"}:
+            return None
+        try:
+            confidence = max(0.0, min(1.0, float(state.get("confidence", 0))))
+        except (TypeError, ValueError):
+            return None
+        return cls(
+            action=action,
+            confidence=confidence,
+            rationale=str(state.get("rationale") or "")[:400],
+            provider=str(state.get("provider") or "unknown")[:120],
+            generated_at=str(state.get("generated_at") or ""),
+            expires_at=str(state.get("expires_at") or ""),
+        )
+
+
+@dataclass(frozen=True)
 class RiskCheck:
     allowed: bool
     action: str
@@ -746,6 +793,7 @@ class PaperTradingAgent:
         interval_seconds: float = 1.0,
         requested_mode: str = "paper",
         evaluation_deadband: float = 0.00005,
+        advisory_min_confidence: float = 0.7,
     ):
         if market.symbol != symbol:
             raise ValueError("Trading agent and market provider symbols must match")
@@ -758,6 +806,10 @@ class PaperTradingAgent:
         self.interval_seconds = max(0.05, interval_seconds)
         self.requested_mode = requested_mode
         self.evaluation_deadband = max(0.0, min(1.0, evaluation_deadband))
+        self.advisory_min_confidence = max(
+            0.0,
+            min(1.0, advisory_min_confidence),
+        )
         self.mode = "paper"
         self._running = False
         self._stop = threading.Event()
@@ -772,6 +824,9 @@ class PaperTradingAgent:
             last_price = self._last_cycle["tick"]["price"]
         self._last_price = _decimal(last_price or "0")
         self._cycle_count = self.ledger.count(symbol=self.symbol)
+        self._advisory = StrategyAdvisory.from_state(
+            self.ledger.load_state(f"advisory:{self.symbol}")
+        )
 
     @classmethod
     def from_config(cls, config: Any) -> "PaperTradingAgent":
@@ -827,7 +882,36 @@ class PaperTradingAgent:
             interval_seconds=config.trading_tick_seconds,
             requested_mode=config.trading_mode,
             evaluation_deadband=config.trading_evaluation_deadband,
+            advisory_min_confidence=config.trading_advisory_min_confidence,
         )
+
+    def update_advisory(
+        self,
+        *,
+        action: str,
+        confidence: float,
+        rationale: str,
+        provider: str,
+        ttl_seconds: float,
+    ) -> dict[str, Any]:
+        clean_action = action.strip().lower()
+        if clean_action not in {"buy", "sell", "hold"}:
+            raise ValueError("Strategy advisory action must be buy, sell, or hold")
+        clean_confidence = max(0.0, min(1.0, float(confidence)))
+        generated = datetime.now(UTC)
+        expires = generated.timestamp() + max(1.0, min(86_400.0, ttl_seconds))
+        advisory = StrategyAdvisory(
+            action=clean_action,
+            confidence=clean_confidence,
+            rationale=" ".join(rationale.split())[:400],
+            provider=provider.strip()[:120] or "unknown",
+            generated_at=generated.isoformat(),
+            expires_at=datetime.fromtimestamp(expires, UTC).isoformat(),
+        )
+        with self._lock:
+            self._advisory = advisory
+            self.ledger.save_state(f"advisory:{self.symbol}", advisory.as_dict())
+            return advisory.as_dict()
 
     def start(self) -> dict[str, Any]:
         with self._lock:
@@ -860,7 +944,7 @@ class PaperTradingAgent:
             started = time.perf_counter()
             tick = self.market.next_tick()
             self._evaluate_previous_prediction(tick)
-            prediction = self.signal_model.predict(tick)
+            prediction = self._apply_advisory(self.signal_model.predict(tick))
             portfolio_before = self.broker.portfolio(tick.price)
             risk = self.risk.evaluate(prediction, tick, portfolio_before)
             fill = (
@@ -932,6 +1016,14 @@ class PaperTradingAgent:
                 ),
                 "market_health": market_health() if callable(market_health) else None,
                 "signal_model": self.signal_model.name,
+                "strategy_advisory": (
+                    self._advisory.as_dict() if self._advisory else None
+                ),
+                "strategy_advisory_policy": {
+                    "mode": "veto_only",
+                    "min_confidence": self.advisory_min_confidence,
+                    "can_originate_orders": False,
+                },
                 "cycle_count": self._cycle_count,
                 "last_error": self._last_error,
                 "latest_receipt_id": latest.get("receipt_id") if latest else None,
@@ -940,6 +1032,39 @@ class PaperTradingAgent:
                 "prediction_quality": self.ledger.quality(self.symbol),
                 "risk_limits": self.risk.as_dict(),
             }
+
+    def _apply_advisory(self, base: Prediction) -> Prediction:
+        advisory = self._advisory
+        if (
+            not advisory
+            or not advisory.active()
+            or advisory.confidence < self.advisory_min_confidence
+            or base.action == "hold"
+        ):
+            return base
+        if advisory.action != base.action:
+            return Prediction(
+                action="hold",
+                score=0.0,
+                confidence=advisory.confidence,
+                horizon_seconds=base.horizon_seconds,
+                model=f"{base.model}+advisor_veto",
+                reason=(
+                    f"advisor_veto:{advisory.provider}:{advisory.action}:"
+                    f"{advisory.rationale[:160]}"
+                ),
+            )
+        return Prediction(
+            action=base.action,
+            score=base.score,
+            confidence=max(base.confidence, advisory.confidence),
+            horizon_seconds=base.horizon_seconds,
+            model=f"{base.model}+advisor_confirmed",
+            reason=(
+                f"{base.reason}; advisor_confirmed:{advisory.provider}:"
+                f"{advisory.rationale[:160]}"
+            ),
+        )
 
     def _evaluate_previous_prediction(self, exit_tick: MarketTick) -> dict[str, Any] | None:
         if _is_fallback_source(exit_tick.source):

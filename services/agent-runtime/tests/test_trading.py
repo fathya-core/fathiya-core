@@ -223,6 +223,73 @@ class PaperTradingAgentTests(unittest.TestCase):
         self.assertEqual(second.recent(1)[0]["tick"]["symbol"], "OTHER-USD")
         self.assertEqual(self.ledger.count(), 2)
 
+    def test_model_advisory_can_veto_but_not_originate_paper_orders(self) -> None:
+        agent = self.build_agent(changes=["0.01"])
+        agent.run_cycle()
+        agent.run_cycle()
+        advisory = agent.update_advisory(
+            action="sell",
+            confidence=0.9,
+            rationale="short-lived disagreement",
+            provider="openrouter",
+            ttl_seconds=60,
+        )
+
+        vetoed = agent.run_cycle()
+
+        self.assertTrue(advisory["active"])
+        self.assertEqual(vetoed["prediction"]["action"], "hold")
+        self.assertIn("advisor_veto", vetoed["prediction"]["model"])
+        self.assertIsNone(vetoed["fill"])
+        self.assertEqual(agent.status()["strategy_advisory_policy"]["mode"], "veto_only")
+        self.assertFalse(
+            agent.status()["strategy_advisory_policy"]["can_originate_orders"]
+        )
+
+        hold_agent = PaperTradingAgent(
+            symbol="HOLD-USD",
+            ledger=self.ledger,
+            market=SyntheticSecondMarket("HOLD-USD", changes=["0"]),
+            signal_model=MomentumSignalModel(window=2, threshold=0.001),
+            broker=PaperBroker(initial_cash="1000"),
+            risk=TradingRiskEngine(
+                max_order_notional="100",
+                max_position_notional="200",
+                daily_loss_limit="100",
+                min_order_notional="10",
+            ),
+        )
+        hold_agent.run_cycle()
+        hold_agent.update_advisory(
+            action="buy",
+            confidence=1.0,
+            rationale="advisor wants buy",
+            provider="huggingface_local",
+            ttl_seconds=60,
+        )
+        still_hold = hold_agent.run_cycle()
+
+        self.assertEqual(still_hold["prediction"]["action"], "hold")
+        self.assertIsNone(still_hold["fill"])
+
+    def test_model_advisory_can_confirm_existing_paper_signal(self) -> None:
+        agent = self.build_agent(changes=["0.01"])
+        agent.run_cycle()
+        agent.run_cycle()
+        agent.update_advisory(
+            action="buy",
+            confidence=0.9,
+            rationale="momentum agrees",
+            provider="openrouter",
+            ttl_seconds=60,
+        )
+
+        confirmed = agent.run_cycle()
+
+        self.assertEqual(confirmed["prediction"]["action"], "buy")
+        self.assertIn("advisor_confirmed", confirmed["prediction"]["model"])
+        self.assertIsNotNone(confirmed["fill"])
+
 
 if __name__ == "__main__":
     unittest.main()

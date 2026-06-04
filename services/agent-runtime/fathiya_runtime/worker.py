@@ -8,7 +8,12 @@ from typing import Any
 
 from .config import RuntimeConfig
 from .models import AgentModelRouter
-from .planner import FAST_CONTROL_TOOLS, build_plan, fast_control_steps
+from .planner import (
+    DETERMINISTIC_SYNTHESIS_TOOLS,
+    FAST_CONTROL_TOOLS,
+    build_plan,
+    fast_control_steps,
+)
 from .retrieval import KnowledgeRetriever
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
@@ -44,6 +49,7 @@ class AgentWorker:
         )
         self.synthesis_mode = "not_run"
         self.tools = tools or ToolExecutor(config)
+        self.tools.set_model_router(self.model)
         self.capabilities = [
             "knowledge_search",
             "openrouter_planning",
@@ -177,10 +183,15 @@ class AgentWorker:
                 "بدأ تلخيص الأدلة ونتائج الأدوات.",
             )
             if execution_steps and all(
-                step["tool"] in FAST_CONTROL_TOOLS for step in execution_steps
+                step["tool"] in DETERMINISTIC_SYNTHESIS_TOOLS
+                for step in execution_steps
             ):
                 synthesis = _deterministic_synthesis(tool_results, len(sources))
-                self.synthesis_mode = "local_deterministic_fast_control"
+                self.synthesis_mode = (
+                    "local_deterministic_fast_control"
+                    if all(step["tool"] in FAST_CONTROL_TOOLS for step in execution_steps)
+                    else "local_deterministic_tool_summary"
+                )
             else:
                 synthesis = self._synthesize(task, sources, tool_results)
             self._progress(
@@ -479,6 +490,10 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
                 "risk": cycle.get("risk"),
                 "latency_ms": cycle.get("latency_ms"),
             }
+        if isinstance(result.get("advisory"), dict):
+            summary["advisory"] = result["advisory"]
+            summary["model_provider"] = result.get("model_provider")
+            summary["fallback"] = result.get("fallback")
         for key in ("found_commands", "missing_commands"):
             if isinstance(result.get(key), list):
                 summary[key] = result[key][:20]
@@ -632,6 +647,7 @@ def _deterministic_synthesis(
         elif tool.startswith("trading_"):
             trading = result.get("trading")
             cycle = result.get("cycle")
+            advisory = result.get("advisory")
             if isinstance(trading, dict):
                 quality = trading.get("prediction_quality", {})
                 evidence.append(
@@ -644,6 +660,12 @@ def _deterministic_synthesis(
                 evidence.append(
                     f"نُفذت نبضة تداول Paper بإيصال {cycle.get('receipt_id', 'غير معروف')} "
                     f"وقرار {cycle.get('prediction', {}).get('action', 'غير معروف')}."
+                )
+            elif isinstance(advisory, dict):
+                evidence.append(
+                    f"تم تحديث مستشار الاستراتيجية عبر {result.get('model_provider', 'غير معروف')} "
+                    f"بإشارة {advisory.get('action', 'غير معروفة')} وثقة "
+                    f"{advisory.get('confidence', 0):.2f} وسياسة veto-only."
                 )
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")

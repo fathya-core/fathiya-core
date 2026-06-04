@@ -170,6 +170,20 @@ export type AgentTradingStatus = {
     } | null;
   } | null;
   signal_model: string;
+  strategy_advisory: {
+    action: "buy" | "sell" | "hold";
+    confidence: number;
+    rationale: string;
+    provider: string;
+    generated_at: string;
+    expires_at: string;
+    active: boolean;
+  } | null;
+  strategy_advisory_policy: {
+    mode: "veto_only";
+    min_confidence: number;
+    can_originate_orders: false;
+  };
   cycle_count: number;
   last_error: string | null;
   latest_receipt_id: string | null;

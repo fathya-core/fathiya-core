@@ -11,6 +11,7 @@ from .retrieval import RetrievedSource
 FAST_CONTROL_TOOLS = frozenset(
     {"trading_status", "trading_start", "trading_stop", "trading_tick"}
 )
+DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {"trading_strategy_refresh"}
 
 
 def build_plan(
@@ -280,6 +281,13 @@ def _fallback_steps(
             trading_control["description"],
             trading_control["args"],
         )
+    strategy_refresh = _trading_strategy_refresh_step(prompt)
+    if strategy_refresh:
+        add(
+            strategy_refresh["tool"],
+            strategy_refresh["description"],
+            strategy_refresh["args"],
+        )
 
     profiles = _profile_names(available.get("command_profile", {}))
     connector_profiles = _profile_names(available.get("connector_profile", {}))
@@ -371,6 +379,37 @@ def _trading_control_step(prompt: str) -> dict[str, Any] | None:
     else:
         return None
     return {"tool": tool, "description": description, "args": {}}
+
+
+def _trading_strategy_refresh_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.lower()
+    agent_terms = (
+        "trading advisor",
+        "strategy advisor",
+        "trading agent strategy",
+        "مستشار التداول",
+        "مستشار الاستراتيجية",
+        "استراتيجية وكيل التداول",
+        "استراتيجيه وكيل التداول",
+    )
+    refresh_terms = (
+        "refresh",
+        "update",
+        "حدّث",
+        "حدث",
+        "تحديث",
+        "جدد",
+        "جدّد",
+    )
+    if not any(term in text for term in agent_terms) or not any(
+        term in text for term in refresh_terms
+    ):
+        return None
+    return {
+        "tool": "trading_strategy_refresh",
+        "description": "تحديث مستشار استراتيجية التداول عبر OpenRouter أو Hugging Face",
+        "args": {},
+    }
 
 
 def _profile_names(command_profile_spec: dict[str, Any]) -> set[str]:

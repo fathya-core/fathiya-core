@@ -34,6 +34,15 @@ loop. Explicit local control commands use a deterministic fast path and do not
 wait for knowledge retrieval or model generation. Broader trading research
 continues through the full retrieval and model pipeline.
 
+OpenRouter or local Hugging Face may publish a short-lived structured strategy
+advisory outside the one-second loop. The execution loop reads the latest
+advisory without waiting for a model. The advisory is `veto_only`: a
+high-confidence disagreement can downgrade an existing paper signal to
+`hold`, and an agreement can be recorded as confirmation. It cannot originate
+buy or sell signals, bypass deterministic risk checks, or activate live
+execution. Invalid or unavailable model output is stored with zero confidence
+and has no effect.
+
 ## Live Activation Gates
 
 Live execution requires all of the following:
