@@ -17,7 +17,7 @@ from fathiya_runtime.retrieval import KnowledgeRetriever
 from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
 from fathiya_runtime.tools import ToolExecutionError, ToolExecutor
-from fathiya_runtime.worker import AgentWorker
+from fathiya_runtime.worker import AgentWorker, _deterministic_synthesis, _is_useful_synthesis
 
 
 class AgentRuntimeVerticalSliceTests(unittest.TestCase):
@@ -201,6 +201,32 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertTrue(evaluation["passed"])
         self.assertEqual(evaluation["mode"], "local_deterministic_evaluation")
         local_complete.assert_not_called()
+
+    def test_short_model_synthesis_is_rejected_for_evidence_summary(self) -> None:
+        self.assertFalse(_is_useful_synthesis("###"))
+        summary = _deterministic_synthesis(
+            [
+                {
+                    "result": {
+                        "tool": "n8n_status",
+                        "available": True,
+                        "version": "2.23.2",
+                    }
+                },
+                {
+                    "result": {
+                        "tool": "n8n_workflows",
+                        "available": False,
+                        "status_code": 401,
+                    }
+                },
+            ],
+            5,
+        )
+
+        self.assertIn("n8n المحلية متاحة بإصدار 2.23.2", summary)
+        self.assertIn("N8N_API_KEY", summary)
+        self.assertIn("5 مصادر", summary)
 
     def test_connected_tool_inventory_is_available(self) -> None:
         result = AgentWorker(self.config, self.store).tools.execute(

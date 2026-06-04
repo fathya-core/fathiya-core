@@ -1,10 +1,29 @@
 import type { Session } from "@supabase/supabase-js";
 
-export async function agentApi<T>(session: Session, path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+const configuredLocalUrl = import.meta.env.VITE_FATHIYA_LOCAL_API_URL?.replace(/\/+$/, "");
+const loopbackUrl = /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/;
+
+export const localAgentRuntimeUrl =
+  configuredLocalUrl && loopbackUrl.test(configuredLocalUrl)
+    ? configuredLocalUrl
+    : import.meta.env.DEV
+      ? "http://127.0.0.1:8765"
+      : "";
+
+export const isLocalAgentRuntime = Boolean(localAgentRuntimeUrl);
+
+export async function agentApi<T>(
+  session: Session | null,
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  if (!isLocalAgentRuntime && !session) {
+    throw new Error("Agent operator session is required");
+  }
+  const response = await fetch(`${localAgentRuntimeUrl}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${session.access_token}`,
+      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
       "Content-Type": "application/json",
       ...init?.headers,
     },

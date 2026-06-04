@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .config import RuntimeConfig
+from .local_api import serve_local_control_plane
 from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore, now_iso
 from .tools import ToolExecutor
 from .worker import AgentWorker
@@ -32,6 +33,11 @@ def main() -> None:
     worker = sub.add_parser("worker")
     worker.add_argument("--once", action="store_true")
     worker.add_argument("--poll-seconds", type=float, default=3.0)
+
+    serve = sub.add_parser("serve")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--poll-seconds", type=float, default=0.5)
 
     listing = sub.add_parser("list")
     listing.add_argument("--limit", type=int, default=20)
@@ -60,6 +66,14 @@ def main() -> None:
     elif args.command == "worker":
         count = AgentWorker(config, store).start(once=args.once, poll_seconds=args.poll_seconds)
         print(json.dumps({"processed": count}, ensure_ascii=False))
+    elif args.command == "serve":
+        serve_local_control_plane(
+            config,
+            store,
+            host=args.host,
+            port=args.port,
+            poll_seconds=args.poll_seconds,
+        )
     elif args.command == "list":
         print(json.dumps(store.list_tasks(args.limit), ensure_ascii=False, indent=2))
     elif args.command == "show":

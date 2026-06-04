@@ -17,6 +17,19 @@ py -3.13 -m venv .venv
 .\.venv\Scripts\fathiya-runtime tools
 ```
 
+For the usable local website flow, start the loopback-only API and persistent
+worker together:
+
+```powershell
+.\.venv\Scripts\fathiya-runtime serve
+```
+
+In development, `/agent-tasks` automatically connects to
+`http://127.0.0.1:8765`. The local API accepts browser requests only from
+loopback origins such as `localhost` and `127.0.0.1`; remote web origins are
+rejected. Production builds continue to use the authenticated same-origin
+Supabase/Netlify task API unless `VITE_FATHIYA_LOCAL_API_URL` is explicitly set.
+
 The default SQLite store is for local verification. Set `FATHIYA_STORE=supabase`,
 `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` to connect the worker to the
 production task queue.

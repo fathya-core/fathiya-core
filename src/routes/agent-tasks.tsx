@@ -29,7 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getSupabaseConfigurationError, supabase } from "@/integrations/supabase/client";
-import { agentApi } from "@/lib/agent/client";
+import { agentApi, isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent/client";
 import type {
   AgentTask,
   AgentTaskDetail,
@@ -66,6 +66,7 @@ const STATUS_LABELS: Record<AgentTaskStatus, string> = {
 };
 
 function AgentTasksPage() {
+  const localMode = isLocalAgentRuntime;
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -77,6 +78,10 @@ function AgentTasksPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (localMode) {
+      setSession(null);
+      return undefined;
+    }
     const configurationError = getSupabaseConfigurationError();
     if (configurationError) {
       setError(configurationError);
@@ -94,57 +99,62 @@ function AgentTasksPage() {
       setSession(null);
       return undefined;
     }
-  }, []);
+  }, [localMode]);
+
+  const hasAccess = localMode || Boolean(session);
 
   const loadTasks = useCallback(async () => {
-    if (!session) return;
+    if (!hasAccess) return;
     try {
-      const data = await agentApi<{ tasks: AgentTask[] }>(session, "/api/agent/tasks");
+      const data = await agentApi<{ tasks: AgentTask[] }>(session ?? null, "/api/agent/tasks");
       setTasks(data.tasks);
       setSelectedId((current) => current ?? data.tasks[0]?.id ?? null);
       setError("");
     } catch (loadError) {
       setError(String(loadError));
     }
-  }, [session]);
+  }, [hasAccess, session]);
 
   const loadDetail = useCallback(async () => {
-    if (!session || !selectedId) {
+    if (!hasAccess || !selectedId) {
       setDetail(null);
       return;
     }
     try {
-      const data = await agentApi<AgentTaskDetail>(session, `/api/agent/tasks/${selectedId}`);
+      const data = await agentApi<AgentTaskDetail>(
+        session ?? null,
+        `/api/agent/tasks/${selectedId}`,
+      );
       setDetail(data);
       setTasks((current) => current.map((task) => (task.id === data.task.id ? data.task : task)));
       setError("");
     } catch (loadError) {
       setError(String(loadError));
     }
-  }, [selectedId, session]);
+  }, [hasAccess, selectedId, session]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!hasAccess) return;
     void loadTasks();
     const timer = window.setInterval(() => void loadTasks(), 5000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, session]);
+  }, [hasAccess, loadTasks]);
 
   useEffect(() => {
-    if (!session || !selectedId) return;
+    if (!hasAccess || !selectedId) return;
     void loadDetail();
     const timer = window.setInterval(() => void loadDetail(), 2000);
     return () => window.clearInterval(timer);
-  }, [loadDetail, selectedId, session]);
+  }, [hasAccess, loadDetail, selectedId]);
 
   async function createTask(event: FormEvent) {
     event.preventDefault();
-    if (!session || !prompt.trim()) return;
+    if (!hasAccess || !prompt.trim()) return;
     setCreating(true);
     setError("");
     try {
       const body: CreateAgentTaskBody = { prompt: prompt.trim(), title: title.trim() || undefined };
-      const data = await agentApi<{ task: AgentTask }>(session, "/api/agent/tasks", {
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -160,11 +170,13 @@ function AgentTasksPage() {
   }
 
   async function taskAction(action: "approve" | "cancel") {
-    if (!session || !selectedId) return;
+    if (!hasAccess || !selectedId) return;
     setActing(true);
     setError("");
     try {
-      await agentApi(session, `/api/agent/tasks/${selectedId}/${action}`, { method: "POST" });
+      await agentApi(session ?? null, `/api/agent/tasks/${selectedId}/${action}`, {
+        method: "POST",
+      });
       await Promise.all([loadTasks(), loadDetail()]);
     } catch (actionError) {
       setError(String(actionError));
@@ -174,6 +186,11 @@ function AgentTasksPage() {
   }
 
   async function signOut() {
+    if (localMode) {
+      setTasks([]);
+      setDetail(null);
+      return;
+    }
     await supabase.auth.signOut();
     setTasks([]);
     setDetail(null);
@@ -184,11 +201,11 @@ function AgentTasksPage() {
     [tasks],
   );
 
-  if (session === undefined) {
+  if (!localMode && session === undefined) {
     return <CenteredState icon={Loader2} title="جارٍ التحقق من الجلسة" spin />;
   }
 
-  if (!session) {
+  if (!hasAccess) {
     return (
       <CenteredState icon={ShieldAlert} title="يلزم تسجيل دخول المشغل">
         {error && <p className="mb-4 break-words text-xs text-destructive">{error}</p>}
@@ -209,8 +226,16 @@ function AgentTasksPage() {
                 <ListChecks className="h-5 w-5 text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-sm font-bold">مهام وكلاء فتحية</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-sm font-bold">مهام وكلاء فتحية</h1>
+                  {localMode && (
+                    <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                      LOCAL RUNTIME
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-[11px] text-muted-foreground">
+                  {localMode ? `${localAgentRuntimeUrl} · ` : ""}
                   {activeCount} نشطة من {tasks.length} مهمة
                 </p>
               </div>
@@ -231,10 +256,12 @@ function AgentTasksPage() {
                   مركز القيادة
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => void signOut()}>
-                <LogOut />
-                <span className="sr-only">تسجيل الخروج</span>
-              </Button>
+              {!localMode && (
+                <Button variant="ghost" size="icon" onClick={() => void signOut()}>
+                  <LogOut />
+                  <span className="sr-only">تسجيل الخروج</span>
+                </Button>
+              )}
             </div>
           </div>
         </header>

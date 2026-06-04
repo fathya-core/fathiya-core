@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getSupabaseConfigurationError, supabase } from "@/integrations/supabase/client";
+import { isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent/client";
 
 export const Route = createFileRoute("/agent-login")({
   head: () => ({
@@ -26,6 +27,10 @@ function AgentLoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (isLocalAgentRuntime) {
+      void navigate({ to: "/agent-tasks" });
+      return;
+    }
     const configurationError = getSupabaseConfigurationError();
     if (configurationError) {
       setError(configurationError);
@@ -62,6 +67,36 @@ function AgentLoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (isLocalAgentRuntime) {
+    return (
+      <div
+        dir="rtl"
+        lang="ar"
+        className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground"
+      >
+        <Card className="w-full max-w-md border-emerald-500/20 bg-card/60">
+          <CardHeader>
+            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10">
+              <ShieldCheck className="h-5 w-5 text-emerald-400" />
+            </div>
+            <CardTitle className="text-base">المشغّل المحلي متاح</CardTitle>
+            <CardDescription>
+              الاتصال المحلي لا يحتاج تسجيل دخول إنتاجي. الواجهة تتصل بـ {localAgentRuntimeUrl}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" asChild>
+              <Link to="/agent-tasks">
+                <LogIn />
+                فتح مهام الوكلاء
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

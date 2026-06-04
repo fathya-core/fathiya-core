@@ -38,6 +38,11 @@ py -3.13 -m venv .venv
 .\.venv\Scripts\fathiya-runtime worker
 ```
 
+For a fully local website-to-worker proof without changing production, run
+`.\.venv\Scripts\fathiya-runtime serve`, start the site development server, and
+open `/agent-tasks`. Development mode automatically uses the loopback-only API
+at `http://127.0.0.1:8765`.
+
 ## Operator Flow
 
 1. Open `/agent-login` and authenticate.

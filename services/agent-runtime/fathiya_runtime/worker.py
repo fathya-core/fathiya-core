@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -354,7 +355,7 @@ class AgentWorker:
             )
             try:
                 synthesize = getattr(self.model, "synthesize", self.model.complete)
-                return synthesize(
+                synthesis = synthesize(
                     "أنت وكيل تنفيذ في فتحية. لخّص ما نُفذ وما ثبت وما يحتاج متابعة. لا تدّعِ شيئًا بلا دليل.",
                     (
                         f"الطلب:\n{task['prompt']}\n\nالمصادر:\n{context}\n\n"
@@ -362,16 +363,11 @@ class AgentWorker:
                         f"{json.dumps(_compact_tool_results(tool_results), ensure_ascii=False)[:5000]}"
                     ),
                 )
-            except Exception as exc:
-                return f"اكتمل التنفيذ المحلي، وتعذر تلخيص OpenRouter: {exc}"
-        tool_names = [
-            str(item.get("result", {}).get("tool", "unknown")) for item in tool_results
-        ]
-        return (
-            "اكتمل التنفيذ المحلي بنجاح. "
-            f"الأدوات المستخدمة: {', '.join(tool_names) or 'none'}. "
-            f"عدد مصادر المعرفة المسترجعة: {len(sources)}."
-        )
+                if _is_useful_synthesis(synthesis):
+                    return synthesis
+            except Exception:
+                pass
+        return _deterministic_synthesis(tool_results, len(sources))
 
 
 def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -422,3 +418,75 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             summary["stdout"] = str(result["stdout"])[:600]
         compact.append(summary)
     return compact
+
+
+def _is_useful_synthesis(value: str) -> bool:
+    meaningful = re.sub(r"[\s#*_`~>\-:;,.!?()[\]{}]+", "", value)
+    return len(meaningful) >= 40
+
+
+def _deterministic_synthesis(
+    tool_results: list[dict[str, Any]],
+    source_count: int,
+) -> str:
+    names: list[str] = []
+    evidence: list[str] = []
+    follow_up: list[str] = []
+    for item in tool_results:
+        result = item.get("result")
+        if not isinstance(result, dict):
+            continue
+        tool = str(result.get("tool") or item.get("description") or "unknown")
+        names.append(tool)
+        if result.get("execution_failed"):
+            evidence.append(f"{tool}: فشل التنفيذ.")
+            follow_up.append(f"راجع خطأ {tool}.")
+        elif tool == "tool_catalog" and isinstance(result.get("tools"), list):
+            evidence.append(f"كتالوج المحرك يعرض {len(result['tools'])} أداة قابلة للاستخدام.")
+        elif tool == "repo_status":
+            evidence.append(
+                "المستودع الأساسي نظيف."
+                if result.get("clean")
+                else "المستودع الأساسي يحتوي تغييرات عمل حالية."
+            )
+        elif tool == "github_repo_info" and isinstance(result.get("metadata"), dict):
+            metadata = result["metadata"]
+            evidence.append(
+                f"مستودع GitHub المصادق هو {metadata.get('nameWithOwner', 'غير معروف')} "
+                f"وفرعه الافتراضي {metadata.get('defaultBranchRef', {}).get('name', 'غير معروف')}."
+            )
+        elif tool == "n8n_status":
+            evidence.append(
+                f"n8n المحلية متاحة بإصدار {result.get('version', 'غير معروف')}."
+                if result.get("available")
+                else "n8n المحلية غير متاحة."
+            )
+        elif tool == "n8n_workflows":
+            if result.get("available"):
+                workflows = result.get("workflows")
+                count = len(workflows) if isinstance(workflows, list) else "غير معروف"
+                evidence.append(f"تمت قراءة مسارات n8n وعددها {count}.")
+            else:
+                evidence.append(
+                    f"تعذر سرد مسارات n8n، وحالة الواجهة {result.get('status_code', 'غير معروفة')}."
+                )
+                follow_up.append("أضف N8N_API_KEY لقراءة مسارات n8n.")
+        elif tool == "connected_tool_inventory":
+            evidence.append(
+                f"مخزون الموصلات يعرض {result.get('zapier_app_count', 0)} تطبيقات Zapier "
+                f"و{result.get('zapier_action_count', 0)} إجراءات."
+            )
+        elif "available" in result:
+            evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")
+        elif result.get("return_code") is not None:
+            evidence.append(f"{tool}: رمز الخروج {result.get('return_code')}.")
+
+    lines = [
+        f"اكتمل تنفيذ {len(names)} أدوات داخلية: {', '.join(names) or 'لا توجد أدوات'}.",
+        f"استُرجع {source_count} مصادر معرفة مرتبطة بالطلب.",
+    ]
+    if evidence:
+        lines.append("الأدلة المثبتة: " + " ".join(evidence))
+    if follow_up:
+        lines.append("المتابعة المطلوبة: " + " ".join(dict.fromkeys(follow_up)))
+    return "\n".join(lines)
