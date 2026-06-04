@@ -1,6 +1,6 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-04T13:00:00+03:00",
+  "captured_at": "2026-06-04T14:16:40+03:00",
   "source": "live Zapier MCP enabled-action inventory and local runtime checks",
   "policy": {
     "read_actions": "automatic",
@@ -11,6 +11,19 @@
     "destructive_actions": "awaiting_approval"
   },
   "local_tools": [
+    {
+      "app": "FATHIYA Agent Runtime",
+      "status": "active",
+      "capabilities": [
+        "multi-tool planning",
+        "sequential tool execution",
+        "prior-step context",
+        "dynamic approval gate",
+        "success and failure receipts",
+        "extensible command profiles",
+        "web report intake"
+      ]
+    },
     {
       "app": "n8n",
       "status": "active",
@@ -26,8 +39,17 @@
     {
       "app": "Hugging Face",
       "status": "active",
-      "capabilities": ["multilingual semantic retrieval", "CPU inference"],
-      "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+      "capabilities": [
+        "multilingual semantic retrieval",
+        "local planning",
+        "local synthesis",
+        "local evaluation",
+        "CPU inference"
+      ],
+      "models": [
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "Qwen/Qwen2.5-0.5B-Instruct"
+      ]
     },
     {
       "app": "OpenRouter",

@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from datetime import UTC, datetime
 from typing import Any
 
 from .config import RuntimeConfig
-from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore
+from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore, now_iso
+from .tools import ToolExecutor
 from .worker import AgentWorker
 
 
@@ -16,6 +19,7 @@ def build_store(config: RuntimeConfig) -> TaskStore:
 
 
 def main() -> None:
+    _configure_console()
     parser = argparse.ArgumentParser(description="FATHIYA local agent runtime")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("init")
@@ -35,6 +39,14 @@ def main() -> None:
     show = sub.add_parser("show")
     show.add_argument("task_id")
 
+    approve = sub.add_parser("approve")
+    approve.add_argument("task_id")
+
+    cancel = sub.add_parser("cancel")
+    cancel.add_argument("task_id")
+
+    sub.add_parser("tools")
+
     args = parser.parse_args()
     config = RuntimeConfig.load()
     store = build_store(config)
@@ -52,6 +64,62 @@ def main() -> None:
         print(json.dumps(store.list_tasks(args.limit), ensure_ascii=False, indent=2))
     elif args.command == "show":
         print(json.dumps(store.get_detail(args.task_id), ensure_ascii=False, indent=2))
+    elif args.command == "approve":
+        task = _require_task(store, args.task_id)
+        if task["status"] != "awaiting_approval":
+            raise SystemExit("task is not awaiting approval")
+        store.update_task(
+            task["id"],
+            status="queued",
+            approval_state="approved",
+            current_step="تمت الموافقة، بانتظار المشغّل المحلي",
+            error_message=None,
+            last_heartbeat_at=now_iso(),
+        )
+        store.add_event(
+            task,
+            "approved",
+            "وافق المشغل على خطة التنفيذ.",
+            status="queued",
+            step="approved",
+            progress=task["progress"],
+        )
+        print(json.dumps(store.get_task(task["id"]), ensure_ascii=False, indent=2))
+    elif args.command == "cancel":
+        task = _require_task(store, args.task_id)
+        if task["status"] not in {"queued", "running", "awaiting_approval", "stalled"}:
+            raise SystemExit("task cannot be canceled")
+        store.update_task(
+            task["id"],
+            status="canceled",
+            current_step="ألغيت بواسطة المشغل",
+            completed_at=datetime.now(UTC).isoformat(),
+        )
+        store.add_event(
+            task,
+            "canceled",
+            "ألغى المشغل المهمة.",
+            status="canceled",
+            step="canceled",
+            progress=task["progress"],
+        )
+        print(json.dumps(store.get_task(task["id"]), ensure_ascii=False, indent=2))
+    elif args.command == "tools":
+        print(json.dumps(ToolExecutor(config).catalog(), ensure_ascii=False, indent=2))
+
+
+def _require_task(store: TaskStore, task_id: str) -> dict[str, Any]:
+    task = store.get_task(task_id)
+    if not task:
+        raise SystemExit(f"task not found: {task_id}")
+    return task
+
+
+def _configure_console() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="replace")
 
 
 if __name__ == "__main__":

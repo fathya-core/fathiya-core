@@ -23,6 +23,9 @@ static site.
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
 4. Configure `services/agent-runtime/.env` from `.env.example`.
+   - Enable `FATHIYA_ENABLE_HF_RETRIEVAL=true` for multilingual semantic search.
+   - Enable `FATHIYA_ENABLE_LOCAL_GENERATION=true` to use the downloaded
+     `Qwen/Qwen2.5-0.5B-Instruct` CPU model after OpenRouter fails or is absent.
 5. Set `FATHIYA_STORE=supabase` on the local worker.
 6. Start the worker:
 
@@ -40,7 +43,8 @@ py -3.13 -m venv .venv
 3. Submit an internal task such as:
    `اعرض حالة المستودع وسجل إيصال التنفيذ`
 4. Confirm the worker claims the task within 30 seconds.
-5. Confirm progress events, heartbeat, final result, and receipt appear.
+5. Confirm progress events show every selected tool, heartbeat, model trace,
+   final result, and receipt.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.
@@ -50,7 +54,8 @@ trading, live security testing, deletion, and external publication.
 - Stop the local worker and submit a safe task.
 - Confirm a previously running task becomes `stalled` after two minutes.
 - Restart the worker and submit a new safe task.
-- Confirm OpenRouter failures use `openrouter_error_fallback`.
+- Confirm OpenRouter failures route to `huggingface_local`, then to the
+  deterministic local planner/evaluator only if local generation also fails.
 - Confirm no `sk-or-v1-`, service-role value, or `VITE_OPENROUTER_*` string is
   present in `dist/client`.
 - Run:
@@ -66,5 +71,9 @@ cd services/agent-runtime
 
 - OpenRouter currently returns HTTP 402 for the configured local key.
 - n8n `2.23.2` is active locally and responds on port `5678`.
+- n8n API workflow listing requires `N8N_API_KEY`. The local n8n CLI currently
+  fails migrations with `temporary_webhook_entity already exists`; back up and
+  repair the n8n SQLite database before importing or publishing the FATHIYA
+  webhook bridge.
 - Production verification requires applying the Supabase migration and
   deploying this branch to `fathya-core.com`.

@@ -6,11 +6,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .config import RuntimeConfig
-from .models import OpenRouterClient
+from .models import AgentModelRouter
 from .planner import build_plan
 from .retrieval import KnowledgeRetriever
 from .store import TaskStore, now_iso
-from .tools import ToolExecutor
+from .tools import ToolExecutionError, ToolExecutor
 
 
 class TaskCanceledError(RuntimeError):
@@ -18,26 +18,30 @@ class TaskCanceledError(RuntimeError):
 
 
 class AgentWorker:
-    capabilities = [
-        "knowledge_search",
-        "openrouter_reasoning",
-        "repo_status",
-        "n8n_status",
-        "connected_tool_inventory",
-        "kali_tool_inventory",
-        "security_core_plan",
-    ]
-
     def __init__(self, config: RuntimeConfig, store: TaskStore):
         self.config = config
         self.store = store
-        self.model = OpenRouterClient(config.openrouter_api_key, config.openrouter_model)
+        self.model = AgentModelRouter(
+            config.openrouter_api_key,
+            config.openrouter_model,
+            enable_local_generation=config.enable_local_generation,
+            local_model=config.local_model,
+            local_max_new_tokens=config.local_max_new_tokens,
+        )
         self.retriever = KnowledgeRetriever(
             config.knowledge_root,
             enable_hf=config.enable_hf_retrieval,
             hf_model=config.hf_model,
         )
         self.tools = ToolExecutor(config)
+        self.capabilities = [
+            "knowledge_search",
+            "openrouter_planning",
+            "openrouter_synthesis",
+            "openrouter_evaluation",
+            "huggingface_local_generation",
+            *[tool["name"] for tool in self.tools.catalog()],
+        ]
 
     def start(self, *, once: bool = False, poll_seconds: float = 3.0) -> int:
         self.store.initialize()
@@ -78,7 +82,13 @@ class AgentWorker:
                 },
             )
 
-            plan = build_plan(task, sources, self.model)
+            plan = build_plan(
+                task,
+                sources,
+                self.model,
+                self.tools.catalog(),
+                max_tool_steps=self.config.max_tool_steps,
+            )
             self.store.update_task(
                 task["id"],
                 plan=plan,
@@ -95,25 +105,48 @@ class AgentWorker:
                 payload={"plan": plan},
             )
 
-            execution_step = next(step for step in plan if step["id"] == "execute")
-            self._progress(
-                task,
-                45,
-                execution_step["description"],
-                "tool_started",
-                f"تشغيل الأداة: {execution_step['tool']}",
-            )
-            tool_result = self.tools.execute(execution_step["tool"], task["prompt"])
-            self._progress(
-                task,
-                70,
-                "اكتمل تنفيذ الأداة",
-                "tool_completed",
-                f"اكتمل تنفيذ {execution_step['tool']}.",
-                {"tool_result": tool_result},
-            )
+            execution_steps = [step for step in plan if step.get("kind") == "tool"]
+            if self._gate_plan_for_approval(task, execution_steps):
+                return
 
-            synthesis = self._synthesize(task, sources, tool_result)
+            tool_results: list[dict[str, Any]] = []
+            for index, execution_step in enumerate(execution_steps, start=1):
+                start_progress = 35 + int(((index - 1) / len(execution_steps)) * 40)
+                complete_progress = 35 + int((index / len(execution_steps)) * 40)
+                self._progress(
+                    task,
+                    start_progress,
+                    execution_step["description"],
+                    "tool_started",
+                    f"تشغيل الأداة {index}/{len(execution_steps)}: {execution_step['tool']}",
+                    {
+                        "tool": execution_step["tool"],
+                        "args": execution_step.get("args", {}),
+                    },
+                )
+                tool_result = self.tools.execute(
+                    execution_step["tool"],
+                    task["prompt"],
+                    execution_step.get("args", {}),
+                    tool_results,
+                )
+                tool_results.append(
+                    {
+                        "step_id": execution_step["id"],
+                        "description": execution_step["description"],
+                        "result": tool_result,
+                    }
+                )
+                self._progress(
+                    task,
+                    complete_progress,
+                    f"اكتمل {execution_step['tool']}",
+                    "tool_completed",
+                    f"اكتمل تنفيذ {execution_step['tool']}.",
+                    {"tool_result": tool_result},
+                )
+
+            synthesis = self._synthesize(task, sources, tool_results)
             self._progress(
                 task,
                 85,
@@ -122,11 +155,22 @@ class AgentWorker:
                 "تم تلخيص النتيجة وبدأ التقييم.",
                 {"synthesis": synthesis},
             )
-            evaluation = self.model.evaluate(task["prompt"], {"tool_result": tool_result, "synthesis": synthesis})
+            evaluation = self.model.evaluate(
+                task["prompt"],
+                {"tool_results": tool_results, "synthesis": synthesis},
+            )
+            model_trace = {
+                "planner_provider": plan[0].get("planner_mode"),
+                "planner_error": plan[0].get("planner_error"),
+                "last_provider": self.model.last_provider,
+                "provider_fallbacks": self.model.last_error,
+            }
             result = {
                 "synthesis": synthesis,
-                "tool_result": tool_result,
+                "tool_results": tool_results,
+                "tool_result": tool_results[-1]["result"] if tool_results else None,
                 "evaluation": evaluation,
+                "model_trace": model_trace,
                 "sources": [source.__dict__ for source in sources],
             }
 
@@ -137,8 +181,9 @@ class AgentWorker:
                 synthesis[:1000],
                 {
                     "worker_id": self.config.worker_id,
-                    "tool": execution_step["tool"],
+                    "tools": [step["tool"] for step in execution_steps],
                     "evaluation": evaluation,
+                    "model_trace": model_trace,
                     "source_count": len(sources),
                     "completed_at": now_iso(),
                 },
@@ -171,11 +216,31 @@ class AgentWorker:
                 step="canceled",
             )
         except Exception as exc:
+            failure_result = {
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "tool_result": exc.result if isinstance(exc, ToolExecutionError) else None,
+            }
+            receipt_id: str | None = None
+            try:
+                receipt_id = self.store.add_receipt(
+                    task,
+                    "failed",
+                    f"فشل التنفيذ: {str(exc)[:800]}",
+                    {
+                        "worker_id": self.config.worker_id,
+                        "failure": failure_result,
+                        "failed_at": now_iso(),
+                    },
+                )
+            except Exception:
+                receipt_id = None
             self.store.update_task(
                 task["id"],
                 status="failed",
                 current_step="فشل التنفيذ",
                 error_message=str(exc),
+                result=failure_result,
                 last_heartbeat_at=now_iso(),
                 completed_at=now_iso(),
             )
@@ -185,6 +250,7 @@ class AgentWorker:
                 f"فشل التنفيذ: {exc}",
                 status="failed",
                 step="error",
+                payload={"receipt_id": receipt_id, "failure": failure_result},
             )
         finally:
             self.store.heartbeat_worker(self.config.worker_id, "online")
@@ -221,11 +287,57 @@ class AgentWorker:
         if current and current["status"] == "canceled":
             raise TaskCanceledError(task["id"])
 
+    def _gate_plan_for_approval(
+        self,
+        task: dict[str, Any],
+        execution_steps: list[dict[str, Any]],
+    ) -> bool:
+        if task.get("approval_state") == "approved":
+            return False
+        gated: list[dict[str, Any]] = []
+        for step in execution_steps:
+            requirement = self.tools.approval_requirement(
+                step["tool"],
+                step.get("args", {}),
+            )
+            if requirement.required:
+                gated.append(
+                    {
+                        "step_id": step["id"],
+                        "tool": step["tool"],
+                        "risk_class": requirement.risk_class,
+                        "reason": requirement.reason,
+                    }
+                )
+        if not gated:
+            return False
+        risk_class = gated[0]["risk_class"]
+        self.store.update_task(
+            task["id"],
+            status="awaiting_approval",
+            progress=30,
+            current_step=f"الخطة تحتاج موافقة قبل تشغيل {gated[0]['tool']}",
+            risk_class=risk_class,
+            requires_approval=True,
+            approval_state="pending",
+            last_heartbeat_at=now_iso(),
+        )
+        self.store.add_event(
+            task,
+            "approval_required",
+            "اختارت خطة التنفيذ أداة ذات أثر حساس وتوقفت قبل تشغيلها.",
+            status="awaiting_approval",
+            step="plan_approval_gate",
+            progress=30,
+            payload={"gated_steps": gated},
+        )
+        return True
+
     def _synthesize(
         self,
         task: dict[str, Any],
         sources: list[Any],
-        tool_result: dict[str, Any],
+        tool_results: list[dict[str, Any]],
     ) -> str:
         if self.model.available:
             context = "\n".join(
@@ -234,12 +346,15 @@ class AgentWorker:
             try:
                 return self.model.complete(
                     "أنت وكيل تنفيذ في فتحية. لخّص ما نُفذ وما ثبت وما يحتاج متابعة. لا تدّعِ شيئًا بلا دليل.",
-                    f"الطلب:\n{task['prompt']}\n\nالمصادر:\n{context}\n\nنتيجة الأداة:\n{json.dumps(tool_result, ensure_ascii=False)[:8000]}",
+                    f"الطلب:\n{task['prompt']}\n\nالمصادر:\n{context}\n\nنتائج الأدوات:\n{json.dumps(tool_results, ensure_ascii=False)[:12000]}",
                 )
             except Exception as exc:
                 return f"اكتمل التنفيذ المحلي، وتعذر تلخيص OpenRouter: {exc}"
+        tool_names = [
+            str(item.get("result", {}).get("tool", "unknown")) for item in tool_results
+        ]
         return (
             "اكتمل التنفيذ المحلي بنجاح. "
-            f"الأداة المستخدمة: {tool_result.get('tool', 'unknown')}. "
+            f"الأدوات المستخدمة: {', '.join(tool_names) or 'none'}. "
             f"عدد مصادر المعرفة المسترجعة: {len(sources)}."
         )
