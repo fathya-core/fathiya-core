@@ -36,6 +36,7 @@ class AgentWorker:
             enable_hf=config.enable_hf_retrieval,
             hf_model=config.hf_model,
         )
+        self.synthesis_mode = "not_run"
         self.tools = ToolExecutor(config)
         self.capabilities = [
             "knowledge_search",
@@ -172,6 +173,7 @@ class AgentWorker:
             model_trace = {
                 "planner_provider": plan[0].get("planner_mode"),
                 "planner_error": plan[0].get("planner_error"),
+                "synthesis_provider": self.synthesis_mode,
                 "last_provider": self.model.last_provider,
                 "provider_fallbacks": self.model.last_error,
             }
@@ -363,10 +365,14 @@ class AgentWorker:
                         f"{json.dumps(_compact_tool_results(tool_results), ensure_ascii=False)[:5000]}"
                     ),
                 )
-                if _is_useful_synthesis(synthesis):
+                if _is_useful_synthesis(synthesis, tool_results):
+                    self.synthesis_mode = self.model.last_provider
                     return synthesis
+                self.synthesis_mode = "local_deterministic_rejected_model_synthesis"
             except Exception:
-                pass
+                self.synthesis_mode = "local_deterministic_model_error"
+        else:
+            self.synthesis_mode = "local_deterministic_no_model"
         return _deterministic_synthesis(tool_results, len(sources))
 
 
@@ -395,6 +401,8 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             "execution_failed",
             "status_code",
             "return_code",
+            "status",
+            "distro",
             "version",
             "error",
             "message",
@@ -418,15 +426,68 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             summary["metadata"] = result["metadata"]
         if isinstance(result.get("workflows"), dict):
             summary["workflows"] = result["workflows"]
+        for key in ("found_commands", "missing_commands"):
+            if isinstance(result.get(key), list):
+                summary[key] = result[key][:20]
         if result.get("stdout"):
             summary["stdout"] = str(result["stdout"])[:600]
         compact.append(summary)
     return compact
 
 
-def _is_useful_synthesis(value: str) -> bool:
+def _is_useful_synthesis(
+    value: str,
+    tool_results: list[dict[str, Any]] | None = None,
+) -> bool:
     meaningful = re.sub(r"[\s#*_`~>\-:;,.!?()[\]{}]+", "", value)
-    return len(meaningful) >= 40
+    if len(meaningful) < 40:
+        return False
+    lowered = value.casefold()
+    for anchors in _required_synthesis_anchors(tool_results or []):
+        if not any(anchor.casefold() in lowered for anchor in anchors):
+            return False
+    return True
+
+
+def _required_synthesis_anchors(
+    tool_results: list[dict[str, Any]],
+) -> list[tuple[str, ...]]:
+    required: list[tuple[str, ...]] = []
+    for item in tool_results:
+        result = item.get("result")
+        if not isinstance(result, dict):
+            continue
+        tool = str(result.get("tool") or "")
+        if tool in {"n8n_status", "n8n_workflows"}:
+            required.append(("n8n",))
+        elif tool == "connected_tool_inventory":
+            required.append(("zapier", "زابير"))
+        elif tool == "connector_catalog":
+            required.append(("connector", "موصل"))
+        elif tool == "connector_profile":
+            anchors = tuple(
+                str(result.get(key))
+                for key in ("provider", "profile")
+                if result.get(key)
+            )
+            if anchors:
+                required.append(anchors)
+        elif tool == "kali_tool_inventory":
+            required.append(("kali", "كالي"))
+            commands = tuple(
+                str(command)
+                for command in result.get("found_commands", [])
+                if command
+            )
+            if commands:
+                required.append(commands)
+        elif tool == "repo_status":
+            required.append(("repo", "repository", "مستودع"))
+        elif tool == "github_repo_info":
+            required.append(("github", "جيت"))
+        elif tool == "security_core_plan":
+            required.append(("security", "أمن"))
+    return required
 
 
 def _deterministic_synthesis(
@@ -498,6 +559,21 @@ def _deterministic_synthesis(
                     f"موصل {provider}/{profile} غير متاح، وحالة الواجهة "
                     f"{result.get('status_code', 'غير معروفة')}."
                 )
+        elif tool == "kali_tool_inventory":
+            found = result.get("found_commands", [])
+            missing = result.get("missing_commands", [])
+            if result.get("available"):
+                evidence.append(
+                    f"Kali WSL متاحة، وتم العثور على {len(found)} أدوات: "
+                    f"{', '.join(found) or 'لا توجد أدوات'}."
+                )
+                if missing:
+                    follow_up.append(
+                        f"أدوات Kali غير المتاحة: {', '.join(missing)}."
+                    )
+            else:
+                evidence.append("تعذر الوصول إلى Kali WSL.")
+                follow_up.append("راجع إعداد KALI_WSL_DISTRO وحالة WSL.")
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")
         elif result.get("return_code") is not None:

@@ -609,15 +609,31 @@ class ToolExecutor:
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         commands = ["nmap", "nuclei", "httpx", "subfinder", "git", "python3"]
-        script = "for cmd in " + " ".join(commands) + '; do command -v "$cmd" || true; done'
+        # Explicit commands avoid WSL argument translation dropping a shell loop variable.
+        script = "; ".join(f"command -v {command} || true" for command in commands)
         result = self._run(
             ["wsl.exe", "-d", self.config.kali_wsl_distro, "--", "bash", "-lc", script],
             cwd=self.config.repo_root,
             timeout=30,
         )
         found = [line.strip() for line in result["stdout"].splitlines() if line.strip()]
+        found_commands = [line.rsplit("/", 1)[-1] for line in found]
+        missing_commands = [
+            command for command in commands if command not in found_commands
+        ]
+        available = result["return_code"] == 0
         return {
+            "available": available,
+            "status": (
+                "active"
+                if available and not missing_commands
+                else "degraded" if available else "unavailable"
+            ),
+            "distro": self.config.kali_wsl_distro,
+            "requested_commands": commands,
             "found": found,
+            "found_commands": found_commands,
+            "missing_commands": missing_commands,
             "execution_failed": result["return_code"] != 0,
             "error": result["stderr"] or None,
             **result,

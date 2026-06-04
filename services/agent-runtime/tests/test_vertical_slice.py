@@ -206,6 +206,27 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
     def test_short_model_synthesis_is_rejected_for_evidence_summary(self) -> None:
         self.assertFalse(_is_useful_synthesis("###"))
+        kali_results = [
+            {
+                "result": {
+                    "tool": "kali_tool_inventory",
+                    "available": True,
+                    "found_commands": ["nmap", "python3"],
+                }
+            }
+        ]
+        self.assertFalse(
+            _is_useful_synthesis(
+                "اكتمل العمل بنجاح وتم عرض الأدوات المتاحة في النظام المحلي.",
+                kali_results,
+            )
+        )
+        self.assertTrue(
+            _is_useful_synthesis(
+                "Kali متاحة وتم التحقق من وجود nmap وpython3 داخل WSL بنجاح.",
+                kali_results,
+            )
+        )
         summary = _deterministic_synthesis(
             [
                 {
@@ -239,6 +260,53 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertTrue(result["available"])
         self.assertGreaterEqual(result["zapier_app_count"], 20)
         self.assertGreater(result["zapier_action_count"], result["zapier_app_count"])
+
+    def test_kali_inventory_uses_wsl_safe_explicit_commands(self) -> None:
+        executor = ToolExecutor(self.config)
+        paths = "\n".join(
+            [
+                "/usr/bin/nmap",
+                "/usr/bin/nuclei",
+                "/usr/bin/httpx",
+                "/usr/bin/subfinder",
+                "/usr/bin/git",
+                "/usr/bin/python3",
+            ]
+        )
+        run_result = {
+            "command": [],
+            "return_code": 0,
+            "stdout": f"{paths}\n",
+            "stderr": "",
+        }
+
+        with patch.object(executor, "_run", return_value=run_result) as run:
+            result = executor.execute("kali_tool_inventory", "اعرض أدوات كالي")
+
+        script = run.call_args.args[0][-1]
+        self.assertNotIn("$cmd", script)
+        self.assertIn("command -v nmap", script)
+        self.assertEqual(result["status"], "active")
+        self.assertEqual(result["missing_commands"], [])
+        self.assertEqual(len(result["found_commands"]), 6)
+
+    def test_kali_inventory_synthesis_reports_real_availability(self) -> None:
+        summary = _deterministic_synthesis(
+            [
+                {
+                    "result": {
+                        "tool": "kali_tool_inventory",
+                        "available": True,
+                        "found_commands": ["nmap", "git", "python3"],
+                        "missing_commands": ["nuclei", "httpx", "subfinder"],
+                    }
+                }
+            ],
+            0,
+        )
+
+        self.assertIn("تم العثور على 3 أدوات", summary)
+        self.assertIn("أدوات Kali غير المتاحة", summary)
 
     def test_connector_catalog_exposes_readiness_and_dynamic_approval(self) -> None:
         executor = ToolExecutor(self.config)
