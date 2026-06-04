@@ -1,0 +1,96 @@
+{
+  "schema_version": "fathiya_connector_profiles_v1",
+  "profiles": [
+    {
+      "name": "n8n_health",
+      "provider": "n8n",
+      "description": "Read the local n8n health endpoint through the generic connector gateway.",
+      "method": "GET",
+      "url_env": "N8N_BASE_URL",
+      "default_url": "http://127.0.0.1:5678",
+      "path": "/healthz",
+      "timeout_seconds": 10,
+      "risk_class": "internal_owned",
+      "requires_approval": false,
+      "read_only": true
+    },
+    {
+      "name": "n8n_workflows",
+      "provider": "n8n",
+      "description": "Read configured n8n workflows through the authenticated local API.",
+      "method": "GET",
+      "url_env": "N8N_BASE_URL",
+      "default_url": "http://127.0.0.1:5678",
+      "path": "/api/v1/workflows",
+      "headers_env": {
+        "X-N8N-API-KEY": "N8N_API_KEY"
+      },
+      "required_env": [
+        "N8N_API_KEY"
+      ],
+      "default_query": {
+        "limit": 50
+      },
+      "timeout_seconds": 20,
+      "risk_class": "internal_owned",
+      "requires_approval": false,
+      "read_only": true
+    },
+    {
+      "name": "n8n_fathiya_webhook",
+      "provider": "n8n",
+      "description": "Send an approved task payload to the configured FATHIYA n8n webhook.",
+      "method": "POST",
+      "url_env": "FATHIYA_N8N_WEBHOOK_URL",
+      "required_env": [
+        "FATHIYA_N8N_WEBHOOK_URL"
+      ],
+      "timeout_seconds": 60,
+      "risk_class": "external",
+      "requires_approval": true,
+      "read_only": false
+    },
+    {
+      "name": "zapier_fathiya_webhook",
+      "provider": "Zapier",
+      "description": "Send an approved task payload to a Zapier Catch Hook owned by FATHIYA.",
+      "method": "POST",
+      "url_env": "FATHIYA_ZAPIER_WEBHOOK_URL",
+      "required_env": [
+        "FATHIYA_ZAPIER_WEBHOOK_URL"
+      ],
+      "timeout_seconds": 60,
+      "risk_class": "external",
+      "requires_approval": true,
+      "read_only": false
+    },
+    {
+      "name": "cursor_agent_bridge",
+      "provider": "Cursor",
+      "description": "Send an approved engineering task to the configured Cursor agent bridge.",
+      "method": "POST",
+      "url_env": "FATHIYA_CURSOR_AGENT_URL",
+      "required_env": [
+        "FATHIYA_CURSOR_AGENT_URL"
+      ],
+      "timeout_seconds": 90,
+      "risk_class": "external",
+      "requires_approval": true,
+      "read_only": false
+    },
+    {
+      "name": "manus_agent_bridge",
+      "provider": "Manus",
+      "description": "Send an approved delegated task to the configured Manus agent bridge.",
+      "method": "POST",
+      "url_env": "FATHIYA_MANUS_AGENT_URL",
+      "required_env": [
+        "FATHIYA_MANUS_AGENT_URL"
+      ],
+      "timeout_seconds": 90,
+      "risk_class": "external",
+      "requires_approval": true,
+      "read_only": false
+    }
+  ]
+}

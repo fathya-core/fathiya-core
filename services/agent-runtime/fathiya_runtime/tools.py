@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -61,6 +62,8 @@ class ToolExecutor:
             "n8n_status": self._n8n_status,
             "n8n_workflows": self._n8n_workflows,
             "n8n_webhook": self._n8n_webhook,
+            "connector_catalog": self._connector_catalog,
+            "connector_profile": self._connector_profile,
             "connected_tool_inventory": self._connected_tool_inventory,
             "kali_tool_inventory": self._kali_tool_inventory,
             "security_core_plan": self._security_core_plan,
@@ -130,6 +133,17 @@ class ToolExecutor:
                     inputs=("payload",),
                 ),
                 ToolSpec(
+                    "connector_catalog",
+                    "List version-controlled connector profiles and their readiness without exposing secrets.",
+                    "connectors",
+                ),
+                ToolSpec(
+                    "connector_profile",
+                    "Execute a named version-controlled connector profile.",
+                    "connectors",
+                    inputs=("profile", "payload", "query"),
+                ),
+                ToolSpec(
                     "connected_tool_inventory",
                     "Read the connected Zapier, agent-provider, and local-tool inventory.",
                     "connectors",
@@ -157,6 +171,7 @@ class ToolExecutor:
 
     def catalog(self) -> list[dict[str, Any]]:
         profiles = self._command_profiles()
+        connector_profiles = self.connector_catalog()
         catalog: list[dict[str, Any]] = []
         for spec in self._specs.values():
             item = spec.to_dict()
@@ -171,11 +186,37 @@ class ToolExecutor:
                     for profile in profiles
                 ]
                 item["configured"] = bool(profiles)
+            elif spec.name == "connector_profile":
+                item["profiles"] = connector_profiles
+                item["configured"] = any(
+                    bool(profile.get("configured")) for profile in connector_profiles
+                )
+            elif spec.name == "connector_catalog":
+                item["configured"] = bool(connector_profiles)
             elif spec.name == "n8n_webhook":
                 item["configured"] = bool(self.config.n8n_webhook_url)
             else:
                 item["configured"] = True
             catalog.append(item)
+        return catalog
+
+    def connector_catalog(self) -> list[dict[str, Any]]:
+        catalog: list[dict[str, Any]] = []
+        for profile in self._connector_profiles():
+            missing_env = self._connector_missing_env(profile)
+            catalog.append(
+                {
+                    "name": profile.get("name"),
+                    "provider": profile.get("provider", "connector"),
+                    "description": profile.get("description"),
+                    "method": str(profile.get("method", "GET")).upper(),
+                    "risk_class": profile.get("risk_class", "internal_owned"),
+                    "requires_approval": bool(profile.get("requires_approval", False)),
+                    "read_only": bool(profile.get("read_only", True)),
+                    "configured": not missing_env,
+                    "missing_env": missing_env,
+                }
+            )
         return catalog
 
     def get_spec(self, tool: str) -> ToolSpec:
@@ -203,6 +244,17 @@ class ToolExecutor:
                     required,
                     risk_class,
                     f"command profile {requested} requires approval" if required else "",
+                )
+        if tool == "connector_profile":
+            requested = str((args or {}).get("profile", ""))
+            profile = self._connector_profile_by_name(requested)
+            if profile:
+                required = bool(profile.get("requires_approval", False))
+                risk_class = str(profile.get("risk_class", "internal_owned"))
+                return ApprovalRequirement(
+                    required,
+                    risk_class,
+                    f"connector profile {requested} requires approval" if required else "",
                 )
         return ApprovalRequirement(
             spec.requires_approval,
@@ -429,6 +481,99 @@ class ToolExecutor:
             "response": response.text[:20_000],
         }
 
+    def _connector_catalog(
+        self,
+        _prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        profiles = self.connector_catalog()
+        return {
+            "available": bool(profiles),
+            "configured_count": sum(bool(profile["configured"]) for profile in profiles),
+            "profile_count": len(profiles),
+            "profiles": profiles,
+        }
+
+    def _connector_profile(
+        self,
+        prompt: str,
+        args: dict[str, Any],
+        context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        requested = str(args.get("profile") or "").strip()
+        profile = self._connector_profile_by_name(requested)
+        if not profile:
+            raise ValueError(f"Unknown connector profile: {requested or '<missing>'}")
+        missing_env = self._connector_missing_env(profile)
+        if missing_env:
+            raise RuntimeError(
+                f"Connector profile {requested} requires environment variables: "
+                f"{', '.join(missing_env)}"
+            )
+
+        method = str(profile.get("method", "GET")).upper()
+        if method not in {"GET", "POST"}:
+            raise ValueError(f"Unsupported connector method for {requested}: {method}")
+        url = self._connector_url(profile)
+        timeout = max(1, min(120, int(profile.get("timeout_seconds", 30))))
+        headers = {
+            str(header): os.getenv(str(env_name), "")
+            for header, env_name in dict(profile.get("headers_env") or {}).items()
+            if os.getenv(str(env_name), "")
+        }
+        default_query = profile.get("default_query")
+        query = dict(default_query) if isinstance(default_query, dict) else {}
+        requested_query = args.get("query")
+        if isinstance(requested_query, dict):
+            query.update(requested_query)
+        payload = args.get("payload")
+        if method == "POST" and not isinstance(payload, dict):
+            payload = {
+                "prompt": prompt,
+                "prior_results": context[-5:],
+                "source": "fathiya-agent-runtime",
+            }
+
+        try:
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                params=query or None,
+                json=payload if method == "POST" else None,
+                timeout=timeout,
+            )
+        except requests.RequestException as exc:
+            return {
+                "profile": requested,
+                "provider": profile.get("provider", "connector"),
+                "method": method,
+                "configured": True,
+                "available": False,
+                "executed": False,
+                "execution_failed": method != "GET",
+                "error": f"{type(exc).__name__}: connector request failed",
+            }
+
+        text = response.text[:20_000]
+        try:
+            response_payload: Any = json.loads(text) if text else None
+        except json.JSONDecodeError:
+            response_payload = text
+        return {
+            "profile": requested,
+            "provider": profile.get("provider", "connector"),
+            "method": method,
+            "configured": True,
+            "available": response.ok,
+            "executed": response.ok,
+            "execution_failed": method != "GET" and not response.ok,
+            "status_code": response.status_code,
+            "error": None if response.ok else f"Connector returned HTTP {response.status_code}",
+            "response": response_payload,
+        }
+
     def _connected_tool_inventory(
         self,
         _prompt: str,
@@ -449,6 +594,7 @@ class ToolExecutor:
             "path": str(path),
             "captured_at": inventory.get("captured_at"),
             "policy": inventory.get("policy", {}),
+            "zapier_mcp_status": inventory.get("zapier_mcp_status", {}),
             "local_tools": inventory.get("local_tools", []),
             "zapier_app_count": len(apps),
             "zapier_action_count": sum(int(app.get("action_count", 0)) for app in apps),
@@ -558,6 +704,52 @@ class ToolExecutor:
             return []
         profiles = payload.get("profiles", [])
         return [item for item in profiles if isinstance(item, dict)]
+
+    def _connector_profiles(self) -> list[dict[str, Any]]:
+        path = self.config.connector_profiles_path
+        if not path.exists():
+            return []
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return []
+        profiles = payload.get("profiles", [])
+        return [
+            item
+            for item in profiles
+            if isinstance(item, dict) and isinstance(item.get("name"), str)
+        ]
+
+    def _connector_profile_by_name(self, requested: str) -> dict[str, Any] | None:
+        return next(
+            (profile for profile in self._connector_profiles() if profile.get("name") == requested),
+            None,
+        )
+
+    @staticmethod
+    def _connector_missing_env(profile: dict[str, Any]) -> list[str]:
+        required = [
+            str(name)
+            for name in profile.get("required_env", [])
+            if isinstance(name, str) and name
+        ]
+        url_env = str(profile.get("url_env") or "")
+        if url_env and not os.getenv(url_env) and not profile.get("default_url"):
+            required.append(url_env)
+        return list(dict.fromkeys(name for name in required if not os.getenv(name)))
+
+    @staticmethod
+    def _connector_url(profile: dict[str, Any]) -> str:
+        url_env = str(profile.get("url_env") or "")
+        base = (os.getenv(url_env, "") if url_env else "") or str(
+            profile.get("default_url") or ""
+        )
+        path = str(profile.get("path") or "")
+        url = f"{base.rstrip('/')}/{path.lstrip('/')}" if path else base
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError(f"Connector profile {profile.get('name')} has no valid HTTP(S) URL")
+        return url
 
     def _bounded_repo_path(self, requested: str) -> Path:
         target = (self.config.repo_root / requested).resolve()

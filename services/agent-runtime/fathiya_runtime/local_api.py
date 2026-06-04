@@ -68,6 +68,21 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             )
         if path == "/api/agent/tools":
             return self._send_json({"tools": self.server.tools.catalog()})
+        if path == "/api/agent/connectors":
+            connectors = self.server.tools.connector_catalog()
+            inventory = self.server.tools.execute(
+                "connected_tool_inventory",
+                "عرض مخزون الموصلات",
+            )
+            return self._send_json(
+                {
+                    "connectors": connectors,
+                    "configured_count": sum(
+                        bool(connector.get("configured")) for connector in connectors
+                    ),
+                    "inventory": inventory,
+                }
+            )
         if path == "/api/agent/tasks":
             self.server.store.mark_stalled()
             return self._send_json({"tasks": self.server.store.list_tasks(50)})

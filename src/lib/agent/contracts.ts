@@ -79,3 +79,15 @@ export type CreateAgentTaskBody = {
   prompt: string;
   title?: string;
 };
+
+export type AgentConnectorProfile = {
+  name: string;
+  provider: string;
+  description: string | null;
+  method: "GET" | "POST";
+  risk_class: AgentRiskClass;
+  requires_approval: boolean;
+  read_only: boolean;
+  configured: boolean;
+  missing_env: string[];
+};

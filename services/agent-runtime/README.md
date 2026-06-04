@@ -77,6 +77,14 @@ n8n health/workflows, call an approved n8n webhook, inspect connected tools,
 inspect Kali WSL, run the defensive security core, and execute versioned local
 command profiles from `config/command_profiles.json`.
 
+Version-controlled connector profiles in `config/connector_profiles.json`
+provide a single execution contract for n8n, Zapier, Cursor, Manus, and future
+agent providers. Read-only configured profiles run automatically. External
+write profiles are selected by the planner but pause in `awaiting_approval`
+before the HTTP request is sent. URLs and authentication headers are resolved
+from local environment variables and are never returned by the connector
+catalog or written into receipts.
+
 For local SQLite tasks:
 
 ```powershell

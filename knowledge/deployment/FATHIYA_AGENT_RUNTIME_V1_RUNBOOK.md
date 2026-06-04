@@ -28,6 +28,10 @@ static site.
      `Qwen/Qwen2.5-0.5B-Instruct` CPU model for bounded synthesis after
      OpenRouter fails or is absent. Deterministic local planning and evaluation
      keep the worker responsive; local model planning is opt-in.
+   - Configure only the connector bridges that should be executable:
+     `FATHIYA_N8N_WEBHOOK_URL`, `FATHIYA_ZAPIER_WEBHOOK_URL`,
+     `FATHIYA_CURSOR_AGENT_URL`, and `FATHIYA_MANUS_AGENT_URL`.
+     Their values stay in the local process; the website sees readiness only.
 5. Set `FATHIYA_STORE=supabase` on the local worker.
 6. Start the worker:
 
@@ -52,6 +56,8 @@ at `http://127.0.0.1:8765`.
 4. Confirm the worker claims the task within 30 seconds.
 5. Confirm progress events show every selected tool, heartbeat, model trace,
    final result, and receipt.
+6. Confirm the local connector panel shows `n8n_health` ready and external
+   connector profiles as requiring setup or approval as appropriate.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.

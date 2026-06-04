@@ -147,7 +147,7 @@ def _validate_steps(
     if not isinstance(requested, list):
         return []
     available = {
-        str(item["name"])
+        str(item["name"]): item
         for item in tool_catalog
         if bool(item.get("configured", True))
     }
@@ -159,16 +159,36 @@ def _validate_steps(
         if tool not in available:
             continue
         args = item.get("args")
+        clean_args = args if isinstance(args, dict) else {}
+        if not _profile_args_are_configured(tool, clean_args, available[tool]):
+            continue
         validated.append(
             {
                 "tool": tool,
                 "description": str(item.get("description") or ""),
-                "args": args if isinstance(args, dict) else {},
+                "args": clean_args,
             }
         )
         if len(validated) >= max_tool_steps:
             break
     return validated
+
+
+def _profile_args_are_configured(
+    tool: str,
+    args: dict[str, Any],
+    spec: dict[str, Any],
+) -> bool:
+    if tool not in {"command_profile", "connector_profile"}:
+        return True
+    requested = str(args.get("profile") or "")
+    profiles = spec.get("profiles", [])
+    return any(
+        isinstance(profile, dict)
+        and profile.get("name") == requested
+        and bool(profile.get("configured", True))
+        for profile in profiles
+    )
 
 
 def _fallback_steps(
@@ -200,7 +220,21 @@ def _fallback_steps(
 
     if any(term in text for term in ("tool", "agent", "capabil", "أداة", "أدوات", "وكلاء")):
         add("tool_catalog", "عرض كتالوج التنفيذ المتاح للمحرك")
-    if any(term in text for term in ("zapier", "زابير", "manus", "cursor", "gmail", "netlify")):
+    if any(
+        term in text
+        for term in (
+            "connector",
+            "zapier",
+            "زابير",
+            "manus",
+            "cursor",
+            "gmail",
+            "netlify",
+            "موصل",
+            "موصلات",
+        )
+    ):
+        add("connector_catalog", "عرض جاهزية بوابات تنفيذ الموصلات")
         add("connected_tool_inventory", "قراءة موصلات ووكلاء الحساب المتاحين")
     if any(term in text for term in ("git", "repo", "repository", "مستودع", "الكود", "github")):
         add("repo_status", "قراءة حالة المستودع الأساسي")
@@ -209,6 +243,7 @@ def _fallback_steps(
     if any(term in text for term in ("search code", "find in repo", "ابحث في الكود", "ابحث بالمستودع")):
         add("repo_search", "البحث داخل المستودع", {"query": prompt[:300]})
     if "n8n" in text:
+        add("connector_catalog", "عرض جاهزية بوابات تنفيذ الموصلات")
         add("n8n_status", "قراءة حالة n8n المحلية")
         add("n8n_workflows", "قراءة مسارات n8n المتاحة")
     if any(term in text for term in ("kali", "كالي", "nmap", "nuclei")):
@@ -217,6 +252,20 @@ def _fallback_steps(
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})
 
     profiles = _profile_names(available.get("command_profile", {}))
+    connector_profiles = _profile_names(available.get("connector_profile", {}))
+    if "n8n" in text and "n8n_health" in connector_profiles:
+        add(
+            "connector_profile",
+            "التحقق من n8n عبر بوابة الموصلات العامة",
+            {"profile": "n8n_health"},
+        )
+    for connector_profile in sorted(connector_profiles):
+        if connector_profile.lower() in text:
+            add(
+                "connector_profile",
+                f"تشغيل موصل {connector_profile}",
+                {"profile": connector_profile},
+            )
     if any(term in text for term in ("runtime test", "agent runtime test", "اختبارات المحرك")):
         if "runtime_tests" in profiles:
             add("command_profile", "تشغيل اختبارات محرك الوكلاء", {"profile": "runtime_tests"})
@@ -242,7 +291,9 @@ def _profile_names(command_profile_spec: dict[str, Any]) -> set[str]:
     return {
         str(profile.get("name"))
         for profile in profiles
-        if isinstance(profile, dict) and profile.get("name")
+        if isinstance(profile, dict)
+        and profile.get("name")
+        and bool(profile.get("configured", True))
     }
 
 

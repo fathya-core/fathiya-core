@@ -18,6 +18,7 @@ class RuntimeConfig:
     knowledge_root: Path
     tool_inventory_path: Path
     command_profiles_path: Path
+    connector_profiles_path: Path
     enable_hf_retrieval: bool
     hf_model: str
     enable_local_generation: bool
@@ -59,6 +60,10 @@ class RuntimeConfig:
             command_profiles_path=resolve_path(
                 "FATHIYA_COMMAND_PROFILES_PATH",
                 "config/command_profiles.json",
+            ),
+            connector_profiles_path=resolve_path(
+                "FATHIYA_CONNECTOR_PROFILES_PATH",
+                "config/connector_profiles.json",
             ),
             enable_hf_retrieval=os.getenv("FATHIYA_ENABLE_HF_RETRIEVAL", "false").lower()
             in {"1", "true", "yes"},

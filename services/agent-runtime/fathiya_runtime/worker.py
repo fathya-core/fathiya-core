@@ -398,6 +398,10 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             "version",
             "error",
             "message",
+            "profile",
+            "provider",
+            "profile_count",
+            "configured_count",
             "zapier_app_count",
             "zapier_action_count",
         ):
@@ -476,6 +480,24 @@ def _deterministic_synthesis(
                 f"مخزون الموصلات يعرض {result.get('zapier_app_count', 0)} تطبيقات Zapier "
                 f"و{result.get('zapier_action_count', 0)} إجراءات."
             )
+            zapier_status = result.get("zapier_mcp_status")
+            if isinstance(zapier_status, dict) and zapier_status.get("action_execution") == "degraded":
+                follow_up.append("تنفيذ إجراءات Zapier MCP يحتاج إصلاح تمرير selected_api.")
+        elif tool == "connector_catalog":
+            evidence.append(
+                f"بوابة الموصلات تعرض {result.get('configured_count', 0)} موصلات جاهزة "
+                f"من أصل {result.get('profile_count', 0)}."
+            )
+        elif tool == "connector_profile":
+            profile = result.get("profile", "غير معروف")
+            provider = result.get("provider", "connector")
+            if result.get("available"):
+                evidence.append(f"تم تشغيل موصل {provider}/{profile} بنجاح.")
+            else:
+                evidence.append(
+                    f"موصل {provider}/{profile} غير متاح، وحالة الواجهة "
+                    f"{result.get('status_code', 'غير معروفة')}."
+                )
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")
         elif result.get("return_code") is not None:

@@ -8,7 +8,9 @@ import unittest
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+import requests
 
 from fathiya_runtime.config import RuntimeConfig
 from fathiya_runtime.models import AgentModelRouter, OpenRouterClient
@@ -238,6 +240,90 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertGreaterEqual(result["zapier_app_count"], 20)
         self.assertGreater(result["zapier_action_count"], result["zapier_app_count"])
 
+    def test_connector_catalog_exposes_readiness_and_dynamic_approval(self) -> None:
+        executor = ToolExecutor(self.config)
+        connectors = {item["name"]: item for item in executor.connector_catalog()}
+
+        self.assertTrue(connectors["n8n_health"]["configured"])
+        self.assertFalse(connectors["n8n_health"]["requires_approval"])
+        self.assertTrue(connectors["zapier_fathiya_webhook"]["requires_approval"])
+        requirement = executor.approval_requirement(
+            "connector_profile",
+            {"profile": "zapier_fathiya_webhook"},
+        )
+        self.assertTrue(requirement.required)
+        self.assertEqual(requirement.risk_class, "external")
+
+    def test_connector_profile_executes_configured_read_connector(self) -> None:
+        executor = ToolExecutor(self.config)
+        response = Mock(ok=True, status_code=200, text='{"status":"ok"}')
+
+        with patch("fathiya_runtime.tools.requests.request", return_value=response) as request:
+            result = executor.execute(
+                "connector_profile",
+                "افحص n8n",
+                {"profile": "n8n_health"},
+            )
+
+        self.assertTrue(result["available"])
+        self.assertEqual(result["response"], {"status": "ok"})
+        self.assertEqual(result["profile"], "n8n_health")
+        self.assertEqual(request.call_args.args[0], "GET")
+        self.assertEqual(request.call_args.args[1], "http://127.0.0.1:5678/healthz")
+
+    def test_connector_network_error_does_not_leak_webhook_url(self) -> None:
+        previous = os.environ.get("FATHIYA_ZAPIER_WEBHOOK_URL")
+        os.environ["FATHIYA_ZAPIER_WEBHOOK_URL"] = (
+            "https://example.invalid/zapier/secret-token"
+        )
+        try:
+            executor = ToolExecutor(RuntimeConfig.load())
+            with patch(
+                "fathiya_runtime.tools.requests.request",
+                side_effect=requests.ConnectionError(
+                    "failed https://example.invalid/zapier/secret-token"
+                ),
+            ):
+                with self.assertRaises(ToolExecutionError) as raised:
+                    executor.execute(
+                        "connector_profile",
+                        "send proof",
+                        {"profile": "zapier_fathiya_webhook", "payload": {"ok": True}},
+                    )
+            self.assertNotIn("secret-token", raised.exception.result["error"])
+            self.assertEqual(
+                raised.exception.result["error"],
+                "ConnectionError: connector request failed",
+            )
+        finally:
+            if previous is None:
+                os.environ.pop("FATHIYA_ZAPIER_WEBHOOK_URL", None)
+            else:
+                os.environ["FATHIYA_ZAPIER_WEBHOOK_URL"] = previous
+
+    def test_fallback_plan_selects_generic_connector_gateway(self) -> None:
+        plan = build_plan(
+            {"prompt": "اعرض حالة n8n عبر بوابة الموصلات"},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            ToolExecutor(self.config).catalog(),
+            max_tool_steps=6,
+        )
+        connector_steps = [
+            step
+            for step in plan
+            if step.get("tool") == "connector_profile"
+        ]
+
+        self.assertEqual(len(connector_steps), 1)
+        self.assertEqual(connector_steps[0]["args"]["profile"], "n8n_health")
+
     def test_fallback_plan_executes_multiple_connected_tools(self) -> None:
         task = self.store.enqueue(
             "تشغيل متعدد",
@@ -300,6 +386,36 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(len(gated["receipts"]), 0)
         self.assertEqual(gated["events"][-1]["event_type"], "approval_required")
 
+    def test_connector_profile_plan_waits_for_dynamic_approval(self) -> None:
+        task = self.store.enqueue("بوابة Zapier", "نفذ مهمة داخلية")
+        worker = AgentWorker(self.config, self.store)
+        plan = [
+            {
+                "id": "retrieve",
+                "kind": "retrieval",
+                "tool": "knowledge_search",
+                "description": "retrieve",
+            },
+            {
+                "id": "execute-1",
+                "kind": "tool",
+                "tool": "connector_profile",
+                "description": "external connector",
+                "args": {
+                    "profile": "zapier_fathiya_webhook",
+                    "payload": {"test": True},
+                },
+            },
+        ]
+
+        with patch("fathiya_runtime.worker.build_plan", return_value=plan):
+            worker.start(once=True)
+
+        gated = self.store.get_detail(task["id"])
+        self.assertEqual(gated["task"]["status"], "awaiting_approval")
+        self.assertEqual(gated["task"]["risk_class"], "external")
+        self.assertEqual(gated["events"][-1]["payload"]["gated_steps"][0]["tool"], "connector_profile")
+
     def test_openrouter_plan_uses_only_registered_tools(self) -> None:
         model = OpenRouterClient("configured-key", "test-model")
         model.complete = lambda *_args, **_kwargs: (
@@ -320,6 +436,24 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         self.assertEqual(tools, ["repo_status"])
         self.assertEqual(plan[0]["planner_mode"], "openrouter")
+
+    def test_openrouter_plan_rejects_unconfigured_connector_profile(self) -> None:
+        model = OpenRouterClient("configured-key", "test-model")
+        model.complete = lambda *_args, **_kwargs: (
+            '{"steps": [{"tool": "connector_profile", "description": "send", '
+            '"args": {"profile": "zapier_fathiya_webhook"}}]}'
+        )
+        plan = build_plan(
+            {"prompt": "نفذ طلبا داخليا"},
+            [],
+            model,
+            ToolExecutor(self.config).catalog(),
+            max_tool_steps=4,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+
+        self.assertNotIn("connector_profile", tools)
+        self.assertEqual(tools, ["internal_echo"])
 
     def test_model_plan_accepts_direct_json_array(self) -> None:
         model = OpenRouterClient("configured-key", "test-model")
@@ -344,10 +478,17 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         self.assertIn("knowledge_ingest_url", by_name)
         self.assertIn("n8n_webhook", by_name)
+        self.assertIn("connector_catalog", by_name)
+        self.assertIn("connector_profile", by_name)
         self.assertTrue(by_name["n8n_webhook"]["requires_approval"])
         profiles = {profile["name"] for profile in by_name["command_profile"]["profiles"]}
         self.assertIn("runtime_tests", profiles)
         self.assertIn("repo_build", profiles)
+        connector_profiles = {
+            profile["name"] for profile in by_name["connector_profile"]["profiles"]
+        }
+        self.assertIn("n8n_health", connector_profiles)
+        self.assertIn("zapier_fathiya_webhook", connector_profiles)
 
     def test_command_profile_uses_runtime_python_interpreter(self) -> None:
         executor = ToolExecutor(self.config)

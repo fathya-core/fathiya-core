@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   ArrowRight,
+  Cable,
   CheckCircle2,
   CircleAlert,
   Clock3,
@@ -31,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getSupabaseConfigurationError, supabase } from "@/integrations/supabase/client";
 import { agentApi, isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent/client";
 import type {
+  AgentConnectorProfile,
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
@@ -69,6 +71,7 @@ function AgentTasksPage() {
   const localMode = isLocalAgentRuntime;
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
+  const [connectors, setConnectors] = useState<AgentConnectorProfile[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
   const [title, setTitle] = useState("");
@@ -133,12 +136,32 @@ function AgentTasksPage() {
     }
   }, [hasAccess, selectedId, session]);
 
+  const loadConnectors = useCallback(async () => {
+    if (!localMode) return;
+    try {
+      const data = await agentApi<{ connectors: AgentConnectorProfile[] }>(
+        null,
+        "/api/agent/connectors",
+      );
+      setConnectors(data.connectors);
+    } catch (loadError) {
+      setError(String(loadError));
+    }
+  }, [localMode]);
+
   useEffect(() => {
     if (!hasAccess) return;
     void loadTasks();
     const timer = window.setInterval(() => void loadTasks(), 5000);
     return () => window.clearInterval(timer);
   }, [hasAccess, loadTasks]);
+
+  useEffect(() => {
+    if (!localMode) return;
+    void loadConnectors();
+    const timer = window.setInterval(() => void loadConnectors(), 15_000);
+    return () => window.clearInterval(timer);
+  }, [loadConnectors, localMode]);
 
   useEffect(() => {
     if (!hasAccess || !selectedId) return;
@@ -200,6 +223,10 @@ function AgentTasksPage() {
     () => tasks.filter((task) => ACTIVE_STATUSES.has(task.status)).length,
     [tasks],
   );
+  const configuredConnectorCount = useMemo(
+    () => connectors.filter((connector) => connector.configured).length,
+    [connectors],
+  );
 
   if (!localMode && session === undefined) {
     return <CenteredState icon={Loader2} title="جارٍ التحقق من الجلسة" spin />;
@@ -237,13 +264,21 @@ function AgentTasksPage() {
                 <p className="text-[11px] text-muted-foreground">
                   {localMode ? `${localAgentRuntimeUrl} · ` : ""}
                   {activeCount} نشطة من {tasks.length} مهمة
+                  {localMode && ` · ${configuredConnectorCount}/${connectors.length} موصلات جاهزة`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={() => void loadTasks()}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      void loadTasks();
+                      void loadConnectors();
+                    }}
+                  >
                     <RefreshCw />
                     <span className="sr-only">تحديث</span>
                   </Button>
@@ -315,6 +350,56 @@ function AgentTasksPage() {
                   </form>
                 </CardContent>
               </Card>
+
+              {localMode && (
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <Cable className="h-4 w-4" />
+                      الموصلات
+                    </CardTitle>
+                    <CardDescription>
+                      {configuredConnectorCount} جاهزة من {connectors.length}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {connectors.length === 0 ? (
+                      <p className="px-5 py-6 text-center text-xs text-muted-foreground">
+                        لم تُحمّل ملفات الموصلات بعد.
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-border/50">
+                        {connectors.map((connector) => (
+                          <div
+                            key={connector.name}
+                            className="flex items-center justify-between gap-3 px-4 py-2.5"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold">
+                                {connector.provider} · {connector.name}
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                {connector.method}
+                                {connector.requires_approval ? " · يحتاج موافقة" : " · تلقائي"}
+                              </p>
+                            </div>
+                            <Badge
+                              className={cn(
+                                "shrink-0",
+                                connector.configured
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                  : "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                              )}
+                            >
+                              {connector.configured ? "جاهز" : "يحتاج إعداد"}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="border-border/60 bg-card/50">
                 <CardHeader className="pb-3">

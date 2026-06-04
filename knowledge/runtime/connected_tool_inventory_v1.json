@@ -10,6 +10,11 @@
     "live_security_actions": "awaiting_approval",
     "destructive_actions": "awaiting_approval"
   },
+  "zapier_mcp_status": {
+    "inventory": "active",
+    "action_execution": "degraded",
+    "note": "Enabled-action inventory is live. A Manus read action currently fails inside Zapier MCP because selected_api is not forwarded by the exposed execution tool."
+  },
   "local_tools": [
     {
       "app": "FATHIYA Agent Runtime",
@@ -21,6 +26,8 @@
         "dynamic approval gate",
         "success and failure receipts",
         "extensible command profiles",
+        "version-controlled connector profiles",
+        "secret-safe connector readiness",
         "web report intake"
       ]
     },
