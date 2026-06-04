@@ -27,6 +27,8 @@ class AgentWorker:
             enable_local_generation=config.enable_local_generation,
             local_model=config.local_model,
             local_max_new_tokens=config.local_max_new_tokens,
+            enable_local_planning=config.enable_local_planning,
+            local_max_generation_seconds=config.local_max_generation_seconds,
         )
         self.retriever = KnowledgeRetriever(
             config.knowledge_root,
@@ -146,6 +148,13 @@ class AgentWorker:
                     {"tool_result": tool_result},
                 )
 
+            self._progress(
+                task,
+                80,
+                "تلخيص الأدلة",
+                "synthesis_started",
+                "بدأ تلخيص الأدلة ونتائج الأدوات.",
+            )
             synthesis = self._synthesize(task, sources, tool_results)
             self._progress(
                 task,
@@ -344,9 +353,14 @@ class AgentWorker:
                 f"- {source.path}: {source.excerpt[:400]}" for source in sources
             )
             try:
-                return self.model.complete(
+                synthesize = getattr(self.model, "synthesize", self.model.complete)
+                return synthesize(
                     "أنت وكيل تنفيذ في فتحية. لخّص ما نُفذ وما ثبت وما يحتاج متابعة. لا تدّعِ شيئًا بلا دليل.",
-                    f"الطلب:\n{task['prompt']}\n\nالمصادر:\n{context}\n\nنتائج الأدوات:\n{json.dumps(tool_results, ensure_ascii=False)[:12000]}",
+                    (
+                        f"الطلب:\n{task['prompt']}\n\nالمصادر:\n{context}\n\n"
+                        f"ملخص نتائج الأدوات:\n"
+                        f"{json.dumps(_compact_tool_results(tool_results), ensure_ascii=False)[:5000]}"
+                    ),
                 )
             except Exception as exc:
                 return f"اكتمل التنفيذ المحلي، وتعذر تلخيص OpenRouter: {exc}"
@@ -358,3 +372,53 @@ class AgentWorker:
             f"الأدوات المستخدمة: {', '.join(tool_names) or 'none'}. "
             f"عدد مصادر المعرفة المسترجعة: {len(sources)}."
         )
+
+
+def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for item in tool_results:
+        result = item.get("result")
+        if not isinstance(result, dict):
+            compact.append(
+                {
+                    "step_id": item.get("step_id"),
+                    "description": item.get("description"),
+                    "result": str(result)[:500],
+                }
+            )
+            continue
+        summary: dict[str, Any] = {
+            "step_id": item.get("step_id"),
+            "description": item.get("description"),
+            "tool": result.get("tool"),
+        }
+        for key in (
+            "available",
+            "configured",
+            "clean",
+            "execution_failed",
+            "status_code",
+            "return_code",
+            "version",
+            "error",
+            "message",
+            "zapier_app_count",
+            "zapier_action_count",
+        ):
+            if key in result:
+                summary[key] = result[key]
+        if isinstance(result.get("tools"), list):
+            summary["tool_count"] = len(result["tools"])
+            summary["tool_names"] = [
+                str(tool.get("name"))
+                for tool in result["tools"][:20]
+                if isinstance(tool, dict) and tool.get("name")
+            ]
+        if isinstance(result.get("metadata"), dict):
+            summary["metadata"] = result["metadata"]
+        if isinstance(result.get("workflows"), dict):
+            summary["workflows"] = result["workflows"]
+        if result.get("stdout"):
+            summary["stdout"] = str(result["stdout"])[:600]
+        compact.append(summary)
+    return compact

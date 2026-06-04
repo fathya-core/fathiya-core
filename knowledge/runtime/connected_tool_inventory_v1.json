@@ -41,9 +41,9 @@
       "status": "active",
       "capabilities": [
         "multilingual semantic retrieval",
-        "local planning",
-        "local synthesis",
-        "local evaluation",
+        "opt-in local planning",
+        "bounded local synthesis",
+        "deterministic local evaluation",
         "CPU inference"
       ],
       "models": [

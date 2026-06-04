@@ -25,7 +25,9 @@ static site.
 4. Configure `services/agent-runtime/.env` from `.env.example`.
    - Enable `FATHIYA_ENABLE_HF_RETRIEVAL=true` for multilingual semantic search.
    - Enable `FATHIYA_ENABLE_LOCAL_GENERATION=true` to use the downloaded
-     `Qwen/Qwen2.5-0.5B-Instruct` CPU model after OpenRouter fails or is absent.
+     `Qwen/Qwen2.5-0.5B-Instruct` CPU model for bounded synthesis after
+     OpenRouter fails or is absent. Deterministic local planning and evaluation
+     keep the worker responsive; local model planning is opt-in.
 5. Set `FATHIYA_STORE=supabase` on the local worker.
 6. Start the worker:
 
@@ -54,8 +56,8 @@ trading, live security testing, deletion, and external publication.
 - Stop the local worker and submit a safe task.
 - Confirm a previously running task becomes `stalled` after two minutes.
 - Restart the worker and submit a new safe task.
-- Confirm OpenRouter failures route to `huggingface_local`, then to the
-  deterministic local planner/evaluator only if local generation also fails.
+- Confirm OpenRouter failures route to deterministic local planning, bounded
+  `huggingface_local` synthesis, and deterministic local evaluation.
 - Confirm no `sk-or-v1-`, service-role value, or `VITE_OPENROUTER_*` string is
   present in `dist/client`.
 - Run:

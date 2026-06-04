@@ -28,6 +28,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
+        os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
         os.environ.pop("OPENROUTER_API_KEY", None)
         self.config = RuntimeConfig.load()
         self.store = SQLiteTaskStore(self.db_path)
@@ -49,6 +50,10 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         detail = self.store.get_detail(task["id"])
         self.assertIsNotNone(detail)
         self.assertGreater(len(detail["events"]), 1)
+        self.assertIn(
+            "synthesis_started",
+            {event["event_type"] for event in detail["events"]},
+        )
         self.assertEqual(len(detail["receipts"]), 1)
 
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -158,6 +163,44 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(result, '{"steps":[]}')
         self.assertEqual(router.last_provider, "huggingface_local")
         self.assertIn("remote failed", router.last_error)
+
+    def test_local_model_planning_is_opt_in(self) -> None:
+        router = AgentModelRouter(
+            "",
+            "remote-model",
+            enable_local_generation=True,
+            local_model="local-model",
+            local_max_new_tokens=64,
+        )
+        with patch.object(router.local, "complete") as local_complete:
+            plan = build_plan(
+                {"prompt": "inspect repo"},
+                [],
+                router,
+                ToolExecutor(self.config).catalog(),
+                max_tool_steps=4,
+            )
+
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+        self.assertEqual(tools, ["repo_status"])
+        self.assertEqual(plan[0]["planner_mode"], "local_fallback")
+        self.assertIn("local planning disabled", plan[0]["planner_error"])
+        local_complete.assert_not_called()
+
+    def test_local_evaluation_uses_fast_deterministic_gate(self) -> None:
+        router = AgentModelRouter(
+            "",
+            "remote-model",
+            enable_local_generation=True,
+            local_model="local-model",
+            local_max_new_tokens=64,
+        )
+        with patch.object(router.local, "complete") as local_complete:
+            evaluation = router.evaluate("inspect repo", {"tool_results": [{"ok": True}]})
+
+        self.assertTrue(evaluation["passed"])
+        self.assertEqual(evaluation["mode"], "local_deterministic_evaluation")
+        local_complete.assert_not_called()
 
     def test_connected_tool_inventory_is_available(self) -> None:
         result = AgentWorker(self.config, self.store).tools.execute(

@@ -21,8 +21,10 @@ class RuntimeConfig:
     enable_hf_retrieval: bool
     hf_model: str
     enable_local_generation: bool
+    enable_local_planning: bool
     local_model: str
     local_max_new_tokens: int
+    local_max_generation_seconds: float
     openrouter_api_key: str
     openrouter_model: str
     max_tool_steps: int
@@ -69,13 +71,25 @@ class RuntimeConfig:
                 "false",
             ).lower()
             in {"1", "true", "yes"},
+            enable_local_planning=os.getenv(
+                "FATHIYA_ENABLE_LOCAL_PLANNING",
+                "false",
+            ).lower()
+            in {"1", "true", "yes"},
             local_model=os.getenv(
                 "FATHIYA_LOCAL_MODEL",
                 "Qwen/Qwen2.5-0.5B-Instruct",
             ),
             local_max_new_tokens=max(
                 64,
-                min(1024, int(os.getenv("FATHIYA_LOCAL_MAX_NEW_TOKENS", "384"))),
+                min(1024, int(os.getenv("FATHIYA_LOCAL_MAX_NEW_TOKENS", "128"))),
+            ),
+            local_max_generation_seconds=max(
+                5.0,
+                min(
+                    60.0,
+                    float(os.getenv("FATHIYA_LOCAL_MAX_GENERATION_SECONDS", "20")),
+                ),
             ),
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY", ""),
             openrouter_model=os.getenv("OPENROUTER_MODEL", "openrouter/auto"),

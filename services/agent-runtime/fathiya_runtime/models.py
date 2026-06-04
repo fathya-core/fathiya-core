@@ -13,7 +13,14 @@ class ModelClient(Protocol):
     @property
     def available(self) -> bool: ...
 
-    def complete(self, system: str, user: str, *, json_mode: bool = False) -> str: ...
+    def complete(
+        self,
+        system: str,
+        user: str,
+        *,
+        json_mode: bool = False,
+        max_new_tokens: int | None = None,
+    ) -> str: ...
 
     def evaluate(self, prompt: str, result: dict[str, Any]) -> dict[str, Any]: ...
 
@@ -29,7 +36,14 @@ class OpenRouterClient:
     def available(self) -> bool:
         return bool(self.api_key)
 
-    def complete(self, system: str, user: str, *, json_mode: bool = False) -> str:
+    def complete(
+        self,
+        system: str,
+        user: str,
+        *,
+        json_mode: bool = False,
+        max_new_tokens: int | None = None,
+    ) -> str:
         if not self.available:
             raise RuntimeError("OpenRouter is not configured")
         body: dict[str, Any] = {
@@ -39,7 +53,7 @@ class OpenRouterClient:
                 {"role": "user", "content": user},
             ],
             "temperature": 0.2,
-            "max_tokens": 1200,
+            "max_tokens": max_new_tokens or 1200,
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
@@ -80,10 +94,17 @@ class OpenRouterClient:
 
 
 class LocalHuggingFaceClient:
-    def __init__(self, enabled: bool, model: str, max_new_tokens: int):
+    def __init__(
+        self,
+        enabled: bool,
+        model: str,
+        max_new_tokens: int,
+        max_generation_seconds: float = 20.0,
+    ):
         self.enabled = enabled
         self.model = model
         self.max_new_tokens = max_new_tokens
+        self.max_generation_seconds = max_generation_seconds
         self.last_provider = "huggingface_local"
         self._tokenizer: Any = None
         self._model: Any = None
@@ -92,7 +113,14 @@ class LocalHuggingFaceClient:
     def available(self) -> bool:
         return self.enabled
 
-    def complete(self, system: str, user: str, *, json_mode: bool = False) -> str:
+    def complete(
+        self,
+        system: str,
+        user: str,
+        *,
+        json_mode: bool = False,
+        max_new_tokens: int | None = None,
+    ) -> str:
         if not self.available:
             raise RuntimeError("Local Hugging Face generation is not enabled")
         self._load()
@@ -113,7 +141,8 @@ class LocalHuggingFaceClient:
         inputs = self._tokenizer(rendered, return_tensors="pt")
         generated = self._model.generate(
             **inputs,
-            max_new_tokens=self.max_new_tokens,
+            max_new_tokens=min(self.max_new_tokens, max_new_tokens or self.max_new_tokens),
+            max_time=self.max_generation_seconds,
             do_sample=False,
             pad_token_id=self._tokenizer.eos_token_id,
         )
@@ -156,13 +185,17 @@ class AgentModelRouter:
         enable_local_generation: bool,
         local_model: str,
         local_max_new_tokens: int,
+        enable_local_planning: bool = False,
+        local_max_generation_seconds: float = 20.0,
     ):
         self.openrouter = OpenRouterClient(openrouter_api_key, openrouter_model)
         self.local = LocalHuggingFaceClient(
             enable_local_generation,
             local_model,
             local_max_new_tokens,
+            local_max_generation_seconds,
         )
+        self.enable_local_planning = enable_local_planning
         self.model = (
             self.openrouter.model
             if self.openrouter.available
@@ -177,13 +210,25 @@ class AgentModelRouter:
     def available(self) -> bool:
         return self.openrouter.available or self.local.available
 
-    def complete(self, system: str, user: str, *, json_mode: bool = False) -> str:
+    def complete(
+        self,
+        system: str,
+        user: str,
+        *,
+        json_mode: bool = False,
+        max_new_tokens: int | None = None,
+    ) -> str:
         errors: list[str] = []
         for client in (self.openrouter, self.local):
             if not client.available:
                 continue
             try:
-                result = client.complete(system, user, json_mode=json_mode)
+                result = client.complete(
+                    system,
+                    user,
+                    json_mode=json_mode,
+                    max_new_tokens=max_new_tokens,
+                )
                 self.last_provider = client.last_provider
                 self.last_error = "; ".join(errors) or None
                 return result
@@ -192,23 +237,80 @@ class AgentModelRouter:
         self.last_error = "; ".join(errors) or "No model provider is configured"
         raise RuntimeError(self.last_error)
 
+    def plan_complete(self, system: str, user: str, *, json_mode: bool = True) -> str:
+        errors: list[str] = []
+        if self.openrouter.available:
+            try:
+                result = self.openrouter.complete(system, user, json_mode=json_mode)
+                self.last_provider = self.openrouter.last_provider
+                self.last_error = None
+                return result
+            except Exception as exc:
+                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
+        if self.enable_local_planning and self.local.available:
+            try:
+                result = self.local.complete(
+                    system,
+                    user,
+                    json_mode=json_mode,
+                    max_new_tokens=160,
+                )
+                self.last_provider = self.local.last_provider
+                self.last_error = "; ".join(errors) or None
+                return result
+            except Exception as exc:
+                errors.append(f"huggingface_local: {type(exc).__name__}: {str(exc)[:500]}")
+        if self.local.available and not self.enable_local_planning:
+            errors.append("local planning disabled; using deterministic planner")
+        self.last_error = "; ".join(errors) or "No planning model provider is configured"
+        raise RuntimeError(self.last_error)
+
+    def synthesize(self, system: str, user: str) -> str:
+        errors: list[str] = []
+        if self.openrouter.available:
+            try:
+                result = self.openrouter.complete(
+                    system,
+                    user,
+                    max_new_tokens=700,
+                )
+                self.last_provider = self.openrouter.last_provider
+                self.last_error = None
+                return result
+            except Exception as exc:
+                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
+        if self.local.available:
+            try:
+                result = self.local.complete(
+                    system,
+                    user,
+                    max_new_tokens=96,
+                )
+                self.last_provider = self.local.last_provider
+                self.last_error = "; ".join(errors) or None
+                return result
+            except Exception as exc:
+                errors.append(f"huggingface_local: {type(exc).__name__}: {str(exc)[:500]}")
+        self.last_error = "; ".join(errors) or "No synthesis model provider is configured"
+        raise RuntimeError(self.last_error)
+
     def evaluate(self, prompt: str, result: dict[str, Any]) -> dict[str, Any]:
-        if not self.available:
-            return _local_result_check(result)
-        try:
-            raw = self.complete(
-                "أنت مقيّم نتائج في فتحية. أخرج JSON فقط: passed, summary, concerns.",
-                f"الطلب:\n{prompt}\n\nالنتيجة:\n{json.dumps(result, ensure_ascii=False)[:8000]}",
-                json_mode=True,
-            )
-            return _parse_evaluation(raw, self.last_provider)
-        except Exception as exc:
-            return {
-                **_local_result_check(result),
-                "mode": "model_router_error_fallback",
-                "error_type": type(exc).__name__,
-                "error": str(exc)[:500],
-            }
+        if self.openrouter.available:
+            evaluation = self.openrouter.evaluate(prompt, result)
+            self.last_provider = self.openrouter.last_provider
+            if evaluation.get("mode") == "openrouter_error_fallback":
+                self.last_error = (
+                    f"openrouter: {evaluation.get('error_type')}: "
+                    f"{str(evaluation.get('error', ''))[:500]}"
+                )
+            else:
+                self.last_error = None
+            return evaluation
+        return {
+            **_local_result_check(result),
+            "mode": "local_deterministic_evaluation",
+            "summary": "تم التحقق محليًا من وجود نتائج أدوات قابلة للتسجيل.",
+        }
 
 
 def _local_result_check(result: dict[str, Any]) -> dict[str, Any]:

@@ -101,7 +101,8 @@ def _model_steps(
         for source in sources
     ]
     try:
-        raw = model.complete(
+        plan_complete = getattr(model, "plan_complete", model.complete)
+        raw = plan_complete(
             (
                 "You are the FATHIYA execution planner. Return JSON only with a steps array. "
                 "Select one or more registered tools that genuinely move the request forward. "

@@ -28,17 +28,22 @@ Hugging Face retrieval is CPU-only by default and optional:
 $env:FATHIYA_ENABLE_HF_RETRIEVAL="true"
 ```
 
-Local Hugging Face generation can also act as the planning, synthesis, and
-evaluation fallback when OpenRouter is missing or unavailable:
+Local Hugging Face generation can act as the bounded synthesis fallback when
+OpenRouter is missing or unavailable:
 
 ```powershell
 $env:FATHIYA_ENABLE_LOCAL_GENERATION="true"
 $env:FATHIYA_LOCAL_MODEL="Qwen/Qwen2.5-0.5B-Instruct"
+$env:FATHIYA_LOCAL_MAX_GENERATION_SECONDS="20"
 ```
 
-The model is loaded lazily on CPU. OpenRouter remains the first route when its
-server-only key is configured, followed by local Hugging Face generation, then
-the deterministic local planner/evaluator.
+The model is loaded lazily on CPU and each local generation is time bounded.
+OpenRouter remains the first route for planning, synthesis, and evaluation.
+When it is unavailable, the deterministic multi-tool planner selects the
+actions, local Hugging Face produces a short evidence summary, and the
+deterministic evaluator verifies that tool results exist. Local model planning
+can be enabled explicitly with `FATHIYA_ENABLE_LOCAL_PLANNING=true`, but is off
+by default on low-memory machines to keep task progress responsive.
 
 The worker never reads a browser-exposed OpenRouter key. `OPENROUTER_API_KEY`
 is read only by the local process.
