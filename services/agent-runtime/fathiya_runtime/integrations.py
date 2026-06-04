@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .config import RuntimeConfig
+from .trading import BinanceSpotTestnetGateway
 from .zapier_mcp import ZapierTokenStore
 
 
@@ -40,6 +41,7 @@ def build_integration_readiness(
         connector_by_name.get("n8n_workflows", {}).get("configured")
     )
     hugging_face_ready = config.enable_hf_retrieval or config.enable_local_generation
+    testnet = BinanceSpotTestnetGateway.from_config(config).status()
     capability_rows = [
         item
         for item in (local_capabilities or {}).get("capabilities", [])
@@ -233,17 +235,46 @@ def build_integration_readiness(
             "id": "broker_testnet",
             "name": "وسيط التداول التجريبي",
             "category": "financial",
-            "status": "needs_operator",
+            "status": (
+                "ready"
+                if testnet["execution_enabled"]
+                else "partial" if testnet["configured"] else "needs_operator"
+            ),
             "connection_mode": "trade_only_testnet_api",
             "account_required": True,
             "credential_policy": "local_server_only",
-            "summary": "لا يوجد حساب وسيط أو Testnet مربوط، والتنفيذ الحقيقي مقفل.",
-            "next_step": "اختر وسيطًا وسوقًا وحساب Testnet بمفتاح تداول فقط دون صلاحية سحب.",
-            "missing_env": [],
+            "summary": (
+                "بوابة Binance Spot Testnet مربوطة ومفعلة للتنفيذ التجريبي فقط."
+                if testnet["execution_enabled"]
+                else "مفاتيح Binance Spot Testnet موجودة، لكن تنفيذ الأوامر التجريبية غير مفعّل."
+                if testnet["configured"]
+                else "لا يوجد حساب Binance Spot Testnet مربوط، والتنفيذ الحقيقي مقفل."
+            ),
+            "next_step": (
+                "لا إجراء مطلوب."
+                if testnet["execution_enabled"]
+                else "فعّل FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED محليًا بعد اختبار الحساب."
+                if testnet["configured"]
+                else "أنشئ مفاتيح Binance Spot Testnet واحفظها محليًا؛ لا ترسلها في المحادثة."
+            ),
+            "missing_env": (
+                []
+                if testnet["configured"]
+                else [
+                    "FATHIYA_TRADING_TESTNET_API_KEY",
+                    "FATHIYA_TRADING_TESTNET_API_SECRET",
+                ]
+            ),
             "connected_apps": [],
             "details": {
+                "provider": testnet["provider"],
+                "environment": testnet["environment"],
+                "symbol": testnet["symbol"],
+                "configured": testnet["configured"],
+                "testnet_execution_enabled": testnet["execution_enabled"],
                 "live_execution_enabled": False,
                 "withdrawal_permission_allowed": False,
+                "real_funds_possible": False,
             },
         },
     ]

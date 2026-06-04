@@ -581,7 +581,7 @@ def _fallback_steps(
         add("kali_tool_inventory", "قراءة الأدوات المتاحة داخل Kali WSL")
     if any(
         term in safe_text
-        for term in ("security", "أمن", "اختراق", "ثغرات", "فحص")
+        for term in ("security", "أمن", "اختراق", "ثغرات", "فحص أمني")
     ):
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})
     trading_control = _trading_control_step(prompt)
@@ -590,6 +590,23 @@ def _fallback_steps(
             trading_control["tool"],
             trading_control["description"],
             trading_control["args"],
+        )
+    if any(
+        term in safe_text
+        for term in (
+            "testnet",
+            "test net",
+            "حساب تجريبي",
+            "حساب التداول التجريبي",
+            "وسيط تجريبي",
+            "تداول تجريبي",
+            "التداول التجريبي",
+        )
+    ):
+        add(
+            "trading_testnet_status",
+            "فحص جاهزية بوابة وسيط التداول التجريبي",
+            {"probe": any(term in safe_text for term in ("probe", "افحص", "تحقق", "اختبر"))},
         )
     strategy_refresh = _trading_strategy_refresh_step(prompt)
     if strategy_refresh:
@@ -668,7 +685,7 @@ def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
     elif "manus" in text or "مانوس" in text:
         provider = "manus"
     else:
-        return None
+        provider = "auto"
     execute = any(
         term in text
         for term in (

@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from fathiya_runtime.trading import (
+    BinanceSpotTestnetGateway,
     CoinbaseSpotMarket,
     FallbackMarketDataProvider,
     MomentumSignalModel,
@@ -17,6 +18,71 @@ from fathiya_runtime.trading import (
     TradingLedger,
     TradingRiskEngine,
 )
+
+
+class BinanceSpotTestnetGatewayTests(unittest.TestCase):
+    def build_gateway(self, *, execution_enabled: bool = False) -> BinanceSpotTestnetGateway:
+        return BinanceSpotTestnetGateway(
+            base_url="https://testnet.binance.vision",
+            symbol="BTCUSDT",
+            api_key="test-api-key",
+            api_secret="test-api-secret",
+            execution_enabled=execution_enabled,
+        )
+
+    def test_probe_reports_account_readiness_without_exposing_credentials(self) -> None:
+        public = Mock(ok=True, status_code=200)
+        public.json.return_value = {"serverTime": 123}
+        account = Mock(ok=True, status_code=200)
+        account.json.return_value = {
+            "canTrade": True,
+            "accountType": "SPOT",
+            "permissions": ["SPOT"],
+            "balances": [{"asset": "BTC", "free": "100"}],
+        }
+        with patch(
+            "fathiya_runtime.trading.requests.request",
+            side_effect=[public, account],
+        ) as request:
+            result = self.build_gateway().probe()
+
+        self.assertTrue(result["reachable"])
+        self.assertTrue(result["authenticated"])
+        self.assertTrue(result["can_trade"])
+        self.assertNotIn("test-api-key", str(result))
+        self.assertNotIn("test-api-secret", str(result))
+        self.assertIn("signature=", request.call_args_list[1].args[1])
+
+    def test_market_order_validation_never_submits_to_matching_engine(self) -> None:
+        response = Mock(ok=True, status_code=200)
+        response.json.return_value = {}
+        with patch("fathiya_runtime.trading.requests.request", return_value=response) as request:
+            result = self.build_gateway().market_order(
+                side="buy",
+                quote_order_qty="25",
+                validate_only=True,
+            )
+
+        self.assertTrue(result["validated"])
+        self.assertFalse(result["submitted"])
+        self.assertIn("/api/v3/order/test?", request.call_args.args[1])
+
+    def test_market_order_submission_requires_local_testnet_execution_flag(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "execution remains disabled"):
+            self.build_gateway().market_order(
+                side="buy",
+                quote_order_qty="25",
+                validate_only=False,
+            )
+
+    def test_gateway_rejects_non_testnet_host(self) -> None:
+        with self.assertRaisesRegex(ValueError, "approved Binance Testnet host"):
+            BinanceSpotTestnetGateway(
+                base_url="https://api.binance.com",
+                symbol="BTCUSDT",
+                api_key="test-api-key",
+                api_secret="test-api-secret",
+            )
 
 
 class PaperTradingAgentTests(unittest.TestCase):

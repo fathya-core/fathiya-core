@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import re
 import sqlite3
@@ -13,6 +15,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 from typing import Any, Iterator, Protocol
+from urllib.parse import urlencode, urlparse
 
 import requests
 
@@ -156,6 +159,237 @@ class SignalModel(Protocol):
     name: str
 
     def predict(self, tick: MarketTick) -> Prediction: ...
+
+
+class BinanceSpotTestnetGateway:
+    """Secret-safe Binance Spot Testnet account and order gateway."""
+
+    provider = "binance_spot_testnet"
+    allowed_hosts = {"testnet.binance.vision"}
+
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        symbol: str,
+        api_key: str,
+        api_secret: str,
+        execution_enabled: bool = False,
+        recv_window_ms: int = 3000,
+        timeout_seconds: float = 5.0,
+    ):
+        parsed = urlparse(base_url)
+        if parsed.scheme != "https" or parsed.hostname not in self.allowed_hosts:
+            raise ValueError("Trading Testnet base URL must use the approved Binance Testnet host")
+        clean_symbol = symbol.strip().upper()
+        if not re.fullmatch(r"[A-Z0-9]{5,24}", clean_symbol):
+            raise ValueError("Trading Testnet symbol must be a Binance spot symbol")
+        self.base_url = base_url.rstrip("/")
+        self.symbol = clean_symbol
+        self.api_key = api_key.strip()
+        self.api_secret = api_secret.strip()
+        self.execution_requested = bool(execution_enabled)
+        self.recv_window_ms = max(1000, min(5000, int(recv_window_ms)))
+        self.timeout_seconds = max(0.5, min(15.0, float(timeout_seconds)))
+
+    @classmethod
+    def from_config(cls, config: Any) -> "BinanceSpotTestnetGateway":
+        if config.trading_testnet_provider != cls.provider:
+            raise ValueError(
+                f"Unsupported trading Testnet provider: {config.trading_testnet_provider}"
+            )
+        return cls(
+            base_url=config.trading_testnet_base_url,
+            symbol=config.trading_testnet_symbol,
+            api_key=config.trading_testnet_api_key,
+            api_secret=config.trading_testnet_api_secret,
+            execution_enabled=config.trading_testnet_execution_enabled,
+            recv_window_ms=config.trading_testnet_recv_window_ms,
+            timeout_seconds=config.trading_market_timeout_seconds,
+        )
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.api_key and self.api_secret)
+
+    @property
+    def execution_enabled(self) -> bool:
+        return self.configured and self.execution_requested
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "provider": self.provider,
+            "environment": "testnet",
+            "configured": self.configured,
+            "execution_enabled": self.execution_enabled,
+            "symbol": self.symbol,
+            "base_host": urlparse(self.base_url).hostname,
+            "withdrawal_permission_allowed": False,
+            "real_funds_possible": False,
+        }
+
+    def probe(self) -> dict[str, Any]:
+        public = self._request("GET", "/api/v3/time")
+        result = {
+            **self.status(),
+            "reachable": public["ok"],
+            "authenticated": False,
+            "can_trade": False,
+            "permissions": [],
+            "error": public["error"],
+        }
+        if not self.configured or not public["ok"]:
+            return result
+        account = self._signed_request(
+            "GET",
+            "/api/v3/account",
+            {"omitZeroBalances": "true"},
+        )
+        payload = account["payload"] if isinstance(account["payload"], dict) else {}
+        return {
+            **result,
+            "authenticated": account["ok"],
+            "can_trade": bool(payload.get("canTrade")) if account["ok"] else False,
+            "permissions": [
+                str(permission)
+                for permission in payload.get("permissions", [])
+                if isinstance(permission, str)
+            ][:20],
+            "account_type": payload.get("accountType") if account["ok"] else None,
+            "error": account["error"],
+        }
+
+    def market_order(
+        self,
+        *,
+        side: str,
+        quote_order_qty: Decimal | float | str | None = None,
+        quantity: Decimal | float | str | None = None,
+        validate_only: bool = True,
+    ) -> dict[str, Any]:
+        if not self.configured:
+            raise RuntimeError("Trading Testnet credentials are not configured")
+        clean_side = side.strip().upper()
+        if clean_side not in {"BUY", "SELL"}:
+            raise ValueError("Trading Testnet side must be buy or sell")
+        if not validate_only and not self.execution_enabled:
+            raise RuntimeError(
+                "Trading Testnet execution remains disabled until the local execution flag is enabled"
+            )
+        params: dict[str, Any] = {
+            "symbol": self.symbol,
+            "side": clean_side,
+            "type": "MARKET",
+            "newClientOrderId": f"fathiya-{uuid.uuid4().hex[:24]}",
+        }
+        if quote_order_qty is not None:
+            value = _decimal(quote_order_qty)
+            if value <= ZERO:
+                raise ValueError("quote_order_qty must be greater than zero")
+            params["quoteOrderQty"] = format(value, "f")
+        elif quantity is not None:
+            value = _decimal(quantity)
+            if value <= ZERO:
+                raise ValueError("quantity must be greater than zero")
+            params["quantity"] = format(value, "f")
+        else:
+            raise ValueError("Trading Testnet market order requires quote_order_qty or quantity")
+        response = self._signed_request(
+            "POST",
+            "/api/v3/order/test" if validate_only else "/api/v3/order",
+            params,
+        )
+        if not response["ok"]:
+            raise RuntimeError(response["error"] or "Trading Testnet rejected the order")
+        payload = response["payload"] if isinstance(response["payload"], dict) else {}
+        return {
+            **self.status(),
+            "validated": validate_only,
+            "submitted": not validate_only,
+            "side": clean_side.lower(),
+            "quote_order_qty": params.get("quoteOrderQty"),
+            "quantity": params.get("quantity"),
+            "order": {
+                key: payload.get(key)
+                for key in (
+                    "symbol",
+                    "orderId",
+                    "clientOrderId",
+                    "transactTime",
+                    "status",
+                    "executedQty",
+                    "cummulativeQuoteQty",
+                )
+                if key in payload
+            },
+        }
+
+    def _signed_request(
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
+        signed = {
+            **params,
+            "recvWindow": self.recv_window_ms,
+            "timestamp": int(time.time() * 1000),
+        }
+        query = urlencode(signed)
+        signature = hmac.new(
+            self.api_secret.encode("utf-8"),
+            query.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        return self._request(
+            method,
+            path,
+            query=f"{query}&signature={signature}",
+            headers={"X-MBX-APIKEY": self.api_key},
+        )
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        query: str = "",
+        headers: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        url = f"{self.base_url}{path}"
+        if query:
+            url = f"{url}?{query}"
+        try:
+            response = requests.request(
+                method,
+                url,
+                headers=headers or {},
+                timeout=self.timeout_seconds,
+            )
+            try:
+                payload: Any = response.json()
+            except ValueError:
+                payload = {}
+            message = (
+                str(payload.get("msg") or "")
+                if isinstance(payload, dict)
+                else ""
+            )
+            return {
+                "ok": response.ok,
+                "status_code": response.status_code,
+                "payload": payload,
+                "error": None
+                if response.ok
+                else f"Binance Testnet HTTP {response.status_code}: {message[:300]}",
+            }
+        except requests.RequestException as exc:
+            return {
+                "ok": False,
+                "status_code": None,
+                "payload": {},
+                "error": f"Binance Testnet request failed: {_safe_error_name(exc)}",
+            }
 
 
 class SyntheticSecondMarket:

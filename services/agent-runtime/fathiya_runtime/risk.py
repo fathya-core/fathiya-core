@@ -37,9 +37,19 @@ RISK_PATTERNS = (
     ),
 )
 
+NEGATED_RISK_ACTION = re.compile(
+    r"(?:\bwithout\b|\bnever\b|\bdo\s+not\b|\bdon't\b|دون|بدون|لا|لن)"
+    r"\s+(?:أن\s+)?(?:أي\s+)?"
+    r"(?:delete|remove|drop|wipe|format|trade|buy|sell|order|transfer|scan|"
+    r"exploit|pentest|send|publish|deploy|email|webhook|حذف|مسح|تهيئة|تحويل|"
+    r"شراء|بيع|صفقة|فحص حي|اختبار اختراق|استغلال|نشر|إرسال|بريد)",
+    re.IGNORECASE,
+)
+
 
 def classify_risk(prompt: str) -> RiskDecision:
     prompt = operator_request(prompt)
+    prompt = NEGATED_RISK_ACTION.sub("", prompt)
     for risk_class, pattern in RISK_PATTERNS:
         if pattern.search(prompt):
             return RiskDecision(risk_class=risk_class, requires_approval=True)

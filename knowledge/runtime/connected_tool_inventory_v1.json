@@ -1,6 +1,6 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-04T21:22:39+03:00",
+  "captured_at": "2026-06-04T23:39:38+03:00",
   "source": "live Zapier MCP enabled-action inventory and local runtime checks",
   "policy": {
     "read_actions": "automatic",
@@ -31,9 +31,18 @@
         "direct Zapier MCP OAuth and exact-action gateway",
         "multi-round plan, execute, review, and resume loop",
         "live local execution mesh probe",
-        "approval-gated Claude Code, Cursor, and Manus delegation",
+        "approval-gated auto, Claude Code, Cursor, and Manus delegation",
+        "Binance Spot Testnet readiness and approved order gateway",
         "web report intake"
       ]
+    },
+    {
+      "app": "Cursor Agent CLI",
+      "status": "installed_not_authenticated",
+      "version": "2026.06.04-5fd875e",
+      "location": "Kali Linux WSL",
+      "capabilities": ["headless plan", "headless execution", "MCP", "isolated worktrees"],
+      "note": "Installed from the official Cursor installer. Browser login remains an operator action."
     },
     {
       "app": "n8n",
@@ -67,6 +76,12 @@
       "status": "not_configured",
       "capabilities": ["planning", "synthesis", "evaluation"],
       "note": "No local OPENROUTER_API_KEY is configured; local Hugging Face and deterministic fallbacks remain active"
+    },
+    {
+      "app": "Binance Spot Testnet",
+      "status": "not_configured",
+      "capabilities": ["public reachability probe", "signed account probe", "order validation", "approval-gated Testnet order submission"],
+      "boundary": "Testnet host only, real funds impossible, credentials remain local, execution flag defaults off"
     }
   ],
   "zapier_apps": [

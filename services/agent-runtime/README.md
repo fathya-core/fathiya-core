@@ -56,10 +56,12 @@ The operator UI uses the same probe, so "ready" means a runtime check passed,
 not merely that an integration was listed in configuration.
 
 `agent_delegate` is an approval-gated delegation gateway. It can run an
-objective through the authenticated local Claude Code CLI or launch Cursor and
-Manus through their exact Zapier MCP actions after the local Zapier OAuth
-gateway is connected. Local CLI delegation uses structured process arguments,
-a bounded timeout, a bounded dollar budget, and no shell interpolation.
+objective through the authenticated local Claude Code CLI, the official Cursor
+Agent CLI installed inside Kali WSL, or Cursor/Manus through their exact Zapier
+MCP actions. Provider `auto` chooses the first authenticated local agent before
+falling back to Zapier MCP. Local CLI delegation uses structured process
+arguments, a bounded timeout, a bounded dollar budget where supported, and no
+operator-content shell interpolation.
 
 Hugging Face retrieval is CPU-only by default and optional:
 
@@ -89,7 +91,7 @@ The worker never reads a browser-exposed OpenRouter key. `OPENROUTER_API_KEY`
 is read only by the local process.
 
 `GET /api/agent/integrations` returns a secret-safe readiness view for local
-models, OpenRouter, Supabase, n8n, Zapier MCP, and the future broker Testnet
+models, OpenRouter, Supabase, n8n, Zapier MCP, and the Binance Spot Testnet
 account. It reports only status, missing environment variable names, connected
 OAuth app names, and the next safe operator action. It never returns passwords,
 API-key values, webhook URLs, or broker credentials.
@@ -243,10 +245,17 @@ engine blocks paper fills and prediction scoring for that tick. Set
 `FATHIYA_TRADING_MARKET_PROVIDER=synthetic_second_market` for deterministic
 offline tests.
 
-Live orders are not implemented, and setting `FATHIYA_TRADING_MODE` to anything
-other than `paper` blocks the loop. A future live connector must use a
-trade-only account without withdrawal permission and an explicit financial
-approval policy. Broker and engine state are isolated per symbol. The paper
-ledger keeps the newest
+The one-second loop remains Paper-only, and setting `FATHIYA_TRADING_MODE` to
+anything other than `paper` blocks it. A separate Binance Spot Testnet gateway
+can probe a configured account, validate a market order through
+`/api/v3/order/test`, or submit a Testnet-only order after both the financial
+approval gate and `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED=true`. It rejects
+non-Testnet hosts, never exposes credentials, and cannot use real funds.
+Example task requests:
+
+- `افحص جاهزية حساب التداول التجريبي`
+- `تحقق من أمر شراء تجريبي بقيمة 25 USDT دون إرساله`
+
+Broker and engine state are isolated per symbol. The paper ledger keeps the newest
 `FATHIYA_TRADING_MAX_RECEIPTS` cycles and prunes older cycles in bounded
 batches.

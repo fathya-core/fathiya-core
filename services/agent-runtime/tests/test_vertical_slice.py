@@ -105,6 +105,14 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(task["status"], "awaiting_approval")
         self.assertEqual(classify_risk(task["prompt"]).risk_class, "financial")
 
+    def test_negated_external_action_does_not_require_approval(self) -> None:
+        risk = classify_risk(
+            "افحص جاهزية حساب التداول التجريبي وسجل النتيجة دون إرسال أي أمر"
+        )
+
+        self.assertEqual(risk.risk_class, "internal_owned")
+        self.assertFalse(risk.requires_approval)
+
     def test_knowledge_mission_uses_only_operator_objective_for_risk(self) -> None:
         prompt = build_knowledge_mission_prompt(
             "untrusted report",
@@ -582,6 +590,17 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             patch.object(executor, "_probe_cli", side_effect=cli_probe) as probe_cli,
             patch.object(
                 executor,
+                "_probe_cursor_agent",
+                return_value={
+                    "installed": True,
+                    "available": True,
+                    "status": "active",
+                    "version": "cursor-agent-version",
+                    "authenticated": True,
+                },
+            ),
+            patch.object(
+                executor,
                 "_probe_docker",
                 return_value={
                     "id": "docker",
@@ -626,7 +645,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(by_id["docker"]["status"], "degraded")
         self.assertEqual(by_id["zapier_mcp"]["status"], "partial")
         self.assertTrue(cached["cached"])
-        self.assertEqual(probe_cli.call_count, 3)
+        self.assertEqual(probe_cli.call_count, 2)
 
     def test_agent_delegate_local_cli_is_approval_gated_and_argument_safe(self) -> None:
         executor = ToolExecutor(self.config)
@@ -687,6 +706,64 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(delegate["args"]["provider"], "claude_code")
         self.assertEqual(delegate["args"]["mode"], "plan")
         self.assertTrue(delegate["requires_approval"])
+
+    def test_fallback_plan_selects_auto_delegate_without_named_provider(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        plan = build_plan(
+            {"prompt": "فوّض أفضل وكيل ليخطط تحسين اختبارات المحرك"},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+        delegate = next(step for step in plan if step.get("tool") == "agent_delegate")
+
+        self.assertEqual(delegate["args"]["provider"], "auto")
+        self.assertEqual(delegate["args"]["mode"], "plan")
+        self.assertTrue(delegate["requires_approval"])
+
+    def test_agent_delegate_runs_authenticated_cursor_agent_through_wsl(self) -> None:
+        executor = ToolExecutor(self.config)
+        objective = "Plan the change; keep this semicolon inside one argument."
+        run_result = {
+            "command": [],
+            "return_code": 0,
+            "stdout": '{"type":"result","result":"planned"}',
+            "stderr": "",
+        }
+        with (
+            patch.object(
+                executor,
+                "_probe_cursor_agent",
+                return_value={"installed": True, "authenticated": True},
+            ),
+            patch.object(executor, "_wsl_path", return_value="/mnt/c/repo"),
+            patch.object(executor, "_run", return_value=run_result) as run,
+        ):
+            result = executor.execute(
+                "agent_delegate",
+                objective,
+                {
+                    "provider": "cursor",
+                    "objective": objective,
+                    "mode": "plan",
+                },
+            )
+
+        command = run.call_args.args[0]
+        self.assertEqual(command[-1], objective)
+        self.assertEqual(command[0], "wsl.exe")
+        self.assertIn('exec "$HOME/.local/bin/cursor-agent" "$@"', command)
+        self.assertIn("--mode", command)
+        self.assertNotIn("--force", command)
+        self.assertEqual(result["connection_mode"], "local_wsl")
+        self.assertTrue(result["delegated"])
 
     def test_fallback_plan_controls_primary_paper_trading_agent(self) -> None:
         catalog = ToolExecutor(self.config).catalog()
@@ -767,6 +844,57 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         finally:
             stopped = executor.execute("trading_stop", "أوقف وكيل التداول الورقي")
         self.assertFalse(stopped["trading"]["running"])
+
+    def test_trading_testnet_gateway_is_visible_and_order_is_approval_gated(self) -> None:
+        executor = ToolExecutor(self.config)
+        status = executor.execute(
+            "trading_testnet_status",
+            "اعرض جاهزية حساب التداول التجريبي",
+        )
+        requirement = executor.approval_requirement(
+            "trading_testnet_order",
+            {"side": "buy", "quote_order_qty": 25},
+        )
+
+        self.assertFalse(status["testnet"]["configured"])
+        self.assertFalse(status["testnet"]["execution_enabled"])
+        self.assertFalse(status["testnet"]["real_funds_possible"])
+        self.assertTrue(requirement.required)
+        self.assertEqual(requirement.risk_class, "financial")
+
+    def test_trading_testnet_probe_task_completes_without_approval(self) -> None:
+        task = self.store.enqueue(
+            "فحص Testnet",
+            "افحص جاهزية حساب التداول التجريبي وسجل النتيجة دون إرسال أي أمر",
+        )
+
+        worker = AgentWorker(self.config, self.store)
+        with patch.object(
+            worker.tools._trading_testnet_gateway(),
+            "probe",
+            return_value={
+                "provider": "binance_spot_testnet",
+                "environment": "testnet",
+                "configured": False,
+                "execution_enabled": False,
+                "reachable": True,
+                "authenticated": False,
+                "can_trade": False,
+                "permissions": [],
+                "real_funds_possible": False,
+                "error": None,
+            },
+        ):
+            processed = worker.start(once=True)
+        detail = self.store.get_detail(task["id"])
+
+        self.assertEqual(processed, 1)
+        self.assertEqual(detail["task"]["status"], "completed")
+        self.assertEqual(
+            [item["result"]["tool"] for item in detail["task"]["result"]["tool_results"]],
+            ["trading_testnet_status"],
+        )
+        self.assertEqual(len(detail["receipts"]), 1)
 
     def test_trading_status_task_completes_with_receipt(self) -> None:
         task = self.store.enqueue(
@@ -1472,6 +1600,8 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertIn("knowledge_ingest_url", by_name)
         self.assertIn("local_capability_inventory", by_name)
         self.assertIn("agent_delegate", by_name)
+        self.assertIn("trading_testnet_status", by_name)
+        self.assertIn("trading_testnet_order", by_name)
         self.assertIn("n8n_webhook", by_name)
         self.assertIn("connector_catalog", by_name)
         self.assertIn("connector_profile", by_name)
@@ -1479,8 +1609,10 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertTrue(by_name["agent_delegate"]["requires_approval"])
         self.assertEqual(
             {provider["name"] for provider in by_name["agent_delegate"]["providers"]},
-            {"claude_code", "cursor", "manus"},
+            {"auto", "claude_code", "cursor", "manus"},
         )
+        self.assertTrue(by_name["trading_testnet_order"]["requires_approval"])
+        self.assertFalse(by_name["trading_testnet_order"]["execution_enabled"])
         profiles = {profile["name"] for profile in by_name["command_profile"]["profiles"]}
         self.assertIn("runtime_tests", profiles)
         self.assertIn("repo_build", profiles)

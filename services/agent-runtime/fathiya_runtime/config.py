@@ -61,6 +61,13 @@ class RuntimeConfig:
     trading_advisory_ttl_seconds: float
     trading_advisory_min_confidence: float
     trading_max_receipts: int
+    trading_testnet_provider: str
+    trading_testnet_base_url: str
+    trading_testnet_symbol: str
+    trading_testnet_api_key: str
+    trading_testnet_api_secret: str
+    trading_testnet_execution_enabled: bool
+    trading_testnet_recv_window_ms: int
 
     @classmethod
     def load(cls) -> "RuntimeConfig":
@@ -262,6 +269,42 @@ class RuntimeConfig:
                 min(
                     5_000_000,
                     int(os.getenv("FATHIYA_TRADING_MAX_RECEIPTS", "100000")),
+                ),
+            ),
+            trading_testnet_provider=os.getenv(
+                "FATHIYA_TRADING_TESTNET_PROVIDER",
+                "binance_spot_testnet",
+            )
+            .strip()
+            .lower(),
+            trading_testnet_base_url=os.getenv(
+                "FATHIYA_TRADING_TESTNET_BASE_URL",
+                "https://testnet.binance.vision",
+            ).rstrip("/"),
+            trading_testnet_symbol=os.getenv(
+                "FATHIYA_TRADING_TESTNET_SYMBOL",
+                "BTCUSDT",
+            )
+            .strip()
+            .upper(),
+            trading_testnet_api_key=os.getenv(
+                "FATHIYA_TRADING_TESTNET_API_KEY",
+                "",
+            ).strip(),
+            trading_testnet_api_secret=os.getenv(
+                "FATHIYA_TRADING_TESTNET_API_SECRET",
+                "",
+            ).strip(),
+            trading_testnet_execution_enabled=os.getenv(
+                "FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED",
+                "false",
+            ).lower()
+            in {"1", "true", "yes"},
+            trading_testnet_recv_window_ms=max(
+                1_000,
+                min(
+                    5_000,
+                    int(os.getenv("FATHIYA_TRADING_TESTNET_RECV_WINDOW_MS", "3000")),
                 ),
             ),
         )

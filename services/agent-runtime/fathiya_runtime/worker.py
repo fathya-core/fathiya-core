@@ -955,6 +955,21 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
                     ),
                 },
             }
+        if isinstance(result.get("testnet"), dict):
+            testnet = result["testnet"]
+            summary["testnet"] = {
+                "provider": testnet.get("provider"),
+                "environment": testnet.get("environment"),
+                "configured": testnet.get("configured"),
+                "execution_enabled": testnet.get("execution_enabled"),
+                "reachable": testnet.get("reachable"),
+                "authenticated": testnet.get("authenticated"),
+                "can_trade": testnet.get("can_trade"),
+                "validated": testnet.get("validated"),
+                "submitted": testnet.get("submitted"),
+                "symbol": testnet.get("symbol"),
+                "side": testnet.get("side"),
+            }
         if isinstance(result.get("cycle"), dict):
             cycle = result["cycle"]
             summary["cycle"] = {
@@ -1182,6 +1197,7 @@ def _deterministic_synthesis(
             trading = result.get("trading")
             cycle = result.get("cycle")
             advisory = result.get("advisory")
+            testnet = result.get("testnet")
             if isinstance(trading, dict):
                 quality = trading.get("prediction_quality", {})
                 evidence.append(
@@ -1200,6 +1216,13 @@ def _deterministic_synthesis(
                     f"تم تحديث مستشار الاستراتيجية عبر {result.get('model_provider', 'غير معروف')} "
                     f"بإشارة {advisory.get('action', 'غير معروفة')} وثقة "
                     f"{advisory.get('confidence', 0):.2f} وسياسة veto-only."
+                )
+            elif isinstance(testnet, dict):
+                evidence.append(
+                    f"بوابة {testnet.get('provider', 'Testnet')} التجريبية "
+                    f"{'مربوطة' if testnet.get('configured') else 'تنتظر المفاتيح المحلية'} "
+                    f"على {testnet.get('symbol', 'رمز غير معروف')}، والتنفيذ التجريبي "
+                    f"{'مفعل' if testnet.get('execution_enabled') else 'مقفل'}."
                 )
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")

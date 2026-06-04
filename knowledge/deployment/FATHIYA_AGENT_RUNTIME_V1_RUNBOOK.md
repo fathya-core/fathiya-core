@@ -80,6 +80,14 @@ browser origins must receive HTTP 403 from the local control plane.
     reports live readiness for the local execution mesh.
 14. Submit an `agent_delegate` request and confirm it stops at
     `awaiting_approval` before invoking Claude Code, Cursor, or Manus.
+15. In Kali WSL, run `cursor-agent status`. The runtime treats an installed but
+    unauthenticated Cursor Agent as partial, never ready. Complete
+    `cursor-agent login` only as the operator, then submit an `auto` delegation
+    and confirm the runtime prefers an authenticated local agent.
+16. Submit `افحص جاهزية حساب التداول التجريبي`. Confirm Binance Spot Testnet
+    public reachability is reported without credentials. After adding Testnet
+    keys locally, validate an order through `/api/v3/order/test` before enabling
+    `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED`.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.
@@ -93,6 +101,8 @@ trading, live security testing, deletion, and external publication.
   `huggingface_local` synthesis, and deterministic local evaluation.
 - Confirm local capability probes never return auth output, access tokens,
   command paths, or secret environment values.
+- Confirm the trading Testnet gateway rejects non-Testnet hosts and that order
+  submission remains approval-gated and disabled by default.
 - Confirm no `sk-or-v1-`, service-role value, or `VITE_OPENROUTER_*` string is
   present in `dist/client`.
 - Run:
@@ -108,6 +118,10 @@ cd services/agent-runtime
 
 - OpenRouter is not configured in the local worker; Hugging Face and
   deterministic fallbacks remain active.
+- Cursor Agent CLI `2026.06.04-5fd875e` is installed in Kali WSL but awaits
+  operator browser authentication.
+- Binance Spot Testnet support is implemented, but local Testnet API keys are
+  not configured and Testnet order submission remains disabled.
 - Zapier's Codex-exposed generic executor currently omits the required
   `selected_api` argument. The local direct OAuth gateway resolves and forwards
   it itself once the operator completes the local Zapier OAuth connection.

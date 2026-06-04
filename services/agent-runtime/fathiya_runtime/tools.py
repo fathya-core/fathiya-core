@@ -17,7 +17,7 @@ import requests
 
 from .config import RuntimeConfig
 from .models import ModelClient
-from .trading import PaperTradingAgent
+from .trading import BinanceSpotTestnetGateway, PaperTradingAgent
 from .zapier_mcp import ZapierMCPGateway
 
 
@@ -63,8 +63,10 @@ class ToolExecutor:
     ):
         self.config = config
         self._trading = trading_agent
+        self._testnet: BinanceSpotTestnetGateway | None = None
         self._model_router = model_router
         self._capability_cache: tuple[float, dict[str, Any]] | None = None
+        self._cursor_agent_cache: tuple[float, dict[str, Any]] | None = None
         self.zapier = ZapierMCPGateway(config)
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
@@ -92,6 +94,8 @@ class ToolExecutor:
             "trading_stop": self._trading_stop,
             "trading_tick": self._trading_tick,
             "trading_strategy_refresh": self._trading_strategy_refresh,
+            "trading_testnet_status": self._trading_testnet_status,
+            "trading_testnet_order": self._trading_testnet_order,
         }
         self._specs = {
             spec.name: spec
@@ -109,12 +113,19 @@ class ToolExecutor:
                 ),
                 ToolSpec(
                     "agent_delegate",
-                    "Delegate an approved objective to Claude Code locally or to Cursor/Manus through the direct Zapier MCP gateway.",
+                    "Delegate an approved objective to the best ready agent, Claude Code locally, Cursor Agent locally or through Zapier MCP, or Manus through Zapier MCP.",
                     "agents",
                     risk_class="external",
                     requires_approval=True,
                     read_only=False,
-                    inputs=("provider", "objective", "mode", "params", "max_budget_usd"),
+                    inputs=(
+                        "provider",
+                        "objective",
+                        "mode",
+                        "params",
+                        "max_budget_usd",
+                        "timeout_seconds",
+                    ),
                 ),
                 ToolSpec(
                     "internal_echo",
@@ -249,6 +260,21 @@ class ToolExecutor:
                     "trading",
                     read_only=False,
                 ),
+                ToolSpec(
+                    "trading_testnet_status",
+                    "Read or probe the configured Binance Spot Testnet gateway without exposing credentials.",
+                    "trading",
+                    inputs=("probe",),
+                ),
+                ToolSpec(
+                    "trading_testnet_order",
+                    "Validate or submit an approved market order to Binance Spot Testnet only.",
+                    "trading",
+                    risk_class="financial",
+                    requires_approval=True,
+                    read_only=False,
+                    inputs=("side", "quote_order_qty", "quantity", "validate_only"),
+                ),
             )
         }
 
@@ -273,16 +299,39 @@ class ToolExecutor:
                 ]
                 item["configured"] = bool(profiles)
             elif spec.name == "agent_delegate":
+                claude_installed = bool(shutil.which("claude"))
+                cursor = (
+                    dict(self._cursor_agent_cache[1])
+                    if self._cursor_agent_cache
+                    else {
+                        "installed": bool(shutil.which("wsl.exe")),
+                        "authenticated": False,
+                    }
+                )
                 item["providers"] = [
                     {
+                        "name": "auto",
+                        "configured": bool(
+                            claude_installed
+                            or cursor.get("authenticated")
+                            or self.zapier.configured
+                        ),
+                        "connection_mode": "best_ready_agent",
+                    },
+                    {
                         "name": "claude_code",
-                        "configured": bool(shutil.which("claude")),
+                        "configured": claude_installed,
                         "connection_mode": "local_cli",
                     },
                     {
                         "name": "cursor",
-                        "configured": self.zapier.configured,
-                        "connection_mode": "zapier_mcp",
+                        "configured": bool(
+                            cursor.get("authenticated") or self.zapier.configured
+                        ),
+                        "installed": bool(cursor.get("installed")),
+                        "local_ready": bool(cursor.get("authenticated")),
+                        "zapier_ready": self.zapier.configured,
+                        "connection_mode": "local_wsl_or_zapier_mcp",
                     },
                     {
                         "name": "manus",
@@ -306,6 +355,15 @@ class ToolExecutor:
                 item["configured"] = self.zapier.configured
             elif spec.name == "n8n_webhook":
                 item["configured"] = bool(self.config.n8n_webhook_url)
+            elif spec.name in {"trading_testnet_status", "trading_testnet_order"}:
+                testnet = self._trading_testnet_gateway().status()
+                item["configured"] = (
+                    True
+                    if spec.name == "trading_testnet_status"
+                    else bool(testnet["configured"])
+                )
+                item["environment"] = "testnet"
+                item["execution_enabled"] = bool(testnet["execution_enabled"])
             else:
                 item["configured"] = True
             catalog.append(item)
@@ -433,13 +491,14 @@ class ToolExecutor:
         ):
             return {**self._capability_cache[1], "cached": True}
 
-        cursor = self._probe_cli("cursor", ("--version",))
+        cursor = self._probe_cursor_agent()
         cursor.update(
             {
                 "id": "cursor_agent",
                 "name": "Cursor Agent",
-                "execution_mode": "local_cli_and_zapier",
+                "execution_mode": "local_wsl_and_zapier",
                 "requires_approval": True,
+                "zapier_ready": self.zapier.configured,
             }
         )
         claude = self._probe_cli("claude", ("--version",), auth_args=("auth", "status"))
@@ -516,6 +575,7 @@ class ToolExecutor:
             "requires_approval": False,
         }
         trading = self._trading_agent().status()
+        testnet = self._trading_testnet_gateway().status()
         trading_agent = {
             "id": "trading_primary",
             "name": "Primary Trading Agent",
@@ -526,6 +586,8 @@ class ToolExecutor:
             "requires_approval": False,
             "symbol": trading.get("symbol"),
             "live_execution_enabled": False,
+            "testnet_configured": testnet["configured"],
+            "testnet_execution_enabled": testnet["execution_enabled"],
         }
         capabilities = [
             cursor,
@@ -615,6 +677,78 @@ class ToolExecutor:
             "authenticated": authenticated,
         }
 
+    def _probe_cursor_agent(self) -> dict[str, Any]:
+        now = time.monotonic()
+        if (
+            self._cursor_agent_cache
+            and now - self._cursor_agent_cache[0] < 60
+        ):
+            return dict(self._cursor_agent_cache[1])
+        if not shutil.which("wsl.exe"):
+            return {
+                "installed": False,
+                "available": False,
+                "status": "unavailable",
+                "version": None,
+                "authenticated": False,
+            }
+        version = self._run(
+            [
+                "wsl.exe",
+                "-d",
+                self.config.kali_wsl_distro,
+                "--exec",
+                "bash",
+                "-lc",
+                'test -x "$HOME/.local/bin/cursor-agent" && exec "$HOME/.local/bin/cursor-agent" --version',
+            ],
+            cwd=self.config.repo_root,
+            timeout=20,
+        )
+        installed = version["return_code"] == 0
+        version_text = next(
+            (
+                line.strip()
+                for line in version["stdout"].splitlines()
+                if line.strip()
+            ),
+            None,
+        )
+        authenticated = False
+        if installed:
+            auth = self._run(
+                [
+                    "wsl.exe",
+                    "-d",
+                    self.config.kali_wsl_distro,
+                    "--exec",
+                    "bash",
+                    "-lc",
+                    'exec "$HOME/.local/bin/cursor-agent" status',
+                ],
+                cwd=self.config.repo_root,
+                timeout=20,
+            )
+            auth_text = f"{auth['stdout']}\n{auth['stderr']}".casefold()
+            authenticated = (
+                auth["return_code"] == 0
+                and "not logged in" not in auth_text
+                and "not authenticated" not in auth_text
+            )
+        result = {
+            "installed": installed,
+            "available": installed,
+            "status": (
+                "active"
+                if installed and authenticated
+                else "partial" if installed else "unavailable"
+            ),
+            "version": version_text,
+            "authenticated": authenticated,
+        }
+        self._cursor_agent_cache = (now, result)
+        return dict(result)
+
     def _probe_docker(self) -> dict[str, Any]:
         executable = shutil.which("docker")
         if not executable:
@@ -653,19 +787,45 @@ class ToolExecutor:
             "requires_approval": True,
         }
 
+    def _wsl_path(self, path: Path) -> str:
+        result = self._run(
+            [
+                "wsl.exe",
+                "-d",
+                self.config.kali_wsl_distro,
+                "--exec",
+                "wslpath",
+                "-a",
+                str(path.resolve()),
+            ],
+            cwd=self.config.repo_root,
+            timeout=20,
+        )
+        value = result["stdout"].strip()
+        if result["return_code"] != 0 or not value.startswith("/"):
+            raise RuntimeError("Unable to map the repository path into Kali WSL")
+        return value
+
     def _agent_delegate(
         self,
         prompt: str,
         args: dict[str, Any],
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        provider = str(args.get("provider") or "").strip().lower()
+        requested_provider = str(args.get("provider") or "auto").strip().lower()
         aliases = {
             "claude": "claude_code",
             "claude-code": "claude_code",
             "cursor_agent": "cursor",
+            "best": "auto",
+            "available": "auto",
         }
-        provider = aliases.get(provider, provider)
+        requested_provider = aliases.get(requested_provider, requested_provider)
+        provider = (
+            self._select_delegate_provider()
+            if requested_provider == "auto"
+            else requested_provider
+        )
         objective = " ".join(str(args.get("objective") or prompt).split()).strip()
         if not objective:
             raise ValueError("agent_delegate requires an objective")
@@ -710,6 +870,8 @@ class ToolExecutor:
                 response = result["stdout"][:20_000]
             return {
                 "provider": provider,
+                "requested_provider": requested_provider,
+                "connection_mode": "local_cli",
                 "mode": mode,
                 "delegated": result["return_code"] == 0,
                 "execution_failed": result["return_code"] != 0,
@@ -719,12 +881,64 @@ class ToolExecutor:
             }
 
         if provider == "cursor":
+            cursor = self._probe_cursor_agent()
+            if cursor.get("authenticated"):
+                timeout = max(30, min(900, int(args.get("timeout_seconds", 300))))
+                cursor_args = [
+                    "-p",
+                    "--output-format",
+                    "json",
+                    "--trust",
+                    "--workspace",
+                    self._wsl_path(self.config.repo_root),
+                ]
+                if mode == "execute":
+                    cursor_args.extend(["--force", "--sandbox", "enabled"])
+                else:
+                    cursor_args.extend(["--mode", "plan"])
+                cursor_args.append(objective)
+                result = self._run(
+                    [
+                        "wsl.exe",
+                        "-d",
+                        self.config.kali_wsl_distro,
+                        "--exec",
+                        "bash",
+                        "-lc",
+                        'exec "$HOME/.local/bin/cursor-agent" "$@"',
+                        "fathiya-cursor-agent",
+                        *cursor_args,
+                    ],
+                    cwd=self.config.repo_root,
+                    timeout=timeout,
+                )
+                try:
+                    response: Any = json.loads(result["stdout"])
+                except json.JSONDecodeError:
+                    response = result["stdout"][:20_000]
+                return {
+                    "provider": provider,
+                    "requested_provider": requested_provider,
+                    "connection_mode": "local_wsl",
+                    "mode": mode,
+                    "delegated": result["return_code"] == 0,
+                    "execution_failed": result["return_code"] != 0,
+                    "error": result["stderr"] or None,
+                    "response": response,
+                    "return_code": result["return_code"],
+                }
+            if not self.zapier.configured:
+                raise RuntimeError(
+                    "Cursor Agent CLI is installed but not authenticated; run cursor-agent login in Kali WSL or connect Zapier MCP"
+                )
             params.setdefault("prompt_text", objective)
             params.setdefault("repository_url", self._canonical_repo_url())
             params.setdefault("repository_ref", "main")
             params.setdefault("target_auto_create_pr", False)
             return {
                 "provider": provider,
+                "requested_provider": requested_provider,
+                "connection_mode": "zapier_mcp",
                 "mode": mode,
                 "delegated": True,
                 **self.zapier.execute_action(
@@ -743,6 +957,8 @@ class ToolExecutor:
             params.setdefault("hide_in_task_list", True)
             return {
                 "provider": provider,
+                "requested_provider": requested_provider,
+                "connection_mode": "zapier_mcp",
                 "mode": mode,
                 "delegated": True,
                 **self.zapier.execute_action(
@@ -754,7 +970,25 @@ class ToolExecutor:
                 ),
             }
 
-        raise ValueError("agent_delegate provider must be claude_code, cursor, or manus")
+        raise ValueError(
+            "agent_delegate provider must be auto, claude_code, cursor, or manus"
+        )
+
+    def _select_delegate_provider(self) -> str:
+        claude = self._probe_cli(
+            "claude",
+            ("--version",),
+            auth_args=("auth", "status"),
+        )
+        if claude.get("authenticated"):
+            return "claude_code"
+        if self._probe_cursor_agent().get("authenticated"):
+            return "cursor"
+        if self.zapier.configured:
+            return "cursor"
+        raise RuntimeError(
+            "No authenticated delegated agent is ready; connect Claude Code, Cursor Agent, or Zapier MCP"
+        )
 
     def _canonical_repo_url(self) -> str:
         result = self._run(
@@ -774,6 +1008,11 @@ class ToolExecutor:
         if self._trading is None:
             self._trading = PaperTradingAgent.from_config(self.config)
         return self._trading
+
+    def _trading_testnet_gateway(self) -> BinanceSpotTestnetGateway:
+        if self._testnet is None:
+            self._testnet = BinanceSpotTestnetGateway.from_config(self.config)
+        return self._testnet
 
     def _trading_status(
         self,
@@ -913,6 +1152,46 @@ class ToolExecutor:
             "advisory": advisory,
             "policy": status["strategy_advisory_policy"],
             "live_execution_enabled": False,
+        }
+
+    def _trading_testnet_status(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        gateway = self._trading_testnet_gateway()
+        return {
+            "available": True,
+            "action": "testnet_probe" if bool(args.get("probe")) else "testnet_status",
+            "testnet": gateway.probe() if bool(args.get("probe")) else gateway.status(),
+        }
+
+    def _trading_testnet_order(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        validate_only = args.get("validate_only", True)
+        if isinstance(validate_only, str):
+            validate_only = validate_only.strip().lower() not in {
+                "0",
+                "false",
+                "no",
+            }
+        return {
+            "available": True,
+            "executed": True,
+            "action": "testnet_order_validation"
+            if bool(validate_only)
+            else "testnet_order_submission",
+            "testnet": self._trading_testnet_gateway().market_order(
+                side=str(args.get("side") or ""),
+                quote_order_qty=args.get("quote_order_qty"),
+                quantity=args.get("quantity"),
+                validate_only=bool(validate_only),
+            ),
         }
 
     @staticmethod
