@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class RiskDecision:
+    risk_class: str
+    requires_approval: bool
+
+
+RISK_PATTERNS = (
+    (
+        "destructive",
+        re.compile(r"delete|remove|drop|wipe|format|حذف|مسح|تهيئة", re.IGNORECASE),
+    ),
+    (
+        "financial",
+        re.compile(
+            r"trade|buy|sell|order|portfolio|wallet|تحويل|شراء|بيع|صفقة|محفظة",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "live_security",
+        re.compile(
+            r"scan|exploit|pentest|nmap|nuclei|فحص حي|اختبار اختراق|استغلال",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "external",
+        re.compile(r"send|publish|deploy|email|webhook|نشر|إرسال|بريد", re.IGNORECASE),
+    ),
+)
+
+
+def classify_risk(prompt: str) -> RiskDecision:
+    for risk_class, pattern in RISK_PATTERNS:
+        if pattern.search(prompt):
+            return RiskDecision(risk_class=risk_class, requires_approval=True)
+    return RiskDecision(risk_class="internal_owned", requires_approval=False)

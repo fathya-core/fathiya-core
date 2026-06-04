@@ -76,5 +76,5 @@ The panel displays:
 
 ## Blockers
 
-- Production deployment remains blocked until operator-managed platform env values are configured, especially `VITE_OPENROUTER_API_KEY`.
+- Production deployment remains blocked until operator-managed server env values are configured, especially `OPENROUTER_API_KEY`.
 - This PR intentionally performs no deployment, DNS change, secret insertion, or live webhook activation.

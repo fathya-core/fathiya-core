@@ -1,0 +1,64 @@
+# FATHIYA Agent Runtime v1 Runbook
+
+## Purpose
+
+This runbook connects the authenticated FATHIYA site to the local agent worker
+through Supabase. The browser never receives OpenRouter, Supabase service-role,
+or local tool credentials.
+
+## Deployment Order
+
+1. Apply `supabase/migrations/20260604120000_agent_runtime_v1.sql` to project
+   `qywkyxcljhoitdcaskyu`.
+2. Configure the site server with:
+   - `SUPABASE_URL`
+   - `SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. Configure the browser build with:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+4. Configure `services/agent-runtime/.env` from `.env.example`.
+5. Set `FATHIYA_STORE=supabase` on the local worker.
+6. Start the worker:
+
+```powershell
+cd services/agent-runtime
+py -3.13 -m venv .venv
+.\.venv\Scripts\python -m pip install -e .
+.\.venv\Scripts\fathiya-runtime worker
+```
+
+## Operator Flow
+
+1. Open `/agent-login` and authenticate.
+2. Open `/agent-tasks`.
+3. Submit an internal task such as:
+   `اعرض حالة المستودع وسجل إيصال التنفيذ`
+4. Confirm the worker claims the task within 30 seconds.
+5. Confirm progress events, heartbeat, final result, and receipt appear.
+
+Sensitive tasks remain in `awaiting_approval`. This includes money, real
+trading, live security testing, deletion, and external publication.
+
+## Production Verification
+
+- Stop the local worker and submit a safe task.
+- Confirm a previously running task becomes `stalled` after two minutes.
+- Restart the worker and submit a new safe task.
+- Confirm OpenRouter failures use `openrouter_error_fallback`.
+- Confirm no `sk-or-v1-`, service-role value, or `VITE_OPENROUTER_*` string is
+  present in `dist/client`.
+- Run:
+
+```powershell
+npm run build
+cd services/agent-runtime
+.\.venv\Scripts\python -m unittest discover -s tests -v
+```
+
+## Current External Blockers
+
+- OpenRouter currently returns HTTP 402 for the configured local key.
+- n8n `2.23.2` is active locally and responds on port `5678`.
+- Production verification requires applying the Supabase migration and
+  deploying this branch to `fathya-core.com`.

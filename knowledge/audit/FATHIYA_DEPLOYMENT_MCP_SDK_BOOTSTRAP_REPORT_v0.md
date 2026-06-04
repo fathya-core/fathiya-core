@@ -49,13 +49,13 @@ Architecture artifacts only. No live deploy. No DNS. No secrets. No Supabase. No
 
 | Var | Scope | Required | Secret |
 |-----|-------|----------|--------|
-| `VITE_OPENROUTER_API_KEY` | client | yes | yes |
-| `VITE_OPENROUTER_BASE_URL` | client | no | no |
-| `VITE_OPENROUTER_DEFAULT_MODEL` | client | no | no |
-| `VITE_OPENROUTER_FAST_MODEL` | client | no | no |
-| `VITE_OPENROUTER_REASONING_MODEL` | client | no | no |
-| `VITE_OPENROUTER_CRITIC_MODEL` | client | no | no |
-| `VITE_OPENROUTER_STRUCTURED_MODEL` | client | no | no |
+| `OPENROUTER_API_KEY` | server | yes | yes |
+| `OPENROUTER_BASE_URL` | server | no | no |
+| `OPENROUTER_DEFAULT_MODEL` | server | no | no |
+| `OPENROUTER_FAST_MODEL` | server | no | no |
+| `OPENROUTER_REASONING_MODEL` | server | no | no |
+| `OPENROUTER_CRITIC_MODEL` | server | no | no |
+| `OPENROUTER_STRUCTURED_MODEL` | server | no | no |
 | `FATHIYA_PUBLIC_APP_URL` | server | yes | no |
 | `FATHIYA_PUBLIC_API_URL` | server | yes | no |
 | `FATHIYA_PUBLIC_MCP_URL` | server | yes | no |

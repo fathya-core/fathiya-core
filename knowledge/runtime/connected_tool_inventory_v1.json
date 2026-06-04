@@ -1,0 +1,89 @@
+{
+  "schema_version": "connected_tool_inventory_v1",
+  "captured_at": "2026-06-04T13:00:00+03:00",
+  "source": "live Zapier MCP enabled-action inventory and local runtime checks",
+  "policy": {
+    "read_actions": "automatic",
+    "owned_local_actions": "automatic",
+    "external_writes": "awaiting_approval",
+    "financial_actions": "awaiting_approval",
+    "live_security_actions": "awaiting_approval",
+    "destructive_actions": "awaiting_approval"
+  },
+  "local_tools": [
+    {
+      "app": "n8n",
+      "status": "active",
+      "version": "2.23.2",
+      "capabilities": ["health", "local workflows", "task broker", "agents", "MCP registry"]
+    },
+    {
+      "app": "Kali Linux WSL",
+      "status": "active",
+      "capabilities": ["nmap", "nuclei", "httpx", "subfinder", "git", "python3"],
+      "boundary": "inventory and defensive planning are automatic; live testing requires approval"
+    },
+    {
+      "app": "Hugging Face",
+      "status": "active",
+      "capabilities": ["multilingual semantic retrieval", "CPU inference"],
+      "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    },
+    {
+      "app": "OpenRouter",
+      "status": "degraded",
+      "capabilities": ["planning", "synthesis", "evaluation"],
+      "note": "Endpoint reachable; configured account currently returns HTTP 402 and uses local fallback"
+    }
+  ],
+  "zapier_apps": [
+    { "app": "GitHub", "action_count": 19, "modes": ["read", "approval_gated_write"] },
+    { "app": "Cursor", "action_count": 6, "modes": ["read", "approval_gated_write"] },
+    { "app": "Manus", "action_count": 6, "modes": ["read", "approval_gated_write"] },
+    { "app": "Gmail", "action_count": 12, "modes": ["read", "approval_gated_write"] },
+    { "app": "Code by Zapier", "action_count": 2, "modes": ["approval_gated_write"] },
+    { "app": "Webhooks by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "AI by Zapier", "action_count": 3, "modes": ["approval_gated_write"] },
+    { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
+    { "app": "Zapier Lead Router", "action_count": 6, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Manager", "action_count": 5, "modes": ["read", "approval_gated_write"] },
+    { "app": "Files By Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Forms", "action_count": 3, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Chatbots", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Web Parser by Zapier", "action_count": 1, "modes": ["read"] },
+    { "app": "Zapier Chrome extension", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Microsoft Outlook", "action_count": 32, "modes": ["read", "approval_gated_write"] },
+    { "app": "Zapier Functions", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Tables", "action_count": 11, "modes": ["read", "approval_gated_write"] },
+    { "app": "Formatter by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "Agents", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Netlify", "action_count": 1, "modes": ["approval_gated_write"] }
+  ],
+  "agent_provider_actions": {
+    "Manus": {
+      "read": ["Get Tasks"],
+      "approval_gated_write": [
+        "Continue Task",
+        "Create Task",
+        "Delete Task",
+        "Get Task",
+        "Update Task"
+      ]
+    },
+    "Cursor": {
+      "read": ["Find Agent Status", "Make API GET Request"],
+      "approval_gated_write": [
+        "Delete Agent",
+        "Add Followup Instruction to Agent",
+        "Launch Agent",
+        "Make API Mutating Request"
+      ]
+    },
+    "Agents": {
+      "approval_gated_write": ["Run Agent"]
+    },
+    "Netlify": {
+      "approval_gated_write": ["Start Deploy"]
+    }
+  }
+}
