@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 import requests
 
 from .config import RuntimeConfig
+from .trading import PaperTradingAgent
 
 
 @dataclass(frozen=True)
@@ -49,8 +50,14 @@ ToolHandler = Callable[[str, dict[str, Any], list[dict[str, Any]]], dict[str, An
 
 
 class ToolExecutor:
-    def __init__(self, config: RuntimeConfig):
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        *,
+        trading_agent: PaperTradingAgent | None = None,
+    ):
         self.config = config
+        self._trading = trading_agent
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
             "internal_echo": self._internal_echo,
@@ -68,6 +75,10 @@ class ToolExecutor:
             "kali_tool_inventory": self._kali_tool_inventory,
             "security_core_plan": self._security_core_plan,
             "command_profile": self._command_profile,
+            "trading_status": self._trading_status,
+            "trading_start": self._trading_start,
+            "trading_stop": self._trading_stop,
+            "trading_tick": self._trading_tick,
         }
         self._specs = {
             spec.name: spec
@@ -165,6 +176,29 @@ class ToolExecutor:
                     "local_execution",
                     read_only=False,
                     inputs=("profile",),
+                ),
+                ToolSpec(
+                    "trading_status",
+                    "Read the local primary paper-trading agent status and measured prediction quality.",
+                    "trading",
+                ),
+                ToolSpec(
+                    "trading_start",
+                    "Start the local primary paper-trading agent loop.",
+                    "trading",
+                    read_only=False,
+                ),
+                ToolSpec(
+                    "trading_stop",
+                    "Stop the local primary paper-trading agent loop.",
+                    "trading",
+                    read_only=False,
+                ),
+                ToolSpec(
+                    "trading_tick",
+                    "Run one local paper-trading cycle while the automatic loop is stopped.",
+                    "trading",
+                    read_only=False,
                 ),
             )
         }
@@ -297,6 +331,62 @@ class ToolExecutor:
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         return {"available": True, "tools": self.catalog()}
+
+    def _trading_agent(self) -> PaperTradingAgent:
+        if self._trading is None:
+            self._trading = PaperTradingAgent.from_config(self.config)
+        return self._trading
+
+    def _trading_status(
+        self,
+        _prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "available": True,
+            "action": "status",
+            "trading": self._trading_agent().status(),
+        }
+
+    def _trading_start(
+        self,
+        _prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "available": True,
+            "executed": True,
+            "action": "start",
+            "trading": self._trading_agent().start(),
+        }
+
+    def _trading_stop(
+        self,
+        _prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "available": True,
+            "executed": True,
+            "action": "stop",
+            "trading": self._trading_agent().stop(),
+        }
+
+    def _trading_tick(
+        self,
+        _prompt: str,
+        _args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "available": True,
+            "executed": True,
+            "action": "tick",
+            "cycle": self._trading_agent().tick_once(),
+        }
 
     @staticmethod
     def _internal_echo(

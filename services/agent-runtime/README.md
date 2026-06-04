@@ -135,6 +135,23 @@ The local control plane also exposes:
 - `POST /api/agent/trading/stop`
 - `POST /api/agent/trading/tick`
 
+The primary trading agent is also registered in the general execution catalog,
+so the same task queue, planner, progress log, evaluator, and receipt flow can
+control it. Example local website requests:
+
+- `اعرض حالة وكيل التداول وجودة التنبؤ`
+- `شغّل وكيل التداول الورقي`
+- `أوقف وكيل التداول الورقي`
+- `نفّذ نبضة واحدة لوكيل التداول`
+
+The local control plane shares one trading-agent instance between the direct
+trading API and the task worker. A task-started loop therefore appears
+immediately in the website trading card and can be stopped through either
+surface. Explicit status, start, stop, and single-tick requests use a
+deterministic fast-control path: they bypass knowledge retrieval and model
+generation, while broader trading research requests continue through the full
+knowledge and model pipeline.
+
 This version is deliberately paper-only and long-only. By default it observes
 the public Coinbase spot price for `BTC-USD` once per second, records the
 outcome of each eligible one-second prediction, and exposes measured

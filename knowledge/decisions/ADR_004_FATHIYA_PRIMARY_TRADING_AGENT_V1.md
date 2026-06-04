@@ -26,6 +26,14 @@ Provider failure activates a labeled synthetic fallback for observability only.
 The risk engine blocks fills and prediction scoring on fallback ticks so
 simulated prices cannot be mistaken for market evidence.
 
+The agent is registered as four general runtime tools: status, start, stop, and
+single paper tick. The local HTTP control plane and task worker share the same
+agent instance, so natural-language tasks execute through the normal planning,
+progress, evaluation, and receipt pipeline without creating a second trading
+loop. Explicit local control commands use a deterministic fast path and do not
+wait for knowledge retrieval or model generation. Broader trading research
+continues through the full retrieval and model pipeline.
+
 ## Live Activation Gates
 
 Live execution requires all of the following:

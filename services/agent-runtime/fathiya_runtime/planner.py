@@ -8,6 +8,11 @@ from .models import ModelClient
 from .retrieval import RetrievedSource
 
 
+FAST_CONTROL_TOOLS = frozenset(
+    {"trading_status", "trading_start", "trading_stop", "trading_tick"}
+)
+
+
 def build_plan(
     task: dict[str, Any],
     sources: list[RetrievedSource],
@@ -16,16 +21,21 @@ def build_plan(
     *,
     max_tool_steps: int = 6,
 ) -> list[dict[str, Any]]:
-    tool_steps, planner_mode, planner_error = _model_steps(
-        task,
-        sources,
-        model,
-        tool_catalog,
-        max_tool_steps,
-    )
-    if not tool_steps:
-        tool_steps = _fallback_steps(task["prompt"], tool_catalog, max_tool_steps)
-        planner_mode = "local_fallback"
+    tool_steps = fast_control_steps(task["prompt"], tool_catalog)
+    if tool_steps:
+        planner_mode = "local_fast_control"
+        planner_error = None
+    else:
+        tool_steps, planner_mode, planner_error = _model_steps(
+            task,
+            sources,
+            model,
+            tool_catalog,
+            max_tool_steps,
+        )
+        if not tool_steps:
+            tool_steps = _fallback_steps(task["prompt"], tool_catalog, max_tool_steps)
+            planner_mode = "local_fallback"
 
     plan: list[dict[str, Any]] = [
         {
@@ -72,6 +82,19 @@ def build_plan(
         }
     )
     return plan
+
+
+def fast_control_steps(
+    prompt: str,
+    tool_catalog: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    available = {
+        str(item["name"])
+        for item in tool_catalog
+        if bool(item.get("configured", True))
+    }
+    step = _trading_control_step(prompt)
+    return [step] if step and step["tool"] in available else []
 
 
 def _model_steps(
@@ -250,6 +273,13 @@ def _fallback_steps(
         add("kali_tool_inventory", "قراءة الأدوات المتاحة داخل Kali WSL")
     if any(term in text for term in ("security", "أمن", "اختراق", "ثغرات", "فحص")):
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})
+    trading_control = _trading_control_step(prompt)
+    if trading_control:
+        add(
+            trading_control["tool"],
+            trading_control["description"],
+            trading_control["args"],
+        )
 
     profiles = _profile_names(available.get("command_profile", {}))
     connector_profiles = _profile_names(available.get("connector_profile", {}))
@@ -282,6 +312,65 @@ def _fallback_steps(
     if not steps:
         add("internal_echo", "تنفيذ إثبات داخلي وتسجيل نتيجة", {"message": "تم استلام الطلب وتنفيذه داخليًا."})
     return steps[:max_tool_steps]
+
+
+def _trading_control_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.lower()
+    agent_terms = (
+        "trading agent",
+        "paper trading",
+        "paper-trading",
+        "وكيل التداول",
+        "وكيل تداول",
+        "التداول الورقي",
+        "تداول ورقي",
+    )
+    if not any(term in text for term in agent_terms):
+        return None
+    if any(term in text for term in ("stop", "halt", "أوقف", "ايقاف", "إيقاف", "وقف")):
+        tool = "trading_stop"
+        description = "إيقاف وكيل التداول Paper المحلي"
+    elif any(
+        term in text
+        for term in (
+            "one tick",
+            "single tick",
+            "manual tick",
+            "نبضة واحدة",
+            "نبضه واحده",
+        )
+    ):
+        tool = "trading_tick"
+        description = "تنفيذ نبضة تداول Paper واحدة"
+    elif any(
+        term in text
+        for term in ("start", "run", "شغل", "شغّل", "تشغيل", "ابدأ", "إبدأ")
+    ):
+        tool = "trading_start"
+        description = "تشغيل وكيل التداول Paper المحلي"
+    elif any(
+        term in text
+        for term in (
+            "status",
+            "state",
+            "quality",
+            "accuracy",
+            "show",
+            "حالة",
+            "الحالة",
+            "اعرض",
+            "عرض",
+            "دقة",
+            "جودة",
+            "نتائج",
+            "تنبؤ",
+        )
+    ):
+        tool = "trading_status"
+        description = "قراءة حالة وكيل التداول وجودة تنبؤاته"
+    else:
+        return None
+    return {"tool": tool, "description": description, "args": {}}
 
 
 def _profile_names(command_profile_spec: dict[str, Any]) -> set[str]:

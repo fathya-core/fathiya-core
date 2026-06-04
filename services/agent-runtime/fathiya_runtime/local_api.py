@@ -44,8 +44,8 @@ class LocalAgentHTTPServer(ThreadingHTTPServer):
         super().__init__(address, LocalAgentRequestHandler)
         self.config = config
         self.store = store
-        self.tools = ToolExecutor(config)
         self.trading = PaperTradingAgent.from_config(config)
+        self.tools = ToolExecutor(config, trading_agent=self.trading)
         self.worker_thread: threading.Thread | None = None
 
     def server_close(self) -> None:
@@ -524,7 +524,7 @@ def serve_local_control_plane(
     poll_seconds: float = 0.5,
 ) -> None:
     server = create_local_server(config, store, host=host, port=port)
-    worker = AgentWorker(config, store)
+    worker = AgentWorker(config, store, tools=server.tools)
     worker_thread = threading.Thread(
         target=worker.start,
         kwargs={"poll_seconds": poll_seconds},

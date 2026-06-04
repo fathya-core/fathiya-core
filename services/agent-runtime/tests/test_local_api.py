@@ -106,7 +106,7 @@ class LocalAgentApiTests(unittest.TestCase):
         task = created.json()["task"]
         self.assertEqual(task["status"], "queued")
 
-        AgentWorker(self.config, self.store).start(once=True)
+        AgentWorker(self.config, self.store, tools=self.server.tools).start(once=True)
         detail = requests.get(
             f"{self.base_url}/api/agent/tasks/{task['id']}",
             headers=self.headers,
@@ -180,6 +180,35 @@ class LocalAgentApiTests(unittest.TestCase):
             timeout=5,
         ).json()["receipts"]
         self.assertGreaterEqual(len(trading_receipts), 2)
+
+        task_started_trading = requests.post(
+            f"{self.base_url}/api/agent/tasks",
+            headers=self.headers,
+            json={"prompt": "شغّل وكيل التداول الورقي"},
+            timeout=5,
+        ).json()["task"]
+        AgentWorker(self.config, self.store, tools=self.server.tools).start(once=True)
+        task_started_detail = requests.get(
+            f"{self.base_url}/api/agent/tasks/{task_started_trading['id']}",
+            headers=self.headers,
+            timeout=5,
+        ).json()
+        shared_trading_status = requests.get(
+            f"{self.base_url}/api/agent/trading/status",
+            headers=self.headers,
+            timeout=5,
+        ).json()["trading"]
+        self.assertEqual(task_started_detail["task"]["status"], "completed")
+        self.assertEqual(
+            task_started_detail["task"]["result"]["tool_results"][0]["result"]["tool"],
+            "trading_start",
+        )
+        self.assertTrue(shared_trading_status["running"])
+        requests.post(
+            f"{self.base_url}/api/agent/trading/stop",
+            headers=self.headers,
+            timeout=5,
+        )
 
         dispatch_body = {
             "task_id": task["id"],

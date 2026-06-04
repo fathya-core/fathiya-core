@@ -28,6 +28,12 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.db_path = Path(self.temp.name) / "runtime.db"
         os.environ["FATHIYA_STORE"] = "sqlite"
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
+        os.environ["FATHIYA_TRADING_SQLITE_PATH"] = str(
+            Path(self.temp.name) / "trading.db"
+        )
+        os.environ["FATHIYA_TRADING_MARKET_PROVIDER"] = "synthetic_second_market"
+        os.environ["FATHIYA_TRADING_SYMBOL"] = "TEST-USD"
+        os.environ["FATHIYA_TRADING_TICK_SECONDS"] = "0.05"
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
@@ -260,6 +266,108 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertTrue(result["available"])
         self.assertGreaterEqual(result["zapier_app_count"], 20)
         self.assertGreater(result["zapier_action_count"], result["zapier_app_count"])
+
+    def test_fallback_plan_controls_primary_paper_trading_agent(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        model = AgentModelRouter(
+            "",
+            "remote-model",
+            enable_local_generation=False,
+            local_model="local-model",
+            local_max_new_tokens=64,
+        )
+
+        status_plan = build_plan(
+            {"prompt": "اعرض حالة وكيل التداول وجودة التنبؤ"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        start_plan = build_plan(
+            {"prompt": "شغّل وكيل التداول الورقي"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+
+        self.assertEqual(
+            [step["tool"] for step in status_plan if step.get("kind") == "tool"],
+            ["trading_status"],
+        )
+        self.assertEqual(
+            [step["tool"] for step in start_plan if step.get("kind") == "tool"],
+            ["trading_start"],
+        )
+        research_plan = build_plan(
+            {"prompt": "ابحث عن استراتيجيات التداول الحديثة"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertNotIn(
+            "trading_status",
+            [step["tool"] for step in research_plan if step.get("kind") == "tool"],
+        )
+        stop_loss_plan = build_plan(
+            {"prompt": "اشرح وقف الخسارة في التداول"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertNotIn(
+            "trading_stop",
+            [step["tool"] for step in stop_loss_plan if step.get("kind") == "tool"],
+        )
+
+    def test_trading_tools_share_one_paper_agent(self) -> None:
+        executor = ToolExecutor(self.config)
+        started = executor.execute("trading_start", "شغّل وكيل التداول الورقي")
+        try:
+            status = executor.execute("trading_status", "اعرض حالة وكيل التداول")
+            self.assertTrue(started["trading"]["running"])
+            self.assertTrue(status["trading"]["running"])
+            self.assertEqual(status["trading"]["symbol"], "TEST-USD")
+            self.assertFalse(status["trading"]["live_execution_enabled"])
+        finally:
+            stopped = executor.execute("trading_stop", "أوقف وكيل التداول الورقي")
+        self.assertFalse(stopped["trading"]["running"])
+
+    def test_trading_status_task_completes_with_receipt(self) -> None:
+        task = self.store.enqueue(
+            "حالة وكيل التداول",
+            "اعرض حالة وكيل التداول وجودة التنبؤ",
+        )
+
+        worker = AgentWorker(self.config, self.store)
+        with (
+            patch.object(worker.retriever, "search") as retrieve,
+            patch.object(worker, "_synthesize") as synthesize,
+        ):
+            processed = worker.start(once=True)
+        detail = self.store.get_detail(task["id"])
+
+        retrieve.assert_not_called()
+        synthesize.assert_not_called()
+        self.assertEqual(processed, 1)
+        self.assertEqual(detail["task"]["status"], "completed")
+        self.assertEqual(
+            detail["task"]["result"]["tool_results"][0]["result"]["tool"],
+            "trading_status",
+        )
+        self.assertIn("وكيل التداول Paper", detail["task"]["result"]["synthesis"])
+        self.assertEqual(
+            detail["task"]["result"]["model_trace"]["planner_provider"],
+            "local_fast_control",
+        )
+        self.assertEqual(
+            detail["task"]["result"]["model_trace"]["synthesis_provider"],
+            "local_deterministic_fast_control",
+        )
+        self.assertEqual(len(detail["receipts"]), 1)
 
     def test_kali_inventory_uses_wsl_safe_explicit_commands(self) -> None:
         executor = ToolExecutor(self.config)

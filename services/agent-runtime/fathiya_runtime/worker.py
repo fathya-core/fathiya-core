@@ -8,7 +8,7 @@ from typing import Any
 
 from .config import RuntimeConfig
 from .models import AgentModelRouter
-from .planner import build_plan
+from .planner import FAST_CONTROL_TOOLS, build_plan, fast_control_steps
 from .retrieval import KnowledgeRetriever
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
@@ -19,7 +19,13 @@ class TaskCanceledError(RuntimeError):
 
 
 class AgentWorker:
-    def __init__(self, config: RuntimeConfig, store: TaskStore):
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        store: TaskStore,
+        *,
+        tools: ToolExecutor | None = None,
+    ):
         self.config = config
         self.store = store
         self.model = AgentModelRouter(
@@ -37,7 +43,7 @@ class AgentWorker:
             hf_model=config.hf_model,
         )
         self.synthesis_mode = "not_run"
-        self.tools = ToolExecutor(config)
+        self.tools = tools or ToolExecutor(config)
         self.capabilities = [
             "knowledge_search",
             "openrouter_planning",
@@ -72,25 +78,38 @@ class AgentWorker:
             self.store.heartbeat_worker(self.config.worker_id, "busy")
             self._progress(task, 5, "بدء التنفيذ", "started", "بدأ المشغّل المحلي المهمة.")
 
-            sources = self.retriever.search(task["prompt"], limit=5)
-            self._progress(
-                task,
-                20,
-                "استرجاع المعرفة",
-                "retrieved",
-                f"تم استرجاع {len(sources)} مصادر مرتبطة عبر {self.retriever.last_mode}.",
-                {
-                    "retrieval_mode": self.retriever.last_mode,
-                    "retrieval_error": self.retriever.last_error,
-                    "sources": [source.__dict__ for source in sources],
-                },
-            )
+            tool_catalog = self.tools.catalog()
+            direct_control = fast_control_steps(task["prompt"], tool_catalog)
+            if direct_control:
+                sources = []
+                self._progress(
+                    task,
+                    20,
+                    "توجيه تحكم مباشر",
+                    "direct_control",
+                    "تم التعرف على أمر تحكم محلي محدد ولا يحتاج استرجاع معرفة.",
+                    {"tools": [step["tool"] for step in direct_control]},
+                )
+            else:
+                sources = self.retriever.search(task["prompt"], limit=5)
+                self._progress(
+                    task,
+                    20,
+                    "استرجاع المعرفة",
+                    "retrieved",
+                    f"تم استرجاع {len(sources)} مصادر مرتبطة عبر {self.retriever.last_mode}.",
+                    {
+                        "retrieval_mode": self.retriever.last_mode,
+                        "retrieval_error": self.retriever.last_error,
+                        "sources": [source.__dict__ for source in sources],
+                    },
+                )
 
             plan = build_plan(
                 task,
                 sources,
                 self.model,
-                self.tools.catalog(),
+                tool_catalog,
                 max_tool_steps=self.config.max_tool_steps,
             )
             self.store.update_task(
@@ -157,7 +176,13 @@ class AgentWorker:
                 "synthesis_started",
                 "بدأ تلخيص الأدلة ونتائج الأدوات.",
             )
-            synthesis = self._synthesize(task, sources, tool_results)
+            if execution_steps and all(
+                step["tool"] in FAST_CONTROL_TOOLS for step in execution_steps
+            ):
+                synthesis = _deterministic_synthesis(tool_results, len(sources))
+                self.synthesis_mode = "local_deterministic_fast_control"
+            else:
+                synthesis = self._synthesize(task, sources, tool_results)
             self._progress(
                 task,
                 85,
@@ -426,6 +451,34 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             summary["metadata"] = result["metadata"]
         if isinstance(result.get("workflows"), dict):
             summary["workflows"] = result["workflows"]
+        if isinstance(result.get("trading"), dict):
+            trading = result["trading"]
+            quality = trading.get("prediction_quality", {})
+            summary["trading"] = {
+                "running": trading.get("running"),
+                "mode": trading.get("mode"),
+                "symbol": trading.get("symbol"),
+                "current_market_source": trading.get("current_market_source"),
+                "cycle_count": trading.get("cycle_count"),
+                "live_execution_enabled": trading.get("live_execution_enabled"),
+                "prediction_quality": {
+                    "evaluated_count": quality.get("evaluated_count"),
+                    "directional_accuracy": quality.get("directional_accuracy"),
+                    "cumulative_strategy_return_bps": quality.get(
+                        "cumulative_strategy_return_bps"
+                    ),
+                },
+            }
+        if isinstance(result.get("cycle"), dict):
+            cycle = result["cycle"]
+            summary["cycle"] = {
+                "receipt_id": cycle.get("receipt_id"),
+                "status": cycle.get("status"),
+                "tick": cycle.get("tick"),
+                "prediction": cycle.get("prediction"),
+                "risk": cycle.get("risk"),
+                "latency_ms": cycle.get("latency_ms"),
+            }
         for key in ("found_commands", "missing_commands"):
             if isinstance(result.get(key), list):
                 summary[key] = result[key][:20]
@@ -487,6 +540,8 @@ def _required_synthesis_anchors(
             required.append(("github", "جيت"))
         elif tool == "security_core_plan":
             required.append(("security", "أمن"))
+        elif tool.startswith("trading_"):
+            required.append(("trading", "تداول"))
     return required
 
 
@@ -574,6 +629,22 @@ def _deterministic_synthesis(
             else:
                 evidence.append("تعذر الوصول إلى Kali WSL.")
                 follow_up.append("راجع إعداد KALI_WSL_DISTRO وحالة WSL.")
+        elif tool.startswith("trading_"):
+            trading = result.get("trading")
+            cycle = result.get("cycle")
+            if isinstance(trading, dict):
+                quality = trading.get("prediction_quality", {})
+                evidence.append(
+                    f"وكيل التداول Paper {'يعمل' if trading.get('running') else 'متوقف'} "
+                    f"على {trading.get('symbol', 'رمز غير معروف')} من مصدر "
+                    f"{trading.get('current_market_source') or trading.get('market_provider', 'غير معروف')}، "
+                    f"وتم قياس {quality.get('evaluated_count', 0)} تنبؤات."
+                )
+            elif isinstance(cycle, dict):
+                evidence.append(
+                    f"نُفذت نبضة تداول Paper بإيصال {cycle.get('receipt_id', 'غير معروف')} "
+                    f"وقرار {cycle.get('prediction', {}).get('action', 'غير معروف')}."
+                )
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")
         elif result.get("return_code") is not None:
@@ -581,8 +652,13 @@ def _deterministic_synthesis(
 
     lines = [
         f"اكتمل تنفيذ {len(names)} أدوات داخلية: {', '.join(names) or 'لا توجد أدوات'}.",
-        f"استُرجع {source_count} مصادر معرفة مرتبطة بالطلب.",
     ]
+    if source_count:
+        lines.append(f"استُرجع {source_count} مصادر معرفة مرتبطة بالطلب.")
+    elif names and all(name in FAST_CONTROL_TOOLS for name in names):
+        lines.append("لم يحتج أمر التحكم المحلي إلى استرجاع مصادر معرفة.")
+    else:
+        lines.append("لم يتم العثور على مصادر معرفة مرتبطة بالطلب.")
     if evidence:
         lines.append("الأدلة المثبتة: " + " ".join(evidence))
     if follow_up:
