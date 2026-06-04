@@ -21,6 +21,10 @@ class RuntimeConfig:
     connector_profiles_path: Path
     connector_dispatch_token_file: Path
     connector_dispatch_token: str
+    operator_origins: tuple[str, ...]
+    zapier_mcp_url: str
+    zapier_mcp_token_path: Path
+    zapier_mcp_access_token: str
     enable_hf_retrieval: bool
     hf_model: str
     enable_local_generation: bool
@@ -101,6 +105,30 @@ class RuntimeConfig:
             ),
             connector_dispatch_token_file=connector_dispatch_token_file,
             connector_dispatch_token=connector_dispatch_token,
+            operator_origins=tuple(
+                origin.strip().rstrip("/")
+                for origin in os.getenv(
+                    "FATHIYA_OPERATOR_ORIGINS",
+                    (
+                        "https://fathya-core.com,"
+                        "https://www.fathya-core.com,"
+                        "https://fathya-project.github.io"
+                    ),
+                ).split(",")
+                if origin.strip()
+            ),
+            zapier_mcp_url=os.getenv(
+                "FATHIYA_ZAPIER_MCP_URL",
+                "https://mcp.zapier.com/api/v1/connect",
+            ).rstrip("/"),
+            zapier_mcp_token_path=resolve_path(
+                "FATHIYA_ZAPIER_MCP_TOKEN_PATH",
+                "runtime/zapier_mcp_oauth.json",
+            ),
+            zapier_mcp_access_token=os.getenv(
+                "FATHIYA_ZAPIER_MCP_ACCESS_TOKEN",
+                "",
+            ).strip(),
             enable_hf_retrieval=os.getenv("FATHIYA_ENABLE_HF_RETRIEVAL", "false").lower()
             in {"1", "true", "yes"},
             hf_model=os.getenv(

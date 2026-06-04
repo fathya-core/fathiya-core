@@ -12,8 +12,8 @@
   },
   "zapier_mcp_status": {
     "inventory": "active",
-    "action_execution": "degraded",
-    "note": "Enabled-action inventory is live. A Manus read action currently fails inside Zapier MCP because selected_api is not forwarded by the exposed execution tool."
+    "action_execution": "requires_local_oauth",
+    "note": "Enabled-action inventory is live. The Codex-exposed executor omits selected_api, so the local runtime now uses a direct OAuth MCP gateway that resolves and forwards selected_api itself."
   },
   "local_tools": [
     {
@@ -28,6 +28,7 @@
         "extensible command profiles",
         "version-controlled connector profiles",
         "secret-safe connector readiness",
+        "direct Zapier MCP OAuth and exact-action gateway",
         "web report intake"
       ]
     },

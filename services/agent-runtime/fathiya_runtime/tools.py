@@ -16,6 +16,7 @@ import requests
 from .config import RuntimeConfig
 from .models import ModelClient
 from .trading import PaperTradingAgent
+from .zapier_mcp import ZapierMCPGateway
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,7 @@ class ToolExecutor:
         self.config = config
         self._trading = trading_agent
         self._model_router = model_router
+        self.zapier = ZapierMCPGateway(config)
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
             "internal_echo": self._internal_echo,
@@ -75,6 +77,8 @@ class ToolExecutor:
             "connector_catalog": self._connector_catalog,
             "connector_profile": self._connector_profile,
             "connected_tool_inventory": self._connected_tool_inventory,
+            "zapier_action_catalog": self._zapier_action_catalog,
+            "zapier_action": self._zapier_action,
             "kali_tool_inventory": self._kali_tool_inventory,
             "security_core_plan": self._security_core_plan,
             "command_profile": self._command_profile,
@@ -164,6 +168,21 @@ class ToolExecutor:
                     "connectors",
                 ),
                 ToolSpec(
+                    "zapier_action_catalog",
+                    "Read the live Zapier MCP app and action catalog through local OAuth.",
+                    "connectors",
+                    inputs=("app", "refresh"),
+                ),
+                ToolSpec(
+                    "zapier_action",
+                    "Execute an exact enabled Zapier MCP action through the local OAuth gateway.",
+                    "connectors",
+                    risk_class="external",
+                    requires_approval=True,
+                    read_only=False,
+                    inputs=("app", "action", "params", "instructions", "output"),
+                ),
+                ToolSpec(
                     "kali_tool_inventory",
                     "Read available defensive tools inside Kali Linux WSL.",
                     "security",
@@ -240,6 +259,10 @@ class ToolExecutor:
                 )
             elif spec.name == "connector_catalog":
                 item["configured"] = bool(connector_profiles)
+            elif spec.name == "zapier_action_catalog":
+                item["configured"] = True
+            elif spec.name == "zapier_action":
+                item["configured"] = self.zapier.configured
             elif spec.name == "n8n_webhook":
                 item["configured"] = bool(self.config.n8n_webhook_url)
             else:
@@ -313,6 +336,16 @@ class ToolExecutor:
                     risk_class,
                     f"connector profile {requested} requires approval" if required else "",
                 )
+        if tool == "zapier_action":
+            requirement = self.zapier.action_requirement(
+                str((args or {}).get("app") or ""),
+                str((args or {}).get("action") or ""),
+            )
+            return ApprovalRequirement(
+                bool(requirement["required"]),
+                str(requirement["risk_class"]),
+                str(requirement["reason"]),
+            )
         return ApprovalRequirement(
             spec.requires_approval,
             spec.risk_class,
@@ -802,7 +835,40 @@ class ToolExecutor:
             "zapier_action_count": sum(int(app.get("action_count", 0)) for app in apps),
             "zapier_apps": apps,
             "agent_provider_actions": inventory.get("agent_provider_actions", {}),
+            "direct_zapier_mcp": self.zapier.status(),
         }
+
+    def _zapier_action_catalog(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return self.zapier.action_catalog(
+            str(args.get("app") or ""),
+            force=bool(args.get("refresh")),
+        )
+
+    def _zapier_action(
+        self,
+        prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        app = str(args.get("app") or "").strip()
+        action = str(args.get("action") or "").strip()
+        params = args.get("params")
+        if not app or not action:
+            raise ValueError("Zapier action requires app and action")
+        if not isinstance(params, dict):
+            params = {}
+        return self.zapier.execute_action(
+            app,
+            action,
+            params,
+            str(args.get("instructions") or prompt),
+            str(args.get("output") or "Return the action result and receipt-safe identifiers."),
+        )
 
     def _kali_tool_inventory(
         self,

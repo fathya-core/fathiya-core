@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from .config import RuntimeConfig
 from .integrations import build_integration_readiness
@@ -67,7 +67,51 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if not self._origin_allowed():
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
-        path = urlparse(self.path).path.rstrip("/") or "/"
+        parsed_request = urlparse(self.path)
+        path = parsed_request.path.rstrip("/") or "/"
+        if path == "/api/agent/oauth/zapier/status":
+            return self._send_json({"zapier_mcp": self.server.tools.zapier.status()})
+        if path == "/api/agent/oauth/zapier/start":
+            query = parse_qs(parsed_request.query)
+            return_to = _safe_operator_return_to(
+                str(query.get("return_to", [""])[0])
+                or str(self.headers.get("Referer") or ""),
+                self.server.config,
+            )
+            callback_url = (
+                f"http://127.0.0.1:{self.server.server_address[1]}"
+                "/api/agent/oauth/zapier/callback"
+            )
+            try:
+                authorization_url = self.server.tools.zapier.start_oauth(
+                    callback_url,
+                    return_to,
+                )
+            except Exception as exc:
+                return self._send_error(
+                    HTTPStatus.BAD_GATEWAY,
+                    f"Zapier OAuth start failed: {type(exc).__name__}",
+                )
+            return self._send_redirect(authorization_url)
+        if path == "/api/agent/oauth/zapier/callback":
+            query = parse_qs(parsed_request.query)
+            code = str(query.get("code", [""])[0])
+            state = str(query.get("state", [""])[0])
+            if not code or not state:
+                return self._send_error(
+                    HTTPStatus.BAD_REQUEST,
+                    "Zapier OAuth callback requires code and state",
+                )
+            try:
+                return_to = self.server.tools.zapier.complete_oauth(code, state)
+            except Exception as exc:
+                return self._send_error(
+                    HTTPStatus.BAD_GATEWAY,
+                    f"Zapier OAuth callback failed: {type(exc).__name__}",
+                )
+            return self._send_redirect(
+                _append_query(return_to, {"integration": "zapier_mcp", "status": "connected"})
+            )
         if path == "/healthz":
             trading = self.server.trading.status()
             return self._send_json(
@@ -438,7 +482,7 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
 
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
-        return not origin or bool(LOCAL_ORIGIN.fullmatch(origin))
+        return not origin or _operator_origin_allowed(origin, self.server.config)
 
     def _json_body(self) -> dict[str, Any]:
         try:
@@ -480,12 +524,21 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         )
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         origin = self.headers.get("Origin")
-        if origin and LOCAL_ORIGIN.fullmatch(origin):
+        if origin and _operator_origin_allowed(origin, self.server.config):
             self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Private-Network", "true")
             self.send_header("Vary", "Origin")
         self.end_headers()
         if body:
             self.wfile.write(body)
+
+    def _send_redirect(self, location: str) -> None:
+        body = b""
+        self.send_response(HTTPStatus.FOUND.value)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
 
 
 def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
@@ -505,6 +558,29 @@ def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
         )
         if key in result
     }
+
+
+def _operator_origin_allowed(origin: str, config: RuntimeConfig) -> bool:
+    clean = origin.rstrip("/")
+    return bool(LOCAL_ORIGIN.fullmatch(clean)) or clean in config.operator_origins
+
+
+def _safe_operator_return_to(value: str, config: RuntimeConfig) -> str:
+    parsed = urlparse(value)
+    origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
+    if not origin or not _operator_origin_allowed(origin, config):
+        return "http://127.0.0.1:5180/agent-tasks"
+    path = parsed.path if parsed.path.startswith("/") else "/agent-tasks"
+    return urlunparse((parsed.scheme, parsed.netloc, path, "", parsed.query, ""))
+
+
+def _append_query(value: str, fields: dict[str, str]) -> str:
+    parsed = urlparse(value)
+    query = parse_qs(parsed.query)
+    for key, field_value in fields.items():
+        query[key] = [field_value]
+    flat = [(key, item) for key, values in query.items() for item in values]
+    return urlunparse((*parsed[:4], urlencode(flat), ""))
 
 
 def _find_connector_dispatch_receipt(

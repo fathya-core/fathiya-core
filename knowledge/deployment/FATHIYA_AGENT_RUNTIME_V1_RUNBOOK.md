@@ -2,27 +2,19 @@
 
 ## Purpose
 
-This runbook connects the authenticated FATHIYA site to the local agent worker
-through Supabase. The browser never receives OpenRouter, Supabase service-role,
-or local tool credentials.
+This runbook connects the hosted FATHIYA operator site directly to the
+loopback-only agent runtime running on the operator's machine. The browser never
+receives OpenRouter, Supabase service-role, Zapier OAuth tokens, or local tool
+credentials.
 
-The canonical TanStack server routes and the Netlify `agent-tasks` function
-expose the same `/api/agent/tasks` contract. The Netlify bridge is required by
-the current production deployment because it publishes `dist/client` as a
-static site.
+The canonical TanStack server routes and the Netlify `agent-tasks` function keep
+the same `/api/agent/tasks` contract for an optional remote queue, but the
+operator site now defaults to the local execution plane.
 
 ## Deployment Order
 
-1. Apply `supabase/migrations/20260604120000_agent_runtime_v1.sql` to project
-   `qywkyxcljhoitdcaskyu`.
-2. Configure the site server with:
-   - `SUPABASE_URL`
-   - `SUPABASE_PUBLISHABLE_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-3. Configure the browser build with:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`
-4. Configure `services/agent-runtime/.env` from `.env.example`.
+1. Configure `services/agent-runtime/.env` from `.env.example`.
+   - Set `FATHIYA_OPERATOR_ORIGINS` to the exact hosted operator-site origins.
    - Enable `FATHIYA_ENABLE_HF_RETRIEVAL=true` for multilingual semantic search.
    - Enable `FATHIYA_ENABLE_LOCAL_GENERATION=true` to use the downloaded
      `Qwen/Qwen2.5-0.5B-Instruct` CPU model for bounded synthesis after
@@ -32,20 +24,24 @@ static site.
      `FATHIYA_N8N_WEBHOOK_URL`, `FATHIYA_ZAPIER_WEBHOOK_URL`,
      `FATHIYA_CURSOR_AGENT_URL`, and `FATHIYA_MANUS_AGENT_URL`.
      Their values stay in the local process; the website sees readiness only.
-5. Set `FATHIYA_STORE=supabase` on the local worker.
-6. Start the worker:
+2. Start the local control plane and worker:
 
 ```powershell
 cd services/agent-runtime
 py -3.13 -m venv .venv
 .\.venv\Scripts\python -m pip install -e .
-.\.venv\Scripts\fathiya-runtime worker
+.\.venv\Scripts\fathiya-runtime serve
 ```
 
-For a fully local website-to-worker proof without changing production, run
-`.\.venv\Scripts\fathiya-runtime serve`, start the site development server, and
-open `/agent-tasks`. Development mode automatically uses the loopback-only API
-at `http://127.0.0.1:8765`.
+3. Deploy the site. An optional remote queue can still use the Supabase
+   migration and `FATHIYA_STORE=supabase`, but it is not required for the
+   hosted site to control the local engine.
+
+Run `.\.venv\Scripts\fathiya-runtime serve`, then open `/agent-tasks` from either
+the development site or `https://fathya-core.com`. Both default to the
+loopback-only API at `http://127.0.0.1:8765`. Confirm
+`FATHIYA_OPERATOR_ORIGINS` contains the exact production origins; unrelated
+browser origins must receive HTTP 403 from the local control plane.
 
 ## Operator Flow
 
@@ -61,6 +57,15 @@ at `http://127.0.0.1:8765`.
    final result, and receipt.
 7. Confirm the local connector panel shows `n8n_health` ready and external
    connector profiles as requiring setup or approval as appropriate.
+8. In the integrations panel, select `ربط Zapier MCP محليًا`, complete OAuth,
+   then confirm `fathiya-runtime zapier-actions --refresh` returns the live app
+   and action counts without printing credentials.
+9. Submit a read-only exact action such as:
+   `Zapier action: GitHub / Find Repository`
+   with repository parameters. Confirm it completes automatically and the
+   receipt contains the friendly app/action names but no `selected_api`.
+10. Submit a Zapier write action and confirm it remains in
+    `awaiting_approval` until the operator approves it.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.
@@ -87,6 +92,9 @@ cd services/agent-runtime
 
 - OpenRouter is not configured in the local worker; Hugging Face and
   deterministic fallbacks remain active.
+- Zapier's Codex-exposed generic executor currently omits the required
+  `selected_api` argument. The local direct OAuth gateway resolves and forwards
+  it itself once the operator completes the local Zapier OAuth connection.
 - n8n `2.23.2` is active locally and responds on port `5678`.
 - n8n API workflow listing requires `N8N_API_KEY`. The local n8n CLI currently
   fails migrations with `temporary_webhook_entity already exists`; back up and

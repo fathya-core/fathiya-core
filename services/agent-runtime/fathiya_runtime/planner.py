@@ -238,6 +238,8 @@ def _profile_args_are_configured(
     args: dict[str, Any],
     spec: dict[str, Any],
 ) -> bool:
+    if tool == "zapier_action":
+        return bool(str(args.get("app") or "").strip() and str(args.get("action") or "").strip())
     if tool not in {"command_profile", "connector_profile"}:
         return True
     requested = str(args.get("profile") or "")
@@ -304,6 +306,7 @@ def _fallback_steps(
     ):
         add("connector_catalog", "عرض جاهزية بوابات تنفيذ الموصلات")
         add("connected_tool_inventory", "قراءة موصلات ووكلاء الحساب المتاحين")
+        add("zapier_action_catalog", "قراءة كتالوج إجراءات Zapier MCP المباشر")
     if any(
         term in safe_text
         for term in ("git", "repo", "repository", "مستودع", "الكود", "github")
@@ -340,6 +343,13 @@ def _fallback_steps(
             strategy_refresh["tool"],
             strategy_refresh["description"],
             strategy_refresh["args"],
+        )
+    zapier_action = _zapier_action_step(prompt)
+    if zapier_action:
+        add(
+            zapier_action["tool"],
+            zapier_action["description"],
+            zapier_action["args"],
         )
 
     profiles = _profile_names(available.get("command_profile", {}))
@@ -462,6 +472,42 @@ def _trading_strategy_refresh_step(prompt: str) -> dict[str, Any] | None:
         "tool": "trading_strategy_refresh",
         "description": "تحديث مستشار استراتيجية التداول عبر OpenRouter أو Hugging Face",
         "args": {},
+    }
+
+
+def _zapier_action_step(prompt: str) -> dict[str, Any] | None:
+    match = re.search(
+        r"(?:zapier\s+action|إجراء\s+زابير)\s*:\s*([^/\n]+)\s*/\s*([^\n]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    app = match.group(1).strip()
+    action = match.group(2).strip()
+    params: dict[str, Any] = {}
+    params_match = re.search(
+        r"(?:params|parameters|المعاملات)\s*:\s*(\{[^\n]*\})",
+        prompt,
+        re.IGNORECASE,
+    )
+    if params_match:
+        try:
+            parsed = json.loads(params_match.group(1))
+            if isinstance(parsed, dict):
+                params = parsed
+        except json.JSONDecodeError:
+            params = {}
+    return {
+        "tool": "zapier_action",
+        "description": f"تنفيذ إجراء Zapier {app}/{action}",
+        "args": {
+            "app": app,
+            "action": action,
+            "params": params,
+            "instructions": prompt[:2_000],
+            "output": "Return the action result and receipt-safe identifiers.",
+        },
     }
 
 

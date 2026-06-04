@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .config import RuntimeConfig
+from .zapier_mcp import ZapierTokenStore
 
 
 def build_integration_readiness(
@@ -24,6 +25,12 @@ def build_integration_readiness(
     )
     zapier_bridge_ready = bool(
         connector_by_name.get("zapier_fathiya_webhook", {}).get("configured")
+    )
+    zapier_direct_ready = bool(
+        ZapierTokenStore(
+            config.zapier_mcp_token_path,
+            config.zapier_mcp_access_token,
+        ).status()["connected"]
     )
     n8n_health_ready = bool(
         connector_by_name.get("n8n_health", {}).get("configured")
@@ -136,12 +143,12 @@ def build_integration_readiness(
             "category": "automation",
             "status": (
                 "ready"
-                if zapier_inventory_ready and zapier_bridge_ready
+                if zapier_inventory_ready and (zapier_direct_ready or zapier_bridge_ready)
                 else "partial"
                 if zapier_inventory_ready
                 else "needs_setup"
             ),
-            "connection_mode": "oauth_managed",
+            "connection_mode": "local_oauth_mcp",
             "account_required": True,
             "credential_policy": "oauth_managed",
             "summary": (
@@ -150,16 +157,28 @@ def build_integration_readiness(
             )
             if zapier_inventory_ready
             else "لم يُحمّل مخزون حسابات Zapier المتصلة.",
-            "next_step": "لا يلزم إرسال كلمات مرور؛ أضف Catch Hook فقط لتسليم مهام المحرك المحلي."
-            if zapier_inventory_ready and not zapier_bridge_ready
+            "next_step": "اربط Zapier MCP بالمحرك المحلي عبر OAuth؛ لا ترسل كلمة مرور أو رمزًا."
+            if zapier_inventory_ready and not zapier_direct_ready
             else "لا إجراء مطلوب."
-            if zapier_inventory_ready
+            if zapier_inventory_ready and (zapier_direct_ready or zapier_bridge_ready)
             else "اربط التطبيقات المطلوبة داخل Zapier MCP عبر OAuth.",
-            "missing_env": [] if zapier_bridge_ready else ["FATHIYA_ZAPIER_WEBHOOK_URL"],
+            "missing_env": [],
             "connected_apps": zapier_apps,
+            "action_path": (
+                None
+                if zapier_direct_ready
+                else "/api/agent/oauth/zapier/start"
+            ),
+            "action_label": (
+                None
+                if zapier_direct_ready
+                else "ربط Zapier MCP محليًا"
+            ),
             "details": {
                 "app_count": len(zapier_apps),
                 "action_count": int(inventory.get("zapier_action_count", 0)),
+                "direct_oauth_connected": zapier_direct_ready,
+                "webhook_bridge_ready": zapier_bridge_ready,
             },
         },
         {

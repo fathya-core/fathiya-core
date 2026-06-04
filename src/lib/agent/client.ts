@@ -6,9 +6,7 @@ const loopbackUrl = /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/;
 export const localAgentRuntimeUrl =
   configuredLocalUrl && loopbackUrl.test(configuredLocalUrl)
     ? configuredLocalUrl
-    : import.meta.env.DEV
-      ? "http://127.0.0.1:8765"
-      : "";
+    : "http://127.0.0.1:8765";
 
 export const isLocalAgentRuntime = Boolean(localAgentRuntimeUrl);
 

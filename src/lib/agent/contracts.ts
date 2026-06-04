@@ -115,6 +115,8 @@ export type AgentIntegrationReadiness = {
   next_step: string;
   missing_env: string[];
   connected_apps: string[];
+  action_path?: string | null;
+  action_label?: string | null;
   details: Record<string, Json>;
 };
 

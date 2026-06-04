@@ -32,6 +32,10 @@ class LocalAgentApiTests(unittest.TestCase):
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
+        os.environ["FATHIYA_ZAPIER_MCP_TOKEN_PATH"] = str(
+            Path(self.temp.name) / "zapier_oauth.json"
+        )
+        os.environ.pop("FATHIYA_ZAPIER_MCP_ACCESS_TOKEN", None)
         os.environ.pop("OPENROUTER_API_KEY", None)
         self.previous_dispatch_token = os.environ.get("FATHIYA_CONNECTOR_DISPATCH_TOKEN")
         os.environ["FATHIYA_CONNECTOR_DISPATCH_TOKEN"] = "local-api-test-bridge-token"
@@ -107,6 +111,10 @@ class LocalAgentApiTests(unittest.TestCase):
             integration_by_id["openrouter"]["missing_env"],
         )
         self.assertEqual(integration_by_id["zapier_mcp"]["status"], "partial")
+        self.assertEqual(
+            integration_by_id["zapier_mcp"]["action_path"],
+            "/api/agent/oauth/zapier/start",
+        )
         self.assertGreaterEqual(
             integration_by_id["zapier_mcp"]["details"]["app_count"],
             20,
@@ -119,12 +127,63 @@ class LocalAgentApiTests(unittest.TestCase):
             integration_by_id["broker_testnet"]["details"]["live_execution_enabled"]
         )
 
+        zapier_status = requests.get(
+            f"{self.base_url}/api/agent/oauth/zapier/status",
+            headers=self.headers,
+            timeout=5,
+        ).json()["zapier_mcp"]
+        self.assertFalse(zapier_status["connected"])
+        with patch.object(
+            self.server.tools.zapier,
+            "start_oauth",
+            return_value="https://mcp.zapier.com/oauth/authorize?test=1",
+        ) as start_oauth:
+            oauth_start = requests.get(
+                f"{self.base_url}/api/agent/oauth/zapier/start",
+                headers=self.headers,
+                params={"return_to": f"{self.base_url}/agent-tasks"},
+                allow_redirects=False,
+                timeout=5,
+            )
+        self.assertEqual(oauth_start.status_code, 302)
+        self.assertEqual(
+            oauth_start.headers["Location"],
+            "https://mcp.zapier.com/oauth/authorize?test=1",
+        )
+        self.assertEqual(
+            start_oauth.call_args.args[1],
+            f"{self.base_url}/agent-tasks",
+        )
+
         denied = requests.get(
             f"{self.base_url}/healthz",
             headers={"Origin": "https://example.com"},
             timeout=5,
         )
         self.assertEqual(denied.status_code, 403)
+        production_origin = requests.get(
+            f"{self.base_url}/healthz",
+            headers={"Origin": "https://fathya-core.com"},
+            timeout=5,
+        )
+        self.assertEqual(production_origin.status_code, 200)
+        self.assertEqual(
+            production_origin.headers["Access-Control-Allow-Origin"],
+            "https://fathya-core.com",
+        )
+        production_preflight = requests.options(
+            f"{self.base_url}/api/agent/tasks",
+            headers={
+                "Origin": "https://fathya-core.com",
+                "Access-Control-Request-Private-Network": "true",
+            },
+            timeout=5,
+        )
+        self.assertEqual(production_preflight.status_code, 204)
+        self.assertEqual(
+            production_preflight.headers["Access-Control-Allow-Private-Network"],
+            "true",
+        )
 
         created = requests.post(
             f"{self.base_url}/api/agent/tasks",

@@ -14,6 +14,7 @@ from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore, now_iso
 from .tools import ToolExecutor
 from .trading import PaperTradingAgent
 from .worker import AgentWorker
+from .zapier_mcp import ZapierMCPGateway
 
 
 def build_store(config: RuntimeConfig) -> TaskStore:
@@ -55,6 +56,10 @@ def main() -> None:
     cancel.add_argument("task_id")
 
     sub.add_parser("tools")
+    sub.add_parser("zapier-status")
+    zapier_actions = sub.add_parser("zapier-actions")
+    zapier_actions.add_argument("--refresh", action="store_true")
+    zapier_actions.add_argument("--app", default="")
     bridge_init = sub.add_parser("bridge-init")
     bridge_init.add_argument("--rotate", action="store_true")
     sub.add_parser("trading-status")
@@ -129,6 +134,22 @@ def main() -> None:
         print(json.dumps(store.get_task(task["id"]), ensure_ascii=False, indent=2))
     elif args.command == "tools":
         print(json.dumps(ToolExecutor(config).catalog(), ensure_ascii=False, indent=2))
+    elif args.command == "zapier-status":
+        print(
+            json.dumps(
+                ZapierMCPGateway(config).status(),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "zapier-actions":
+        print(
+            json.dumps(
+                ZapierMCPGateway(config).action_catalog(args.app, force=args.refresh),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.command == "bridge-init":
         path = config.connector_dispatch_token_file
         if path.exists() and not args.rotate:

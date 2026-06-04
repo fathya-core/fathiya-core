@@ -24,11 +24,11 @@ worker together:
 .\.venv\Scripts\fathiya-runtime serve
 ```
 
-In development, `/agent-tasks` automatically connects to
-`http://127.0.0.1:8765`. The local API accepts browser requests only from
-loopback origins such as `localhost` and `127.0.0.1`; remote web origins are
-rejected. Production builds continue to use the authenticated same-origin
-Supabase/Netlify task API unless `VITE_FATHIYA_LOCAL_API_URL` is explicitly set.
+`/agent-tasks` automatically connects to `http://127.0.0.1:8765` in development
+and production so the hosted operator site can use the engine running on the
+operator's own machine. The local API accepts browser requests only from
+loopback origins or exact origins listed in `FATHIYA_OPERATOR_ORIGINS`; unrelated
+remote web origins are rejected.
 
 The default SQLite store is for local verification. Set `FATHIYA_STORE=supabase`,
 `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` to connect the worker to the
@@ -129,6 +129,33 @@ The connected-tool registry is refreshed from the live Zapier MCP inventory and
 records agent providers such as Manus, Cursor, Zapier Agents, GitHub, and
 Netlify. Read-only inventory is automatic; connected-app writes remain approval
 gated.
+
+### Direct Zapier MCP gateway
+
+The local control plane connects directly to Zapier MCP through OAuth without
+asking the operator to paste a password or token into chat. Open
+`/agent-tasks`, then use `ربط Zapier MCP محليًا` in the integrations panel.
+OAuth credentials are stored only under the ignored local runtime directory.
+
+After connection, the runtime resolves the exact enabled app and action,
+forwards Zapier's internal `selected_api` identifier itself, and executes through
+the registered `zapier_action` tool. Read actions run automatically. Zapier
+write actions remain approval-gated and generate normal task receipts.
+
+Deterministic requests can use this explicit form:
+
+```text
+Zapier action: GitHub / Find Repository
+params: {"repo":"fathiya-core","owner":"fathiya-core"}
+```
+
+Inspect the local connection without exposing credentials:
+
+```powershell
+.\.venv\Scripts\fathiya-runtime zapier-status
+.\.venv\Scripts\fathiya-runtime zapier-actions --refresh
+.\.venv\Scripts\fathiya-runtime zapier-actions --app GitHub
+```
 
 ## Primary trading agent
 

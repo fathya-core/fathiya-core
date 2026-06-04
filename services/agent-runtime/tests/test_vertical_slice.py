@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 import sys
@@ -9,6 +10,7 @@ from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -24,6 +26,7 @@ from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
 from fathiya_runtime.tools import ToolExecutionError, ToolExecutor
 from fathiya_runtime.worker import AgentWorker, _deterministic_synthesis, _is_useful_synthesis
+from fathiya_runtime.zapier_mcp import StreamableHttpMCPClient, ZapierMCPGateway, ZapierTokenStore
 
 
 class AgentRuntimeVerticalSliceTests(unittest.TestCase):
@@ -42,6 +45,10 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
+        os.environ["FATHIYA_ZAPIER_MCP_TOKEN_PATH"] = str(
+            Path(self.temp.name) / "zapier_oauth.json"
+        )
+        os.environ.pop("FATHIYA_ZAPIER_MCP_ACCESS_TOKEN", None)
         os.environ.pop("OPENROUTER_API_KEY", None)
         self.config = RuntimeConfig.load()
         self.store = SQLiteTaskStore(self.db_path)
@@ -172,6 +179,216 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertNotIn("trading_start", tools)
         self.assertNotIn("command_profile", tools)
         self.assertNotIn("connector_profile", tools)
+        self.assertNotIn("zapier_action", tools)
+
+    def test_zapier_gateway_forwards_selected_api_for_exact_read_action(self) -> None:
+        class FakeZapierClient:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, dict]] = []
+
+            def list_tools(self) -> list[dict]:
+                return [
+                    {"name": "list_enabled_zapier_actions"},
+                    {
+                        "name": "execute_zapier_read_action",
+                        "description": "Execute a search or read action",
+                    },
+                    {
+                        "name": "execute_zapier_write_action",
+                        "description": "Execute a write or create action",
+                    },
+                ]
+
+            def call_tool(self, name: str, arguments: dict) -> dict:
+                self.calls.append((name, arguments))
+                if name == "list_enabled_zapier_actions" and not arguments:
+                    payload = {
+                        "apps": [
+                            {
+                                "app": "GitHub",
+                                "selected_api": "internal-github-api",
+                                "action_count": 2,
+                            }
+                        ]
+                    }
+                elif name == "list_enabled_zapier_actions":
+                    payload = [
+                        {
+                            "app": "GitHub",
+                            "actions": [
+                                {
+                                    "key": "repository_v2",
+                                    "name": "Find Repository",
+                                    "tool": "execute_zapier_read_action",
+                                    "tool_name": "github_find_repository",
+                                },
+                                {
+                                    "key": "issue",
+                                    "name": "Create Issue",
+                                    "tool": "execute_zapier_write_action",
+                                    "tool_name": "github_create_issue",
+                                },
+                            ],
+                        }
+                    ]
+                else:
+                    payload = {
+                        "repository": "fathya-core/fathiya-core",
+                        "selected_api": "internal-github-api",
+                        "access_token": "must-not-leak",
+                    }
+                return {"content": [{"type": "text", "text": json.dumps(payload)}]}
+
+        fake = FakeZapierClient()
+        gateway = ZapierMCPGateway(self.config, client_factory=lambda: fake)
+        gateway.token_store.environment_access_token = "test-access-token"
+
+        catalog = gateway.action_catalog("GitHub")
+        read_requirement = gateway.action_requirement("GitHub", "Find Repository")
+        result = gateway.execute_action(
+            "GitHub",
+            "Find Repository",
+            {"repo": "fathiya-core", "owner": "fathya-core"},
+            "Find the canonical repository",
+            "Return repository name",
+        )
+        write_requirement = gateway.action_requirement("GitHub", "Create Issue")
+
+        self.assertFalse(read_requirement["required"])
+        self.assertTrue(write_requirement["required"])
+        self.assertEqual(catalog["action_count"], 2)
+        self.assertNotIn("selected_api", str(catalog))
+        execution = fake.calls[-2]
+        self.assertEqual(execution[0], "execute_zapier_read_action")
+        self.assertEqual(execution[1]["selected_api"], "internal-github-api")
+        self.assertNotIn("selected_api", result)
+        self.assertNotIn("must-not-leak", str(result))
+        self.assertEqual(result["app"], "GitHub")
+        self.assertEqual(result["mode"], "read")
+
+    def test_streamable_mcp_client_initializes_and_reuses_session(self) -> None:
+        class FakeResponse:
+            def __init__(
+                self,
+                payload: dict | None,
+                *,
+                session_id: str = "",
+                status_code: int = 200,
+            ) -> None:
+                self.payload = payload
+                self.status_code = status_code
+                self.ok = status_code < 400
+                self.content = b"json" if payload is not None else b""
+                self.text = json.dumps(payload or {})
+                self.headers = {"Content-Type": "application/json"}
+                if session_id:
+                    self.headers["Mcp-Session-Id"] = session_id
+
+            def json(self) -> dict:
+                return self.payload or {}
+
+        class FakeSession:
+            def __init__(self) -> None:
+                self.calls: list[dict] = []
+                self.responses = [
+                    FakeResponse(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": 1,
+                            "result": {"protocolVersion": "2025-06-18"},
+                        },
+                        session_id="session-1",
+                    ),
+                    FakeResponse(None, status_code=202),
+                    FakeResponse(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": 2,
+                            "result": {"tools": [{"name": "proof_tool"}]},
+                        }
+                    ),
+                    FakeResponse(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": 3,
+                            "result": {"content": [{"type": "text", "text": "ok"}]},
+                        }
+                    ),
+                ]
+
+            def post(self, _url: str, **kwargs) -> FakeResponse:
+                self.calls.append(kwargs)
+                return self.responses.pop(0)
+
+        token_store = ZapierTokenStore(self.config.zapier_mcp_token_path, "test-token")
+        client = StreamableHttpMCPClient(self.config, token_store)
+        fake_session = FakeSession()
+        client.session = fake_session
+
+        tools = client.list_tools()
+        result = client.call_tool("proof_tool", {"value": 1})
+
+        self.assertEqual(tools[0]["name"], "proof_tool")
+        self.assertEqual(result["content"][0]["text"], "ok")
+        self.assertEqual(fake_session.calls[2]["headers"]["Mcp-Session-Id"], "session-1")
+        self.assertEqual(fake_session.calls[3]["json"]["params"]["name"], "proof_tool")
+
+    def test_zapier_oauth_flow_stores_token_without_exposing_it(self) -> None:
+        registration = Mock(
+            ok=True,
+            status_code=201,
+            json=lambda: {"client_id": "client-id"},
+        )
+        token = Mock(
+            ok=True,
+            status_code=200,
+            json=lambda: {
+                "access_token": "private-access-token",
+                "refresh_token": "private-refresh-token",
+                "expires_in": 3600,
+            },
+        )
+        gateway = ZapierMCPGateway(self.config)
+        with patch("fathiya_runtime.zapier_mcp.requests.post", side_effect=[registration, token]):
+            authorization_url = gateway.start_oauth(
+                "http://127.0.0.1:8765/api/agent/oauth/zapier/callback",
+                "http://127.0.0.1:5180/agent-tasks",
+            )
+            state = parse_qs(urlparse(authorization_url).query)["state"][0]
+            return_to = gateway.complete_oauth("authorization-code", state)
+
+        self.assertEqual(return_to, "http://127.0.0.1:5180/agent-tasks")
+        self.assertTrue(gateway.configured)
+        self.assertNotIn("private-access-token", authorization_url)
+        stored = json.loads(self.config.zapier_mcp_token_path.read_text(encoding="utf-8"))
+        self.assertEqual(stored["access_token"], "private-access-token")
+
+    def test_fallback_plan_selects_exact_zapier_action_request(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        next(item for item in catalog if item["name"] == "zapier_action")["configured"] = True
+        plan = build_plan(
+            {
+                "prompt": (
+                    'Zapier action: GitHub / Find Repository\n'
+                    'params: {"repo":"fathiya-core","owner":"fathya-core"}'
+                )
+            },
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+        action_step = next(step for step in plan if step.get("tool") == "zapier_action")
+
+        self.assertEqual(action_step["args"]["app"], "GitHub")
+        self.assertEqual(action_step["args"]["action"], "Find Repository")
+        self.assertEqual(action_step["args"]["params"]["repo"], "fathiya-core")
 
     def test_canceled_running_task_is_not_completed(self) -> None:
         task = self.store.enqueue("إلغاء", "نفذ اختبار داخلي آمن")
@@ -754,6 +971,42 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(gated["task"]["status"], "awaiting_approval")
         self.assertEqual(gated["task"]["risk_class"], "external")
         self.assertEqual(gated["events"][-1]["payload"]["gated_steps"][0]["tool"], "connector_profile")
+
+    def test_zapier_write_action_plan_waits_for_dynamic_approval(self) -> None:
+        task = self.store.enqueue("بوابة Zapier MCP", "نفذ مهمة داخلية")
+        worker = AgentWorker(self.config, self.store)
+        plan = [
+            {
+                "id": "retrieve",
+                "kind": "retrieval",
+                "tool": "knowledge_search",
+                "description": "retrieve",
+            },
+            {
+                "id": "execute-1",
+                "kind": "tool",
+                "tool": "zapier_action",
+                "description": "create issue",
+                "args": {
+                    "app": "GitHub",
+                    "action": "Create Issue",
+                    "params": {"title": "proof"},
+                },
+            },
+        ]
+        worker.tools.zapier.action_requirement = lambda *_args: {
+            "required": True,
+            "risk_class": "external",
+            "reason": "Zapier write action requires approval",
+        }
+
+        with patch("fathiya_runtime.worker.build_plan", return_value=plan):
+            worker.start(once=True)
+
+        gated = self.store.get_detail(task["id"])
+        self.assertEqual(gated["task"]["status"], "awaiting_approval")
+        self.assertEqual(gated["task"]["risk_class"], "external")
+        self.assertEqual(gated["events"][-1]["payload"]["gated_steps"][0]["tool"], "zapier_action")
 
     def test_openrouter_plan_uses_only_registered_tools(self) -> None:
         model = OpenRouterClient("configured-key", "test-model")

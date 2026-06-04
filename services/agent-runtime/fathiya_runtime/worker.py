@@ -492,6 +492,12 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
             "configured_count",
             "zapier_app_count",
             "zapier_action_count",
+            "app_count",
+            "action_count",
+            "app",
+            "action",
+            "action_key",
+            "mode",
         ):
             if key in result:
                 summary[key] = result[key]
@@ -573,6 +579,8 @@ def _required_synthesis_anchors(
         if tool in {"n8n_status", "n8n_workflows"}:
             required.append(("n8n",))
         elif tool == "connected_tool_inventory":
+            required.append(("zapier", "زابير"))
+        elif tool in {"zapier_action_catalog", "zapier_action"}:
             required.append(("zapier", "زابير"))
         elif tool == "connector_catalog":
             required.append(("connector", "موصل"))
@@ -656,8 +664,27 @@ def _deterministic_synthesis(
                 f"و{result.get('zapier_action_count', 0)} إجراءات."
             )
             zapier_status = result.get("zapier_mcp_status")
-            if isinstance(zapier_status, dict) and zapier_status.get("action_execution") == "degraded":
-                follow_up.append("تنفيذ إجراءات Zapier MCP يحتاج إصلاح تمرير selected_api.")
+            if (
+                isinstance(zapier_status, dict)
+                and zapier_status.get("action_execution") != "active"
+            ):
+                direct = result.get("direct_zapier_mcp")
+                if not isinstance(direct, dict) or not direct.get("connected"):
+                    follow_up.append("اربط بوابة Zapier MCP المحلية عبر OAuth لتفعيل التنفيذ المباشر.")
+        elif tool == "zapier_action_catalog":
+            if result.get("connected"):
+                evidence.append(
+                    f"بوابة Zapier MCP المباشرة متصلة وتعرض {result.get('app_count', 0)} تطبيقات "
+                    f"و{result.get('action_count', 0)} إجراءات."
+                )
+            else:
+                evidence.append("بوابة Zapier MCP المباشرة لم تُربط محليًا بعد.")
+                follow_up.append("استخدم زر ربط Zapier MCP المحلي عبر OAuth.")
+        elif tool == "zapier_action":
+            evidence.append(
+                f"تم تنفيذ إجراء Zapier {result.get('app', 'غير معروف')}/"
+                f"{result.get('action', 'غير معروف')} بوضع {result.get('mode', 'غير معروف')}."
+            )
         elif tool == "connector_catalog":
             evidence.append(
                 f"بوابة الموصلات تعرض {result.get('configured_count', 0)} موصلات جاهزة "

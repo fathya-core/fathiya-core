@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Cable,
   CheckCircle2,
+  ChevronDown,
   CircleAlert,
   Clock3,
   FileCheck2,
@@ -659,6 +660,21 @@ function AgentTasksPage() {
                               </div>
                               <IntegrationStatusBadge status={integration.status} />
                             </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className="border-border/60 text-[9px] font-normal text-muted-foreground"
+                              >
+                                {credentialPolicyLabel(integration)}
+                              </Badge>
+                              {integration.account_required && (
+                                <span className="text-[9px] text-muted-foreground">
+                                  {integration.status === "ready"
+                                    ? "الحساب مربوط"
+                                    : "الربط يتم خارج المحادثة"}
+                                </span>
+                              )}
+                            </div>
                             {integration.connected_apps.length > 0 && (
                               <p className="mt-2 line-clamp-2 text-[10px] text-sky-300">
                                 {integration.connected_apps.join(" · ")}
@@ -668,6 +684,19 @@ function AgentTasksPage() {
                               <p className="mt-2 break-words text-[10px] text-amber-300">
                                 {integration.next_step}
                               </p>
+                            )}
+                            {integration.action_path && integration.action_label && (
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 h-7 text-[10px]"
+                              >
+                                <a href={integrationActionHref(integration.action_path)}>
+                                  <KeyRound />
+                                  {integration.action_label}
+                                </a>
+                              </Button>
                             )}
                             {integration.missing_env.length > 0 && (
                               <p
@@ -939,13 +968,15 @@ function TaskDetail({
                       <Badge variant="outline">{receipt.status}</Badge>
                     </div>
                     <p className="whitespace-pre-wrap text-xs">{receipt.summary}</p>
-                    <JsonBlock value={receipt.evidence} />
+                    <ReceiptEvidenceSummary evidence={receipt.evidence} />
+                    <TechnicalDetails label="دليل الإيصال التقني" value={receipt.evidence} />
                   </div>
                 ))}
                 {task.result !== null && (
                   <div>
                     <p className="mb-2 text-xs font-semibold">النتيجة النهائية</p>
-                    <JsonBlock value={task.result} />
+                    <TaskResultSummary value={task.result} />
+                    <TechnicalDetails label="النتيجة التقنية الكاملة" value={task.result} />
                   </div>
                 )}
                 {receipts.length === 0 && task.result === null && (
@@ -1007,6 +1038,20 @@ function IntegrationStatusBadge({ status }: { status: AgentIntegrationStatus }) 
   return <Badge className={cn("shrink-0", tone[status])}>{labels[status]}</Badge>;
 }
 
+function credentialPolicyLabel(integration: AgentIntegrationReadiness) {
+  if (!integration.account_required) return "لا يحتاج حسابًا";
+  if (integration.credential_policy === "oauth_managed") return "OAuth آمن";
+  if (integration.credential_policy === "local_server_only") return "مفتاح محلي فقط";
+  return "لا توجد بيانات دخول";
+}
+
+function integrationActionHref(path: string) {
+  const returnTo =
+    typeof window === "undefined" ? "http://127.0.0.1:5180/agent-tasks" : window.location.href;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${localAgentRuntimeUrl}${path}${separator}return_to=${encodeURIComponent(returnTo)}`;
+}
+
 function CenteredState({
   icon: Icon,
   title,
@@ -1038,6 +1083,124 @@ function InfoField({ label, value }: { label: string; value: string }) {
       <div className="break-all text-[11px]">{value}</div>
     </div>
   );
+}
+
+function ReceiptEvidenceSummary({ evidence }: { evidence: unknown }) {
+  const record = asRecord(evidence);
+  if (!record) return null;
+
+  const tools = Array.isArray(record.tools)
+    ? record.tools.filter((tool): tool is string => typeof tool === "string")
+    : [];
+  const evaluation = asRecord(record.evaluation);
+  const evaluationSummary =
+    typeof evaluation?.summary === "string" ? evaluation.summary : "لم يُسجل ملخص تقييم.";
+  const sourceCount = typeof record.source_count === "number" ? record.source_count : 0;
+  const worker = typeof record.worker_id === "string" ? record.worker_id : "غير مسجل";
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-emerald-500/15 pt-3">
+      <div className="grid gap-2 text-[10px] sm:grid-cols-2">
+        <InfoField label="المشغّل" value={worker} />
+        <InfoField label="مصادر المعرفة" value={String(sourceCount)} />
+      </div>
+      {tools.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tools.map((tool) => (
+            <Badge key={tool} variant="outline" className="font-mono text-[9px] font-normal">
+              {tool}
+            </Badge>
+          ))}
+        </div>
+      )}
+      <p className="text-[10px] text-muted-foreground">{evaluationSummary}</p>
+    </div>
+  );
+}
+
+function TaskResultSummary({ value }: { value: unknown }) {
+  const result = asRecord(value);
+  if (!result) {
+    return <p className="text-xs text-muted-foreground">النتيجة غير قابلة للعرض المختصر.</p>;
+  }
+
+  const synthesis = typeof result.synthesis === "string" ? result.synthesis : null;
+  const evaluation = asRecord(result.evaluation);
+  const evaluationPassed = typeof evaluation?.passed === "boolean" ? evaluation.passed : null;
+  const evaluationSummary = typeof evaluation?.summary === "string" ? evaluation.summary : null;
+  const sourceCount = Array.isArray(result.sources) ? result.sources.length : 0;
+  const toolRows = Array.isArray(result.tool_results)
+    ? result.tool_results.flatMap((item) => {
+        const row = asRecord(item);
+        const toolResult = asRecord(row?.result);
+        const tool = typeof toolResult?.tool === "string" ? toolResult.tool : null;
+        if (!tool) return [];
+        return [
+          {
+            tool,
+            description:
+              typeof row?.description === "string" ? row.description : "اكتمل تنفيذ الأداة.",
+          },
+        ];
+      })
+    : [];
+
+  return (
+    <div className="space-y-3">
+      {synthesis && <p className="whitespace-pre-wrap break-words text-xs">{synthesis}</p>}
+      {(evaluationSummary || sourceCount > 0) && (
+        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+          {evaluationPassed !== null && (
+            <Badge
+              className={cn(
+                "font-normal",
+                evaluationPassed
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  : "border-red-500/30 bg-red-500/10 text-red-400",
+              )}
+            >
+              {evaluationPassed ? "اجتاز التقييم" : "لم يجتز التقييم"}
+            </Badge>
+          )}
+          {sourceCount > 0 && <span>{sourceCount} مصادر معرفة</span>}
+          {evaluationSummary && <span className="break-words">{evaluationSummary}</span>}
+        </div>
+      )}
+      {toolRows.length > 0 && (
+        <div className="divide-y divide-border/50 border-y border-border/50">
+          {toolRows.map((row, index) => (
+            <div key={`${row.tool}-${index}`} className="flex items-start gap-3 py-2">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <div className="min-w-0">
+                <p className="break-all font-mono text-[10px] text-foreground">{row.tool}</p>
+                <p className="mt-0.5 break-words text-[10px] text-muted-foreground">
+                  {row.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TechnicalDetails({ label, value }: { label: string; value: unknown }) {
+  return (
+    <details className="group mt-3">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground">
+        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+        {label}
+      </summary>
+      <JsonBlock value={value} />
+    </details>
+  );
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function JsonBlock({ value }: { value: unknown }) {
