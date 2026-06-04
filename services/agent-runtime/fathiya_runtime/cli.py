@@ -4,6 +4,7 @@ import argparse
 import json
 import secrets
 import sys
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -11,6 +12,7 @@ from .config import RuntimeConfig
 from .local_api import serve_local_control_plane
 from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore, now_iso
 from .tools import ToolExecutor
+from .trading import PaperTradingAgent
 from .worker import AgentWorker
 
 
@@ -55,6 +57,10 @@ def main() -> None:
     sub.add_parser("tools")
     bridge_init = sub.add_parser("bridge-init")
     bridge_init.add_argument("--rotate", action="store_true")
+    sub.add_parser("trading-status")
+    sub.add_parser("trading-tick")
+    trading_proof = sub.add_parser("trading-proof")
+    trading_proof.add_argument("--cycles", type=int, default=5)
 
     args = parser.parse_args()
     config = RuntimeConfig.load()
@@ -146,6 +152,40 @@ def main() -> None:
                     "endpoint": "http://127.0.0.1:8765/api/agent/connector-dispatch",
                     "token_printed": False,
                     "restart_required": True,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "trading-status":
+        print(
+            json.dumps(
+                PaperTradingAgent.from_config(config).status(),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "trading-tick":
+        print(
+            json.dumps(
+                PaperTradingAgent.from_config(config).tick_once(),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "trading-proof":
+        trading = PaperTradingAgent.from_config(config)
+        cycles = max(1, min(120, args.cycles))
+        results: list[dict[str, Any]] = []
+        for index in range(cycles):
+            results.append(trading.run_cycle())
+            if index < cycles - 1:
+                time.sleep(config.trading_tick_seconds)
+        print(
+            json.dumps(
+                {
+                    "cycles": results,
+                    "status": trading.status(),
                 },
                 ensure_ascii=False,
                 indent=2,

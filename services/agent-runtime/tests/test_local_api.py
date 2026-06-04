@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -21,6 +22,11 @@ class LocalAgentApiTests(unittest.TestCase):
         self.db_path = Path(self.temp.name) / "runtime.db"
         os.environ["FATHIYA_STORE"] = "sqlite"
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
+        os.environ["FATHIYA_TRADING_SQLITE_PATH"] = str(
+            Path(self.temp.name) / "trading.db"
+        )
+        os.environ["FATHIYA_TRADING_TICK_SECONDS"] = "0.05"
+        os.environ["FATHIYA_TRADING_MODE"] = "paper"
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
@@ -50,6 +56,8 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(health.status_code, 200)
         self.assertEqual(health.json()["mode"], "local_sqlite")
         self.assertFalse(health.json()["worker_online"])
+        self.assertEqual(health.json()["trading"]["mode"], "paper")
+        self.assertEqual(health.json()["trading"]["cycle_target_seconds"], 0.05)
         self.assertEqual(
             health.headers["Access-Control-Allow-Origin"],
             "http://127.0.0.1:5173",
@@ -128,6 +136,48 @@ class LocalAgentApiTests(unittest.TestCase):
             timeout=5,
         ).json()["task"]
         self.assertEqual(canceled["status"], "canceled")
+
+        trading_status = requests.get(
+            f"{self.base_url}/api/agent/trading/status",
+            headers=self.headers,
+            timeout=5,
+        ).json()["trading"]
+        self.assertFalse(trading_status["running"])
+        self.assertFalse(trading_status["live_execution_enabled"])
+
+        paper_cycle = requests.post(
+            f"{self.base_url}/api/agent/trading/tick",
+            headers=self.headers,
+            timeout=5,
+        ).json()["cycle"]
+        self.assertTrue(paper_cycle["receipt_id"].startswith("TR-"))
+        self.assertEqual(paper_cycle["mode"], "paper")
+
+        started_trading = requests.post(
+            f"{self.base_url}/api/agent/trading/start",
+            headers=self.headers,
+            timeout=5,
+        ).json()["trading"]
+        self.assertTrue(started_trading["running"])
+        tick_while_running = requests.post(
+            f"{self.base_url}/api/agent/trading/tick",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(tick_while_running.status_code, 409)
+        time.sleep(0.12)
+        stopped_trading = requests.post(
+            f"{self.base_url}/api/agent/trading/stop",
+            headers=self.headers,
+            timeout=5,
+        ).json()["trading"]
+        self.assertFalse(stopped_trading["running"])
+        trading_receipts = requests.get(
+            f"{self.base_url}/api/agent/trading/receipts",
+            headers=self.headers,
+            timeout=5,
+        ).json()["receipts"]
+        self.assertGreaterEqual(len(trading_receipts), 2)
 
         dispatch_body = {
             "task_id": task["id"],

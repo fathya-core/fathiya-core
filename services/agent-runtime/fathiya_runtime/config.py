@@ -37,6 +37,20 @@ class RuntimeConfig:
     n8n_api_key: str
     n8n_webhook_url: str
     kali_wsl_distro: str
+    trading_sqlite_path: Path
+    trading_mode: str
+    trading_symbol: str
+    trading_tick_seconds: float
+    trading_initial_cash: float
+    trading_max_order_notional: float
+    trading_max_position_notional: float
+    trading_daily_loss_limit: float
+    trading_min_order_notional: float
+    trading_fee_bps: float
+    trading_slippage_bps: float
+    trading_signal_window: int
+    trading_signal_threshold: float
+    trading_max_receipts: int
 
     @classmethod
     def load(cls) -> "RuntimeConfig":
@@ -122,4 +136,60 @@ class RuntimeConfig:
             n8n_api_key=os.getenv("N8N_API_KEY", ""),
             n8n_webhook_url=os.getenv("FATHIYA_N8N_WEBHOOK_URL", ""),
             kali_wsl_distro=os.getenv("KALI_WSL_DISTRO", "kali-linux"),
+            trading_sqlite_path=resolve_path(
+                "FATHIYA_TRADING_SQLITE_PATH",
+                "runtime/fathiya_trading.db",
+            ),
+            trading_mode=os.getenv("FATHIYA_TRADING_MODE", "paper").strip().lower(),
+            trading_symbol=os.getenv("FATHIYA_TRADING_SYMBOL", "SIM-USD").strip().upper(),
+            trading_tick_seconds=max(
+                0.05,
+                min(60.0, float(os.getenv("FATHIYA_TRADING_TICK_SECONDS", "1"))),
+            ),
+            trading_initial_cash=max(
+                100.0,
+                float(os.getenv("FATHIYA_TRADING_INITIAL_CASH", "10000")),
+            ),
+            trading_max_order_notional=max(
+                1.0,
+                float(os.getenv("FATHIYA_TRADING_MAX_ORDER_NOTIONAL", "100")),
+            ),
+            trading_max_position_notional=max(
+                1.0,
+                float(os.getenv("FATHIYA_TRADING_MAX_POSITION_NOTIONAL", "500")),
+            ),
+            trading_daily_loss_limit=max(
+                1.0,
+                float(os.getenv("FATHIYA_TRADING_DAILY_LOSS_LIMIT", "100")),
+            ),
+            trading_min_order_notional=max(
+                1.0,
+                float(os.getenv("FATHIYA_TRADING_MIN_ORDER_NOTIONAL", "10")),
+            ),
+            trading_fee_bps=max(
+                0.0,
+                float(os.getenv("FATHIYA_TRADING_FEE_BPS", "1")),
+            ),
+            trading_slippage_bps=max(
+                0.0,
+                float(os.getenv("FATHIYA_TRADING_SLIPPAGE_BPS", "2")),
+            ),
+            trading_signal_window=max(
+                2,
+                min(120, int(os.getenv("FATHIYA_TRADING_SIGNAL_WINDOW", "4"))),
+            ),
+            trading_signal_threshold=max(
+                0.000001,
+                min(
+                    1.0,
+                    float(os.getenv("FATHIYA_TRADING_SIGNAL_THRESHOLD", "0.001")),
+                ),
+            ),
+            trading_max_receipts=max(
+                1_000,
+                min(
+                    5_000_000,
+                    int(os.getenv("FATHIYA_TRADING_MAX_RECEIPTS", "100000")),
+                ),
+            ),
         )

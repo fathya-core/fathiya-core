@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Square,
+  TrendingUp,
   XCircle,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,6 +38,7 @@ import type {
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
+  AgentTradingStatus,
   CreateAgentTaskBody,
 } from "@/lib/agent/contracts";
 import { cn } from "@/lib/utils";
@@ -74,12 +76,14 @@ function AgentTasksPage() {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [connectors, setConnectors] = useState<AgentConnectorProfile[]>([]);
   const [connectorBridge, setConnectorBridge] = useState<AgentConnectorBridge | null>(null);
+  const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
+  const [tradingActing, setTradingActing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -152,6 +156,19 @@ function AgentTasksPage() {
     }
   }, [localMode]);
 
+  const loadTrading = useCallback(async () => {
+    if (!localMode) return;
+    try {
+      const data = await agentApi<{ trading: AgentTradingStatus }>(
+        null,
+        "/api/agent/trading/status",
+      );
+      setTrading(data.trading);
+    } catch (loadError) {
+      setError(String(loadError));
+    }
+  }, [localMode]);
+
   useEffect(() => {
     if (!hasAccess) return;
     void loadTasks();
@@ -165,6 +182,13 @@ function AgentTasksPage() {
     const timer = window.setInterval(() => void loadConnectors(), 15_000);
     return () => window.clearInterval(timer);
   }, [loadConnectors, localMode]);
+
+  useEffect(() => {
+    if (!localMode) return;
+    void loadTrading();
+    const timer = window.setInterval(() => void loadTrading(), 1000);
+    return () => window.clearInterval(timer);
+  }, [loadTrading, localMode]);
 
   useEffect(() => {
     if (!hasAccess || !selectedId) return;
@@ -208,6 +232,20 @@ function AgentTasksPage() {
       setError(String(actionError));
     } finally {
       setActing(false);
+    }
+  }
+
+  async function tradingAction(action: "start" | "stop" | "tick") {
+    if (!localMode) return;
+    setTradingActing(true);
+    setError("");
+    try {
+      await agentApi(null, `/api/agent/trading/${action}`, { method: "POST" });
+      await loadTrading();
+    } catch (actionError) {
+      setError(String(actionError));
+    } finally {
+      setTradingActing(false);
     }
   }
 
@@ -353,6 +391,96 @@ function AgentTasksPage() {
                   </form>
                 </CardContent>
               </Card>
+
+              {localMode && trading && (
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <TrendingUp className="h-4 w-4" />
+                          وكيل التداول الأساسي
+                        </CardTitle>
+                        <CardDescription className="mt-1 break-words">
+                          {trading.symbol} · نبضة كل {trading.cycle_target_seconds} ثانية ·{" "}
+                          {trading.signal_model}
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        className={cn(
+                          "shrink-0",
+                          trading.running
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-border bg-muted/30 text-muted-foreground",
+                        )}
+                      >
+                        {trading.running ? "يعمل" : "متوقف"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <InfoField
+                        label="الوضع"
+                        value={trading.mode === "paper" ? "Paper فقط" : trading.mode}
+                      />
+                      <InfoField label="الدورات" value={String(trading.cycle_count)} />
+                      <InfoField label="الرصيد" value={formatNumber(trading.portfolio.equity)} />
+                      <InfoField label="صافي PnL" value={formatNumber(trading.portfolio.net_pnl)} />
+                    </div>
+                    <div className="rounded-md border border-border/50 bg-muted/20 p-3 text-[10px]">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="font-semibold">آخر قرار</span>
+                        <span className="font-mono text-muted-foreground">
+                          {trading.latest_cycle
+                            ? `${trading.latest_cycle.latency_ms.toFixed(2)} ms`
+                            : "--"}
+                        </span>
+                      </div>
+                      <p className="break-words text-muted-foreground">
+                        {trading.latest_cycle
+                          ? `${trading.latest_cycle.prediction.action} · ${trading.latest_cycle.risk.reason}`
+                          : "لم تبدأ دورة التنبؤ بعد."}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        size="sm"
+                        onClick={() => void tradingAction(trading.running ? "stop" : "start")}
+                        disabled={tradingActing}
+                      >
+                        {tradingActing ? (
+                          <Loader2 className="animate-spin" />
+                        ) : trading.running ? (
+                          <Square />
+                        ) : (
+                          <Play />
+                        )}
+                        {trading.running ? "إيقاف" : "تشغيل"}
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => void tradingAction("tick")}
+                            disabled={tradingActing || trading.running}
+                          >
+                            <RefreshCw />
+                            <span className="sr-only">تنفيذ نبضة تداول paper</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>تنفيذ نبضة paper واحدة</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="text-[10px] text-amber-300">
+                      بيانات السوق محاكاة، والتداول الحقيقي غير مفعّل حتى ربط حساب وسيط بمفتاح تداول
+                      بلا سحب.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {localMode && (
                 <Card className="border-border/60 bg-card/50">
@@ -703,4 +831,11 @@ function riskLabel(value: AgentTask["risk_class"]) {
     external: "إجراء خارجي",
   };
   return labels[value];
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("ar-SA", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value);
 }

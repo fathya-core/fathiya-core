@@ -100,3 +100,73 @@ export type AgentConnectorBridge = {
   ready_profile_count: number;
   allowed_profiles: string[];
 };
+
+export type AgentTradingCycle = {
+  receipt_id: string;
+  status: "observed" | "executed";
+  mode: "paper";
+  tick: {
+    symbol: string;
+    price: number;
+    observed_at: string;
+    source: string;
+    sequence: number;
+  };
+  prediction: {
+    action: "buy" | "sell" | "hold";
+    score: number;
+    confidence: number;
+    horizon_seconds: number;
+    model: string;
+    reason: string;
+  };
+  risk: {
+    allowed: boolean;
+    action: "buy" | "sell" | "hold";
+    order_notional: number;
+    reason: string;
+  };
+  fill: Json | null;
+  portfolio: {
+    initial_cash: number;
+    cash: number;
+    quantity: number;
+    average_price: number;
+    mark_price: number;
+    position_notional: number;
+    unrealized_pnl: number;
+    realized_pnl: number;
+    fees_paid: number;
+    equity: number;
+    net_pnl: number;
+    daily_pnl: number;
+  };
+  latency_ms: number;
+  created_at: string;
+};
+
+export type AgentTradingStatus = {
+  agent: string;
+  running: boolean;
+  mode: "paper";
+  requested_mode: string;
+  live_execution_enabled: boolean;
+  live_execution_block_reason: string;
+  symbol: string;
+  cycle_target_seconds: number;
+  market_provider: string;
+  signal_model: string;
+  cycle_count: number;
+  last_error: string | null;
+  latest_receipt_id: string | null;
+  latest_cycle: AgentTradingCycle | null;
+  portfolio: AgentTradingCycle["portfolio"];
+  risk_limits: {
+    max_order_notional: number;
+    max_position_notional: number;
+    daily_loss_limit: number;
+    min_order_notional: number;
+    max_tick_age_seconds: number;
+    long_only: boolean;
+  };
+};

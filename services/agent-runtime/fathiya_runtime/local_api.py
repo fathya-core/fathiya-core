@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from .config import RuntimeConfig
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
+from .trading import PaperTradingAgent
 from .worker import AgentWorker
 
 
@@ -22,6 +23,10 @@ TASK_PATH = re.compile(
     re.IGNORECASE,
 )
 CONNECTOR_DISPATCH_PATH = "/api/agent/connector-dispatch"
+TRADING_PATH = re.compile(
+    r"^/api/agent/trading(?:/(?P<action>status|receipts|start|stop|tick))?$",
+    re.IGNORECASE,
+)
 
 
 class LocalAgentHTTPServer(ThreadingHTTPServer):
@@ -40,7 +45,12 @@ class LocalAgentHTTPServer(ThreadingHTTPServer):
         self.config = config
         self.store = store
         self.tools = ToolExecutor(config)
+        self.trading = PaperTradingAgent.from_config(config)
         self.worker_thread: threading.Thread | None = None
+
+    def server_close(self) -> None:
+        self.trading.stop()
+        super().server_close()
 
 
 class LocalAgentRequestHandler(BaseHTTPRequestHandler):
@@ -57,6 +67,7 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/healthz":
+            trading = self.server.trading.status()
             return self._send_json(
                 {
                     "status": "ok",
@@ -66,8 +77,23 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                         self.server.worker_thread and self.server.worker_thread.is_alive()
                     ),
                     "api": f"http://{self.server.server_address[0]}:{self.server.server_address[1]}",
+                    "trading": {
+                        "running": trading["running"],
+                        "mode": trading["mode"],
+                        "symbol": trading["symbol"],
+                        "cycle_target_seconds": trading["cycle_target_seconds"],
+                        "latest_receipt_id": trading["latest_receipt_id"],
+                    },
                 }
             )
+        trading_match = TRADING_PATH.fullmatch(path)
+        if trading_match:
+            action = trading_match.group("action") or "status"
+            if action == "receipts":
+                return self._send_json({"receipts": self.server.trading.recent(50)})
+            if action == "status":
+                return self._send_json({"trading": self.server.trading.status()})
+            return self._send_error(HTTPStatus.METHOD_NOT_ALLOWED, "Use POST for this route")
         if path == "/api/agent/tools":
             return self._send_json({"tools": self.server.tools.catalog()})
         if path == "/api/agent/connectors":
@@ -115,6 +141,22 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         if not self._origin_allowed():
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
         path = urlparse(self.path).path.rstrip("/") or "/"
+        trading_match = TRADING_PATH.fullmatch(path)
+        if trading_match and trading_match.group("action") in {"start", "stop", "tick"}:
+            try:
+                action = trading_match.group("action")
+                if action == "start":
+                    return self._send_json({"trading": self.server.trading.start()})
+                if action == "stop":
+                    return self._send_json({"trading": self.server.trading.stop()})
+                return self._send_json({"cycle": self.server.trading.tick_once()})
+            except RuntimeError as exc:
+                return self._send_error(HTTPStatus.CONFLICT, str(exc))
+            except Exception as exc:
+                return self._send_error(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    f"Trading agent error: {type(exc).__name__}",
+                )
         if path == CONNECTOR_DISPATCH_PATH:
             return self._dispatch_connector()
         if path == "/api/agent/tasks":

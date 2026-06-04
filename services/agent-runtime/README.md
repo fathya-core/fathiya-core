@@ -113,3 +113,33 @@ The connected-tool registry is refreshed from the live Zapier MCP inventory and
 records agent providers such as Manus, Cursor, Zapier Agents, GitHub, and
 Netlify. Read-only inventory is automatic; connected-app writes remain approval
 gated.
+
+## Primary trading agent
+
+The first executable specialist agent is a local paper-trading loop. Its market
+observation, prediction, risk check, optional paper fill, portfolio snapshot,
+latency, and receipt are recorded every cycle. The default target is one cycle
+per second:
+
+```powershell
+.\.venv\Scripts\fathiya-runtime trading-status
+.\.venv\Scripts\fathiya-runtime trading-tick
+.\.venv\Scripts\fathiya-runtime trading-proof --cycles 5
+```
+
+The local control plane also exposes:
+
+- `GET /api/agent/trading/status`
+- `GET /api/agent/trading/receipts`
+- `POST /api/agent/trading/start`
+- `POST /api/agent/trading/stop`
+- `POST /api/agent/trading/tick`
+
+This version is deliberately paper-only and long-only. It uses a deterministic
+second-level market feed until a broker market-data connector is selected. Live
+orders are not implemented, and setting `FATHIYA_TRADING_MODE` to anything
+other than `paper` blocks the loop. A future live connector must use a
+trade-only account without withdrawal permission and an explicit financial
+approval policy. The paper ledger keeps the newest
+`FATHIYA_TRADING_MAX_RECEIPTS` cycles and prunes older cycles in bounded
+batches.
