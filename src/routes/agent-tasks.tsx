@@ -251,11 +251,11 @@ function AgentTasksPage() {
       <div dir="rtl" lang="ar" className="min-h-screen bg-background text-foreground">
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10">
                 <ListChecks className="h-5 w-5 text-emerald-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-sm font-bold">مهام وكلاء فتحية</h1>
                   {localMode && (
@@ -264,7 +264,7 @@ function AgentTasksPage() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="break-all text-[11px] text-muted-foreground">
                   {localMode ? `${localAgentRuntimeUrl} · ` : ""}
                   {activeCount} نشطة من {tasks.length} مهمة
                   {localMode && ` · ${configuredConnectorCount}/${connectors.length} موصلات جاهزة`}
@@ -304,7 +304,7 @@ function AgentTasksPage() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+        <main className="mx-auto min-w-0 max-w-7xl px-4 py-5 sm:px-6">
           {error && (
             <Alert variant="destructive" className="mb-4">
               <CircleAlert />
@@ -313,8 +313,8 @@ function AgentTasksPage() {
             </Alert>
           )}
 
-          <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
-            <div className="space-y-4">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-4">
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
                   <CardTitle className="text-sm">مهمة جديدة</CardTitle>
@@ -491,7 +491,7 @@ function TaskDetail({
   const canCancel = ACTIVE_STATUSES.has(task.status);
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <Card className="border-border/60 bg-card/50">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -501,7 +501,9 @@ function TaskDetail({
                 <Badge variant="outline">{riskLabel(task.risk_class)}</Badge>
               </div>
               <CardTitle className="break-words text-base">{task.title}</CardTitle>
-              <CardDescription className="mt-2 whitespace-pre-wrap">{task.prompt}</CardDescription>
+              <CardDescription className="mt-2 whitespace-pre-wrap break-words">
+                {task.prompt}
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {task.status === "awaiting_approval" && (
@@ -597,8 +599,8 @@ function TaskDetail({
                     key={receipt.id}
                     className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3"
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="font-mono text-[11px] text-emerald-400">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <span className="break-all font-mono text-[11px] text-emerald-400">
                         {receipt.receipt_id}
                       </span>
                       <Badge variant="outline">{receipt.status}</Badge>
@@ -677,7 +679,7 @@ function JsonBlock({ value }: { value: unknown }) {
   return (
     <pre
       dir="ltr"
-      className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/50 bg-background/50 p-3 text-left font-mono text-[10px]"
+      className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md border border-border/50 bg-background/50 p-3 text-left font-mono text-[10px]"
     >
       {JSON.stringify(value, null, 2)}
     </pre>
