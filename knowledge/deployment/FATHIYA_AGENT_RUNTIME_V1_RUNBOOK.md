@@ -6,6 +6,11 @@ This runbook connects the authenticated FATHIYA site to the local agent worker
 through Supabase. The browser never receives OpenRouter, Supabase service-role,
 or local tool credentials.
 
+The canonical TanStack server routes and the Netlify `agent-tasks` function
+expose the same `/api/agent/tasks` contract. The Netlify bridge is required by
+the current production deployment because it publishes `dist/client` as a
+static site.
+
 ## Deployment Order
 
 1. Apply `supabase/migrations/20260604120000_agent_runtime_v1.sql` to project
@@ -52,6 +57,7 @@ trading, live security testing, deletion, and external publication.
 
 ```powershell
 npm run build
+node netlify/tests/agent-tasks.test.mjs
 cd services/agent-runtime
 .\.venv\Scripts\python -m unittest discover -s tests -v
 ```

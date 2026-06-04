@@ -29,3 +29,15 @@ from = "/api/learning/status"
 to = "/.netlify/functions/learning-status"
 status = 200
 force = true
+
+[[redirects]]
+from = "/api/agent/tasks"
+to = "/.netlify/functions/agent-tasks"
+status = 200
+force = true
+
+[[redirects]]
+from = "/api/agent/tasks/*"
+to = "/.netlify/functions/agent-tasks?path=:splat"
+status = 200
+force = true
