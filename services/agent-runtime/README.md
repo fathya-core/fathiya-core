@@ -96,6 +96,15 @@ account. It reports only status, missing environment variable names, connected
 OAuth app names, and the next safe operator action. It never returns passwords,
 API-key values, webhook URLs, or broker credentials.
 
+`GET /api/agent/settings` returns only allowlisted field metadata and whether
+each field is configured. The local integrations panel can write OpenRouter,
+Supabase, n8n, and Binance Spot Testnet credentials through
+`POST /api/agent/settings/:group` only when the browser page itself is served
+from a loopback origin. Values are stored under ignored local runtime data,
+never returned by the API, and applied to the running agent tools when a full
+service restart is not required. Testnet credentials never enable real trading
+or Testnet order submission by themselves.
+
 Tasks involving money, real trading, live security testing, deletion, or
 external publication remain in `awaiting_approval`. The worker only claims
 `queued` tasks.
@@ -153,6 +162,10 @@ command profiles from `config/command_profiles.json`.
 
 The local control plane also exposes `GET /api/agent/capabilities` for the same
 live, receipt-safe capability probe used by the integrations panel.
+
+The primary paper-trading agent starts automatically with the local control
+plane when `FATHIYA_TRADING_AUTOSTART=true` and continues independently at the
+configured cadence.
 
 Version-controlled connector profiles in `config/connector_profiles.json`
 provide a single execution contract for n8n, Zapier, Cursor, Manus, and future

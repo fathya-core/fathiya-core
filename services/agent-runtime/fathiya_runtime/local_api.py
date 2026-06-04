@@ -14,6 +14,7 @@ from .config import RuntimeConfig
 from .integrations import build_integration_readiness
 from .knowledge_watcher import KnowledgeIntakeWatcher
 from .knowledge_mission import operator_request
+from .local_settings import LocalSettingsStore
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
 from .trading import PaperTradingAgent
@@ -32,6 +33,10 @@ TRADING_PATH = re.compile(
 )
 INTAKE_PATH = re.compile(
     r"^/api/agent/intake(?:/(?P<action>status|scan|start|stop))?$",
+    re.IGNORECASE,
+)
+SETTINGS_PATH = re.compile(
+    r"^/api/agent/settings(?:/(?P<group>[a-z0-9_-]+))?$",
     re.IGNORECASE,
 )
 
@@ -54,7 +59,19 @@ class LocalAgentHTTPServer(ThreadingHTTPServer):
         self.trading = PaperTradingAgent.from_config(config)
         self.tools = ToolExecutor(config, trading_agent=self.trading)
         self.intake = KnowledgeIntakeWatcher(config, store)
+        self.settings = LocalSettingsStore(config.local_settings_path)
+        self.worker: AgentWorker | None = None
         self.worker_thread: threading.Thread | None = None
+
+    def reload_runtime_config(self) -> RuntimeConfig:
+        config = RuntimeConfig.load()
+        tools = ToolExecutor(config, trading_agent=self.trading)
+        tools.zapier.oauth.pending = self.tools.zapier.oauth.pending
+        if self.worker:
+            self.worker.reload_config(config, tools)
+        self.config = config
+        self.tools = tools
+        return config
 
     def server_close(self) -> None:
         self.intake.stop()
@@ -141,11 +158,25 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     "knowledge_intake": self.server.intake.status(),
                     "trading": {
                         "running": trading["running"],
+                        "autostart": self.server.config.trading_autostart,
                         "mode": trading["mode"],
                         "symbol": trading["symbol"],
                         "cycle_target_seconds": trading["cycle_target_seconds"],
                         "latest_receipt_id": trading["latest_receipt_id"],
                     },
+                }
+            )
+        settings_match = SETTINGS_PATH.fullmatch(path)
+        if settings_match:
+            if settings_match.group("group"):
+                return self._send_error(
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    "Use POST to update a local settings group",
+                )
+            return self._send_json(
+                {
+                    **self.server.settings.status(),
+                    "write_allowed": self._local_settings_write_allowed(),
                 }
             )
         intake_match = INTAKE_PATH.fullmatch(path)
@@ -236,6 +267,36 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         if not self._origin_allowed():
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
         path = urlparse(self.path).path.rstrip("/") or "/"
+        settings_match = SETTINGS_PATH.fullmatch(path)
+        if settings_match and settings_match.group("group"):
+            if not self._local_settings_write_allowed():
+                return self._send_error(
+                    HTTPStatus.FORBIDDEN,
+                    "Local settings can only be changed from a loopback operator page",
+                )
+            try:
+                body = self._json_body()
+                result = self.server.settings.update_group(
+                    settings_match.group("group"),
+                    body.get("values", {}),
+                    body.get("clear", []),
+                )
+                config = self.server.reload_runtime_config()
+            except ValueError as exc:
+                return self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
+            except Exception as exc:
+                return self._send_error(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    f"Local settings update failed: {type(exc).__name__}",
+                )
+            return self._send_json(
+                {
+                    **result,
+                    "applied": True,
+                    "active_store": config.store,
+                    "write_allowed": True,
+                }
+            )
         intake_match = INTAKE_PATH.fullmatch(path)
         if intake_match and intake_match.group("action") in {"scan", "start", "stop"}:
             action = intake_match.group("action")
@@ -528,6 +589,10 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         return not origin or _operator_origin_allowed(origin, self.server.config)
 
+    def _local_settings_write_allowed(self) -> bool:
+        origin = self.headers.get("Origin")
+        return not origin or bool(LOCAL_ORIGIN.fullmatch(origin.rstrip("/")))
+
     def _json_body(self) -> dict[str, Any]:
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -574,7 +639,10 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Vary", "Origin")
         self.end_headers()
         if body:
-            self.wfile.write(body)
+            try:
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+                pass
 
     def _send_redirect(self, location: str) -> None:
         body = b""
@@ -664,6 +732,7 @@ def serve_local_control_plane(
 ) -> None:
     server = create_local_server(config, store, host=host, port=port)
     worker = AgentWorker(config, store, tools=server.tools)
+    server.worker = worker
     worker_thread = threading.Thread(
         target=worker.start,
         kwargs={"poll_seconds": poll_seconds},
@@ -673,6 +742,8 @@ def serve_local_control_plane(
     server.worker_thread = worker_thread
     worker_thread.start()
     server.intake.start()
+    if config.trading_autostart:
+        server.trading.start()
     print(
         json.dumps(
             {

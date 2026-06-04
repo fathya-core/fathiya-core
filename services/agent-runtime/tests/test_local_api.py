@@ -22,6 +22,9 @@ class LocalAgentApiTests(unittest.TestCase):
         self.db_path = Path(self.temp.name) / "runtime.db"
         os.environ["FATHIYA_STORE"] = "sqlite"
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
+        os.environ["FATHIYA_LOCAL_SETTINGS_PATH"] = str(
+            Path(self.temp.name) / "operator-settings.json"
+        )
         os.environ["FATHIYA_KNOWLEDGE_ROOT"] = str(Path(self.temp.name) / "knowledge")
         os.environ["FATHIYA_KNOWLEDGE_WATCH_ENABLED"] = "true"
         os.environ["FATHIYA_KNOWLEDGE_WATCH_ROOT"] = str(Path(self.temp.name) / "inbox")
@@ -62,6 +65,7 @@ class LocalAgentApiTests(unittest.TestCase):
             os.environ.pop("FATHIYA_CONNECTOR_DISPATCH_TOKEN", None)
         else:
             os.environ["FATHIYA_CONNECTOR_DISPATCH_TOKEN"] = self.previous_dispatch_token
+        os.environ.pop("OPENROUTER_API_KEY", None)
 
     def test_local_api_vertical_slice_and_approval_controls(self) -> None:
         health = requests.get(f"{self.base_url}/healthz", headers=self.headers, timeout=5)
@@ -74,6 +78,7 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertTrue(health.json()["knowledge_intake"]["enabled"])
         self.assertFalse(health.json()["knowledge_intake"]["running"])
         self.assertEqual(health.json()["trading"]["mode"], "paper")
+        self.assertTrue(health.json()["trading"]["autostart"])
         self.assertEqual(health.json()["trading"]["cycle_target_seconds"], 0.05)
         self.assertEqual(
             health.headers["Access-Control-Allow-Origin"],
@@ -154,6 +159,50 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertFalse(
             integration_by_id["broker_testnet"]["details"]["live_execution_enabled"]
         )
+        settings_response = requests.get(
+            f"{self.base_url}/api/agent/settings",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(settings_response.status_code, 200)
+        self.assertTrue(settings_response.json()["write_allowed"])
+        self.assertFalse(settings_response.json()["security"]["values_returned"])
+        self.assertNotIn("local-api-test-bridge-token", settings_response.text)
+
+        remote_settings_write = requests.post(
+            f"{self.base_url}/api/agent/settings/openrouter",
+            headers={"Origin": "https://fathya-core.com"},
+            json={"values": {"OPENROUTER_API_KEY": "remote-must-not-write"}, "clear": []},
+            timeout=5,
+        )
+        self.assertEqual(remote_settings_write.status_code, 403)
+        self.server.worker = AgentWorker(self.config, self.store, tools=self.server.tools)
+        self.server.tools.zapier.oauth.pending["pending-test-state"] = {
+            "expires_at": time.time() + 60
+        }
+        local_settings_write = requests.post(
+            f"{self.base_url}/api/agent/settings/openrouter",
+            headers=self.headers,
+            json={"values": {"OPENROUTER_API_KEY": "local-openrouter-test-key"}, "clear": []},
+            timeout=5,
+        )
+        self.assertEqual(local_settings_write.status_code, 200)
+        self.assertTrue(local_settings_write.json()["applied"])
+        self.assertNotIn("local-openrouter-test-key", local_settings_write.text)
+        self.assertTrue(self.server.config.openrouter_api_key)
+        self.assertTrue(self.server.worker.model.openrouter.available)
+        self.assertIn("pending-test-state", self.server.tools.zapier.oauth.pending)
+        self.assertTrue(
+            requests.get(f"{self.base_url}/healthz", headers=self.headers, timeout=5)
+            .json()["agent_loop"]["openrouter_configured"]
+        )
+        invalid_n8n_url = requests.post(
+            f"{self.base_url}/api/agent/settings/n8n_local",
+            headers=self.headers,
+            json={"values": {"N8N_BASE_URL": "https://example.com"}, "clear": []},
+            timeout=5,
+        )
+        self.assertEqual(invalid_n8n_url.status_code, 400)
         intake_status = requests.get(
             f"{self.base_url}/api/agent/intake/status",
             headers=self.headers,

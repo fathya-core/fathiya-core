@@ -11,15 +11,20 @@ import {
   Clock3,
   FileCheck2,
   FolderSearch,
+  Eye,
+  EyeOff,
   KeyRound,
   ListChecks,
   Loader2,
   LogOut,
   Play,
   RefreshCw,
+  Save,
+  Settings2,
   ShieldAlert,
   Square,
   TrendingUp,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -31,6 +36,13 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -50,6 +62,8 @@ import type {
   AgentIntegrationStatus,
   AgentIntegrationSummary,
   AgentKnowledgeIntakeStatus,
+  AgentLocalSettingsGroup,
+  AgentLocalSettingsResponse,
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
@@ -95,6 +109,8 @@ function AgentTasksPage() {
   const [integrationSummary, setIntegrationSummary] = useState<AgentIntegrationSummary | null>(
     null,
   );
+  const [localSettings, setLocalSettings] = useState<AgentLocalSettingsResponse | null>(null);
+  const [selectedSettingsGroup, setSelectedSettingsGroup] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -221,6 +237,16 @@ function AgentTasksPage() {
     }
   }, [localMode]);
 
+  const loadLocalSettings = useCallback(async () => {
+    if (!localMode) return;
+    try {
+      const data = await agentApi<AgentLocalSettingsResponse>(null, "/api/agent/settings");
+      setLocalSettings(data);
+    } catch (loadError) {
+      setError(String(loadError));
+    }
+  }, [localMode]);
+
   useEffect(() => {
     if (!hasAccess) return;
     void loadTasks();
@@ -255,6 +281,11 @@ function AgentTasksPage() {
     const timer = window.setInterval(() => void loadIntegrations(), 15_000);
     return () => window.clearInterval(timer);
   }, [loadIntegrations, localMode]);
+
+  useEffect(() => {
+    if (!localMode) return;
+    void loadLocalSettings();
+  }, [loadLocalSettings, localMode]);
 
   useEffect(() => {
     if (!hasAccess || !selectedId) return;
@@ -365,6 +396,11 @@ function AgentTasksPage() {
     () => connectors.filter((connector) => connector.configured).length,
     [connectors],
   );
+  const activeSettingsGroup = useMemo(
+    () =>
+      localSettings?.groups.find((group) => group.id === selectedSettingsGroup) ?? null,
+    [localSettings, selectedSettingsGroup],
+  );
   const canCreateTask =
     composerMode === "knowledge"
       ? Boolean(reportSource.trim() && reportObjective.trim() && reportContent.trim())
@@ -421,6 +457,7 @@ function AgentTasksPage() {
                       void loadConnectors();
                       void loadIntegrations();
                       void loadIntake();
+                      void loadLocalSettings();
                     }}
                   >
                     <RefreshCw />
@@ -830,6 +867,18 @@ function AgentTasksPage() {
                                 </a>
                               </Button>
                             )}
+                            {integration.settings_path && integration.settings_label && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 h-7 text-[10px]"
+                                onClick={() => setSelectedSettingsGroup(integration.id)}
+                              >
+                                <Settings2 />
+                                {integration.settings_label}
+                              </Button>
+                            )}
                             {integration.missing_env.length > 0 && (
                               <p
                                 dir="ltr"
@@ -956,8 +1005,230 @@ function AgentTasksPage() {
             />
           </div>
         </main>
+        <IntegrationSettingsSheet
+          group={activeSettingsGroup}
+          writeAllowed={Boolean(localSettings?.write_allowed)}
+          onClose={() => setSelectedSettingsGroup(null)}
+          onSaved={async () => {
+            await Promise.all([loadLocalSettings(), loadIntegrations(), loadConnectors()]);
+          }}
+        />
       </div>
     </TooltipProvider>
+  );
+}
+
+function IntegrationSettingsSheet({
+  group,
+  writeAllowed,
+  onClose,
+  onSaved,
+}: {
+  group: AgentLocalSettingsGroup | null;
+  writeAllowed: boolean;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [clearFields, setClearFields] = useState<Set<string>>(new Set());
+  const [visibleSecrets, setVisibleSecrets] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [sheetError, setSheetError] = useState("");
+
+  useEffect(() => {
+    setValues({});
+    setClearFields(new Set());
+    setVisibleSecrets(new Set());
+    setMessage("");
+    setSheetError("");
+  }, [group?.id]);
+
+  const hasChanges =
+    Object.values(values).some((value) => value.trim()) || clearFields.size > 0;
+
+  async function saveSettings(event: FormEvent) {
+    event.preventDefault();
+    if (!group || !writeAllowed || !hasChanges) return;
+    setSaving(true);
+    setMessage("");
+    setSheetError("");
+    try {
+      const cleanValues = Object.fromEntries(
+        Object.entries(values)
+          .map(([name, value]) => [name, value.trim()])
+          .filter(([, value]) => Boolean(value)),
+      );
+      const result = await agentApi<{
+        updated_fields: string[];
+        cleared_fields: string[];
+        restart_required: boolean;
+      }>(null, `/api/agent/settings/${group.id}`, {
+        method: "POST",
+        body: JSON.stringify({
+          values: cleanValues,
+          clear: [...clearFields],
+        }),
+      });
+      setValues({});
+      setClearFields(new Set());
+      setMessage(
+        result.restart_required
+          ? "حُفظ الإعداد محليًا. يلزم إعادة تشغيل المشغّل لتفعيله بالكامل."
+          : "حُفظ الإعداد وطُبق على المحرك المحلي.",
+      );
+      await onSaved();
+    } catch (saveError) {
+      setSheetError(String(saveError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Sheet open={Boolean(group)} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="left" dir="rtl" className="w-full overflow-y-auto sm:max-w-md">
+        {group && (
+          <>
+            <SheetHeader className="text-right">
+              <SheetTitle className="flex items-center gap-2 text-base">
+                <KeyRound className="h-4 w-4" />
+                {group.name}
+              </SheetTitle>
+              <SheetDescription>{group.description}</SheetDescription>
+            </SheetHeader>
+
+            {!writeAllowed && (
+              <Alert variant="destructive" className="mt-5">
+                <CircleAlert className="h-4 w-4" />
+                <AlertTitle>الإعداد المحلي مقفل</AlertTitle>
+                <AlertDescription>
+                  افتح صفحة الوكلاء من عنوان 127.0.0.1 على هذا الجهاز.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <form className="mt-6 space-y-5" onSubmit={saveSettings}>
+              {group.fields.map((field) => {
+                const clearing = clearFields.has(field.name);
+                const visible = visibleSecrets.has(field.name);
+                return (
+                  <div key={field.name} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label htmlFor={`local-setting-${field.name}`} className="text-xs">
+                        {field.label}
+                      </Label>
+                      <div className="flex items-center gap-1.5">
+                        {field.configured && (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[9px]",
+                              clearing
+                                ? "border-red-500/30 text-red-300"
+                                : "border-emerald-500/30 text-emerald-300",
+                            )}
+                          >
+                            {clearing
+                              ? "سيُمسح"
+                              : field.source === "local_store"
+                                ? "محفوظ محليًا"
+                                : "من بيئة التشغيل"}
+                          </Badge>
+                        )}
+                        {field.clearable && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className={cn("h-7 w-7", clearing && "text-red-300")}
+                                onClick={() =>
+                                  setClearFields((current) => {
+                                    const next = new Set(current);
+                                    if (next.has(field.name)) next.delete(field.name);
+                                    else next.add(field.name);
+                                    return next;
+                                  })
+                                }
+                                disabled={!writeAllowed || saving}
+                              >
+                                <Trash2 />
+                                <span className="sr-only">مسح القيمة المحلية</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {clearing ? "إلغاء المسح" : "مسح القيمة المحلية عند الحفظ"}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id={`local-setting-${field.name}`}
+                        dir="ltr"
+                        type={field.kind === "secret" && !visible ? "password" : "text"}
+                        value={values[field.name] ?? ""}
+                        placeholder={
+                          field.configured
+                            ? "اتركه فارغًا للإبقاء على القيمة الحالية"
+                            : field.placeholder || field.name
+                        }
+                        onChange={(event) =>
+                          setValues((current) => ({
+                            ...current,
+                            [field.name]: event.target.value,
+                          }))
+                        }
+                        disabled={!writeAllowed || saving || clearing}
+                        autoComplete="off"
+                        className={cn("text-left text-xs", field.kind === "secret" && "pl-10")}
+                      />
+                      {field.kind === "secret" && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-1 top-1 h-7 w-7"
+                          onClick={() =>
+                            setVisibleSecrets((current) => {
+                              const next = new Set(current);
+                              if (next.has(field.name)) next.delete(field.name);
+                              else next.add(field.name);
+                              return next;
+                            })
+                          }
+                          disabled={!writeAllowed || saving || clearing}
+                        >
+                          {visible ? <EyeOff /> : <Eye />}
+                          <span className="sr-only">إظهار أو إخفاء القيمة</span>
+                        </Button>
+                      )}
+                    </div>
+                    <p dir="ltr" className="break-all text-left font-mono text-[9px] text-muted-foreground">
+                      {field.name}
+                    </p>
+                  </div>
+                );
+              })}
+
+              {group.restart_required && (
+                <p className="text-[10px] text-amber-300">يتطلب التفعيل الكامل إعادة تشغيل المشغّل.</p>
+              )}
+              {message && <p className="text-[10px] text-emerald-300">{message}</p>}
+              {sheetError && <p className="break-words text-[10px] text-destructive">{sheetError}</p>}
+
+              <Button type="submit" className="w-full" disabled={!writeAllowed || saving || !hasChanges}>
+                {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                حفظ محليًا
+              </Button>
+            </form>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 

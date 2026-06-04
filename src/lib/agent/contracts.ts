@@ -141,6 +141,8 @@ export type AgentIntegrationReadiness = {
   connected_apps: string[];
   action_path?: string | null;
   action_label?: string | null;
+  settings_path?: string | null;
+  settings_label?: string | null;
   details: Record<string, Json>;
 };
 
@@ -150,6 +152,36 @@ export type AgentIntegrationSummary = {
   partial: number;
   needs_setup: number;
   needs_operator: number;
+};
+
+export type AgentLocalSettingField = {
+  name: string;
+  label: string;
+  kind: "secret" | "url" | "text";
+  required: boolean;
+  placeholder?: string;
+  configured: boolean;
+  source: "local_store" | "environment" | "missing";
+  clearable: boolean;
+};
+
+export type AgentLocalSettingsGroup = {
+  id: string;
+  name: string;
+  description: string;
+  restart_required: boolean;
+  fields: AgentLocalSettingField[];
+  configured_count: number;
+};
+
+export type AgentLocalSettingsResponse = {
+  groups: AgentLocalSettingsGroup[];
+  write_allowed: boolean;
+  security: {
+    values_returned: boolean;
+    allowlisted_fields_only: boolean;
+    storage_path: string;
+  };
 };
 
 export type AgentTradingCycle = {

@@ -34,6 +34,9 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.db_path = Path(self.temp.name) / "runtime.db"
         os.environ["FATHIYA_STORE"] = "sqlite"
+        os.environ["FATHIYA_LOCAL_SETTINGS_PATH"] = str(
+            Path(self.temp.name) / "operator-settings.json"
+        )
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
         os.environ["FATHIYA_KNOWLEDGE_ROOT"] = str(Path(self.temp.name) / "knowledge")
         os.environ["FATHIYA_TRADING_SQLITE_PATH"] = str(

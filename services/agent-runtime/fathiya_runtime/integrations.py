@@ -66,6 +66,7 @@ def build_integration_readiness(
         )
         if not value
     ]
+    supabase_active = not supabase_missing and config.store == "supabase"
 
     integrations = [
         {
@@ -136,28 +137,45 @@ def build_integration_readiness(
             else "لا يوجد مفتاح OpenRouter في المشغّل المحلي.",
             "next_step": "لا إجراء مطلوب."
             if config.openrouter_api_key
-            else "أنشئ مفتاح OpenRouter واحفظه في ملف .env المحلي؛ لا ترسله في المحادثة.",
+            else "أنشئ مفتاح OpenRouter وأدخله من إعداد OpenRouter المحلي.",
             "missing_env": [] if config.openrouter_api_key else ["OPENROUTER_API_KEY"],
             "connected_apps": [],
+            "settings_path": "/api/agent/settings/openrouter",
+            "settings_label": "إعداد OpenRouter محليًا",
             "details": {"model": config.openrouter_model},
         },
         {
             "id": "supabase",
             "name": "Supabase",
             "category": "control_plane",
-            "status": "ready" if not supabase_missing else "needs_setup",
+            "status": (
+                "ready"
+                if supabase_active
+                else "partial"
+                if not supabase_missing
+                else "needs_setup"
+            ),
             "connection_mode": "server_api_key",
             "account_required": True,
             "credential_policy": "local_server_only",
-            "summary": "قناة المهام الإنتاجية جاهزة."
+            "summary": "قناة المهام الإنتاجية مفعلة."
+            if supabase_active
+            else "بيانات Supabase محفوظة، والمشغّل الحالي ما زال على SQLite."
             if not supabase_missing
             else "المشغّل المحلي يعمل على SQLite؛ قناة الإنتاج غير مربوطة.",
             "next_step": "لا إجراء مطلوب."
+            if supabase_active
+            else "أعد تشغيل المشغّل بوضع Supabase بعد تطبيق مخطط قاعدة البيانات."
             if not supabase_missing
-            else "اربط مشروع Supabase واحفظ URL ومفتاح الخدمة في الخادم فقط.",
+            else "أدخل URL ومفتاح الخدمة من إعداد Supabase المحلي.",
             "missing_env": supabase_missing,
             "connected_apps": [],
-            "details": {"local_fallback": "sqlite"},
+            "settings_path": "/api/agent/settings/supabase",
+            "settings_label": "إعداد Supabase محليًا",
+            "details": {
+                "active_store": config.store,
+                "restart_required": not supabase_active,
+            },
         },
         {
             "id": "n8n_local",
@@ -185,6 +203,8 @@ def build_integration_readiness(
             else "شغّل n8n المحلي واربط عنوانه.",
             "missing_env": [] if n8n_workflows_ready else ["N8N_API_KEY"],
             "connected_apps": [],
+            "settings_path": "/api/agent/settings/n8n_local",
+            "settings_label": "إعداد n8n محليًا",
             "details": {"base_url": config.n8n_base_url},
         },
         {
@@ -255,7 +275,7 @@ def build_integration_readiness(
                 if testnet["execution_enabled"]
                 else "فعّل FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED محليًا بعد اختبار الحساب."
                 if testnet["configured"]
-                else "أنشئ مفاتيح Binance Spot Testnet واحفظها محليًا؛ لا ترسلها في المحادثة."
+                else "أنشئ مفاتيح Binance Spot Testnet وأدخلها من إعداد Testnet المحلي."
             ),
             "missing_env": (
                 []
@@ -266,6 +286,8 @@ def build_integration_readiness(
                 ]
             ),
             "connected_apps": [],
+            "settings_path": "/api/agent/settings/broker_testnet",
+            "settings_label": "إعداد Testnet محليًا",
             "details": {
                 "provider": testnet["provider"],
                 "environment": testnet["environment"],

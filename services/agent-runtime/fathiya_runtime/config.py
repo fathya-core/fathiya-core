@@ -6,10 +6,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from .local_settings import LocalSettingsStore
+
 
 @dataclass(frozen=True)
 class RuntimeConfig:
     service_root: Path
+    local_settings_path: Path
     store: str
     sqlite_path: Path
     worker_id: str
@@ -50,6 +53,7 @@ class RuntimeConfig:
     kali_wsl_distro: str
     trading_sqlite_path: Path
     trading_mode: str
+    trading_autostart: bool
     trading_symbol: str
     trading_market_provider: str
     trading_market_timeout_seconds: float
@@ -79,6 +83,15 @@ class RuntimeConfig:
     def load(cls) -> "RuntimeConfig":
         service_root = Path(__file__).resolve().parents[1]
         load_dotenv(service_root / ".env")
+        configured_settings_path = Path(
+            os.getenv("FATHIYA_LOCAL_SETTINGS_PATH", "runtime/operator-settings.json")
+        )
+        local_settings_path = (
+            configured_settings_path
+            if configured_settings_path.is_absolute()
+            else (service_root / configured_settings_path).resolve()
+        )
+        LocalSettingsStore(local_settings_path).load_into_environment()
 
         def resolve_path(name: str, default: str) -> Path:
             value = Path(os.getenv(name, default))
@@ -99,6 +112,7 @@ class RuntimeConfig:
 
         return cls(
             service_root=service_root,
+            local_settings_path=local_settings_path,
             store=os.getenv("FATHIYA_STORE", "sqlite").lower(),
             sqlite_path=resolve_path("FATHIYA_SQLITE_PATH", "runtime/fathiya_runtime.db"),
             worker_id=os.getenv("FATHIYA_WORKER_ID", "local-primary"),
@@ -226,6 +240,11 @@ class RuntimeConfig:
                 "runtime/fathiya_trading.db",
             ),
             trading_mode=os.getenv("FATHIYA_TRADING_MODE", "paper").strip().lower(),
+            trading_autostart=os.getenv(
+                "FATHIYA_TRADING_AUTOSTART",
+                "true",
+            ).lower()
+            in {"1", "true", "yes"},
             trading_symbol=os.getenv("FATHIYA_TRADING_SYMBOL", "BTC-USD").strip().upper(),
             trading_market_provider=os.getenv(
                 "FATHIYA_TRADING_MARKET_PROVIDER",

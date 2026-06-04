@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -35,8 +36,17 @@ class AgentWorker:
         *,
         tools: ToolExecutor | None = None,
     ):
-        self.config = config
         self.store = store
+        self._runtime_lock = threading.RLock()
+        self.synthesis_mode = "not_run"
+        self._configure_runtime(config, tools or ToolExecutor(config))
+
+    def reload_config(self, config: RuntimeConfig, tools: ToolExecutor) -> None:
+        with self._runtime_lock:
+            self._configure_runtime(config, tools)
+
+    def _configure_runtime(self, config: RuntimeConfig, tools: ToolExecutor) -> None:
+        self.config = config
         self.model = AgentModelRouter(
             config.openrouter_api_key,
             config.openrouter_model,
@@ -51,8 +61,7 @@ class AgentWorker:
             enable_hf=config.enable_hf_retrieval,
             hf_model=config.hf_model,
         )
-        self.synthesis_mode = "not_run"
-        self.tools = tools or ToolExecutor(config)
+        self.tools = tools
         self.tools.set_model_router(self.model)
         self.capabilities = [
             "knowledge_search",
@@ -77,7 +86,8 @@ class AgentWorker:
             task = self.store.claim_next(self.config.worker_id)
             if task:
                 processed += 1
-                self._process(task)
+                with self._runtime_lock:
+                    self._process(task)
             if once:
                 self.store.heartbeat_worker(self.config.worker_id, "online")
                 return processed

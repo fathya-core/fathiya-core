@@ -26,6 +26,7 @@ class KnowledgeIntakeWatcherTests(unittest.TestCase):
             {
                 "FATHIYA_STORE": "sqlite",
                 "FATHIYA_SQLITE_PATH": str(root / "runtime.db"),
+                "FATHIYA_LOCAL_SETTINGS_PATH": str(root / "operator-settings.json"),
                 "FATHIYA_KNOWLEDGE_ROOT": str(self.knowledge),
                 "FATHIYA_KNOWLEDGE_WATCH_ENABLED": "true",
                 "FATHIYA_KNOWLEDGE_WATCH_ROOT": str(self.inbox),

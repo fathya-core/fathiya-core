@@ -1,6 +1,6 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-05T00:12:00+03:00",
+  "captured_at": "2026-06-05T00:32:00+03:00",
   "source": "live Zapier MCP enabled-action inventory and local runtime checks",
   "policy": {
     "read_actions": "automatic",
@@ -34,7 +34,9 @@
         "approval-gated auto, Claude Code, Cursor, and Manus delegation",
         "Binance Spot Testnet readiness and approved order gateway",
         "web report intake",
-        "continuous local knowledge-inbox watcher"
+        "continuous local knowledge-inbox watcher",
+        "loopback-only local account setup without secret echo",
+        "automatic one-second primary paper-trading startup"
       ]
     },
     {
