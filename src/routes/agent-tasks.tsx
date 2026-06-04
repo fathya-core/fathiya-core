@@ -9,6 +9,7 @@ import {
   CircleAlert,
   Clock3,
   FileCheck2,
+  KeyRound,
   ListChecks,
   Loader2,
   LogOut,
@@ -35,6 +36,9 @@ import { agentApi, isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent
 import type {
   AgentConnectorBridge,
   AgentConnectorProfile,
+  AgentIntegrationReadiness,
+  AgentIntegrationStatus,
+  AgentIntegrationSummary,
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
@@ -76,6 +80,10 @@ function AgentTasksPage() {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [connectors, setConnectors] = useState<AgentConnectorProfile[]>([]);
   const [connectorBridge, setConnectorBridge] = useState<AgentConnectorBridge | null>(null);
+  const [integrations, setIntegrations] = useState<AgentIntegrationReadiness[]>([]);
+  const [integrationSummary, setIntegrationSummary] = useState<AgentIntegrationSummary | null>(
+    null,
+  );
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
@@ -169,6 +177,20 @@ function AgentTasksPage() {
     }
   }, [localMode]);
 
+  const loadIntegrations = useCallback(async () => {
+    if (!localMode) return;
+    try {
+      const data = await agentApi<{
+        integrations: AgentIntegrationReadiness[];
+        summary: AgentIntegrationSummary;
+      }>(null, "/api/agent/integrations");
+      setIntegrations(data.integrations);
+      setIntegrationSummary(data.summary);
+    } catch (loadError) {
+      setError(String(loadError));
+    }
+  }, [localMode]);
+
   useEffect(() => {
     if (!hasAccess) return;
     void loadTasks();
@@ -189,6 +211,13 @@ function AgentTasksPage() {
     const timer = window.setInterval(() => void loadTrading(), 1000);
     return () => window.clearInterval(timer);
   }, [loadTrading, localMode]);
+
+  useEffect(() => {
+    if (!localMode) return;
+    void loadIntegrations();
+    const timer = window.setInterval(() => void loadIntegrations(), 15_000);
+    return () => window.clearInterval(timer);
+  }, [loadIntegrations, localMode]);
 
   useEffect(() => {
     if (!hasAccess || !selectedId) return;
@@ -318,6 +347,7 @@ function AgentTasksPage() {
                     onClick={() => {
                       void loadTasks();
                       void loadConnectors();
+                      void loadIntegrations();
                     }}
                   >
                     <RefreshCw />
@@ -515,6 +545,67 @@ function AgentTasksPage() {
                       )}
                     >
                       {marketNotice(trading.current_market_source)}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {localMode && (
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <KeyRound className="h-4 w-4" />
+                      الحسابات والاتصالات
+                    </CardTitle>
+                    <CardDescription>
+                      {integrationSummary
+                        ? `${integrationSummary.ready} جاهزة · ${integrationSummary.partial} جزئية · ${integrationSummary.needs_setup + integrationSummary.needs_operator} تحتاج إجراء`
+                        : "جارٍ التحقق من حالة الربط الآمن"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {integrations.length === 0 ? (
+                      <p className="px-5 py-6 text-center text-xs text-muted-foreground">
+                        لم تُحمّل حالة الحسابات بعد.
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-border/50">
+                        {integrations.map((integration) => (
+                          <div key={integration.id} className="px-4 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold">{integration.name}</p>
+                                <p className="mt-1 break-words text-[10px] text-muted-foreground">
+                                  {integration.summary}
+                                </p>
+                              </div>
+                              <IntegrationStatusBadge status={integration.status} />
+                            </div>
+                            {integration.connected_apps.length > 0 && (
+                              <p className="mt-2 line-clamp-2 text-[10px] text-sky-300">
+                                {integration.connected_apps.join(" · ")}
+                              </p>
+                            )}
+                            {integration.status !== "ready" && (
+                              <p className="mt-2 break-words text-[10px] text-amber-300">
+                                {integration.next_step}
+                              </p>
+                            )}
+                            {integration.missing_env.length > 0 && (
+                              <p
+                                dir="ltr"
+                                className="mt-1 break-all text-left font-mono text-[9px] text-muted-foreground"
+                              >
+                                {integration.missing_env.join(" · ")}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="border-t border-border/50 px-4 py-3 text-[10px] text-muted-foreground">
+                      لا تُرسل كلمات المرور أو مفاتيح API في المحادثة. حسابات OAuth يديرها مزودها،
+                      ومفاتيح الخادم تبقى على الجهاز أو الخادم فقط.
                     </p>
                   </CardContent>
                 </Card>
@@ -806,6 +897,22 @@ function StatusBadge({ status }: { status: AgentTaskStatus }) {
     canceled: "border-border bg-muted/30 text-muted-foreground",
   };
   return <Badge className={cn("shrink-0", tone[status])}>{STATUS_LABELS[status]}</Badge>;
+}
+
+function IntegrationStatusBadge({ status }: { status: AgentIntegrationStatus }) {
+  const labels: Record<AgentIntegrationStatus, string> = {
+    ready: "جاهز",
+    partial: "متصل جزئيًا",
+    needs_setup: "يحتاج ربطًا",
+    needs_operator: "ينتظر اختيارك",
+  };
+  const tone: Record<AgentIntegrationStatus, string> = {
+    ready: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    partial: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    needs_setup: "border-orange-500/30 bg-orange-500/10 text-orange-400",
+    needs_operator: "border-violet-500/30 bg-violet-500/10 text-violet-300",
+  };
+  return <Badge className={cn("shrink-0", tone[status])}>{labels[status]}</Badge>;
 }
 
 function CenteredState({

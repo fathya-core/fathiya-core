@@ -101,6 +101,31 @@ export type AgentConnectorBridge = {
   allowed_profiles: string[];
 };
 
+export type AgentIntegrationStatus = "ready" | "partial" | "needs_setup" | "needs_operator";
+
+export type AgentIntegrationReadiness = {
+  id: string;
+  name: string;
+  category: "model" | "control_plane" | "automation" | "financial";
+  status: AgentIntegrationStatus;
+  connection_mode: string;
+  account_required: boolean;
+  credential_policy: "none" | "local_server_only" | "oauth_managed";
+  summary: string;
+  next_step: string;
+  missing_env: string[];
+  connected_apps: string[];
+  details: Record<string, Json>;
+};
+
+export type AgentIntegrationSummary = {
+  total: number;
+  ready: number;
+  partial: number;
+  needs_setup: number;
+  needs_operator: number;
+};
+
 export type AgentTradingCycle = {
   receipt_id: string;
   status: "observed" | "executed";

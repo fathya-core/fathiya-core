@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .config import RuntimeConfig
+from .integrations import build_integration_readiness
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
 from .trading import PaperTradingAgent
@@ -124,6 +125,19 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     },
                     "inventory": inventory,
                 }
+            )
+        if path == "/api/agent/integrations":
+            connectors = self.server.tools.connector_catalog()
+            inventory = self.server.tools.execute(
+                "connected_tool_inventory",
+                "عرض حالة الحسابات والاتصالات",
+            )
+            return self._send_json(
+                build_integration_readiness(
+                    self.server.config,
+                    connectors,
+                    inventory,
+                )
             )
         if path == "/api/agent/tasks":
             self.server.store.mark_stalled()

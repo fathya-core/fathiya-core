@@ -61,6 +61,12 @@ by default on low-memory machines to keep task progress responsive.
 The worker never reads a browser-exposed OpenRouter key. `OPENROUTER_API_KEY`
 is read only by the local process.
 
+`GET /api/agent/integrations` returns a secret-safe readiness view for local
+models, OpenRouter, Supabase, n8n, Zapier MCP, and the future broker Testnet
+account. It reports only status, missing environment variable names, connected
+OAuth app names, and the next safe operator action. It never returns passwords,
+API-key values, webhook URLs, or broker credentials.
+
 Tasks involving money, real trading, live security testing, deletion, or
 external publication remain in `awaiting_approval`. The worker only claims
 `queued` tasks.

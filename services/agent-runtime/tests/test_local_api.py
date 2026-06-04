@@ -89,6 +89,36 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn("n8n_health", connectors["bridge"]["allowed_profiles"])
         self.assertGreaterEqual(connectors["inventory"]["zapier_app_count"], 20)
 
+        integrations_response = requests.get(
+            f"{self.base_url}/api/agent/integrations",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(integrations_response.status_code, 200)
+        self.assertNotIn("local-api-test-bridge-token", integrations_response.text)
+        integrations = integrations_response.json()
+        integration_by_id = {
+            item["id"]: item for item in integrations["integrations"]
+        }
+        self.assertFalse(integrations["security_policy"]["accept_passwords_in_chat"])
+        self.assertEqual(integration_by_id["openrouter"]["status"], "needs_setup")
+        self.assertIn(
+            "OPENROUTER_API_KEY",
+            integration_by_id["openrouter"]["missing_env"],
+        )
+        self.assertEqual(integration_by_id["zapier_mcp"]["status"], "partial")
+        self.assertGreaterEqual(
+            integration_by_id["zapier_mcp"]["details"]["app_count"],
+            20,
+        )
+        self.assertEqual(
+            integration_by_id["broker_testnet"]["status"],
+            "needs_operator",
+        )
+        self.assertFalse(
+            integration_by_id["broker_testnet"]["details"]["live_execution_enabled"]
+        )
+
         denied = requests.get(
             f"{self.base_url}/healthz",
             headers={"Origin": "https://example.com"},

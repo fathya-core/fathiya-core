@@ -1,6 +1,6 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-04T14:16:40+03:00",
+  "captured_at": "2026-06-04T21:22:39+03:00",
   "source": "live Zapier MCP enabled-action inventory and local runtime checks",
   "policy": {
     "read_actions": "automatic",
@@ -60,9 +60,9 @@
     },
     {
       "app": "OpenRouter",
-      "status": "degraded",
+      "status": "not_configured",
       "capabilities": ["planning", "synthesis", "evaluation"],
-      "note": "Endpoint reachable; configured account currently returns HTTP 402 and uses local fallback"
+      "note": "No local OPENROUTER_API_KEY is configured; local Hugging Face and deterministic fallbacks remain active"
     }
   ],
   "zapier_apps": [
@@ -72,6 +72,7 @@
     { "app": "Gmail", "action_count": 12, "modes": ["read", "approval_gated_write"] },
     { "app": "Code by Zapier", "action_count": 2, "modes": ["approval_gated_write"] },
     { "app": "Webhooks by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "MCP Client by Zapier", "action_count": 2, "modes": ["read", "approval_gated_write"] },
     { "app": "AI by Zapier", "action_count": 3, "modes": ["approval_gated_write"] },
     { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
     { "app": "Zapier Lead Router", "action_count": 6, "modes": ["approval_gated_write"] },
