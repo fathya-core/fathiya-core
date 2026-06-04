@@ -284,7 +284,7 @@ class SQLiteTaskStore:
         summary: str,
         evidence: dict[str, Any],
     ) -> str:
-        receipt_id = f"AR-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{task['id'][:8]}"
+        receipt_id = f"AR-{datetime.now(UTC).strftime('%Y%m%d%H%M%S%f')}-{task['id'][:8]}"
         with self._connect() as conn:
             conn.execute(
                 """
@@ -501,7 +501,7 @@ class SupabaseTaskStore:
         summary: str,
         evidence: dict[str, Any],
     ) -> str:
-        receipt_id = f"AR-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{task['id'][:8]}"
+        receipt_id = f"AR-{datetime.now(UTC).strftime('%Y%m%d%H%M%S%f')}-{task['id'][:8]}"
         self._request(
             "POST",
             "agent_receipts",

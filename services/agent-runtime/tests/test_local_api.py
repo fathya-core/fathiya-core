@@ -5,6 +5,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import requests
 
@@ -24,6 +25,8 @@ class LocalAgentApiTests(unittest.TestCase):
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"
         os.environ.pop("OPENROUTER_API_KEY", None)
+        self.previous_dispatch_token = os.environ.get("FATHIYA_CONNECTOR_DISPATCH_TOKEN")
+        os.environ["FATHIYA_CONNECTOR_DISPATCH_TOKEN"] = "local-api-test-bridge-token"
         self.config = RuntimeConfig.load()
         self.store = SQLiteTaskStore(self.db_path)
         self.server = create_local_server(self.config, self.store, port=0)
@@ -37,6 +40,10 @@ class LocalAgentApiTests(unittest.TestCase):
         self.server.server_close()
         self.thread.join(timeout=5)
         self.temp.cleanup()
+        if self.previous_dispatch_token is None:
+            os.environ.pop("FATHIYA_CONNECTOR_DISPATCH_TOKEN", None)
+        else:
+            os.environ["FATHIYA_CONNECTOR_DISPATCH_TOKEN"] = self.previous_dispatch_token
 
     def test_local_api_vertical_slice_and_approval_controls(self) -> None:
         health = requests.get(f"{self.base_url}/healthz", headers=self.headers, timeout=5)
@@ -66,6 +73,10 @@ class LocalAgentApiTests(unittest.TestCase):
         connectors = connector_response.json()
         by_name = {item["name"]: item for item in connectors["connectors"]}
         self.assertTrue(by_name["n8n_health"]["configured"])
+        self.assertTrue(by_name["n8n_health"]["bridge_dispatch_allowed"])
+        self.assertFalse(by_name["n8n_fathiya_webhook"]["bridge_dispatch_allowed"])
+        self.assertTrue(connectors["bridge"]["configured"])
+        self.assertIn("n8n_health", connectors["bridge"]["allowed_profiles"])
         self.assertGreaterEqual(connectors["inventory"]["zapier_app_count"], 20)
 
         denied = requests.get(
@@ -117,6 +128,146 @@ class LocalAgentApiTests(unittest.TestCase):
             timeout=5,
         ).json()["task"]
         self.assertEqual(canceled["status"], "canceled")
+
+        dispatch_body = {
+            "task_id": task["id"],
+            "profile": "n8n_health",
+            "approval_state": "approved",
+            "dispatch_allowed": True,
+            "receipt_id": "N8N-STAGE-TEST",
+            "source": "n8n-connector-gateway",
+        }
+        unauthorized = requests.post(
+            f"{self.base_url}/api/agent/connector-dispatch",
+            headers=self.headers,
+            json=dispatch_body,
+            timeout=5,
+        )
+        self.assertEqual(unauthorized.status_code, 401)
+
+        bridge_headers = {
+            **self.headers,
+            "X-FATHIYA-Bridge-Token": "local-api-test-bridge-token",
+        }
+        denied_gate = requests.post(
+            f"{self.base_url}/api/agent/connector-dispatch",
+            headers=bridge_headers,
+            json={**dispatch_body, "dispatch_allowed": False},
+            timeout=5,
+        )
+        self.assertEqual(denied_gate.status_code, 409)
+
+        loop_profile = requests.post(
+            f"{self.base_url}/api/agent/connector-dispatch",
+            headers=bridge_headers,
+            json={**dispatch_body, "profile": "n8n_fathiya_webhook"},
+            timeout=5,
+        )
+        self.assertEqual(loop_profile.status_code, 403)
+
+        previous_zapier_url = os.environ.get("FATHIYA_ZAPIER_WEBHOOK_URL")
+        os.environ["FATHIYA_ZAPIER_WEBHOOK_URL"] = "https://example.invalid/approved-only"
+        try:
+            unapproved_external = requests.post(
+                f"{self.base_url}/api/agent/connector-dispatch",
+                headers=bridge_headers,
+                json={**dispatch_body, "profile": "zapier_fathiya_webhook"},
+                timeout=5,
+            )
+        finally:
+            if previous_zapier_url is None:
+                os.environ.pop("FATHIYA_ZAPIER_WEBHOOK_URL", None)
+            else:
+                os.environ["FATHIYA_ZAPIER_WEBHOOK_URL"] = previous_zapier_url
+        self.assertEqual(unapproved_external.status_code, 409)
+
+        with patch.object(
+            self.server.tools,
+            "execute",
+            return_value={
+                "tool": "connector_profile",
+                "profile": "n8n_health",
+                "provider": "n8n",
+                "method": "GET",
+                "configured": True,
+                "available": True,
+                "executed": True,
+                "status_code": 200,
+                "response": {"secret_response_field": "not stored"},
+            },
+        ) as execute:
+            dispatched = requests.post(
+                f"{self.base_url}/api/agent/connector-dispatch",
+                headers=bridge_headers,
+                json=dispatch_body,
+                timeout=5,
+            )
+            duplicate = requests.post(
+                f"{self.base_url}/api/agent/connector-dispatch",
+                headers=bridge_headers,
+                json=dispatch_body,
+                timeout=5,
+            )
+        self.assertEqual(dispatched.status_code, 200)
+        self.assertEqual(dispatched.json()["status"], "dispatched")
+        self.assertEqual(duplicate.status_code, 200)
+        self.assertEqual(duplicate.json()["status"], "duplicate")
+        self.assertEqual(
+            duplicate.json()["receipt_id"],
+            dispatched.json()["receipt_id"],
+        )
+        execute.assert_called_once()
+        self.assertNotIn("secret_response_field", dispatched.text)
+        dispatched_detail = self.store.get_detail(task["id"])
+        self.assertEqual(len(dispatched_detail["receipts"]), 2)
+        self.assertEqual(
+            dispatched_detail["events"][-1]["event_type"],
+            "connector_dispatched",
+        )
+        self.assertNotIn(
+            "secret_response_field",
+            str(dispatched_detail["receipts"][0]["evidence"]),
+        )
+
+        failed_dispatch_body = {
+            **dispatch_body,
+            "receipt_id": "N8N-STAGE-FAILED-TEST",
+        }
+        with patch.object(
+            self.server.tools,
+            "execute",
+            return_value={
+                "tool": "connector_profile",
+                "profile": "n8n_health",
+                "provider": "n8n",
+                "configured": True,
+                "available": False,
+                "executed": False,
+                "error": "connection failed",
+            },
+        ) as execute:
+            failed = requests.post(
+                f"{self.base_url}/api/agent/connector-dispatch",
+                headers=bridge_headers,
+                json=failed_dispatch_body,
+                timeout=5,
+            )
+            duplicate_failed = requests.post(
+                f"{self.base_url}/api/agent/connector-dispatch",
+                headers=bridge_headers,
+                json=failed_dispatch_body,
+                timeout=5,
+            )
+        self.assertEqual(failed.status_code, 502)
+        self.assertFalse(failed.json()["accepted"])
+        self.assertEqual(duplicate_failed.status_code, 502)
+        self.assertFalse(duplicate_failed.json()["accepted"])
+        self.assertEqual(duplicate_failed.json()["status"], "duplicate_failed")
+        self.assertEqual(
+            duplicate_failed.json()["receipt_id"],
+            failed.json()["receipt_id"],
+        )
+        execute.assert_called_once()
 
 
 if __name__ == "__main__":

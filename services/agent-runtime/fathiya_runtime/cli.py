@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import secrets
 import sys
 from datetime import UTC, datetime
 from typing import Any
@@ -52,6 +53,8 @@ def main() -> None:
     cancel.add_argument("task_id")
 
     sub.add_parser("tools")
+    bridge_init = sub.add_parser("bridge-init")
+    bridge_init.add_argument("--rotate", action="store_true")
 
     args = parser.parse_args()
     config = RuntimeConfig.load()
@@ -120,6 +123,34 @@ def main() -> None:
         print(json.dumps(store.get_task(task["id"]), ensure_ascii=False, indent=2))
     elif args.command == "tools":
         print(json.dumps(ToolExecutor(config).catalog(), ensure_ascii=False, indent=2))
+    elif args.command == "bridge-init":
+        path = config.connector_dispatch_token_file
+        if path.exists() and not args.rotate:
+            source = "token_file"
+        elif config.connector_dispatch_token and not args.rotate:
+            source = "environment"
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(secrets.token_urlsafe(32), encoding="utf-8")
+            try:
+                path.chmod(0o600)
+            except OSError:
+                pass
+            source = "token_file_rotated" if args.rotate else "token_file_created"
+        print(
+            json.dumps(
+                {
+                    "configured": True,
+                    "source": source,
+                    "token_file": str(path),
+                    "endpoint": "http://127.0.0.1:8765/api/agent/connector-dispatch",
+                    "token_printed": False,
+                    "restart_required": True,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
 
 
 def _require_task(store: TaskStore, task_id: str) -> dict[str, Any]:

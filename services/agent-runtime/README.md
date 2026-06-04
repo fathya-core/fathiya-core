@@ -90,6 +90,18 @@ The inactive, importable n8n gateway is stored at
 requests, validates the connector allowlist, and reaches its dispatch node only
 when `approval_state` is exactly `approved`.
 
+Initialize the authenticated local dispatch endpoint without printing its
+token:
+
+```powershell
+.\.venv\Scripts\fathiya-runtime bridge-init
+```
+
+The token is stored in ignored local runtime data. The dispatch endpoint
+re-validates the task and approval state, rejects the n8n ingress profile to
+prevent loops, executes only explicitly bridge-enabled connector profiles, and
+writes a bounded receipt.
+
 For local SQLite tasks:
 
 ```powershell

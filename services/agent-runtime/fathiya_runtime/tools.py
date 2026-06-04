@@ -213,11 +213,21 @@ class ToolExecutor:
                     "risk_class": profile.get("risk_class", "internal_owned"),
                     "requires_approval": bool(profile.get("requires_approval", False)),
                     "read_only": bool(profile.get("read_only", True)),
+                    "bridge_dispatch_allowed": bool(
+                        profile.get("bridge_dispatch_allowed", False)
+                    ),
                     "configured": not missing_env,
                     "missing_env": missing_env,
                 }
             )
         return catalog
+
+    def bridge_dispatch_profiles(self) -> list[dict[str, Any]]:
+        return [
+            profile
+            for profile in self.connector_catalog()
+            if profile.get("bridge_dispatch_allowed")
+        ]
 
     def get_spec(self, tool: str) -> ToolSpec:
         try:

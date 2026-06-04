@@ -12,7 +12,8 @@
       "timeout_seconds": 10,
       "risk_class": "internal_owned",
       "requires_approval": false,
-      "read_only": true
+      "read_only": true,
+      "bridge_dispatch_allowed": true
     },
     {
       "name": "n8n_workflows",
@@ -34,7 +35,8 @@
       "timeout_seconds": 20,
       "risk_class": "internal_owned",
       "requires_approval": false,
-      "read_only": true
+      "read_only": true,
+      "bridge_dispatch_allowed": true
     },
     {
       "name": "n8n_fathiya_webhook",
@@ -48,7 +50,9 @@
       "timeout_seconds": 60,
       "risk_class": "external",
       "requires_approval": true,
-      "read_only": false
+      "read_only": false,
+      "bridge_dispatch_allowed": false,
+      "bridge_dispatch_block_reason": "Ingress profile; dispatching it from the same n8n gateway can create a webhook loop."
     },
     {
       "name": "zapier_fathiya_webhook",
@@ -62,7 +66,8 @@
       "timeout_seconds": 60,
       "risk_class": "external",
       "requires_approval": true,
-      "read_only": false
+      "read_only": false,
+      "bridge_dispatch_allowed": true
     },
     {
       "name": "cursor_agent_bridge",
@@ -76,7 +81,8 @@
       "timeout_seconds": 90,
       "risk_class": "external",
       "requires_approval": true,
-      "read_only": false
+      "read_only": false,
+      "bridge_dispatch_allowed": true
     },
     {
       "name": "manus_agent_bridge",
@@ -90,7 +96,8 @@
       "timeout_seconds": 90,
       "risk_class": "external",
       "requires_approval": true,
-      "read_only": false
+      "read_only": false,
+      "bridge_dispatch_allowed": true
     }
   ]
 }

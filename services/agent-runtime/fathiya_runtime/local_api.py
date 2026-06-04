@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import json
 import re
 import threading
@@ -11,7 +12,7 @@ from urllib.parse import urlparse
 
 from .config import RuntimeConfig
 from .store import TaskStore, now_iso
-from .tools import ToolExecutor
+from .tools import ToolExecutionError, ToolExecutor
 from .worker import AgentWorker
 
 
@@ -20,6 +21,7 @@ TASK_PATH = re.compile(
     r"^/api/agent/tasks/(?P<task_id>[0-9a-f-]{36})(?:/(?P<action>approve|cancel))?$",
     re.IGNORECASE,
 )
+CONNECTOR_DISPATCH_PATH = "/api/agent/connector-dispatch"
 
 
 class LocalAgentHTTPServer(ThreadingHTTPServer):
@@ -70,6 +72,7 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             return self._send_json({"tools": self.server.tools.catalog()})
         if path == "/api/agent/connectors":
             connectors = self.server.tools.connector_catalog()
+            bridge_profiles = self.server.tools.bridge_dispatch_profiles()
             inventory = self.server.tools.execute(
                 "connected_tool_inventory",
                 "عرض مخزون الموصلات",
@@ -80,6 +83,19 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     "configured_count": sum(
                         bool(connector.get("configured")) for connector in connectors
                     ),
+                    "bridge": {
+                        "configured": bool(
+                            self.server.config.connector_dispatch_token
+                        ),
+                        "endpoint": CONNECTOR_DISPATCH_PATH,
+                        "allowed_profile_count": len(bridge_profiles),
+                        "ready_profile_count": sum(
+                            bool(profile.get("configured")) for profile in bridge_profiles
+                        ),
+                        "allowed_profiles": [
+                            profile["name"] for profile in bridge_profiles
+                        ],
+                    },
                     "inventory": inventory,
                 }
             )
@@ -99,6 +115,8 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         if not self._origin_allowed():
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
         path = urlparse(self.path).path.rstrip("/") or "/"
+        if path == CONNECTOR_DISPATCH_PATH:
+            return self._dispatch_connector()
         if path == "/api/agent/tasks":
             try:
                 body = self._json_body()
@@ -173,6 +191,181 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         )
         return self._send_json({"task": self.server.store.get_task(task["id"])})
 
+    def _dispatch_connector(self) -> None:
+        expected_token = self.server.config.connector_dispatch_token
+        if not expected_token:
+            return self._send_error(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "Connector dispatch bridge is not configured",
+            )
+        provided_token = self.headers.get("X-FATHIYA-Bridge-Token", "")
+        if not provided_token or not hmac.compare_digest(provided_token, expected_token):
+            return self._send_error(
+                HTTPStatus.UNAUTHORIZED,
+                "Connector dispatch authentication failed",
+            )
+        try:
+            body = self._json_body()
+        except ValueError as exc:
+            return self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
+
+        task_id = str(body.get("task_id") or "").strip()
+        profile_name = str(body.get("profile") or "").strip()
+        if not TASK_PATH.fullmatch(f"/api/agent/tasks/{task_id}"):
+            return self._send_error(HTTPStatus.BAD_REQUEST, "A valid task_id is required")
+        task = self.server.store.get_task(task_id)
+        if not task:
+            return self._send_error(HTTPStatus.NOT_FOUND, "Task not found")
+        upstream_receipt_id = str(body.get("receipt_id") or "")[:160]
+        if not upstream_receipt_id:
+            return self._send_error(
+                HTTPStatus.BAD_REQUEST,
+                "An upstream receipt_id is required for idempotent dispatch",
+            )
+
+        all_profiles = {
+            profile["name"]: profile for profile in self.server.tools.connector_catalog()
+        }
+        profile = all_profiles.get(profile_name)
+        if not profile:
+            return self._send_error(HTTPStatus.BAD_REQUEST, "Unknown connector profile")
+        if not profile.get("bridge_dispatch_allowed"):
+            return self._send_error(
+                HTTPStatus.FORBIDDEN,
+                "Connector profile is not allowed through the n8n dispatch bridge",
+            )
+        if not profile.get("configured"):
+            return self._send_error(
+                HTTPStatus.CONFLICT,
+                "Connector profile is not configured",
+            )
+        if body.get("dispatch_allowed") is not True or body.get("approval_state") != "approved":
+            return self._send_error(
+                HTTPStatus.CONFLICT,
+                "Connector dispatch requires an approved n8n gate",
+            )
+        if profile.get("requires_approval") and task.get("approval_state") != "approved":
+            return self._send_error(
+                HTTPStatus.CONFLICT,
+                "External connector dispatch requires task approval",
+            )
+        existing_receipt = _find_connector_dispatch_receipt(
+            self.server.store.get_detail(task_id),
+            profile_name,
+            upstream_receipt_id,
+        )
+        if existing_receipt:
+            evidence = existing_receipt.get("evidence")
+            result = evidence.get("result", {}) if isinstance(evidence, dict) else {}
+            duplicate_failed = existing_receipt.get("status") != "completed"
+            return self._send_json(
+                {
+                    "accepted": not duplicate_failed,
+                    "status": "duplicate_failed" if duplicate_failed else "duplicate",
+                    "task_id": task_id,
+                    "profile": profile_name,
+                    "receipt_id": existing_receipt["receipt_id"],
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "result": result,
+                },
+                HTTPStatus.BAD_GATEWAY if duplicate_failed else HTTPStatus.OK,
+            )
+
+        args: dict[str, Any] = {"profile": profile_name}
+        if isinstance(body.get("payload"), dict):
+            args["payload"] = body["payload"]
+        if isinstance(body.get("query"), dict):
+            args["query"] = body["query"]
+        source = str(body.get("source") or "n8n-connector-gateway")[:120]
+
+        try:
+            result = self.server.tools.execute(
+                "connector_profile",
+                f"n8n approved dispatch for task {task_id}",
+                args,
+            )
+            if not result.get("available") or result.get("executed") is False:
+                raise ToolExecutionError("Connector dispatch did not complete", result)
+            safe_result = _connector_result_evidence(result)
+            receipt_id = self.server.store.add_receipt(
+                task,
+                "completed",
+                f"اكتمل تسليم الموصل {profile_name} عبر جسر n8n.",
+                {
+                    "source": source,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "profile": profile_name,
+                    "result": safe_result,
+                },
+            )
+            self.server.store.add_event(
+                task,
+                "connector_dispatched",
+                f"اكتمل تسليم الموصل {profile_name} عبر جسر n8n.",
+                status=task["status"],
+                step="connector_dispatch",
+                progress=task["progress"],
+                payload={
+                    "profile": profile_name,
+                    "receipt_id": receipt_id,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "result": safe_result,
+                },
+            )
+            return self._send_json(
+                {
+                    "accepted": True,
+                    "status": "dispatched",
+                    "task_id": task_id,
+                    "profile": profile_name,
+                    "receipt_id": receipt_id,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "result": safe_result,
+                }
+            )
+        except Exception as exc:
+            raw_result = exc.result if isinstance(exc, ToolExecutionError) else {}
+            safe_result = _connector_result_evidence(raw_result)
+            receipt_id = self.server.store.add_receipt(
+                task,
+                "failed",
+                f"فشل تسليم الموصل {profile_name} عبر جسر n8n.",
+                {
+                    "source": source,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "profile": profile_name,
+                    "error_type": type(exc).__name__,
+                    "result": safe_result,
+                },
+            )
+            self.server.store.add_event(
+                task,
+                "connector_dispatch_failed",
+                f"فشل تسليم الموصل {profile_name} عبر جسر n8n.",
+                status=task["status"],
+                step="connector_dispatch",
+                progress=task["progress"],
+                payload={
+                    "profile": profile_name,
+                    "receipt_id": receipt_id,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "error_type": type(exc).__name__,
+                    "result": safe_result,
+                },
+            )
+            return self._send_json(
+                {
+                    "accepted": False,
+                    "status": "failed",
+                    "task_id": task_id,
+                    "profile": profile_name,
+                    "receipt_id": receipt_id,
+                    "upstream_receipt_id": upstream_receipt_id,
+                    "result": safe_result,
+                },
+                HTTPStatus.BAD_GATEWAY,
+            )
+
     def log_message(self, format: str, *args: Any) -> None:
         if (
             len(args) >= 2
@@ -202,6 +395,7 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         return body
 
     def _send_error(self, status: HTTPStatus, message: str) -> None:
+        self.close_connection = True
         self._send_json({"error": message}, status)
 
     def _send_json(
@@ -217,7 +411,12 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        if self.close_connection:
+            self.send_header("Connection", "close")
+        self.send_header(
+            "Access-Control-Allow-Headers",
+            "Content-Type, X-FATHIYA-Bridge-Token",
+        )
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         origin = self.headers.get("Origin")
         if origin and LOCAL_ORIGIN.fullmatch(origin):
@@ -226,6 +425,41 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         if body:
             self.wfile.write(body)
+
+
+def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: result.get(key)
+        for key in (
+            "tool",
+            "profile",
+            "provider",
+            "method",
+            "configured",
+            "available",
+            "executed",
+            "execution_failed",
+            "status_code",
+            "error",
+        )
+        if key in result
+    }
+
+
+def _find_connector_dispatch_receipt(
+    detail: dict[str, Any] | None,
+    profile: str,
+    upstream_receipt_id: str,
+) -> dict[str, Any] | None:
+    for receipt in (detail or {}).get("receipts", []):
+        evidence = receipt.get("evidence")
+        if (
+            isinstance(evidence, dict)
+            and evidence.get("profile") == profile
+            and evidence.get("upstream_receipt_id") == upstream_receipt_id
+        ):
+            return receipt
+    return None
 
 
 def create_local_server(

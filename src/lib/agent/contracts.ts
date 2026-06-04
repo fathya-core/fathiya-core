@@ -88,6 +88,15 @@ export type AgentConnectorProfile = {
   risk_class: AgentRiskClass;
   requires_approval: boolean;
   read_only: boolean;
+  bridge_dispatch_allowed: boolean;
   configured: boolean;
   missing_env: string[];
+};
+
+export type AgentConnectorBridge = {
+  configured: boolean;
+  endpoint: string;
+  allowed_profile_count: number;
+  ready_profile_count: number;
+  allowed_profiles: string[];
 };

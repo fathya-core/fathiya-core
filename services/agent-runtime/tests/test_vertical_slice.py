@@ -314,6 +314,18 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         self.assertTrue(connectors["n8n_health"]["configured"])
         self.assertFalse(connectors["n8n_health"]["requires_approval"])
+        self.assertTrue(connectors["n8n_health"]["bridge_dispatch_allowed"])
+        self.assertFalse(connectors["n8n_fathiya_webhook"]["bridge_dispatch_allowed"])
+        self.assertEqual(
+            {profile["name"] for profile in executor.bridge_dispatch_profiles()},
+            {
+                "n8n_health",
+                "n8n_workflows",
+                "zapier_fathiya_webhook",
+                "cursor_agent_bridge",
+                "manus_agent_bridge",
+            },
+        )
         self.assertTrue(connectors["zapier_fathiya_webhook"]["requires_approval"])
         requirement = executor.approval_requirement(
             "connector_profile",

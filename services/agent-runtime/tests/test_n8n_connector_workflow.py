@@ -10,6 +10,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW_PATH = (
     REPO_ROOT / "artifacts" / "workflows" / "n8n" / "fathiya-connector-gateway-v1.json"
 )
+CONNECTOR_PROFILES_PATH = (
+    REPO_ROOT / "services" / "agent-runtime" / "config" / "connector_profiles.json"
+)
 
 
 class N8nConnectorWorkflowTests(unittest.TestCase):
@@ -43,6 +46,19 @@ class N8nConnectorWorkflowTests(unittest.TestCase):
         validation_code = self.nodes["Validate and Gate"]["parameters"]["jsCode"]
         self.assertIn("approvalState === 'approved'", validation_code)
         self.assertIn("allowedProfiles", validation_code)
+        self.assertIn("'n8n_health'", validation_code)
+        self.assertIn("'n8n_workflows'", validation_code)
+        self.assertNotIn("'n8n_fathiya_webhook'", validation_code)
+        self.assertIn("query: body.query", validation_code)
+        connector_profiles = json.loads(
+            CONNECTOR_PROFILES_PATH.read_text(encoding="utf-8")
+        )["profiles"]
+        for profile in connector_profiles:
+            quoted_name = f"'{profile['name']}'"
+            if profile.get("bridge_dispatch_allowed"):
+                self.assertIn(quoted_name, validation_code)
+            else:
+                self.assertNotIn(quoted_name, validation_code)
 
         approval_outputs = self.workflow["connections"]["Approval Granted?"]["main"]
         self.assertEqual(approval_outputs[0][0]["node"], "Dispatch Approved Connector")

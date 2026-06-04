@@ -19,6 +19,8 @@ class RuntimeConfig:
     tool_inventory_path: Path
     command_profiles_path: Path
     connector_profiles_path: Path
+    connector_dispatch_token_file: Path
+    connector_dispatch_token: str
     enable_hf_retrieval: bool
     hf_model: str
     enable_local_generation: bool
@@ -45,6 +47,19 @@ class RuntimeConfig:
             value = Path(os.getenv(name, default))
             return value if value.is_absolute() else (service_root / value).resolve()
 
+        connector_dispatch_token_file = resolve_path(
+            "FATHIYA_CONNECTOR_DISPATCH_TOKEN_FILE",
+            "runtime/connector_dispatch.token",
+        )
+        connector_dispatch_token = os.getenv(
+            "FATHIYA_CONNECTOR_DISPATCH_TOKEN",
+            "",
+        ).strip()
+        if not connector_dispatch_token and connector_dispatch_token_file.exists():
+            connector_dispatch_token = connector_dispatch_token_file.read_text(
+                encoding="utf-8",
+            ).strip()
+
         return cls(
             service_root=service_root,
             store=os.getenv("FATHIYA_STORE", "sqlite").lower(),
@@ -65,6 +80,8 @@ class RuntimeConfig:
                 "FATHIYA_CONNECTOR_PROFILES_PATH",
                 "config/connector_profiles.json",
             ),
+            connector_dispatch_token_file=connector_dispatch_token_file,
+            connector_dispatch_token=connector_dispatch_token,
             enable_hf_retrieval=os.getenv("FATHIYA_ENABLE_HF_RETRIEVAL", "false").lower()
             in {"1", "true", "yes"},
             hf_model=os.getenv(

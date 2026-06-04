@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getSupabaseConfigurationError, supabase } from "@/integrations/supabase/client";
 import { agentApi, isLocalAgentRuntime, localAgentRuntimeUrl } from "@/lib/agent/client";
 import type {
+  AgentConnectorBridge,
   AgentConnectorProfile,
   AgentTask,
   AgentTaskDetail,
@@ -72,6 +73,7 @@ function AgentTasksPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [connectors, setConnectors] = useState<AgentConnectorProfile[]>([]);
+  const [connectorBridge, setConnectorBridge] = useState<AgentConnectorBridge | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
   const [title, setTitle] = useState("");
@@ -139,11 +141,12 @@ function AgentTasksPage() {
   const loadConnectors = useCallback(async () => {
     if (!localMode) return;
     try {
-      const data = await agentApi<{ connectors: AgentConnectorProfile[] }>(
-        null,
-        "/api/agent/connectors",
-      );
+      const data = await agentApi<{
+        connectors: AgentConnectorProfile[];
+        bridge: AgentConnectorBridge;
+      }>(null, "/api/agent/connectors");
       setConnectors(data.connectors);
+      setConnectorBridge(data.bridge);
     } catch (loadError) {
       setError(String(loadError));
     }
@@ -360,6 +363,12 @@ function AgentTasksPage() {
                     </CardTitle>
                     <CardDescription>
                       {configuredConnectorCount} جاهزة من {connectors.length}
+                      {connectorBridge &&
+                        ` · جسر n8n ${
+                          connectorBridge.configured
+                            ? `جاهز (${connectorBridge.ready_profile_count}/${connectorBridge.allowed_profile_count})`
+                            : "يحتاج تهيئة"
+                        }`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -381,6 +390,7 @@ function AgentTasksPage() {
                               <p className="mt-0.5 text-[10px] text-muted-foreground">
                                 {connector.method}
                                 {connector.requires_approval ? " · يحتاج موافقة" : " · تلقائي"}
+                                {connector.bridge_dispatch_allowed && " · عبر جسر n8n"}
                               </p>
                             </div>
                             <Badge
