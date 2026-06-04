@@ -123,6 +123,14 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                         self.server.worker_thread and self.server.worker_thread.is_alive()
                     ),
                     "api": f"http://{self.server.server_address[0]}:{self.server.server_address[1]}",
+                    "agent_loop": {
+                        "max_rounds": self.server.config.max_agent_rounds,
+                        "max_tool_steps_per_round": self.server.config.max_tool_steps,
+                        "local_planning_enabled": self.server.config.enable_local_planning,
+                        "openrouter_configured": bool(
+                            self.server.config.openrouter_api_key
+                        ),
+                    },
                     "trading": {
                         "running": trading["running"],
                         "mode": trading["mode"],

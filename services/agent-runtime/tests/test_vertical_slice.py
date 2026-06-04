@@ -20,7 +20,7 @@ from fathiya_runtime.knowledge_mission import (
     parse_knowledge_mission,
 )
 from fathiya_runtime.models import AgentModelRouter, OpenRouterClient
-from fathiya_runtime.planner import build_plan
+from fathiya_runtime.planner import build_follow_up_decision, build_plan, step_signature
 from fathiya_runtime.retrieval import KnowledgeRetriever, RetrievedSource
 from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
@@ -912,6 +912,184 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(calls[0]["prior_result_count"], 0)
         self.assertEqual(calls[-1]["prior_result_count"], len(calls) - 1)
         self.assertEqual(len(completed["result"]["tool_results"]), len(calls))
+
+    def test_agent_loop_runs_deterministic_follow_up_round(self) -> None:
+        task = self.store.enqueue(
+            "جولات الوكيل",
+            "اعرض الموصلات ونفّذ الفحوصات الجاهزة",
+        )
+        worker = AgentWorker(self.config, self.store)
+        calls: list[dict] = []
+
+        def execute(
+            tool: str,
+            _prompt: str,
+            args: dict | None = None,
+            context: list | None = None,
+        ) -> dict:
+            calls.append(
+                {
+                    "tool": tool,
+                    "args": args or {},
+                    "prior_result_count": len(context or []),
+                }
+            )
+            if tool == "connector_catalog":
+                return {
+                    "tool": tool,
+                    "available": True,
+                    "configured_count": 1,
+                    "profile_count": 2,
+                    "profiles": [
+                        {
+                            "name": "n8n_health",
+                            "configured": True,
+                            "read_only": True,
+                            "requires_approval": False,
+                        },
+                        {
+                            "name": "external_write",
+                            "configured": True,
+                            "read_only": False,
+                            "requires_approval": True,
+                        },
+                    ],
+                }
+            if tool == "connector_profile":
+                return {
+                    "tool": tool,
+                    "profile": (args or {}).get("profile"),
+                    "available": True,
+                    "executed": True,
+                }
+            return {"tool": tool, "available": True}
+
+        worker.tools.execute = execute
+        worker.start(once=True)
+        detail = self.store.get_detail(task["id"])
+        result = detail["task"]["result"]
+
+        self.assertEqual(detail["task"]["status"], "completed")
+        self.assertEqual(len(result["agent_rounds"]), 2)
+        self.assertIn("connector_catalog", result["agent_rounds"][0]["tools"])
+        self.assertEqual(result["agent_rounds"][1]["tools"], ["connector_profile"])
+        self.assertEqual(
+            [call["tool"] for call in calls].count("connector_profile"),
+            1,
+        )
+        self.assertEqual(calls[-1]["args"]["profile"], "n8n_health")
+        self.assertNotIn("external_write", str(calls))
+        event_types = {event["event_type"] for event in detail["events"]}
+        self.assertIn("agent_round_completed", event_types)
+        self.assertIn("agent_reviewed", event_types)
+        self.assertEqual(detail["receipts"][0]["evidence"]["round_count"], 2)
+
+    def test_agent_loop_checkpoints_and_resumes_sensitive_follow_up(self) -> None:
+        task = self.store.enqueue("استئناف الوكيل", "نفّذ مهمة داخلية ثم تابع")
+        worker = AgentWorker(self.config, self.store)
+        calls: list[str] = []
+        initial_plan = [
+            {
+                "id": "retrieve",
+                "kind": "retrieval",
+                "tool": "knowledge_search",
+                "description": "retrieve",
+                "planner_mode": "test",
+                "planner_error": None,
+            },
+            {
+                "id": "execute-1",
+                "kind": "tool",
+                "tool": "internal_echo",
+                "description": "safe first step",
+                "args": {"message": "proof"},
+            },
+        ]
+
+        def execute(tool: str, *_args, **_kwargs) -> dict:
+            calls.append(tool)
+            return {"tool": tool, "available": True, "executed": True}
+
+        def follow_up(*_args, **_kwargs) -> dict:
+            if "connector_profile" in calls:
+                return {
+                    "complete": True,
+                    "reason": "اكتملت الخطوة الحساسة المعتمدة.",
+                    "steps": [],
+                    "planner_mode": "test-review",
+                    "planner_error": None,
+                }
+            return {
+                "complete": False,
+                "reason": "تحتاج المهمة تسليمًا خارجيًا.",
+                "steps": [
+                    {
+                        "tool": "connector_profile",
+                        "description": "approved external follow-up",
+                        "args": {"profile": "n8n_fathiya_webhook"},
+                    }
+                ],
+                "planner_mode": "test-review",
+                "planner_error": None,
+            }
+
+        worker.tools.execute = execute
+        with (
+            patch("fathiya_runtime.worker.build_plan", return_value=initial_plan) as plan,
+            patch("fathiya_runtime.worker.build_follow_up_decision", side_effect=follow_up),
+        ):
+            worker.start(once=True)
+            gated = self.store.get_detail(task["id"])
+
+            self.assertEqual(gated["task"]["status"], "awaiting_approval")
+            self.assertEqual(calls, ["internal_echo"])
+            checkpoint = gated["task"]["result"]["execution_checkpoint"]
+            self.assertEqual(checkpoint["round_number"], 2)
+            self.assertEqual(len(checkpoint["tool_results"]), 1)
+
+            self.store.update_task(
+                task["id"],
+                status="queued",
+                approval_state="approved",
+                current_step="approved",
+            )
+            worker.start(once=True)
+
+        completed = self.store.get_detail(task["id"])
+        self.assertEqual(completed["task"]["status"], "completed")
+        self.assertEqual(calls, ["internal_echo", "connector_profile"])
+        self.assertEqual(plan.call_count, 1)
+        self.assertEqual(len(completed["task"]["result"]["agent_rounds"]), 2)
+        self.assertIn(
+            "agent_round_resumed",
+            {event["event_type"] for event in completed["events"]},
+        )
+
+    def test_agent_loop_model_reviewer_drops_seen_step(self) -> None:
+        model = Mock()
+        model.available = True
+        model.last_provider = "openrouter"
+        model.plan_complete.return_value = (
+            '{"complete":false,"reason":"inspect GitHub next","steps":['
+            '{"tool":"repo_status","description":"repeat","args":{}},'
+            '{"tool":"github_repo_info","description":"new evidence","args":{}}]}'
+        )
+        decision = build_follow_up_decision(
+            {"prompt": "inspect the repository and GitHub"},
+            [],
+            model,
+            ToolExecutor(self.config).catalog(),
+            [{"round": 1, "result": {"tool": "repo_status", "available": True}}],
+            {step_signature("repo_status", {})},
+            round_number=1,
+            max_tool_steps=4,
+        )
+
+        self.assertFalse(decision["complete"])
+        self.assertEqual(
+            [step["tool"] for step in decision["steps"]],
+            ["github_repo_info"],
+        )
 
     def test_plan_selected_sensitive_tool_waits_for_approval(self) -> None:
         task = self.store.enqueue("بوابة ديناميكية", "نفذ مهمة داخلية")

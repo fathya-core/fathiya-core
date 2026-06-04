@@ -20,6 +20,11 @@ operator site now defaults to the local execution plane.
      `Qwen/Qwen2.5-0.5B-Instruct` CPU model for bounded synthesis after
      OpenRouter fails or is absent. Deterministic local planning and evaluation
      keep the worker responsive; local model planning is opt-in.
+   - Keep `FATHIYA_ENABLE_LOCAL_PLANNING=false` on CPU-only operators unless a
+     latency check proves the local model can review the compact tool catalog
+     promptly. OpenRouter or the deterministic reviewer keeps the loop moving
+     when local planning is disabled. Set `FATHIYA_MAX_AGENT_ROUNDS` to bound the loop;
+     invalid model plans fall back to the deterministic local reviewer.
    - Configure only the connector bridges that should be executable:
      `FATHIYA_N8N_WEBHOOK_URL`, `FATHIYA_ZAPIER_WEBHOOK_URL`,
      `FATHIYA_CURSOR_AGENT_URL`, and `FATHIYA_MANUS_AGENT_URL`.
@@ -66,6 +71,11 @@ browser origins must receive HTTP 403 from the local control plane.
    receipt contains the friendly app/action names but no `selected_api`.
 10. Submit a Zapier write action and confirm it remains in
     `awaiting_approval` until the operator approves it.
+11. Submit `اعرض الموصلات ونفّذ الفحوصات الجاهزة`, then confirm the task shows
+    at least two agent rounds: the first discovers connector readiness and the
+    second runs the newly discovered configured read-only check.
+12. Confirm a sensitive follow-up stores an execution checkpoint and resumes
+    after approval without replaying completed rounds.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.

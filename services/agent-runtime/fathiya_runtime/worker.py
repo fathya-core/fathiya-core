@@ -12,8 +12,10 @@ from .models import AgentModelRouter
 from .planner import (
     DETERMINISTIC_SYNTHESIS_TOOLS,
     FAST_CONTROL_TOOLS,
+    build_follow_up_decision,
     build_plan,
     fast_control_steps,
+    step_signature,
 )
 from .retrieval import KnowledgeRetriever
 from .retrieval import RetrievedSource
@@ -84,137 +86,353 @@ class AgentWorker:
     def _process(self, task: dict[str, Any]) -> None:
         try:
             self.store.heartbeat_worker(self.config.worker_id, "busy")
-            self._progress(task, 5, "بدء التنفيذ", "started", "بدأ المشغّل المحلي المهمة.")
-
-            mission = parse_knowledge_mission(task["prompt"])
-            mission_evidence: dict[str, Any] | None = None
-            execution_task = task
-            mission_source: RetrievedSource | None = None
-            if mission:
-                mission_evidence = persist_knowledge_mission(
-                    self.config.knowledge_root,
-                    mission,
-                )
-                execution_task = {
-                    **task,
-                    "prompt": mission.objective,
-                    "knowledge_mission": True,
-                }
-                mission_source = RetrievedSource(
-                    path=mission_evidence["path"],
-                    score=1.0,
-                    excerpt=mission.content[:500].replace("\n", " "),
-                )
-                self._progress(
-                    task,
-                    10,
-                    "استيعاب التقرير",
-                    "knowledge_intake",
-                    "حُفظ التقرير كدليل غير موثوق قبل بناء خطة التنفيذ.",
-                    mission_evidence,
-                )
+            checkpoint = _execution_checkpoint(task)
+            self._progress(
+                task,
+                5,
+                "استئناف التنفيذ" if checkpoint else "بدء التنفيذ",
+                "resumed" if checkpoint else "started",
+                (
+                    "استأنف المشغّل المهمة من الجولة المحفوظة بعد الموافقة."
+                    if checkpoint
+                    else "بدأ المشغّل المحلي المهمة."
+                ),
+            )
 
             tool_catalog = self.tools.catalog()
-            direct_control = fast_control_steps(execution_task["prompt"], tool_catalog)
-            if direct_control:
-                sources = []
+            if checkpoint:
+                execution_task = {
+                    **task,
+                    "prompt": str(checkpoint["execution_prompt"]),
+                    "knowledge_mission": bool(checkpoint.get("knowledge_mission")),
+                }
+                mission_evidence = checkpoint.get("mission_evidence")
+                sources = [
+                    RetrievedSource(
+                        path=str(source.get("path") or ""),
+                        score=float(source.get("score") or 0),
+                        excerpt=str(source.get("excerpt") or ""),
+                    )
+                    for source in checkpoint.get("sources", [])
+                    if isinstance(source, dict) and source.get("path")
+                ]
+                initial_plan = checkpoint.get("initial_plan", [])
+                tool_results = checkpoint.get("tool_results", [])
+                agent_rounds = checkpoint.get("agent_rounds", [])
+                seen_signatures = {
+                    str(value) for value in checkpoint.get("seen_signatures", [])
+                }
+                round_number = max(1, int(checkpoint.get("round_number") or 1))
+                round_reason = str(
+                    checkpoint.get("round_reason")
+                    or "استئناف الجولة التي انتظرت موافقة المشغل."
+                )
+                round_planner_mode = str(
+                    checkpoint.get("round_planner_mode") or "approval_resume"
+                )
+                round_planner_error = checkpoint.get("round_planner_error")
+                current_steps = _materialize_round_steps(
+                    checkpoint.get("next_steps", []),
+                    tool_catalog,
+                    round_number,
+                )
                 self._progress(
                     task,
-                    20,
-                    "توجيه تحكم مباشر",
-                    "direct_control",
-                    "تم التعرف على أمر تحكم محلي محدد ولا يحتاج استرجاع معرفة.",
-                    {"tools": [step["tool"] for step in direct_control]},
+                    30,
+                    f"استئناف جولة الوكيل {round_number}",
+                    "agent_round_resumed",
+                    f"استؤنفت جولة الوكيل {round_number} دون إعادة الخطوات المكتملة.",
+                    {
+                        "round": round_number,
+                        "completed_rounds": len(agent_rounds),
+                        "completed_tools": len(tool_results),
+                    },
                 )
             else:
-                query = execution_task["prompt"]
-                if mission_evidence:
-                    query = (
-                        f"{query}\n{mission_evidence['source_name']}\n"
-                        f"{mission_evidence['path']}"
+                mission = parse_knowledge_mission(task["prompt"])
+                mission_evidence: dict[str, Any] | None = None
+                execution_task = task
+                mission_source: RetrievedSource | None = None
+                if mission:
+                    mission_evidence = persist_knowledge_mission(
+                        self.config.knowledge_root,
+                        mission,
                     )
-                sources = self.retriever.search(query, limit=4 if mission_source else 5)
-                if mission_source:
-                    sources = [
-                        mission_source,
-                        *[source for source in sources if source.path != mission_source.path],
-                    ][:5]
-                self._progress(
-                    task,
-                    20,
-                    "استرجاع المعرفة",
-                    "retrieved",
-                    f"تم استرجاع {len(sources)} مصادر مرتبطة عبر {self.retriever.last_mode}.",
-                    {
-                        "retrieval_mode": self.retriever.last_mode,
-                        "retrieval_error": self.retriever.last_error,
-                        "sources": [source.__dict__ for source in sources],
-                    },
-                )
-
-            plan = build_plan(
-                execution_task,
-                sources,
-                self.model,
-                tool_catalog,
-                max_tool_steps=self.config.max_tool_steps,
-            )
-            self.store.update_task(
-                task["id"],
-                plan=plan,
-                last_heartbeat_at=now_iso(),
-                current_step="تم بناء خطة التنفيذ",
-            )
-            self.store.add_event(
-                task,
-                "planned",
-                "بُنيت خطة التنفيذ من الأدلة والأدوات المسموحة.",
-                status="running",
-                step="plan",
-                progress=30,
-                payload={"plan": plan},
-            )
-
-            execution_steps = [step for step in plan if step.get("kind") == "tool"]
-            if self._gate_plan_for_approval(task, execution_steps):
-                return
-
-            tool_results: list[dict[str, Any]] = []
-            for index, execution_step in enumerate(execution_steps, start=1):
-                start_progress = 35 + int(((index - 1) / len(execution_steps)) * 40)
-                complete_progress = 35 + int((index / len(execution_steps)) * 40)
-                self._progress(
-                    task,
-                    start_progress,
-                    execution_step["description"],
-                    "tool_started",
-                    f"تشغيل الأداة {index}/{len(execution_steps)}: {execution_step['tool']}",
-                    {
-                        "tool": execution_step["tool"],
-                        "args": execution_step.get("args", {}),
-                    },
-                )
-                tool_result = self.tools.execute(
-                    execution_step["tool"],
-                    execution_task["prompt"],
-                    execution_step.get("args", {}),
-                    tool_results,
-                )
-                tool_results.append(
-                    {
-                        "step_id": execution_step["id"],
-                        "description": execution_step["description"],
-                        "result": tool_result,
+                    execution_task = {
+                        **task,
+                        "prompt": mission.objective,
+                        "knowledge_mission": True,
                     }
+                    mission_source = RetrievedSource(
+                        path=mission_evidence["path"],
+                        score=1.0,
+                        excerpt=mission.content[:500].replace("\n", " "),
+                    )
+                    self._progress(
+                        task,
+                        10,
+                        "استيعاب التقرير",
+                        "knowledge_intake",
+                        "حُفظ التقرير كدليل غير موثوق قبل بناء خطة التنفيذ.",
+                        mission_evidence,
+                    )
+
+                direct_control = fast_control_steps(execution_task["prompt"], tool_catalog)
+                if direct_control:
+                    sources = []
+                    self._progress(
+                        task,
+                        20,
+                        "توجيه تحكم مباشر",
+                        "direct_control",
+                        "تم التعرف على أمر تحكم محلي محدد ولا يحتاج استرجاع معرفة.",
+                        {"tools": [step["tool"] for step in direct_control]},
+                    )
+                else:
+                    query = execution_task["prompt"]
+                    if mission_evidence:
+                        query = (
+                            f"{query}\n{mission_evidence['source_name']}\n"
+                            f"{mission_evidence['path']}"
+                        )
+                    sources = self.retriever.search(query, limit=4 if mission_source else 5)
+                    if mission_source:
+                        sources = [
+                            mission_source,
+                            *[
+                                source
+                                for source in sources
+                                if source.path != mission_source.path
+                            ],
+                        ][:5]
+                    self._progress(
+                        task,
+                        20,
+                        "استرجاع المعرفة",
+                        "retrieved",
+                        f"تم استرجاع {len(sources)} مصادر مرتبطة عبر {self.retriever.last_mode}.",
+                        {
+                            "retrieval_mode": self.retriever.last_mode,
+                            "retrieval_error": self.retriever.last_error,
+                            "sources": [source.__dict__ for source in sources],
+                        },
+                    )
+
+                initial_plan = build_plan(
+                    execution_task,
+                    sources,
+                    self.model,
+                    tool_catalog,
+                    max_tool_steps=self.config.max_tool_steps,
                 )
-                self._progress(
+                tool_results: list[dict[str, Any]] = []
+                agent_rounds: list[dict[str, Any]] = []
+                seen_signatures: set[str] = set()
+                round_number = 1
+                round_reason = "تنفيذ الخطة الأولية المبنية من طلب المشغل والأدلة."
+                round_planner_mode = str(initial_plan[0].get("planner_mode") or "unknown")
+                round_planner_error = initial_plan[0].get("planner_error")
+                current_steps = _materialize_round_steps(
+                    [step for step in initial_plan if step.get("kind") == "tool"],
+                    tool_catalog,
+                    round_number,
+                )
+                self.store.add_event(
                     task,
-                    complete_progress,
-                    f"اكتمل {execution_step['tool']}",
-                    "tool_completed",
-                    f"اكتمل تنفيذ {execution_step['tool']}.",
-                    {"tool_result": tool_result},
+                    "planned",
+                    "بُنيت الخطة الأولية وبدأت دورة الوكيل متعددة الجولات.",
+                    status="running",
+                    step="plan",
+                    progress=30,
+                    payload={"plan": initial_plan},
                 )
+
+            termination_reason = ""
+            while current_steps and round_number <= self.config.max_agent_rounds:
+                current_steps = [
+                    step
+                    for step in current_steps
+                    if step_signature(step["tool"], step.get("args")) not in seen_signatures
+                ]
+                if not current_steps:
+                    termination_reason = "منع المراجع تكرار خطوات نُفذت سابقًا."
+                    break
+
+                pending_round = {
+                    "round": round_number,
+                    "status": "planned",
+                    "reason": round_reason,
+                    "planner_mode": round_planner_mode,
+                    "planner_error": round_planner_error,
+                    "steps": _round_step_summary(current_steps),
+                }
+                self.store.update_task(
+                    task["id"],
+                    plan={
+                        "max_rounds": self.config.max_agent_rounds,
+                        "initial": initial_plan,
+                        "rounds": agent_rounds,
+                        "pending_round": pending_round,
+                    },
+                    last_heartbeat_at=now_iso(),
+                    current_step=f"جولة الوكيل {round_number}: مراجعة خطة التنفيذ",
+                )
+                round_progress_start, round_progress_end = _round_progress(
+                    round_number,
+                    self.config.max_agent_rounds,
+                )
+                self.store.add_event(
+                    task,
+                    "agent_round_planned",
+                    f"خطط الوكيل الجولة {round_number} لتشغيل {len(current_steps)} أدوات.",
+                    status="running",
+                    step=f"agent_round_{round_number}_plan",
+                    progress=round_progress_start,
+                    payload=pending_round,
+                )
+                checkpoint_payload = _build_execution_checkpoint(
+                    execution_task,
+                    mission_evidence,
+                    sources,
+                    initial_plan,
+                    agent_rounds,
+                    tool_results,
+                    seen_signatures,
+                    round_number,
+                    current_steps,
+                    round_reason,
+                    round_planner_mode,
+                    round_planner_error,
+                )
+                if self._gate_plan_for_approval(
+                    task,
+                    current_steps,
+                    checkpoint=checkpoint_payload,
+                    progress=round_progress_start,
+                ):
+                    return
+
+                round_tools: list[str] = []
+                for index, execution_step in enumerate(current_steps, start=1):
+                    start_progress = round_progress_start + int(
+                        ((index - 1) / len(current_steps))
+                        * (round_progress_end - round_progress_start)
+                    )
+                    complete_progress = round_progress_start + int(
+                        (index / len(current_steps))
+                        * (round_progress_end - round_progress_start)
+                    )
+                    self._progress(
+                        task,
+                        start_progress,
+                        execution_step["description"],
+                        "tool_started",
+                        (
+                            f"الجولة {round_number}: تشغيل الأداة "
+                            f"{index}/{len(current_steps)}: {execution_step['tool']}"
+                        ),
+                        {
+                            "round": round_number,
+                            "tool": execution_step["tool"],
+                            "args": execution_step.get("args", {}),
+                        },
+                    )
+                    tool_result = self.tools.execute(
+                        execution_step["tool"],
+                        execution_task["prompt"],
+                        execution_step.get("args", {}),
+                        tool_results,
+                    )
+                    seen_signatures.add(
+                        step_signature(execution_step["tool"], execution_step.get("args"))
+                    )
+                    round_tools.append(execution_step["tool"])
+                    tool_results.append(
+                        {
+                            "round": round_number,
+                            "step_id": execution_step["id"],
+                            "description": execution_step["description"],
+                            "result": tool_result,
+                        }
+                    )
+                    self._progress(
+                        task,
+                        complete_progress,
+                        f"اكتمل {execution_step['tool']}",
+                        "tool_completed",
+                        f"الجولة {round_number}: اكتمل تنفيذ {execution_step['tool']}.",
+                        {"round": round_number, "tool_result": tool_result},
+                    )
+
+                completed_round = {
+                    **pending_round,
+                    "status": "completed",
+                    "tools": round_tools,
+                }
+                agent_rounds.append(completed_round)
+                self.store.update_task(
+                    task["id"],
+                    plan={
+                        "max_rounds": self.config.max_agent_rounds,
+                        "initial": initial_plan,
+                        "rounds": agent_rounds,
+                    },
+                    last_heartbeat_at=now_iso(),
+                    current_step=f"اكتملت جولة الوكيل {round_number}",
+                )
+                self.store.add_event(
+                    task,
+                    "agent_round_completed",
+                    f"أكمل الوكيل الجولة {round_number} وراجع نتائجها.",
+                    status="running",
+                    step=f"agent_round_{round_number}_completed",
+                    progress=round_progress_end,
+                    payload=completed_round,
+                )
+
+                if round_number >= self.config.max_agent_rounds:
+                    termination_reason = (
+                        f"وصل الوكيل إلى حد الجولات المضبوط "
+                        f"({self.config.max_agent_rounds})."
+                    )
+                    break
+                decision = build_follow_up_decision(
+                    execution_task,
+                    sources,
+                    self.model,
+                    tool_catalog,
+                    tool_results,
+                    seen_signatures,
+                    round_number=round_number,
+                    max_tool_steps=self.config.max_tool_steps,
+                )
+                self.store.add_event(
+                    task,
+                    "agent_reviewed",
+                    (
+                        f"راجع الوكيل الجولة {round_number}: "
+                        f"{'اكتملت المهمة' if decision['complete'] else 'تحتاج جولة أخرى'}."
+                    ),
+                    status="running",
+                    step=f"agent_round_{round_number}_review",
+                    progress=round_progress_end,
+                    payload=decision,
+                )
+                if decision["complete"] or not decision["steps"]:
+                    termination_reason = str(decision["reason"])
+                    break
+                round_number += 1
+                round_reason = str(decision["reason"])
+                round_planner_mode = str(decision["planner_mode"])
+                round_planner_error = decision.get("planner_error")
+                current_steps = _materialize_round_steps(
+                    decision["steps"],
+                    tool_catalog,
+                    round_number,
+                )
+
+            if not termination_reason:
+                termination_reason = "اكتملت دورة الوكيل دون خطوات متابعة جديدة."
 
             self._progress(
                 task,
@@ -223,14 +441,18 @@ class AgentWorker:
                 "synthesis_started",
                 "بدأ تلخيص الأدلة ونتائج الأدوات.",
             )
-            if execution_steps and all(
-                step["tool"] in DETERMINISTIC_SYNTHESIS_TOOLS
-                for step in execution_steps
+            executed_tools = [
+                str(item.get("result", {}).get("tool") or "")
+                for item in tool_results
+                if isinstance(item.get("result"), dict)
+            ]
+            if executed_tools and all(
+                tool in DETERMINISTIC_SYNTHESIS_TOOLS for tool in executed_tools
             ):
                 synthesis = _deterministic_synthesis(tool_results, len(sources))
                 self.synthesis_mode = (
                     "local_deterministic_fast_control"
-                    if all(step["tool"] in FAST_CONTROL_TOOLS for step in execution_steps)
+                    if all(tool in FAST_CONTROL_TOOLS for tool in executed_tools)
                     else "local_deterministic_tool_summary"
                 )
             else:
@@ -248,8 +470,11 @@ class AgentWorker:
                 {"tool_results": tool_results, "synthesis": synthesis},
             )
             model_trace = {
-                "planner_provider": plan[0].get("planner_mode"),
-                "planner_error": plan[0].get("planner_error"),
+                "planner_provider": initial_plan[0].get("planner_mode"),
+                "planner_error": initial_plan[0].get("planner_error"),
+                "review_providers": [
+                    round_item.get("planner_mode") for round_item in agent_rounds[1:]
+                ],
                 "synthesis_provider": self.synthesis_mode,
                 "last_provider": self.model.last_provider,
                 "provider_fallbacks": self.model.last_error,
@@ -262,6 +487,8 @@ class AgentWorker:
                 "model_trace": model_trace,
                 "sources": [source.__dict__ for source in sources],
                 "knowledge_mission": mission_evidence,
+                "agent_rounds": agent_rounds,
+                "termination_reason": termination_reason,
             }
 
             self._ensure_not_canceled(task)
@@ -271,7 +498,9 @@ class AgentWorker:
                 synthesis[:1000],
                 {
                     "worker_id": self.config.worker_id,
-                    "tools": [step["tool"] for step in execution_steps],
+                    "tools": executed_tools,
+                    "round_count": len(agent_rounds),
+                    "termination_reason": termination_reason,
                     "evaluation": evaluation,
                     "model_trace": model_trace,
                     "source_count": len(sources),
@@ -383,6 +612,9 @@ class AgentWorker:
         self,
         task: dict[str, Any],
         execution_steps: list[dict[str, Any]],
+        *,
+        checkpoint: dict[str, Any] | None = None,
+        progress: int = 30,
     ) -> bool:
         if task.get("approval_state") == "approved":
             return False
@@ -404,24 +636,29 @@ class AgentWorker:
         if not gated:
             return False
         risk_class = gated[0]["risk_class"]
-        self.store.update_task(
-            task["id"],
-            status="awaiting_approval",
-            progress=30,
-            current_step=f"الخطة تحتاج موافقة قبل تشغيل {gated[0]['tool']}",
-            risk_class=risk_class,
-            requires_approval=True,
-            approval_state="pending",
-            last_heartbeat_at=now_iso(),
-        )
+        fields: dict[str, Any] = {
+            "status": "awaiting_approval",
+            "progress": progress,
+            "current_step": f"الخطة تحتاج موافقة قبل تشغيل {gated[0]['tool']}",
+            "risk_class": risk_class,
+            "requires_approval": True,
+            "approval_state": "pending",
+            "last_heartbeat_at": now_iso(),
+        }
+        if checkpoint is not None:
+            fields["result"] = {"execution_checkpoint": checkpoint}
+        self.store.update_task(task["id"], **fields)
         self.store.add_event(
             task,
             "approval_required",
             "اختارت خطة التنفيذ أداة ذات أثر حساس وتوقفت قبل تشغيلها.",
             status="awaiting_approval",
             step="plan_approval_gate",
-            progress=30,
-            payload={"gated_steps": gated},
+            progress=progress,
+            payload={
+                "gated_steps": gated,
+                "resume_round": checkpoint.get("round_number") if checkpoint else None,
+            },
         )
         return True
 
@@ -454,6 +691,109 @@ class AgentWorker:
         else:
             self.synthesis_mode = "local_deterministic_no_model"
         return _deterministic_synthesis(tool_results, len(sources))
+
+
+def _execution_checkpoint(task: dict[str, Any]) -> dict[str, Any] | None:
+    result = task.get("result")
+    if not isinstance(result, dict):
+        return None
+    checkpoint = result.get("execution_checkpoint")
+    if (
+        not isinstance(checkpoint, dict)
+        or checkpoint.get("version") != 1
+        or not checkpoint.get("execution_prompt")
+        or not isinstance(checkpoint.get("next_steps"), list)
+    ):
+        return None
+    return checkpoint
+
+
+def _build_execution_checkpoint(
+    execution_task: dict[str, Any],
+    mission_evidence: dict[str, Any] | None,
+    sources: list[RetrievedSource],
+    initial_plan: list[dict[str, Any]],
+    agent_rounds: list[dict[str, Any]],
+    tool_results: list[dict[str, Any]],
+    seen_signatures: set[str],
+    round_number: int,
+    next_steps: list[dict[str, Any]],
+    round_reason: str,
+    round_planner_mode: str,
+    round_planner_error: Any,
+) -> dict[str, Any]:
+    return {
+        "version": 1,
+        "execution_prompt": execution_task["prompt"],
+        "knowledge_mission": bool(execution_task.get("knowledge_mission")),
+        "mission_evidence": mission_evidence,
+        "sources": [source.__dict__ for source in sources],
+        "initial_plan": initial_plan,
+        "agent_rounds": agent_rounds,
+        "tool_results": tool_results,
+        "seen_signatures": sorted(seen_signatures),
+        "round_number": round_number,
+        "next_steps": next_steps,
+        "round_reason": round_reason,
+        "round_planner_mode": round_planner_mode,
+        "round_planner_error": round_planner_error,
+    }
+
+
+def _materialize_round_steps(
+    requested: Any,
+    tool_catalog: list[dict[str, Any]],
+    round_number: int,
+) -> list[dict[str, Any]]:
+    if not isinstance(requested, list):
+        return []
+    catalog_by_name = {
+        str(item.get("name")): item
+        for item in tool_catalog
+        if item.get("name")
+    }
+    steps: list[dict[str, Any]] = []
+    for index, raw in enumerate(requested, start=1):
+        if not isinstance(raw, dict):
+            continue
+        tool = str(raw.get("tool") or "")
+        spec = catalog_by_name.get(tool)
+        if not spec:
+            continue
+        steps.append(
+            {
+                "id": f"round-{round_number}-execute-{index}",
+                "kind": "tool",
+                "tool": tool,
+                "description": str(raw.get("description") or spec.get("description") or tool),
+                "args": raw.get("args") if isinstance(raw.get("args"), dict) else {},
+                "risk_class": spec.get("risk_class", "internal_owned"),
+                "requires_approval": bool(spec.get("requires_approval", False)),
+                "read_only": bool(spec.get("read_only", True)),
+            }
+        )
+    return steps
+
+
+def _round_step_summary(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": step["id"],
+            "tool": step["tool"],
+            "description": step["description"],
+            "args": step.get("args", {}),
+            "risk_class": step.get("risk_class", "internal_owned"),
+            "requires_approval": bool(step.get("requires_approval", False)),
+            "read_only": bool(step.get("read_only", True)),
+        }
+        for step in steps
+    ]
+
+
+def _round_progress(round_number: int, max_rounds: int) -> tuple[int, int]:
+    start = 30 + int(((round_number - 1) / max_rounds) * 45)
+    end = 30 + int((round_number / max_rounds) * 45)
+    return max(30, min(74, start)), max(31, min(75, end))
 
 
 def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, Any]]:

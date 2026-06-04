@@ -903,6 +903,7 @@ function TaskDetail({
               <AlertDescription>{task.error_message}</AlertDescription>
             </Alert>
           )}
+          {task.status === "awaiting_approval" && <ExecutionCheckpointNotice value={task.result} />}
         </CardContent>
       </Card>
 
@@ -915,7 +916,7 @@ function TaskDetail({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[420px]">
+            <ScrollArea className="h-auto [&_[data-radix-scroll-area-viewport]]:h-auto lg:h-[420px] lg:[&_[data-radix-scroll-area-viewport]]:h-full">
               <div className="space-y-4 pl-3">
                 {events.length === 0 ? (
                   <p className="text-xs text-muted-foreground">لا توجد أحداث بعد.</p>
@@ -954,7 +955,7 @@ function TaskDetail({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[420px]">
+            <ScrollArea className="h-auto [&_[data-radix-scroll-area-viewport]]:h-auto lg:h-[420px] lg:[&_[data-radix-scroll-area-viewport]]:h-full">
               <div className="space-y-4 pl-3">
                 {receipts.map((receipt) => (
                   <div
@@ -1096,13 +1097,17 @@ function ReceiptEvidenceSummary({ evidence }: { evidence: unknown }) {
   const evaluationSummary =
     typeof evaluation?.summary === "string" ? evaluation.summary : "لم يُسجل ملخص تقييم.";
   const sourceCount = typeof record.source_count === "number" ? record.source_count : 0;
+  const roundCount = typeof record.round_count === "number" ? record.round_count : 0;
+  const terminationReason =
+    typeof record.termination_reason === "string" ? record.termination_reason : null;
   const worker = typeof record.worker_id === "string" ? record.worker_id : "غير مسجل";
 
   return (
     <div className="mt-3 space-y-2 border-t border-emerald-500/15 pt-3">
-      <div className="grid gap-2 text-[10px] sm:grid-cols-2">
+      <div className="grid gap-2 text-[10px] sm:grid-cols-3">
         <InfoField label="المشغّل" value={worker} />
         <InfoField label="مصادر المعرفة" value={String(sourceCount)} />
+        <InfoField label="جولات الوكيل" value={String(roundCount)} />
       </div>
       {tools.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -1114,6 +1119,9 @@ function ReceiptEvidenceSummary({ evidence }: { evidence: unknown }) {
         </div>
       )}
       <p className="text-[10px] text-muted-foreground">{evaluationSummary}</p>
+      {terminationReason && (
+        <p className="text-[10px] text-muted-foreground">قرار الإنهاء: {terminationReason}</p>
+      )}
     </div>
   );
 }
@@ -1129,6 +1137,25 @@ function TaskResultSummary({ value }: { value: unknown }) {
   const evaluationPassed = typeof evaluation?.passed === "boolean" ? evaluation.passed : null;
   const evaluationSummary = typeof evaluation?.summary === "string" ? evaluation.summary : null;
   const sourceCount = Array.isArray(result.sources) ? result.sources.length : 0;
+  const terminationReason =
+    typeof result.termination_reason === "string" ? result.termination_reason : null;
+  const agentRounds = Array.isArray(result.agent_rounds)
+    ? result.agent_rounds.flatMap((item) => {
+        const round = asRecord(item);
+        if (!round) return [];
+        const tools = Array.isArray(round.tools)
+          ? round.tools.filter((tool): tool is string => typeof tool === "string")
+          : [];
+        return [
+          {
+            number: typeof round.round === "number" ? round.round : 0,
+            reason: typeof round.reason === "string" ? round.reason : "",
+            planner: typeof round.planner_mode === "string" ? round.planner_mode : "",
+            tools,
+          },
+        ];
+      })
+    : [];
   const toolRows = Array.isArray(result.tool_results)
     ? result.tool_results.flatMap((item) => {
         const row = asRecord(item);
@@ -1166,6 +1193,55 @@ function TaskResultSummary({ value }: { value: unknown }) {
           {evaluationSummary && <span className="break-words">{evaluationSummary}</span>}
         </div>
       )}
+      {agentRounds.length > 0 && (
+        <div className="border-y border-border/50">
+          <div className="flex items-center justify-between gap-3 py-2">
+            <span className="text-[10px] font-semibold">جولات قرار وتنفيذ الوكيل</span>
+            <Badge variant="outline" className="text-[9px] font-normal">
+              {agentRounds.length} جولات
+            </Badge>
+          </div>
+          <div className="divide-y divide-border/50">
+            {agentRounds.map((round) => (
+              <div key={`${round.number}-${round.planner}`} className="py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-sky-500/30 bg-sky-500/10 text-[9px] text-sky-300">
+                    الجولة {round.number}
+                  </Badge>
+                  {round.planner && (
+                    <span className="font-mono text-[9px] text-muted-foreground">
+                      {round.planner}
+                    </span>
+                  )}
+                </div>
+                {round.reason && (
+                  <p className="mt-1.5 break-words text-[10px] text-muted-foreground">
+                    {round.reason}
+                  </p>
+                )}
+                {round.tools.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {round.tools.map((tool) => (
+                      <Badge
+                        key={tool}
+                        variant="outline"
+                        className="font-mono text-[9px] font-normal"
+                      >
+                        {tool}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {terminationReason && (
+            <p className="border-t border-border/50 py-2 text-[10px] text-muted-foreground">
+              قرار الإنهاء: {terminationReason}
+            </p>
+          )}
+        </div>
+      )}
       {toolRows.length > 0 && (
         <div className="divide-y divide-border/50 border-y border-border/50">
           {toolRows.map((row, index) => (
@@ -1182,6 +1258,29 @@ function TaskResultSummary({ value }: { value: unknown }) {
         </div>
       )}
     </div>
+  );
+}
+
+function ExecutionCheckpointNotice({ value }: { value: unknown }) {
+  const result = asRecord(value);
+  const checkpoint = asRecord(result?.execution_checkpoint);
+  if (!checkpoint) return null;
+
+  const round = typeof checkpoint.round_number === "number" ? checkpoint.round_number : 1;
+  const completedTools = Array.isArray(checkpoint.tool_results)
+    ? checkpoint.tool_results.length
+    : 0;
+  const nextSteps = Array.isArray(checkpoint.next_steps) ? checkpoint.next_steps.length : 0;
+
+  return (
+    <Alert className="border-violet-500/30 bg-violet-500/5">
+      <Clock3 className="text-violet-300" />
+      <AlertTitle>نقطة استئناف محفوظة</AlertTitle>
+      <AlertDescription>
+        بعد الموافقة سيستأنف الوكيل الجولة {round} وينفذ {nextSteps} خطوات معلقة دون إعادة{" "}
+        {completedTools} خطوات مكتملة.
+      </AlertDescription>
+    </Alert>
   );
 }
 

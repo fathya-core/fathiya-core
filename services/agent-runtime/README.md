@@ -34,6 +34,21 @@ The default SQLite store is for local verification. Set `FATHIYA_STORE=supabase`
 `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` to connect the worker to the
 production task queue.
 
+### Multi-round agent loop
+
+Each task runs as an agent loop instead of a one-shot plan. After every
+execution round, OpenRouter or the enabled local Hugging Face planning model
+reviews the observed tool results and either closes the task with a reason or
+selects a new, non-duplicate set of registered tools. If model review is
+unavailable or invalid, a deterministic local reviewer continues useful
+configured read-only checks.
+
+`FATHIYA_MAX_AGENT_ROUNDS` bounds one task's review/execution loop while
+`FATHIYA_MAX_TOOL_STEPS` bounds each round. A later round that selects an
+approval-gated tool stores an execution checkpoint. After approval, the worker
+resumes that round without repeating completed actions. Receipts record the
+round count and termination reason.
+
 Hugging Face retrieval is CPU-only by default and optional:
 
 ```powershell

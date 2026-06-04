@@ -62,6 +62,9 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(health.status_code, 200)
         self.assertEqual(health.json()["mode"], "local_sqlite")
         self.assertFalse(health.json()["worker_online"])
+        self.assertEqual(health.json()["agent_loop"]["max_rounds"], 4)
+        self.assertEqual(health.json()["agent_loop"]["max_tool_steps_per_round"], 6)
+        self.assertFalse(health.json()["agent_loop"]["openrouter_configured"])
         self.assertEqual(health.json()["trading"]["mode"], "paper")
         self.assertEqual(health.json()["trading"]["cycle_target_seconds"], 0.05)
         self.assertEqual(

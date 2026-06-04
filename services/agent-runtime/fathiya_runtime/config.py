@@ -35,6 +35,7 @@ class RuntimeConfig:
     openrouter_api_key: str
     openrouter_model: str
     max_tool_steps: int
+    max_agent_rounds: int
     supabase_url: str
     supabase_service_role_key: str
     n8n_base_url: str
@@ -163,6 +164,10 @@ class RuntimeConfig:
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY", ""),
             openrouter_model=os.getenv("OPENROUTER_MODEL", "openrouter/auto"),
             max_tool_steps=max(1, min(12, int(os.getenv("FATHIYA_MAX_TOOL_STEPS", "6")))),
+            max_agent_rounds=max(
+                1,
+                min(8, int(os.getenv("FATHIYA_MAX_AGENT_ROUNDS", "4"))),
+            ),
             supabase_url=os.getenv("SUPABASE_URL", "").rstrip("/"),
             supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
             n8n_base_url=os.getenv("N8N_BASE_URL", "http://127.0.0.1:5678").rstrip("/"),

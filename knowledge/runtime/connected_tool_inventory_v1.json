@@ -29,6 +29,7 @@
         "version-controlled connector profiles",
         "secret-safe connector readiness",
         "direct Zapier MCP OAuth and exact-action gateway",
+        "multi-round plan, execute, review, and resume loop",
         "web report intake"
       ]
     },
