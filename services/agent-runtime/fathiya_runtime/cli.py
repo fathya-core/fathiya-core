@@ -10,6 +10,7 @@ from typing import Any
 
 from .config import RuntimeConfig
 from .local_api import serve_local_control_plane
+from .knowledge_watcher import KnowledgeIntakeWatcher
 from .store import SQLiteTaskStore, SupabaseTaskStore, TaskStore, now_iso
 from .tools import ToolExecutor
 from .trading import PaperTradingAgent
@@ -66,6 +67,8 @@ def main() -> None:
     sub.add_parser("trading-tick")
     trading_proof = sub.add_parser("trading-proof")
     trading_proof.add_argument("--cycles", type=int, default=5)
+    sub.add_parser("intake-status")
+    sub.add_parser("intake-scan")
 
     args = parser.parse_args()
     config = RuntimeConfig.load()
@@ -208,6 +211,22 @@ def main() -> None:
                     "cycles": results,
                     "status": trading.status(),
                 },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "intake-status":
+        print(
+            json.dumps(
+                KnowledgeIntakeWatcher(config, store).status(),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    elif args.command == "intake-scan":
+        print(
+            json.dumps(
+                KnowledgeIntakeWatcher(config, store).scan_once(),
                 ensure_ascii=False,
                 indent=2,
             )

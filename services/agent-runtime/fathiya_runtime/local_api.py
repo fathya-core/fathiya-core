@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from .config import RuntimeConfig
 from .integrations import build_integration_readiness
+from .knowledge_watcher import KnowledgeIntakeWatcher
 from .knowledge_mission import operator_request
 from .store import TaskStore, now_iso
 from .tools import ToolExecutionError, ToolExecutor
@@ -27,6 +28,10 @@ TASK_PATH = re.compile(
 CONNECTOR_DISPATCH_PATH = "/api/agent/connector-dispatch"
 TRADING_PATH = re.compile(
     r"^/api/agent/trading(?:/(?P<action>status|receipts|start|stop|tick))?$",
+    re.IGNORECASE,
+)
+INTAKE_PATH = re.compile(
+    r"^/api/agent/intake(?:/(?P<action>status|scan|start|stop))?$",
     re.IGNORECASE,
 )
 
@@ -48,9 +53,11 @@ class LocalAgentHTTPServer(ThreadingHTTPServer):
         self.store = store
         self.trading = PaperTradingAgent.from_config(config)
         self.tools = ToolExecutor(config, trading_agent=self.trading)
+        self.intake = KnowledgeIntakeWatcher(config, store)
         self.worker_thread: threading.Thread | None = None
 
     def server_close(self) -> None:
+        self.intake.stop()
         self.trading.stop()
         super().server_close()
 
@@ -131,6 +138,7 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                             self.server.config.openrouter_api_key
                         ),
                     },
+                    "knowledge_intake": self.server.intake.status(),
                     "trading": {
                         "running": trading["running"],
                         "mode": trading["mode"],
@@ -140,6 +148,12 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     },
                 }
             )
+        intake_match = INTAKE_PATH.fullmatch(path)
+        if intake_match:
+            action = intake_match.group("action") or "status"
+            if action == "status":
+                return self._send_json({"intake": self.server.intake.status()})
+            return self._send_error(HTTPStatus.METHOD_NOT_ALLOWED, "Use POST for this route")
         trading_match = TRADING_PATH.fullmatch(path)
         if trading_match:
             action = trading_match.group("action") or "status"
@@ -222,6 +236,14 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         if not self._origin_allowed():
             return self._send_error(HTTPStatus.FORBIDDEN, "Origin is not allowed")
         path = urlparse(self.path).path.rstrip("/") or "/"
+        intake_match = INTAKE_PATH.fullmatch(path)
+        if intake_match and intake_match.group("action") in {"scan", "start", "stop"}:
+            action = intake_match.group("action")
+            if action == "scan":
+                return self._send_json(self.server.intake.scan_once())
+            if action == "start":
+                return self._send_json({"intake": self.server.intake.start()})
+            return self._send_json({"intake": self.server.intake.stop()})
         trading_match = TRADING_PATH.fullmatch(path)
         if trading_match and trading_match.group("action") in {"start", "stop", "tick"}:
             try:
@@ -650,6 +672,7 @@ def serve_local_control_plane(
     )
     server.worker_thread = worker_thread
     worker_thread.start()
+    server.intake.start()
     print(
         json.dumps(
             {
@@ -657,6 +680,7 @@ def serve_local_control_plane(
                 "api": f"http://{host}:{server.server_address[1]}",
                 "worker_id": config.worker_id,
                 "store": config.store,
+                "knowledge_intake": server.intake.status(),
             },
             ensure_ascii=False,
         )

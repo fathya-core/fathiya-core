@@ -10,6 +10,7 @@ import {
   CircleAlert,
   Clock3,
   FileCheck2,
+  FolderSearch,
   KeyRound,
   ListChecks,
   Loader2,
@@ -48,6 +49,7 @@ import type {
   AgentIntegrationReadiness,
   AgentIntegrationStatus,
   AgentIntegrationSummary,
+  AgentKnowledgeIntakeStatus,
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
@@ -94,6 +96,7 @@ function AgentTasksPage() {
     null,
   );
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
+  const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
   const [title, setTitle] = useState("");
@@ -105,6 +108,7 @@ function AgentTasksPage() {
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
   const [tradingActing, setTradingActing] = useState(false);
+  const [intakeActing, setIntakeActing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -190,6 +194,19 @@ function AgentTasksPage() {
     }
   }, [localMode]);
 
+  const loadIntake = useCallback(async () => {
+    if (!localMode) return;
+    try {
+      const data = await agentApi<{ intake: AgentKnowledgeIntakeStatus }>(
+        null,
+        "/api/agent/intake/status",
+      );
+      setIntake(data.intake);
+    } catch (loadError) {
+      setError(String(loadError));
+    }
+  }, [localMode]);
+
   const loadIntegrations = useCallback(async () => {
     if (!localMode) return;
     try {
@@ -224,6 +241,13 @@ function AgentTasksPage() {
     const timer = window.setInterval(() => void loadTrading(), 1000);
     return () => window.clearInterval(timer);
   }, [loadTrading, localMode]);
+
+  useEffect(() => {
+    if (!localMode) return;
+    void loadIntake();
+    const timer = window.setInterval(() => void loadIntake(), 5000);
+    return () => window.clearInterval(timer);
+  }, [loadIntake, localMode]);
 
   useEffect(() => {
     if (!localMode) return;
@@ -308,6 +332,20 @@ function AgentTasksPage() {
     }
   }
 
+  async function intakeAction(action: "start" | "stop" | "scan") {
+    if (!localMode) return;
+    setIntakeActing(true);
+    setError("");
+    try {
+      await agentApi(null, `/api/agent/intake/${action}`, { method: "POST" });
+      await Promise.all([loadIntake(), loadTasks()]);
+    } catch (actionError) {
+      setError(String(actionError));
+    } finally {
+      setIntakeActing(false);
+    }
+  }
+
   async function signOut() {
     if (localMode) {
       setTasks([]);
@@ -382,6 +420,7 @@ function AgentTasksPage() {
                       void loadTasks();
                       void loadConnectors();
                       void loadIntegrations();
+                      void loadIntake();
                     }}
                   >
                     <RefreshCw />
@@ -500,6 +539,99 @@ function AgentTasksPage() {
                   </form>
                 </CardContent>
               </Card>
+
+              {localMode && intake && (
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <FolderSearch className="h-4 w-4" />
+                          محرك الاستيعاب المستمر
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          يلتقط التقارير المحلية ويحوّلها تلقائيًا إلى مهام وإيصالات.
+                        </CardDescription>
+                      </div>
+                      <Badge
+                        className={cn(
+                          "shrink-0",
+                          intake.running
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-border bg-muted/30 text-muted-foreground",
+                        )}
+                      >
+                        {intake.running ? "يراقب" : intake.enabled ? "متوقف" : "معطّل"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <InfoField label="تقارير متتبعة" value={String(intake.tracked_files)} />
+                      <InfoField label="مهام أنشئت" value={String(intake.enqueued_count)} />
+                      <InfoField
+                        label="دورية الفحص"
+                        value={`${intake.scan_interval_seconds} ثانية`}
+                      />
+                      <InfoField label="آخر فحص" value={formatDate(intake.last_scan_at)} />
+                    </div>
+                    <div className="rounded-md border border-border/50 bg-muted/20 p-3 text-[10px]">
+                      <p className="mb-1 font-semibold">آخر تقرير</p>
+                      <p className="break-words text-muted-foreground">
+                        {intake.last_enqueued?.source_name || "لم يلتقط تقريرًا جديدًا بعد."}
+                      </p>
+                      {intake.last_enqueued && (
+                        <p className="mt-1 break-words text-[9px] text-emerald-400">
+                          {STATUS_LABELS[intake.last_enqueued.task_status]} ·{" "}
+                          {intake.last_enqueued.task_progress ?? 0}%
+                        </p>
+                      )}
+                      <p
+                        dir="ltr"
+                        className="mt-2 break-all text-left font-mono text-[9px] text-muted-foreground"
+                      >
+                        {intake.watch_root}
+                      </p>
+                    </div>
+                    {intake.last_error && (
+                      <p className="break-words text-[10px] text-destructive">
+                        {intake.last_error}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        size="sm"
+                        onClick={() => void intakeAction(intake.running ? "stop" : "start")}
+                        disabled={intakeActing || !intake.enabled}
+                      >
+                        {intakeActing ? (
+                          <Loader2 className="animate-spin" />
+                        ) : intake.running ? (
+                          <Square />
+                        ) : (
+                          <Play />
+                        )}
+                        {intake.running ? "إيقاف المراقبة" : "تشغيل المراقبة"}
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => void intakeAction("scan")}
+                            disabled={intakeActing || !intake.enabled}
+                          >
+                            <RefreshCw />
+                            <span className="sr-only">فحص مجلد التقارير الآن</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>فحص المجلد الآن</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {localMode && trading && (
                 <Card className="border-border/60 bg-card/50">

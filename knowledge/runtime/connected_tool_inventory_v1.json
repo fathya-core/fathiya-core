@@ -1,6 +1,6 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-04T23:39:38+03:00",
+  "captured_at": "2026-06-05T00:12:00+03:00",
   "source": "live Zapier MCP enabled-action inventory and local runtime checks",
   "policy": {
     "read_actions": "automatic",
@@ -33,7 +33,8 @@
         "live local execution mesh probe",
         "approval-gated auto, Claude Code, Cursor, and Manus delegation",
         "Binance Spot Testnet readiness and approved order gateway",
-        "web report intake"
+        "web report intake",
+        "continuous local knowledge-inbox watcher"
       ]
     },
     {
@@ -130,6 +131,13 @@
     },
     "Agents": {
       "approval_gated_write": ["Run Agent"]
+    },
+    "AI by Zapier": {
+      "approval_gated_write": [
+        "Analyze and Return Data",
+        "Extract Content From URL",
+        "Search Content Across URLs"
+      ]
     },
     "Netlify": {
       "approval_gated_write": ["Start Deploy"]

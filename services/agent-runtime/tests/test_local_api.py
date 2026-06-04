@@ -22,6 +22,12 @@ class LocalAgentApiTests(unittest.TestCase):
         self.db_path = Path(self.temp.name) / "runtime.db"
         os.environ["FATHIYA_STORE"] = "sqlite"
         os.environ["FATHIYA_SQLITE_PATH"] = str(self.db_path)
+        os.environ["FATHIYA_KNOWLEDGE_ROOT"] = str(Path(self.temp.name) / "knowledge")
+        os.environ["FATHIYA_KNOWLEDGE_WATCH_ENABLED"] = "true"
+        os.environ["FATHIYA_KNOWLEDGE_WATCH_ROOT"] = str(Path(self.temp.name) / "inbox")
+        os.environ["FATHIYA_KNOWLEDGE_WATCH_STATE_PATH"] = str(
+            Path(self.temp.name) / "knowledge-watcher.json"
+        )
         os.environ["FATHIYA_TRADING_SQLITE_PATH"] = str(
             Path(self.temp.name) / "trading.db"
         )
@@ -65,6 +71,8 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(health.json()["agent_loop"]["max_rounds"], 4)
         self.assertEqual(health.json()["agent_loop"]["max_tool_steps_per_round"], 6)
         self.assertFalse(health.json()["agent_loop"]["openrouter_configured"])
+        self.assertTrue(health.json()["knowledge_intake"]["enabled"])
+        self.assertFalse(health.json()["knowledge_intake"]["running"])
         self.assertEqual(health.json()["trading"]["mode"], "paper")
         self.assertEqual(health.json()["trading"]["cycle_target_seconds"], 0.05)
         self.assertEqual(
@@ -146,6 +154,19 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertFalse(
             integration_by_id["broker_testnet"]["details"]["live_execution_enabled"]
         )
+        intake_status = requests.get(
+            f"{self.base_url}/api/agent/intake/status",
+            headers=self.headers,
+            timeout=5,
+        ).json()["intake"]
+        self.assertTrue(intake_status["enabled"])
+        self.assertFalse(intake_status["running"])
+        intake_scan = requests.post(
+            f"{self.base_url}/api/agent/intake/scan",
+            headers=self.headers,
+            timeout=5,
+        ).json()
+        self.assertEqual(intake_scan["enqueued"], [])
 
         zapier_status = requests.get(
             f"{self.base_url}/api/agent/oauth/zapier/status",

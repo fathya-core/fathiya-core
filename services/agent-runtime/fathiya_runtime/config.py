@@ -36,6 +36,12 @@ class RuntimeConfig:
     openrouter_model: str
     max_tool_steps: int
     max_agent_rounds: int
+    knowledge_watch_enabled: bool
+    knowledge_watch_root: Path
+    knowledge_watch_state_path: Path
+    knowledge_watch_seconds: float
+    knowledge_watch_max_characters: int
+    knowledge_watch_objective: str
     supabase_url: str
     supabase_service_role_key: str
     n8n_base_url: str
@@ -175,6 +181,40 @@ class RuntimeConfig:
                 1,
                 min(8, int(os.getenv("FATHIYA_MAX_AGENT_ROUNDS", "4"))),
             ),
+            knowledge_watch_enabled=os.getenv(
+                "FATHIYA_KNOWLEDGE_WATCH_ENABLED",
+                "true",
+            ).lower()
+            in {"1", "true", "yes"},
+            knowledge_watch_root=resolve_path(
+                "FATHIYA_KNOWLEDGE_WATCH_ROOT",
+                "runtime/knowledge-inbox",
+            ),
+            knowledge_watch_state_path=resolve_path(
+                "FATHIYA_KNOWLEDGE_WATCH_STATE_PATH",
+                "runtime/knowledge-watcher-state.json",
+            ),
+            knowledge_watch_seconds=max(
+                0.25,
+                min(
+                    300.0,
+                    float(os.getenv("FATHIYA_KNOWLEDGE_WATCH_SECONDS", "2")),
+                ),
+            ),
+            knowledge_watch_max_characters=max(
+                1_000,
+                min(
+                    12_000,
+                    int(os.getenv("FATHIYA_KNOWLEDGE_WATCH_MAX_CHARACTERS", "12000")),
+                ),
+            ),
+            knowledge_watch_objective=(
+                os.getenv("FATHIYA_KNOWLEDGE_WATCH_OBJECTIVE")
+                or (
+                    "استوعب التقرير الجديد وابحث في المعرفة وافحص شبكة التنفيذ المحلية "
+                    "وحالة المستودع ونفذ الفحوصات الداخلية الآمنة المناسبة وسجل الأدلة والإيصال"
+                )
+            ).strip(),
             supabase_url=os.getenv("SUPABASE_URL", "").rstrip("/"),
             supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
             n8n_base_url=os.getenv("N8N_BASE_URL", "http://127.0.0.1:5678").rstrip("/"),

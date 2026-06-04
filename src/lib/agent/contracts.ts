@@ -80,6 +80,30 @@ export type CreateAgentTaskBody = {
   title?: string;
 };
 
+export type AgentKnowledgeIntakeStatus = {
+  enabled: boolean;
+  running: boolean;
+  watch_root: string;
+  scan_interval_seconds: number;
+  max_report_characters: number;
+  supported_extensions: string[];
+  tracked_files: number;
+  enqueued_count: number;
+  ignored_count: number;
+  last_scan_at: string | null;
+  last_error: string | null;
+  last_enqueued: {
+    path: string;
+    source_name: string;
+    sha256: string;
+    task_id: string;
+    task_status: AgentTaskStatus;
+    task_progress?: number;
+    task_current_step?: string | null;
+    captured_at: string;
+  } | null;
+};
+
 export type AgentConnectorProfile = {
   name: string;
   provider: string;

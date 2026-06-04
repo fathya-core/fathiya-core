@@ -48,6 +48,11 @@ loopback-only API at `http://127.0.0.1:8765`. Confirm
 `FATHIYA_OPERATOR_ORIGINS` contains the exact production origins; unrelated
 browser origins must receive HTTP 403 from the local control plane.
 
+The same command starts the continuous knowledge-intake watcher. Place a report
+in `services/agent-runtime/runtime/knowledge-inbox`, or a structured operator
+mission in a `*.mission.json` file, and verify that it appears in the task queue
+within the configured watch interval and completes with a receipt.
+
 ## Operator Flow
 
 1. Open `/agent-login` and authenticate.
@@ -88,6 +93,9 @@ browser origins must receive HTTP 403 from the local control plane.
     public reachability is reported without credentials. After adding Testnet
     keys locally, validate an order through `/api/v3/order/test` before enabling
     `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED`.
+17. Place a new report in the continuous knowledge inbox. Confirm the watcher
+    queues it once, the worker persists it before planning, and an unchanged
+    report is not duplicated after restart.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.

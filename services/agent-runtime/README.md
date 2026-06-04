@@ -116,6 +116,35 @@ explicitly requested by the operator and still pass the normal approval gate.
 The final receipt records the source path and SHA-256 without copying the raw
 report into the receipt.
 
+### Continuous knowledge intake
+
+The local control plane starts a continuous knowledge-intake watcher alongside
+the task worker. Drop `.md`, `.txt`, `.json`, or `.csv` reports into
+`services/agent-runtime/runtime/knowledge-inbox`. Each new or changed report is
+wrapped as a knowledge mission, queued exactly once per content digest, executed
+through the normal multi-round agent loop, and recorded with a receipt.
+
+Regular reports use the configured internal-inspection objective. A
+`*.mission.json` file may provide explicit `source_name`, `objective`, and
+`content` fields. The objective is treated as the local operator request and
+still passes normal risk classification; the report content remains untrusted
+evidence and cannot originate hidden external or destructive actions.
+
+```powershell
+.\.venv\Scripts\fathiya-runtime intake-status
+.\.venv\Scripts\fathiya-runtime intake-scan
+```
+
+The local control plane exposes:
+
+- `GET /api/agent/intake/status`
+- `POST /api/agent/intake/scan`
+- `POST /api/agent/intake/start`
+- `POST /api/agent/intake/stop`
+
+The watcher state is stored under ignored local runtime data, so restarting the
+service does not duplicate unchanged reports.
+
 The built-in catalog can fetch and ingest reports into local knowledge, search
 and inspect the canonical repository, read authenticated GitHub metadata, read
 n8n health/workflows, call an approved n8n webhook, inspect connected tools,
