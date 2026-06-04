@@ -76,6 +76,10 @@ browser origins must receive HTTP 403 from the local control plane.
     second runs the newly discovered configured read-only check.
 12. Confirm a sensitive follow-up stores an execution checkpoint and resumes
     after approval without replaying completed rounds.
+13. Submit a broad local-tool task and confirm `local_capability_inventory`
+    reports live readiness for the local execution mesh.
+14. Submit an `agent_delegate` request and confirm it stops at
+    `awaiting_approval` before invoking Claude Code, Cursor, or Manus.
 
 Sensitive tasks remain in `awaiting_approval`. This includes money, real
 trading, live security testing, deletion, and external publication.
@@ -87,6 +91,8 @@ trading, live security testing, deletion, and external publication.
 - Restart the worker and submit a new safe task.
 - Confirm OpenRouter failures route to deterministic local planning, bounded
   `huggingface_local` synthesis, and deterministic local evaluation.
+- Confirm local capability probes never return auth output, access tokens,
+  command paths, or secret environment values.
 - Confirm no `sk-or-v1-`, service-role value, or `VITE_OPENROUTER_*` string is
   present in `dist/client`.
 - Run:

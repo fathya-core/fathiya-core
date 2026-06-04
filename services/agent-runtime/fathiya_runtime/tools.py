@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,9 +64,12 @@ class ToolExecutor:
         self.config = config
         self._trading = trading_agent
         self._model_router = model_router
+        self._capability_cache: tuple[float, dict[str, Any]] | None = None
         self.zapier = ZapierMCPGateway(config)
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
+            "local_capability_inventory": self._local_capability_inventory,
+            "agent_delegate": self._agent_delegate,
             "internal_echo": self._internal_echo,
             "repo_status": self._repo_status,
             "repo_search": self._repo_search,
@@ -95,6 +100,21 @@ class ToolExecutor:
                     "tool_catalog",
                     "List every executable local tool, risk class, and required input.",
                     "runtime",
+                ),
+                ToolSpec(
+                    "local_capability_inventory",
+                    "Probe the local execution mesh and report which agent, automation, model, security, and engineering runtimes are actually ready.",
+                    "runtime",
+                    inputs=("refresh",),
+                ),
+                ToolSpec(
+                    "agent_delegate",
+                    "Delegate an approved objective to Claude Code locally or to Cursor/Manus through the direct Zapier MCP gateway.",
+                    "agents",
+                    risk_class="external",
+                    requires_approval=True,
+                    read_only=False,
+                    inputs=("provider", "objective", "mode", "params", "max_budget_usd"),
                 ),
                 ToolSpec(
                     "internal_echo",
@@ -252,6 +272,27 @@ class ToolExecutor:
                     for profile in profiles
                 ]
                 item["configured"] = bool(profiles)
+            elif spec.name == "agent_delegate":
+                item["providers"] = [
+                    {
+                        "name": "claude_code",
+                        "configured": bool(shutil.which("claude")),
+                        "connection_mode": "local_cli",
+                    },
+                    {
+                        "name": "cursor",
+                        "configured": self.zapier.configured,
+                        "connection_mode": "zapier_mcp",
+                    },
+                    {
+                        "name": "manus",
+                        "configured": self.zapier.configured,
+                        "connection_mode": "zapier_mcp",
+                    },
+                ]
+                item["configured"] = any(
+                    provider["configured"] for provider in item["providers"]
+                )
             elif spec.name == "connector_profile":
                 item["profiles"] = connector_profiles
                 item["configured"] = any(
@@ -377,6 +418,357 @@ class ToolExecutor:
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         return {"available": True, "tools": self.catalog()}
+
+    def _local_capability_inventory(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        now = time.monotonic()
+        if (
+            self._capability_cache
+            and not bool(args.get("refresh"))
+            and now - self._capability_cache[0] < 60
+        ):
+            return {**self._capability_cache[1], "cached": True}
+
+        cursor = self._probe_cli("cursor", ("--version",))
+        cursor.update(
+            {
+                "id": "cursor_agent",
+                "name": "Cursor Agent",
+                "execution_mode": "local_cli_and_zapier",
+                "requires_approval": True,
+            }
+        )
+        claude = self._probe_cli("claude", ("--version",), auth_args=("auth", "status"))
+        claude.update(
+            {
+                "id": "claude_code",
+                "name": "Claude Code",
+                "execution_mode": "local_cli",
+                "requires_approval": True,
+            }
+        )
+        github = self._probe_cli("gh", ("--version",), auth_args=("auth", "status"))
+        github.update(
+            {
+                "id": "github_cli",
+                "name": "GitHub CLI",
+                "execution_mode": "local_cli",
+                "requires_approval": False,
+            }
+        )
+        docker = self._probe_docker()
+        n8n_status = self._n8n_status("", {}, [])
+        n8n = {
+            "id": "n8n",
+            "name": "n8n",
+            "installed": bool(shutil.which("n8n")),
+            "available": bool(n8n_status.get("available")),
+            "status": "active" if n8n_status.get("available") else "degraded",
+            "version": n8n_status.get("version"),
+            "execution_mode": "local_service",
+            "requires_approval": False,
+        }
+        kali_status = self._kali_tool_inventory("", {}, [])
+        kali = {
+            "id": "kali_wsl",
+            "name": "Kali Linux WSL",
+            "installed": bool(shutil.which("wsl.exe")),
+            "available": bool(kali_status.get("available")),
+            "status": str(kali_status.get("status") or "unavailable"),
+            "tool_count": len(kali_status.get("found_commands", [])),
+            "missing_tool_count": len(kali_status.get("missing_commands", [])),
+            "execution_mode": "local_wsl",
+            "requires_approval": False,
+        }
+        zapier_status = self.zapier.status()
+        zapier = {
+            "id": "zapier_mcp",
+            "name": "Zapier MCP",
+            "installed": True,
+            "available": bool(zapier_status.get("connected")),
+            "status": "active" if zapier_status.get("connected") else "partial",
+            "execution_mode": "oauth_mcp",
+            "requires_approval": True,
+        }
+        hugging_face_ready = (
+            self.config.enable_hf_retrieval or self.config.enable_local_generation
+        )
+        hugging_face = {
+            "id": "huggingface_local",
+            "name": "Hugging Face Local",
+            "installed": hugging_face_ready,
+            "available": hugging_face_ready,
+            "status": "active" if hugging_face_ready else "unavailable",
+            "execution_mode": "local_model",
+            "requires_approval": False,
+        }
+        openrouter = {
+            "id": "openrouter",
+            "name": "OpenRouter",
+            "installed": bool(self.config.openrouter_api_key),
+            "available": bool(self.config.openrouter_api_key),
+            "status": "active" if self.config.openrouter_api_key else "unavailable",
+            "execution_mode": "server_api",
+            "requires_approval": False,
+        }
+        trading = self._trading_agent().status()
+        trading_agent = {
+            "id": "trading_primary",
+            "name": "Primary Trading Agent",
+            "installed": True,
+            "available": True,
+            "status": "active" if trading.get("running") else "ready",
+            "execution_mode": "local_paper",
+            "requires_approval": False,
+            "symbol": trading.get("symbol"),
+            "live_execution_enabled": False,
+        }
+        capabilities = [
+            cursor,
+            claude,
+            github,
+            docker,
+            n8n,
+            kali,
+            zapier,
+            hugging_face,
+            openrouter,
+            trading_agent,
+        ]
+        ready_count = sum(
+            item.get("status") in {"active", "ready"} for item in capabilities
+        )
+        result = {
+            "available": True,
+            "captured_at": datetime.now(UTC).isoformat(),
+            "ready_count": ready_count,
+            "partial_count": sum(
+                item.get("status") in {"partial", "degraded"} for item in capabilities
+            ),
+            "unavailable_count": sum(
+                item.get("status") == "unavailable" for item in capabilities
+            ),
+            "capability_count": len(capabilities),
+            "capabilities": capabilities,
+            "cached": False,
+        }
+        self._capability_cache = (now, result)
+        return result
+
+    def _probe_cli(
+        self,
+        command: str,
+        version_args: tuple[str, ...],
+        *,
+        auth_args: tuple[str, ...] | None = None,
+    ) -> dict[str, Any]:
+        executable = shutil.which(command)
+        if not executable:
+            return {
+                "installed": False,
+                "available": False,
+                "status": "unavailable",
+                "version": None,
+                "authenticated": False if auth_args else None,
+            }
+        version = self._run(
+            [executable, *version_args],
+            cwd=self.config.repo_root,
+            timeout=10,
+        )
+        version_text = next(
+            (
+                line.strip()
+                for line in version["stdout"].splitlines()
+                if line.strip()
+            ),
+            None,
+        )
+        authenticated: bool | None = None
+        if auth_args:
+            auth = self._run(
+                [executable, *auth_args],
+                cwd=self.config.repo_root,
+                timeout=10,
+            )
+            authenticated = auth["return_code"] == 0
+            if authenticated and auth["stdout"].lstrip().startswith("{"):
+                try:
+                    payload = json.loads(auth["stdout"])
+                    authenticated = bool(payload.get("loggedIn", authenticated))
+                except json.JSONDecodeError:
+                    pass
+        available = version["return_code"] == 0
+        return {
+            "installed": True,
+            "available": available,
+            "status": (
+                "active"
+                if available and authenticated is not False
+                else "partial" if available else "degraded"
+            ),
+            "version": version_text,
+            "authenticated": authenticated,
+        }
+
+    def _probe_docker(self) -> dict[str, Any]:
+        executable = shutil.which("docker")
+        if not executable:
+            return {
+                "id": "docker",
+                "name": "Docker",
+                "installed": False,
+                "available": False,
+                "status": "unavailable",
+                "version": None,
+                "daemon_running": False,
+                "execution_mode": "local_service",
+                "requires_approval": True,
+            }
+        probe = self._run(
+            [
+                executable,
+                "version",
+                "--format",
+                "{{.Client.Version}}|{{if .Server}}{{.Server.Version}}{{end}}",
+            ],
+            cwd=self.config.repo_root,
+            timeout=10,
+        )
+        client_version, _, server_version = probe["stdout"].strip().partition("|")
+        daemon_running = bool(server_version)
+        return {
+            "id": "docker",
+            "name": "Docker",
+            "installed": True,
+            "available": daemon_running,
+            "status": "active" if daemon_running else "degraded",
+            "version": client_version or None,
+            "daemon_running": daemon_running,
+            "execution_mode": "local_service",
+            "requires_approval": True,
+        }
+
+    def _agent_delegate(
+        self,
+        prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        provider = str(args.get("provider") or "").strip().lower()
+        aliases = {
+            "claude": "claude_code",
+            "claude-code": "claude_code",
+            "cursor_agent": "cursor",
+        }
+        provider = aliases.get(provider, provider)
+        objective = " ".join(str(args.get("objective") or prompt).split()).strip()
+        if not objective:
+            raise ValueError("agent_delegate requires an objective")
+        if len(objective) > 8_000:
+            raise ValueError("agent_delegate objective is limited to 8,000 characters")
+        mode = str(args.get("mode") or "plan").strip().lower()
+        if mode not in {"plan", "execute"}:
+            raise ValueError("agent_delegate mode must be plan or execute")
+        requested_params = args.get("params")
+        params = dict(requested_params) if isinstance(requested_params, dict) else {}
+
+        if provider == "claude_code":
+            executable = shutil.which("claude")
+            if not executable:
+                raise RuntimeError("Claude Code CLI is not installed")
+            try:
+                budget = max(0.1, min(5.0, float(args.get("max_budget_usd", 1.0))))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("max_budget_usd must be numeric") from exc
+            timeout = max(30, min(900, int(args.get("timeout_seconds", 300))))
+            result = self._run(
+                [
+                    executable,
+                    "-p",
+                    objective,
+                    "--output-format",
+                    "json",
+                    "--permission-mode",
+                    "acceptEdits" if mode == "execute" else "plan",
+                    "--max-budget-usd",
+                    str(budget),
+                    "--no-session-persistence",
+                    "--name",
+                    "FATHIYA delegated agent",
+                ],
+                cwd=self.config.repo_root,
+                timeout=timeout,
+            )
+            try:
+                response: Any = json.loads(result["stdout"])
+            except json.JSONDecodeError:
+                response = result["stdout"][:20_000]
+            return {
+                "provider": provider,
+                "mode": mode,
+                "delegated": result["return_code"] == 0,
+                "execution_failed": result["return_code"] != 0,
+                "error": result["stderr"] or None,
+                "response": response,
+                "return_code": result["return_code"],
+            }
+
+        if provider == "cursor":
+            params.setdefault("prompt_text", objective)
+            params.setdefault("repository_url", self._canonical_repo_url())
+            params.setdefault("repository_ref", "main")
+            params.setdefault("target_auto_create_pr", False)
+            return {
+                "provider": provider,
+                "mode": mode,
+                "delegated": True,
+                **self.zapier.execute_action(
+                    "Cursor",
+                    "Launch Agent",
+                    params,
+                    objective,
+                    "Return the launched Cursor agent identifier and status.",
+                ),
+            }
+
+        if provider == "manus":
+            params.setdefault("prompt", objective)
+            params.setdefault("agent_profile", "manus-1.6")
+            params.setdefault("share_visibility", "private")
+            params.setdefault("hide_in_task_list", True)
+            return {
+                "provider": provider,
+                "mode": mode,
+                "delegated": True,
+                **self.zapier.execute_action(
+                    "Manus",
+                    "Create Task",
+                    params,
+                    objective,
+                    "Return the private Manus task identifier and status.",
+                ),
+            }
+
+        raise ValueError("agent_delegate provider must be claude_code, cursor, or manus")
+
+    def _canonical_repo_url(self) -> str:
+        result = self._run(
+            ["gh", "repo", "view", "--json", "url"],
+            cwd=self.config.repo_root,
+            timeout=30,
+        )
+        try:
+            url = str(json.loads(result["stdout"]).get("url") or "")
+        except json.JSONDecodeError:
+            url = ""
+        if not url.startswith("https://github.com/"):
+            raise RuntimeError("Canonical GitHub repository URL is unavailable")
+        return url
 
     def _trading_agent(self) -> PaperTradingAgent:
         if self._trading is None:

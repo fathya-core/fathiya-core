@@ -430,6 +430,7 @@ def _compact_catalog(tool_catalog: list[dict[str, Any]]) -> list[dict[str, Any]]
             "read_only": item.get("read_only", True),
             "inputs": item.get("inputs", []),
             "profiles": item.get("profiles", []),
+            "providers": item.get("providers", []),
             "configured": item.get("configured", True),
         }
         for item in tool_catalog
@@ -537,6 +538,12 @@ def _fallback_steps(
         for term in ("tool", "agent", "capabil", "أداة", "أدوات", "وكلاء")
     ):
         add("tool_catalog", "عرض كتالوج التنفيذ المتاح للمحرك")
+        add("local_capability_inventory", "فحص شبكة التنفيذ المحلية والبوابات الجاهزة")
+    if any(
+        term in safe_text
+        for term in ("computer", "device", "local runtime", "الجهاز", "محلي", "المحرك المحلي")
+    ):
+        add("local_capability_inventory", "فحص شبكة التنفيذ المحلية والبوابات الجاهزة")
     if any(
         term in safe_text
         for term in (
@@ -598,6 +605,13 @@ def _fallback_steps(
             zapier_action["description"],
             zapier_action["args"],
         )
+    agent_delegate = _agent_delegate_step(prompt)
+    if agent_delegate:
+        add(
+            agent_delegate["tool"],
+            agent_delegate["description"],
+            agent_delegate["args"],
+        )
 
     profiles = _profile_names(available.get("command_profile", {}))
     connector_profiles = _profile_names(available.get("connector_profile", {}))
@@ -630,6 +644,54 @@ def _fallback_steps(
     if not steps:
         add("internal_echo", "تنفيذ إثبات داخلي وتسجيل نتيجة", {"message": "تم استلام الطلب وتنفيذه داخليًا."})
     return steps[:max_tool_steps]
+
+
+def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    delegation_terms = (
+        "delegate",
+        "assign",
+        "launch agent",
+        "فوّض",
+        "فوض",
+        "كلّف",
+        "كلف",
+        "شغّل",
+        "شغل",
+    )
+    if not any(term in text for term in delegation_terms):
+        return None
+    if any(term in text for term in ("claude code", "claude", "كلود")):
+        provider = "claude_code"
+    elif "cursor" in text or "كيرسر" in text:
+        provider = "cursor"
+    elif "manus" in text or "مانوس" in text:
+        provider = "manus"
+    else:
+        return None
+    execute = any(
+        term in text
+        for term in (
+            "execute",
+            "implement",
+            "edit",
+            "نفّذ",
+            "نفذ",
+            "طبّق",
+            "طبق",
+            "عدّل",
+            "عدل",
+        )
+    )
+    return {
+        "tool": "agent_delegate",
+        "description": f"تفويض المهمة إلى {provider}",
+        "args": {
+            "provider": provider,
+            "objective": prompt[:8_000],
+            "mode": "execute" if execute else "plan",
+        },
+    }
 
 
 def _trading_control_step(prompt: str) -> dict[str, Any] | None:

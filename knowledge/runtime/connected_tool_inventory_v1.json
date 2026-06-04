@@ -30,6 +30,8 @@
         "secret-safe connector readiness",
         "direct Zapier MCP OAuth and exact-action gateway",
         "multi-round plan, execute, review, and resume loop",
+        "live local execution mesh probe",
+        "approval-gated Claude Code, Cursor, and Manus delegation",
         "web report intake"
       ]
     },

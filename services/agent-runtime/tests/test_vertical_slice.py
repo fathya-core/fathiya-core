@@ -564,6 +564,130 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertGreaterEqual(result["zapier_app_count"], 20)
         self.assertGreater(result["zapier_action_count"], result["zapier_app_count"])
 
+    def test_local_capability_inventory_probes_and_caches_execution_mesh(self) -> None:
+        executor = ToolExecutor(self.config)
+
+        def cli_probe(command: str, *_args, **_kwargs) -> dict:
+            return {
+                "installed": True,
+                "available": True,
+                "status": "active",
+                "version": f"{command}-version",
+                "authenticated": command != "cursor",
+            }
+
+        trading = Mock()
+        trading.status.return_value = {"running": True, "symbol": "TEST-USD"}
+        with (
+            patch.object(executor, "_probe_cli", side_effect=cli_probe) as probe_cli,
+            patch.object(
+                executor,
+                "_probe_docker",
+                return_value={
+                    "id": "docker",
+                    "name": "Docker",
+                    "installed": True,
+                    "available": False,
+                    "status": "degraded",
+                    "daemon_running": False,
+                },
+            ),
+            patch.object(
+                executor,
+                "_n8n_status",
+                return_value={"available": True, "version": "2.23.2"},
+            ),
+            patch.object(
+                executor,
+                "_kali_tool_inventory",
+                return_value={
+                    "available": True,
+                    "status": "active",
+                    "found_commands": ["nmap", "nuclei"],
+                    "missing_commands": [],
+                },
+            ),
+            patch.object(executor.zapier, "status", return_value={"connected": False}),
+            patch.object(executor, "_trading_agent", return_value=trading),
+        ):
+            result = executor.execute(
+                "local_capability_inventory",
+                "افحص شبكة التنفيذ المحلية",
+            )
+            cached = executor.execute(
+                "local_capability_inventory",
+                "افحص شبكة التنفيذ المحلية",
+            )
+
+        by_id = {item["id"]: item for item in result["capabilities"]}
+        self.assertEqual(result["capability_count"], 10)
+        self.assertGreaterEqual(result["ready_count"], 6)
+        self.assertEqual(by_id["claude_code"]["authenticated"], True)
+        self.assertEqual(by_id["docker"]["status"], "degraded")
+        self.assertEqual(by_id["zapier_mcp"]["status"], "partial")
+        self.assertTrue(cached["cached"])
+        self.assertEqual(probe_cli.call_count, 3)
+
+    def test_agent_delegate_local_cli_is_approval_gated_and_argument_safe(self) -> None:
+        executor = ToolExecutor(self.config)
+        objective = "Inspect the repository; do not execute the semicolon as a shell."
+        run_result = {
+            "command": [],
+            "return_code": 0,
+            "stdout": '{"result":"planned"}',
+            "stderr": "",
+        }
+
+        with (
+            patch("fathiya_runtime.tools.shutil.which", return_value="claude.cmd"),
+            patch.object(executor, "_run", return_value=run_result) as run,
+        ):
+            result = executor.execute(
+                "agent_delegate",
+                objective,
+                {
+                    "provider": "claude_code",
+                    "objective": objective,
+                    "mode": "plan",
+                    "max_budget_usd": 0.5,
+                },
+            )
+
+        command = run.call_args.args[0]
+        requirement = executor.approval_requirement(
+            "agent_delegate",
+            {"provider": "claude_code"},
+        )
+        self.assertTrue(requirement.required)
+        self.assertEqual(requirement.risk_class, "external")
+        self.assertEqual(command[2], objective)
+        self.assertIn("--max-budget-usd", command)
+        self.assertNotIn("shell=True", str(run.call_args))
+        self.assertTrue(result["delegated"])
+        self.assertEqual(result["response"]["result"], "planned")
+
+    def test_fallback_plan_selects_approved_agent_delegate(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        next(item for item in catalog if item["name"] == "agent_delegate")["configured"] = True
+        plan = build_plan(
+            {"prompt": "فوّض Claude Code ليخطط تحسين اختبارات المحرك"},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+        delegate = next(step for step in plan if step.get("tool") == "agent_delegate")
+
+        self.assertEqual(delegate["args"]["provider"], "claude_code")
+        self.assertEqual(delegate["args"]["mode"], "plan")
+        self.assertTrue(delegate["requires_approval"])
+
     def test_fallback_plan_controls_primary_paper_trading_agent(self) -> None:
         catalog = ToolExecutor(self.config).catalog()
         model = AgentModelRouter(
@@ -1065,6 +1189,105 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             {event["event_type"] for event in completed["events"]},
         )
 
+    def test_agent_loop_executes_safe_prefix_before_same_round_approval_gate(self) -> None:
+        task = self.store.enqueue(
+            "تفويض بعد الفحص",
+            "افحص شبكة التنفيذ ثم فوّض Claude Code",
+        )
+        worker = AgentWorker(self.config, self.store)
+        calls: list[str] = []
+        plan = [
+            {
+                "id": "retrieve",
+                "kind": "retrieval",
+                "tool": "knowledge_search",
+                "description": "retrieve",
+                "planner_mode": "test",
+                "planner_error": None,
+            },
+            {
+                "id": "execute-1",
+                "kind": "tool",
+                "tool": "tool_catalog",
+                "description": "catalog",
+                "args": {},
+            },
+            {
+                "id": "execute-2",
+                "kind": "tool",
+                "tool": "local_capability_inventory",
+                "description": "capabilities",
+                "args": {},
+            },
+            {
+                "id": "execute-3",
+                "kind": "tool",
+                "tool": "agent_delegate",
+                "description": "delegate",
+                "args": {
+                    "provider": "claude_code",
+                    "objective": "plan",
+                    "mode": "plan",
+                },
+            },
+        ]
+
+        def execute(tool: str, *_args, **_kwargs) -> dict:
+            calls.append(tool)
+            return {"tool": tool, "available": True, "delegated": tool == "agent_delegate"}
+
+        complete = {
+            "complete": True,
+            "reason": "completed",
+            "steps": [],
+            "planner_mode": "test-review",
+            "planner_error": None,
+        }
+        worker.tools.execute = execute
+        with (
+            patch("fathiya_runtime.worker.build_plan", return_value=plan),
+            patch("fathiya_runtime.worker.build_follow_up_decision", return_value=complete),
+        ):
+            worker.start(once=True)
+            gated = self.store.get_detail(task["id"])
+
+            self.assertEqual(gated["task"]["status"], "awaiting_approval")
+            self.assertEqual(calls, ["tool_catalog", "local_capability_inventory"])
+            checkpoint = gated["task"]["result"]["execution_checkpoint"]
+            self.assertEqual(
+                checkpoint["round_completed_tools"],
+                ["tool_catalog", "local_capability_inventory"],
+            )
+            self.assertEqual(checkpoint["next_steps"][0]["tool"], "agent_delegate")
+            self.assertIn(
+                "agent_round_paused",
+                {event["event_type"] for event in gated["events"]},
+            )
+
+            self.store.update_task(
+                task["id"],
+                status="queued",
+                approval_state="approved",
+                current_step="approved",
+            )
+            worker.start(once=True)
+
+        completed = self.store.get_detail(task["id"])
+        self.assertEqual(completed["task"]["status"], "completed")
+        self.assertEqual(
+            calls,
+            ["tool_catalog", "local_capability_inventory", "agent_delegate"],
+        )
+        self.assertEqual(
+            completed["task"]["result"]["agent_rounds"][0]["tools"],
+            ["tool_catalog", "local_capability_inventory", "agent_delegate"],
+        )
+        self.assertEqual(len(completed["task"]["result"]["agent_rounds"]), 1)
+        self.assertIn(
+            "agent_round_resumed",
+            {event["event_type"] for event in completed["events"]},
+        )
+
     def test_agent_loop_model_reviewer_drops_seen_step(self) -> None:
         model = Mock()
         model.available = True
@@ -1247,10 +1470,17 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         by_name = {tool["name"]: tool for tool in catalog}
 
         self.assertIn("knowledge_ingest_url", by_name)
+        self.assertIn("local_capability_inventory", by_name)
+        self.assertIn("agent_delegate", by_name)
         self.assertIn("n8n_webhook", by_name)
         self.assertIn("connector_catalog", by_name)
         self.assertIn("connector_profile", by_name)
         self.assertTrue(by_name["n8n_webhook"]["requires_approval"])
+        self.assertTrue(by_name["agent_delegate"]["requires_approval"])
+        self.assertEqual(
+            {provider["name"] for provider in by_name["agent_delegate"]["providers"]},
+            {"claude_code", "cursor", "manus"},
+        )
         profiles = {profile["name"] for profile in by_name["command_profile"]["profiles"]}
         self.assertIn("runtime_tests", profiles)
         self.assertIn("repo_build", profiles)

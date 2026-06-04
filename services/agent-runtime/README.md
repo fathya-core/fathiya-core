@@ -49,6 +49,18 @@ approval-gated tool stores an execution checkpoint. After approval, the worker
 resumes that round without repeating completed actions. Receipts record the
 round count and termination reason.
 
+`local_capability_inventory` performs a cached, secret-safe live probe of the
+local execution mesh: Cursor Agent, Claude Code, GitHub CLI, Docker, n8n, Kali
+WSL, Zapier MCP, Hugging Face, OpenRouter, and the primary paper-trading agent.
+The operator UI uses the same probe, so "ready" means a runtime check passed,
+not merely that an integration was listed in configuration.
+
+`agent_delegate` is an approval-gated delegation gateway. It can run an
+objective through the authenticated local Claude Code CLI or launch Cursor and
+Manus through their exact Zapier MCP actions after the local Zapier OAuth
+gateway is connected. Local CLI delegation uses structured process arguments,
+a bounded timeout, a bounded dollar budget, and no shell interpolation.
+
 Hugging Face retrieval is CPU-only by default and optional:
 
 ```powershell
@@ -107,6 +119,9 @@ and inspect the canonical repository, read authenticated GitHub metadata, read
 n8n health/workflows, call an approved n8n webhook, inspect connected tools,
 inspect Kali WSL, run the defensive security core, and execute versioned local
 command profiles from `config/command_profiles.json`.
+
+The local control plane also exposes `GET /api/agent/capabilities` for the same
+live, receipt-safe capability probe used by the integrations panel.
 
 Version-controlled connector profiles in `config/connector_profiles.json`
 provide a single execution contract for n8n, Zapier, Cursor, Manus, and future

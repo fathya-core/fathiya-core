@@ -95,6 +95,15 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertTrue(connectors["bridge"]["configured"])
         self.assertIn("n8n_health", connectors["bridge"]["allowed_profiles"])
         self.assertGreaterEqual(connectors["inventory"]["zapier_app_count"], 20)
+        capabilities_response = requests.get(
+            f"{self.base_url}/api/agent/capabilities",
+            headers=self.headers,
+            timeout=15,
+        )
+        self.assertEqual(capabilities_response.status_code, 200)
+        capability_probe = capabilities_response.json()["capabilities"]
+        self.assertEqual(capability_probe["capability_count"], 10)
+        self.assertGreaterEqual(capability_probe["ready_count"], 1)
 
         integrations_response = requests.get(
             f"{self.base_url}/api/agent/integrations",
@@ -108,6 +117,14 @@ class LocalAgentApiTests(unittest.TestCase):
             item["id"]: item for item in integrations["integrations"]
         }
         self.assertFalse(integrations["security_policy"]["accept_passwords_in_chat"])
+        self.assertIn(
+            integration_by_id["local_execution_mesh"]["status"],
+            {"ready", "partial"},
+        )
+        self.assertGreaterEqual(
+            integration_by_id["local_execution_mesh"]["details"]["ready_count"],
+            1,
+        )
         self.assertEqual(integration_by_id["openrouter"]["status"], "needs_setup")
         self.assertIn(
             "OPENROUTER_API_KEY",

@@ -10,6 +10,7 @@ def build_integration_readiness(
     config: RuntimeConfig,
     connectors: list[dict[str, Any]],
     inventory: dict[str, Any],
+    local_capabilities: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return secret-safe account and integration readiness for the operator UI."""
 
@@ -39,6 +40,21 @@ def build_integration_readiness(
         connector_by_name.get("n8n_workflows", {}).get("configured")
     )
     hugging_face_ready = config.enable_hf_retrieval or config.enable_local_generation
+    capability_rows = [
+        item
+        for item in (local_capabilities or {}).get("capabilities", [])
+        if isinstance(item, dict)
+    ]
+    ready_capabilities = [
+        str(item.get("name"))
+        for item in capability_rows
+        if item.get("status") in {"active", "ready"} and item.get("name")
+    ]
+    partial_capabilities = [
+        str(item.get("name"))
+        for item in capability_rows
+        if item.get("status") in {"partial", "degraded"} and item.get("name")
+    ]
 
     supabase_missing = [
         name
@@ -50,6 +66,38 @@ def build_integration_readiness(
     ]
 
     integrations = [
+        {
+            "id": "local_execution_mesh",
+            "name": "شبكة التنفيذ المحلية",
+            "category": "automation",
+            "status": (
+                "ready"
+                if capability_rows and not partial_capabilities
+                else "partial"
+                if ready_capabilities
+                else "needs_setup"
+            ),
+            "connection_mode": "local_runtime_probe",
+            "account_required": False,
+            "credential_policy": "none",
+            "summary": (
+                f"{len(ready_capabilities)} من {len(capability_rows)} بوابات محلية جاهزة للتنفيذ."
+                if capability_rows
+                else "لم يُنفذ فحص شبكة التنفيذ المحلية."
+            ),
+            "next_step": (
+                f"أكمل البوابات الجزئية: {', '.join(partial_capabilities)}."
+                if partial_capabilities
+                else "لا إجراء مطلوب."
+            ),
+            "missing_env": [],
+            "connected_apps": ready_capabilities,
+            "details": {
+                "ready_count": len(ready_capabilities),
+                "partial_count": len(partial_capabilities),
+                "capability_count": len(capability_rows),
+            },
+        },
         {
             "id": "huggingface_local",
             "name": "Hugging Face المحلي",

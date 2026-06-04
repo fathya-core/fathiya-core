@@ -150,6 +150,15 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             return self._send_error(HTTPStatus.METHOD_NOT_ALLOWED, "Use POST for this route")
         if path == "/api/agent/tools":
             return self._send_json({"tools": self.server.tools.catalog()})
+        if path == "/api/agent/capabilities":
+            return self._send_json(
+                {
+                    "capabilities": self.server.tools.execute(
+                        "local_capability_inventory",
+                        "افحص شبكة التنفيذ المحلية",
+                    )
+                }
+            )
         if path == "/api/agent/connectors":
             connectors = self.server.tools.connector_catalog()
             bridge_profiles = self.server.tools.bridge_dispatch_profiles()
@@ -185,11 +194,16 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                 "connected_tool_inventory",
                 "عرض حالة الحسابات والاتصالات",
             )
+            local_capabilities = self.server.tools.execute(
+                "local_capability_inventory",
+                "افحص شبكة التنفيذ المحلية",
+            )
             return self._send_json(
                 build_integration_readiness(
                     self.server.config,
                     connectors,
                     inventory,
+                    local_capabilities,
                 )
             )
         if path == "/api/agent/tasks":

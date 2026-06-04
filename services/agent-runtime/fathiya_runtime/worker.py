@@ -131,6 +131,11 @@ class AgentWorker:
                     checkpoint.get("round_planner_mode") or "approval_resume"
                 )
                 round_planner_error = checkpoint.get("round_planner_error")
+                round_completed_tools = [
+                    str(tool)
+                    for tool in checkpoint.get("round_completed_tools", [])
+                    if tool
+                ]
                 current_steps = _materialize_round_steps(
                     checkpoint.get("next_steps", []),
                     tool_catalog,
@@ -232,6 +237,7 @@ class AgentWorker:
                 round_reason = "تنفيذ الخطة الأولية المبنية من طلب المشغل والأدلة."
                 round_planner_mode = str(initial_plan[0].get("planner_mode") or "unknown")
                 round_planner_error = initial_plan[0].get("planner_error")
+                round_completed_tools: list[str] = []
                 current_steps = _materialize_round_steps(
                     [step for step in initial_plan if step.get("kind") == "tool"],
                     tool_catalog,
@@ -258,13 +264,35 @@ class AgentWorker:
                     termination_reason = "منع المراجع تكرار خطوات نُفذت سابقًا."
                     break
 
+                planned_steps = current_steps
+                approval_index: int | None = None
+                if task.get("approval_state") != "approved":
+                    for index, step in enumerate(planned_steps):
+                        requirement = self.tools.approval_requirement(
+                            step["tool"],
+                            step.get("args", {}),
+                        )
+                        if requirement.required:
+                            approval_index = index
+                            break
+                execution_steps = (
+                    planned_steps
+                    if approval_index is None
+                    else planned_steps[:approval_index]
+                )
+                deferred_steps = (
+                    []
+                    if approval_index is None
+                    else planned_steps[approval_index:]
+                )
+
                 pending_round = {
                     "round": round_number,
                     "status": "planned",
                     "reason": round_reason,
                     "planner_mode": round_planner_mode,
                     "planner_error": round_planner_error,
-                    "steps": _round_step_summary(current_steps),
+                    "steps": _round_step_summary(planned_steps),
                 }
                 self.store.update_task(
                     task["id"],
@@ -284,42 +312,44 @@ class AgentWorker:
                 self.store.add_event(
                     task,
                     "agent_round_planned",
-                    f"خطط الوكيل الجولة {round_number} لتشغيل {len(current_steps)} أدوات.",
+                    f"خطط الوكيل الجولة {round_number} لتشغيل {len(planned_steps)} أدوات.",
                     status="running",
                     step=f"agent_round_{round_number}_plan",
                     progress=round_progress_start,
                     payload=pending_round,
                 )
-                checkpoint_payload = _build_execution_checkpoint(
-                    execution_task,
-                    mission_evidence,
-                    sources,
-                    initial_plan,
-                    agent_rounds,
-                    tool_results,
-                    seen_signatures,
-                    round_number,
-                    current_steps,
-                    round_reason,
-                    round_planner_mode,
-                    round_planner_error,
-                )
-                if self._gate_plan_for_approval(
-                    task,
-                    current_steps,
-                    checkpoint=checkpoint_payload,
-                    progress=round_progress_start,
-                ):
-                    return
+                if not execution_steps and deferred_steps:
+                    checkpoint_payload = _build_execution_checkpoint(
+                        execution_task,
+                        mission_evidence,
+                        sources,
+                        initial_plan,
+                        agent_rounds,
+                        tool_results,
+                        seen_signatures,
+                        round_number,
+                        deferred_steps,
+                        round_reason,
+                        round_planner_mode,
+                        round_planner_error,
+                        round_completed_tools,
+                    )
+                    if self._gate_plan_for_approval(
+                        task,
+                        deferred_steps,
+                        checkpoint=checkpoint_payload,
+                        progress=round_progress_start,
+                    ):
+                        return
 
-                round_tools: list[str] = []
-                for index, execution_step in enumerate(current_steps, start=1):
+                round_tools = [*round_completed_tools]
+                for index, execution_step in enumerate(execution_steps, start=1):
                     start_progress = round_progress_start + int(
-                        ((index - 1) / len(current_steps))
+                        ((index - 1) / len(execution_steps))
                         * (round_progress_end - round_progress_start)
                     )
                     complete_progress = round_progress_start + int(
-                        (index / len(current_steps))
+                        (index / len(execution_steps))
                         * (round_progress_end - round_progress_start)
                     )
                     self._progress(
@@ -329,7 +359,7 @@ class AgentWorker:
                         "tool_started",
                         (
                             f"الجولة {round_number}: تشغيل الأداة "
-                            f"{index}/{len(current_steps)}: {execution_step['tool']}"
+                            f"{index}/{len(execution_steps)}: {execution_step['tool']}"
                         ),
                         {
                             "round": round_number,
@@ -364,12 +394,53 @@ class AgentWorker:
                         {"round": round_number, "tool_result": tool_result},
                     )
 
+                if deferred_steps:
+                    checkpoint_payload = _build_execution_checkpoint(
+                        execution_task,
+                        mission_evidence,
+                        sources,
+                        initial_plan,
+                        agent_rounds,
+                        tool_results,
+                        seen_signatures,
+                        round_number,
+                        deferred_steps,
+                        round_reason,
+                        round_planner_mode,
+                        round_planner_error,
+                        round_tools,
+                    )
+                    self.store.add_event(
+                        task,
+                        "agent_round_paused",
+                        (
+                            f"نفذ الوكيل {len(execution_steps)} خطوات آمنة من الجولة "
+                            f"{round_number} وتوقف قبل الأداة الحساسة."
+                        ),
+                        status="running",
+                        step=f"agent_round_{round_number}_paused",
+                        progress=round_progress_end,
+                        payload={
+                            "round": round_number,
+                            "completed_tools": round_tools,
+                            "deferred_steps": _round_step_summary(deferred_steps),
+                        },
+                    )
+                    if self._gate_plan_for_approval(
+                        task,
+                        deferred_steps,
+                        checkpoint=checkpoint_payload,
+                        progress=round_progress_end,
+                    ):
+                        return
+
                 completed_round = {
                     **pending_round,
                     "status": "completed",
                     "tools": round_tools,
                 }
                 agent_rounds.append(completed_round)
+                round_completed_tools = []
                 self.store.update_task(
                     task["id"],
                     plan={
@@ -425,6 +496,7 @@ class AgentWorker:
                 round_reason = str(decision["reason"])
                 round_planner_mode = str(decision["planner_mode"])
                 round_planner_error = decision.get("planner_error")
+                round_completed_tools = []
                 current_steps = _materialize_round_steps(
                     decision["steps"],
                     tool_catalog,
@@ -721,6 +793,7 @@ def _build_execution_checkpoint(
     round_reason: str,
     round_planner_mode: str,
     round_planner_error: Any,
+    round_completed_tools: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
         "version": 1,
@@ -737,6 +810,7 @@ def _build_execution_checkpoint(
         "round_reason": round_reason,
         "round_planner_mode": round_planner_mode,
         "round_planner_error": round_planner_error,
+        "round_completed_tools": list(round_completed_tools or []),
     }
 
 
@@ -848,6 +922,17 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
                 for tool in result["tools"][:20]
                 if isinstance(tool, dict) and tool.get("name")
             ]
+        if isinstance(result.get("capabilities"), list):
+            summary["capabilities"] = [
+                {
+                    "id": capability.get("id"),
+                    "status": capability.get("status"),
+                    "available": capability.get("available"),
+                    "authenticated": capability.get("authenticated"),
+                }
+                for capability in result["capabilities"][:20]
+                if isinstance(capability, dict)
+            ]
         if isinstance(result.get("metadata"), dict):
             summary["metadata"] = result["metadata"]
         if isinstance(result.get("workflows"), dict):
@@ -918,6 +1003,10 @@ def _required_synthesis_anchors(
         tool = str(result.get("tool") or "")
         if tool in {"n8n_status", "n8n_workflows"}:
             required.append(("n8n",))
+        elif tool == "local_capability_inventory":
+            required.append(("local", "محلي", "تنفيذ"))
+        elif tool == "agent_delegate":
+            required.append(("delegate", "تفويض", "وكيل"))
         elif tool == "connected_tool_inventory":
             required.append(("zapier", "زابير"))
         elif tool in {"zapier_action_catalog", "zapier_action"}:
@@ -970,6 +1059,40 @@ def _deterministic_synthesis(
             follow_up.append(f"راجع خطأ {tool}.")
         elif tool == "tool_catalog" and isinstance(result.get("tools"), list):
             evidence.append(f"كتالوج المحرك يعرض {len(result['tools'])} أداة قابلة للاستخدام.")
+        elif tool == "local_capability_inventory":
+            capabilities = [
+                item
+                for item in result.get("capabilities", [])
+                if isinstance(item, dict)
+            ]
+            ready = [
+                str(item.get("name"))
+                for item in capabilities
+                if item.get("status") in {"active", "ready"} and item.get("name")
+            ]
+            degraded = [
+                str(item.get("name"))
+                for item in capabilities
+                if item.get("status") in {"partial", "degraded"} and item.get("name")
+            ]
+            evidence.append(
+                f"شبكة التنفيذ المحلية تؤكد جاهزية {len(ready)} من "
+                f"{result.get('capability_count', len(capabilities))} بوابات: "
+                f"{', '.join(ready) or 'لا توجد بوابات جاهزة'}."
+            )
+            if degraded:
+                follow_up.append(
+                    f"بوابات محلية تحتاج إكمالًا: {', '.join(degraded)}."
+                )
+        elif tool == "agent_delegate":
+            provider = result.get("provider", "غير معروف")
+            if result.get("delegated"):
+                evidence.append(
+                    f"تم تفويض المهمة إلى الوكيل {provider} بوضع "
+                    f"{result.get('mode', 'غير معروف')}."
+                )
+            else:
+                evidence.append(f"تعذر تفويض المهمة إلى الوكيل {provider}.")
         elif tool == "repo_status":
             evidence.append(
                 "المستودع الأساسي نظيف."
