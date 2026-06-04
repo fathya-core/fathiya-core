@@ -1,0 +1,197 @@
+{
+  "id": "FathiyaConnectorGatewayV1",
+  "name": "FATHIYA Connector Gateway v1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fathiya-agent-bridge-v1",
+        "responseMode": "responseNode",
+        "options": {
+          "ipWhitelist": "127.0.0.1,::1"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "b5779d47-1a5d-41be-a7bd-37644e9e8b13",
+      "name": "Local FATHIYA Ingress",
+      "webhookId": "1fd8db5a-578a-4e86-9011-280e244cd0ab"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst allowedProfiles = new Set([\n  'n8n_fathiya_webhook',\n  'zapier_fathiya_webhook',\n  'cursor_agent_bridge',\n  'manus_agent_bridge',\n]);\nconst taskId = String(body.task_id ?? '').trim();\nconst profile = String(body.profile ?? '').trim();\nconst approvalState = String(body.approval_state ?? 'pending').trim();\nconst valid = Boolean(taskId) && allowedProfiles.has(profile);\nconst dispatchAllowed = valid && approvalState === 'approved';\nreturn [{\n  json: {\n    accepted: valid,\n    status: valid ? (dispatchAllowed ? 'approved_for_dispatch' : 'awaiting_approval') : 'rejected',\n    task_id: taskId || null,\n    profile: profile || null,\n    approval_state: approvalState,\n    dispatch_allowed: dispatchAllowed,\n    payload: body.payload && typeof body.payload === 'object' ? body.payload : {},\n    receipt_id: `N8N-STAGE-${Date.now()}-${(taskId || 'invalid').slice(0, 8)}`,\n    source: 'fathiya-agent-runtime',\n    error: valid ? null : 'task_id and an allowed connector profile are required',\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "79a75152-784d-453e-922b-d0c79c8f9dd8",
+      "name": "Validate and Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a0a45936-345a-4374-83ad-704834fcf08d",
+              "leftValue": "={{ $json.dispatch_allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "076e3910-977c-4f8c-92e0-65b890e2f545",
+      "name": "Approval Granted?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FATHIYA_CONNECTOR_DISPATCH_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-FATHIYA-Bridge-Token",
+              "value": "={{ $env.FATHIYA_CONNECTOR_DISPATCH_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        80,
+        -120
+      ],
+      "id": "cb9be38f-bbe5-49a6-aa88-28f69f7535eb",
+      "name": "Dispatch Approved Connector"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        320,
+        -120
+      ],
+      "id": "cb94792a-ed44-4a09-82da-dce1d616fabf",
+      "name": "Respond Dispatched"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ accepted: $json.accepted, status: $json.status, task_id: $json.task_id, profile: $json.profile, receipt_id: $json.receipt_id, dispatch_allowed: $json.dispatch_allowed, error: $json.error }) }}",
+        "options": {
+          "responseCode": "={{ $json.status === 'rejected' ? 400 : 202 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        120
+      ],
+      "id": "baac5cbe-5e21-4748-8421-2bb735d091da",
+      "name": "Respond Staged"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Local FATHIYA Ingress": {
+      "main": [
+        [
+          {
+            "node": "Validate and Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Gate": {
+      "main": [
+        [
+          {
+            "node": "Approval Granted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Granted?": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Approved Connector",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Staged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Approved Connector": {
+      "main": [
+        [
+          {
+            "node": "Respond Dispatched",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cb29be99-1789-4da3-a004-1437685ddd29",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

@@ -85,6 +85,11 @@ before the HTTP request is sent. URLs and authentication headers are resolved
 from local environment variables and are never returned by the connector
 catalog or written into receipts.
 
+The inactive, importable n8n gateway is stored at
+`artifacts/workflows/n8n/fathiya-connector-gateway-v1.json`. It accepts local
+requests, validates the connector allowlist, and reaches its dispatch node only
+when `approval_state` is exactly `approved`.
+
 For local SQLite tasks:
 
 ```powershell
