@@ -425,6 +425,28 @@ function AgentTasksPage() {
                         value={trading.mode === "paper" ? "Paper فقط" : trading.mode}
                       />
                       <InfoField label="الدورات" value={String(trading.cycle_count)} />
+                      <InfoField
+                        label="مصدر السوق"
+                        value={marketSourceLabel(trading.current_market_source)}
+                      />
+                      <InfoField
+                        label="دقة التنبؤ"
+                        value={
+                          trading.prediction_quality.directional_accuracy === null
+                            ? "--"
+                            : formatPercent(trading.prediction_quality.directional_accuracy)
+                        }
+                      />
+                      <InfoField
+                        label="تنبؤات مقاسة"
+                        value={String(trading.prediction_quality.evaluated_count)}
+                      />
+                      <InfoField
+                        label="عائد نظري"
+                        value={`${formatNumber(
+                          trading.prediction_quality.cumulative_strategy_return_bps,
+                        )} bps`}
+                      />
                       <InfoField label="الرصيد" value={formatNumber(trading.portfolio.equity)} />
                       <InfoField label="صافي PnL" value={formatNumber(trading.portfolio.net_pnl)} />
                     </div>
@@ -474,9 +496,17 @@ function AgentTasksPage() {
                         <TooltipContent>تنفيذ نبضة paper واحدة</TooltipContent>
                       </Tooltip>
                     </div>
-                    <p className="text-[10px] text-amber-300">
-                      بيانات السوق محاكاة، والتداول الحقيقي غير مفعّل حتى ربط حساب وسيط بمفتاح تداول
-                      بلا سحب.
+                    <p
+                      className={cn(
+                        "text-[10px]",
+                        trading.current_market_source === "coinbase_spot"
+                          ? "text-emerald-400"
+                          : trading.current_market_source
+                            ? "text-amber-300"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {marketNotice(trading.current_market_source)}
                     </p>
                   </CardContent>
                 </Card>
@@ -838,4 +868,34 @@ function formatNumber(value: number) {
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
   }).format(value);
+}
+
+function formatPercent(value: number) {
+  return new Intl.NumberFormat("ar-SA", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function isFallbackMarket(source: string | null) {
+  return Boolean(source?.includes(":fallback_for:"));
+}
+
+function marketSourceLabel(source: string | null) {
+  if (!source) return "--";
+  if (source === "coinbase_spot") return "Coinbase Spot";
+  if (isFallbackMarket(source)) return "احتياطي آمن";
+  if (source === "synthetic_second_market") return "محاكاة";
+  return source;
+}
+
+function marketNotice(source: string | null) {
+  if (!source) return "بانتظار أول نبضة سوق. التنفيذ الحقيقي يبقى مقفلاً.";
+  if (isFallbackMarket(source)) {
+    return "المصدر العام متعذر مؤقتًا؛ تستمر المراقبة الاحتياطية وتُحظر أي تعبئة Paper لهذه النبضة.";
+  }
+  if (source === "synthetic_second_market") {
+    return "بيانات محاكاة للاختبار، والتنفيذ Paper فقط.";
+  }
+  return "بيانات سوق عامة مباشرة، والتنفيذ Paper فقط. التداول الحقيقي يبقى مقفلاً حتى ربط حساب تجريبي واعتماده.";
 }

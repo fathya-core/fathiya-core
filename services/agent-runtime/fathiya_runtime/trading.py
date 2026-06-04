@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import threading
 import time
@@ -13,11 +14,14 @@ from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 from typing import Any, Iterator, Protocol
 
+import requests
+
 from .store import now_iso
 
 
 MONEY_QUANTUM = Decimal("0.00000001")
 ZERO = Decimal("0")
+COINBASE_SYMBOL = re.compile(r"^[A-Z0-9]{2,12}-[A-Z0-9]{2,12}$")
 
 
 def _decimal(value: Decimal | float | int | str) -> Decimal:
@@ -30,6 +34,14 @@ def _money(value: Decimal) -> Decimal:
 
 def _as_float(value: Decimal) -> float:
     return float(_money(value))
+
+
+def _safe_error_name(exc: Exception) -> str:
+    return type(exc).__name__
+
+
+def _is_fallback_source(source: str) -> bool:
+    return ":fallback_for:" in source
 
 
 @dataclass(frozen=True)
@@ -145,6 +157,109 @@ class SyntheticSecondMarket:
                 source=self.name,
                 sequence=self._sequence,
             )
+
+
+class CoinbaseSpotMarket:
+    name = "coinbase_spot"
+
+    def __init__(self, symbol: str, *, timeout_seconds: float = 0.8):
+        if not COINBASE_SYMBOL.fullmatch(symbol):
+            raise ValueError("Coinbase spot symbol must look like BTC-USD")
+        self.symbol = symbol
+        self.timeout_seconds = max(0.1, min(10.0, timeout_seconds))
+        self._sequence = 0
+        self._success_count = 0
+        self._failure_count = 0
+        self._last_error: str | None = None
+        self._lock = threading.Lock()
+
+    def next_tick(self) -> MarketTick:
+        with self._lock:
+            try:
+                response = requests.get(
+                    f"https://api.coinbase.com/v2/prices/{self.symbol}/spot",
+                    headers={"User-Agent": "FATHIYA-Agent-Runtime/0.1"},
+                    timeout=self.timeout_seconds,
+                )
+                response.raise_for_status()
+                payload = response.json()
+                price = _decimal(payload["data"]["amount"])
+                if price <= ZERO:
+                    raise ValueError("Coinbase returned a non-positive spot price")
+                self._sequence += 1
+                self._success_count += 1
+                self._last_error = None
+                return MarketTick(
+                    symbol=self.symbol,
+                    price=_money(price),
+                    observed_at=now_iso(),
+                    source=self.name,
+                    sequence=self._sequence,
+                )
+            except Exception as exc:
+                self._failure_count += 1
+                self._last_error = _safe_error_name(exc)
+                raise
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "provider": self.name,
+            "success_count": self._success_count,
+            "failure_count": self._failure_count,
+            "last_error": self._last_error,
+        }
+
+
+class FallbackMarketDataProvider:
+    def __init__(self, primary: MarketDataProvider, fallback: MarketDataProvider):
+        if primary.symbol != fallback.symbol:
+            raise ValueError("Primary and fallback market symbols must match")
+        self.primary = primary
+        self.fallback = fallback
+        self.symbol = primary.symbol
+        self.name = f"{primary.name}+{fallback.name}_fallback"
+        self._fallback_count = 0
+        self._last_error: str | None = None
+        self._last_primary_tick: MarketTick | None = None
+        self._active_source: str | None = None
+
+    def next_tick(self) -> MarketTick:
+        try:
+            tick = self.primary.next_tick()
+            self._last_error = None
+            self._last_primary_tick = tick
+            self._active_source = tick.source
+            return tick
+        except Exception as exc:
+            self._fallback_count += 1
+            self._last_error = _safe_error_name(exc)
+            fallback_tick = self.fallback.next_tick()
+            tick = MarketTick(
+                symbol=fallback_tick.symbol,
+                price=(
+                    self._last_primary_tick.price
+                    if self._last_primary_tick
+                    else fallback_tick.price
+                ),
+                observed_at=fallback_tick.observed_at,
+                source=f"{fallback_tick.source}:fallback_for:{self.primary.name}",
+                sequence=fallback_tick.sequence,
+            )
+            self._active_source = tick.source
+            return tick
+
+    def health(self) -> dict[str, Any]:
+        primary_health = getattr(self.primary, "health", None)
+        return {
+            "provider": self.name,
+            "active_source": self._active_source,
+            "fallback_active": bool(
+                self._active_source and _is_fallback_source(self._active_source)
+            ),
+            "fallback_count": self._fallback_count,
+            "last_error": self._last_error,
+            "primary": primary_health() if callable(primary_health) else None,
+        }
 
 
 class MomentumSignalModel:
@@ -322,6 +437,8 @@ class TradingRiskEngine:
         age_seconds = (datetime.now(UTC) - tick_time).total_seconds()
         if age_seconds > self.max_tick_age_seconds:
             return RiskCheck(False, "hold", ZERO, "stale_market_tick")
+        if _is_fallback_source(tick.source):
+            return RiskCheck(False, "hold", ZERO, "fallback_market_tick")
         daily_pnl = _decimal(portfolio["daily_pnl"])
         if daily_pnl <= -self.daily_loss_limit:
             return RiskCheck(False, "hold", ZERO, "daily_loss_limit_reached")
@@ -402,8 +519,25 @@ class TradingLedger:
                   value TEXT NOT NULL,
                   updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS trading_evaluations (
+                  receipt_id TEXT PRIMARY KEY,
+                  symbol TEXT NOT NULL,
+                  model TEXT NOT NULL,
+                  action TEXT NOT NULL,
+                  entry_price REAL NOT NULL,
+                  exit_price REAL NOT NULL,
+                  realized_return REAL NOT NULL,
+                  strategy_return_bps REAL NOT NULL,
+                  correct INTEGER NOT NULL,
+                  horizon_seconds INTEGER NOT NULL,
+                  evaluated_at TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_trading_cycles_created_at
                   ON trading_cycles(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_trading_cycles_symbol_created_at
+                  ON trading_cycles(symbol, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_trading_evaluations_symbol_evaluated_at
+                  ON trading_evaluations(symbol, evaluated_at DESC);
                 """
             )
 
@@ -461,6 +595,32 @@ class TradingLedger:
         if should_prune:
             self.prune()
 
+    def add_evaluation(self, evaluation: dict[str, Any]) -> bool:
+        with self._connect() as conn:
+            inserted = conn.execute(
+                """
+                INSERT OR IGNORE INTO trading_evaluations (
+                  receipt_id, symbol, model, action, entry_price, exit_price,
+                  realized_return, strategy_return_bps, correct,
+                  horizon_seconds, evaluated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    evaluation["receipt_id"],
+                    evaluation["symbol"],
+                    evaluation["model"],
+                    evaluation["action"],
+                    evaluation["entry_price"],
+                    evaluation["exit_price"],
+                    evaluation["realized_return"],
+                    evaluation["strategy_return_bps"],
+                    int(evaluation["correct"]),
+                    evaluation["horizon_seconds"],
+                    evaluation["evaluated_at"],
+                ),
+            )
+        return inserted.rowcount == 1
+
     def prune(self) -> int:
         with self._connect() as conn:
             deleted = conn.execute(
@@ -474,14 +634,37 @@ class TradingLedger:
                 """,
                 (self.max_cycles,),
             )
+            conn.execute(
+                """
+                DELETE FROM trading_evaluations
+                WHERE receipt_id NOT IN (SELECT receipt_id FROM trading_cycles)
+                """
+            )
         return deleted.rowcount
 
-    def recent(self, limit: int = 20) -> list[dict[str, Any]]:
+    def recent(
+        self,
+        limit: int = 20,
+        *,
+        symbol: str | None = None,
+    ) -> list[dict[str, Any]]:
         with self._connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM trading_cycles ORDER BY created_at DESC LIMIT ?",
-                (max(1, min(200, int(limit))),),
-            ).fetchall()
+            bounded_limit = max(1, min(200, int(limit)))
+            if symbol:
+                rows = conn.execute(
+                    """
+                    SELECT * FROM trading_cycles
+                    WHERE symbol=?
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (symbol, bounded_limit),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM trading_cycles ORDER BY created_at DESC LIMIT ?",
+                    (bounded_limit,),
+                ).fetchall()
         result: list[dict[str, Any]] = []
         for row in rows:
             item = dict(row)
@@ -491,10 +674,63 @@ class TradingLedger:
             result.append(item)
         return result
 
-    def count(self) -> int:
+    def count(self, *, symbol: str | None = None) -> int:
         with self._connect() as conn:
-            row = conn.execute("SELECT COUNT(*) AS count FROM trading_cycles").fetchone()
+            if symbol:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS count FROM trading_cycles WHERE symbol=?",
+                    (symbol,),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS count FROM trading_cycles"
+                ).fetchone()
         return int(row["count"])
+
+    def quality(self, symbol: str) -> dict[str, Any]:
+        with self._connect() as conn:
+            totals = conn.execute(
+                """
+                SELECT
+                  COUNT(*) AS evaluated_count,
+                  COALESCE(SUM(correct), 0) AS correct_count,
+                  COALESCE(SUM(strategy_return_bps), 0) AS cumulative_return_bps,
+                  COALESCE(AVG(strategy_return_bps), 0) AS average_return_bps
+                FROM trading_evaluations
+                WHERE symbol=?
+                """,
+                (symbol,),
+            ).fetchone()
+            latest = conn.execute(
+                """
+                SELECT * FROM trading_evaluations
+                WHERE symbol=?
+                ORDER BY evaluated_at DESC
+                LIMIT 1
+                """,
+                (symbol,),
+            ).fetchone()
+        evaluated_count = int(totals["evaluated_count"])
+        correct_count = int(totals["correct_count"])
+        latest_evaluation = dict(latest) if latest else None
+        if latest_evaluation:
+            latest_evaluation["correct"] = bool(latest_evaluation["correct"])
+        return {
+            "evaluated_count": evaluated_count,
+            "correct_count": correct_count,
+            "directional_accuracy": (
+                correct_count / evaluated_count if evaluated_count else None
+            ),
+            "cumulative_strategy_return_bps": round(
+                float(totals["cumulative_return_bps"]),
+                6,
+            ),
+            "average_strategy_return_bps": round(
+                float(totals["average_return_bps"]),
+                6,
+            ),
+            "latest_evaluation": latest_evaluation,
+        }
 
 
 class PaperTradingAgent:
@@ -509,7 +745,10 @@ class PaperTradingAgent:
         risk: TradingRiskEngine,
         interval_seconds: float = 1.0,
         requested_mode: str = "paper",
+        evaluation_deadband: float = 0.00005,
     ):
+        if market.symbol != symbol:
+            raise ValueError("Trading agent and market provider symbols must match")
         self.symbol = symbol
         self.ledger = ledger
         self.market = market
@@ -518,16 +757,21 @@ class PaperTradingAgent:
         self.risk = risk
         self.interval_seconds = max(0.05, interval_seconds)
         self.requested_mode = requested_mode
+        self.evaluation_deadband = max(0.0, min(1.0, evaluation_deadband))
         self.mode = "paper"
         self._running = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._lock = threading.RLock()
         self._last_error: str | None = None
-        self._last_cycle: dict[str, Any] | None = None
-        state = self.ledger.load_state("engine") or {}
-        self._last_price = _decimal(state.get("last_price", "0"))
-        self._cycle_count = self.ledger.count()
+        recent = self.ledger.recent(1, symbol=self.symbol)
+        self._last_cycle: dict[str, Any] | None = recent[0] if recent else None
+        state = self.ledger.load_state(f"engine:{self.symbol}") or {}
+        last_price = state.get("last_price")
+        if last_price is None and self._last_cycle:
+            last_price = self._last_cycle["tick"]["price"]
+        self._last_price = _decimal(last_price or "0")
+        self._cycle_count = self.ledger.count(symbol=self.symbol)
 
     @classmethod
     def from_config(cls, config: Any) -> "PaperTradingAgent":
@@ -536,11 +780,33 @@ class PaperTradingAgent:
             max_cycles=config.trading_max_receipts,
         )
         ledger.initialize()
-        state = ledger.load_state("broker")
+        symbol = config.trading_symbol
+        state = ledger.load_state(f"broker:{symbol}")
+        engine_state = ledger.load_state(f"engine:{symbol}") or {}
+        if config.trading_market_provider in {
+            "synthetic",
+            "synthetic_second_market",
+        }:
+            market: MarketDataProvider = SyntheticSecondMarket(symbol)
+        elif config.trading_market_provider == "coinbase_spot":
+            market = FallbackMarketDataProvider(
+                CoinbaseSpotMarket(
+                    symbol,
+                    timeout_seconds=config.trading_market_timeout_seconds,
+                ),
+                SyntheticSecondMarket(
+                    symbol,
+                    start_price=engine_state.get("last_price", "100"),
+                ),
+            )
+        else:
+            raise ValueError(
+                f"Unsupported trading market provider: {config.trading_market_provider}"
+            )
         return cls(
-            symbol=config.trading_symbol,
+            symbol=symbol,
             ledger=ledger,
-            market=SyntheticSecondMarket(config.trading_symbol),
+            market=market,
             signal_model=MomentumSignalModel(
                 window=config.trading_signal_window,
                 threshold=config.trading_signal_threshold,
@@ -560,6 +826,7 @@ class PaperTradingAgent:
             ),
             interval_seconds=config.trading_tick_seconds,
             requested_mode=config.trading_mode,
+            evaluation_deadband=config.trading_evaluation_deadband,
         )
 
     def start(self) -> dict[str, Any]:
@@ -592,6 +859,7 @@ class PaperTradingAgent:
             self._require_paper_mode()
             started = time.perf_counter()
             tick = self.market.next_tick()
+            self._evaluate_previous_prediction(tick)
             prediction = self.signal_model.predict(tick)
             portfolio_before = self.broker.portfolio(tick.price)
             risk = self.risk.evaluate(prediction, tick, portfolio_before)
@@ -619,9 +887,9 @@ class PaperTradingAgent:
                 "created_at": now_iso(),
             }
             self.ledger.add_cycle(cycle)
-            self.ledger.save_state("broker", self.broker.export_state())
+            self.ledger.save_state(f"broker:{self.symbol}", self.broker.export_state())
             self.ledger.save_state(
-                "engine",
+                f"engine:{self.symbol}",
                 {"last_price": str(tick.price), "last_receipt_id": receipt_id},
             )
             self._last_price = tick.price
@@ -639,13 +907,14 @@ class PaperTradingAgent:
             return self.run_cycle()
 
     def recent(self, limit: int = 20) -> list[dict[str, Any]]:
-        return self.ledger.recent(limit)
+        return self.ledger.recent(limit, symbol=self.symbol)
 
     def status(self) -> dict[str, Any]:
         with self._lock:
             mark_price = self._last_price
-            recent = self.ledger.recent(1)
+            recent = self.ledger.recent(1, symbol=self.symbol)
             latest = self._last_cycle or (recent[0] if recent else None)
+            market_health = getattr(self.market, "health", None)
             return {
                 "agent": "trading-primary",
                 "running": self._running,
@@ -658,14 +927,68 @@ class PaperTradingAgent:
                 "symbol": self.symbol,
                 "cycle_target_seconds": self.interval_seconds,
                 "market_provider": self.market.name,
+                "current_market_source": (
+                    latest["tick"]["source"] if latest else None
+                ),
+                "market_health": market_health() if callable(market_health) else None,
                 "signal_model": self.signal_model.name,
                 "cycle_count": self._cycle_count,
                 "last_error": self._last_error,
                 "latest_receipt_id": latest.get("receipt_id") if latest else None,
                 "latest_cycle": latest,
                 "portfolio": self.broker.portfolio(mark_price),
+                "prediction_quality": self.ledger.quality(self.symbol),
                 "risk_limits": self.risk.as_dict(),
             }
+
+    def _evaluate_previous_prediction(self, exit_tick: MarketTick) -> dict[str, Any] | None:
+        if _is_fallback_source(exit_tick.source):
+            return None
+        recent = self.ledger.recent(1, symbol=self.symbol)
+        if not recent:
+            return None
+        previous = recent[0]
+        entry_tick = previous["tick"]
+        prediction = previous["prediction"]
+        if _is_fallback_source(entry_tick["source"]) or str(
+            prediction["reason"]
+        ).startswith("warming_up:"):
+            return None
+        entry_price = _decimal(entry_tick["price"])
+        if entry_price <= ZERO:
+            return None
+        elapsed_seconds = (
+            datetime.fromisoformat(exit_tick.observed_at)
+            - datetime.fromisoformat(entry_tick["observed_at"])
+        ).total_seconds()
+        horizon_seconds = int(prediction["horizon_seconds"])
+        if elapsed_seconds < 0 or elapsed_seconds > max(3.0, horizon_seconds * 3.0):
+            return None
+        realized_return = (exit_tick.price / entry_price) - Decimal("1")
+        action = prediction["action"]
+        if action == "buy":
+            correct = realized_return > _decimal(self.evaluation_deadband)
+            strategy_return = realized_return
+        elif action == "sell":
+            correct = realized_return < -_decimal(self.evaluation_deadband)
+            strategy_return = -realized_return
+        else:
+            correct = abs(realized_return) <= _decimal(self.evaluation_deadband)
+            strategy_return = ZERO
+        evaluation = {
+            "receipt_id": previous["receipt_id"],
+            "symbol": self.symbol,
+            "model": prediction["model"],
+            "action": action,
+            "entry_price": _as_float(entry_price),
+            "exit_price": _as_float(exit_tick.price),
+            "realized_return": round(float(realized_return), 10),
+            "strategy_return_bps": round(float(strategy_return * Decimal("10000")), 6),
+            "correct": bool(correct),
+            "horizon_seconds": horizon_seconds,
+            "evaluated_at": now_iso(),
+        }
+        return evaluation if self.ledger.add_evaluation(evaluation) else None
 
     def _run_loop(self) -> None:
         next_run = time.monotonic()

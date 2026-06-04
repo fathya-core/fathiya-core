@@ -135,11 +135,19 @@ The local control plane also exposes:
 - `POST /api/agent/trading/stop`
 - `POST /api/agent/trading/tick`
 
-This version is deliberately paper-only and long-only. It uses a deterministic
-second-level market feed until a broker market-data connector is selected. Live
-orders are not implemented, and setting `FATHIYA_TRADING_MODE` to anything
+This version is deliberately paper-only and long-only. By default it observes
+the public Coinbase spot price for `BTC-USD` once per second, records the
+outcome of each eligible one-second prediction, and exposes measured
+directional accuracy and theoretical strategy return. If the public provider
+fails, a clearly labeled fallback tick keeps the loop observable while the risk
+engine blocks paper fills and prediction scoring for that tick. Set
+`FATHIYA_TRADING_MARKET_PROVIDER=synthetic_second_market` for deterministic
+offline tests.
+
+Live orders are not implemented, and setting `FATHIYA_TRADING_MODE` to anything
 other than `paper` blocks the loop. A future live connector must use a
 trade-only account without withdrawal permission and an explicit financial
-approval policy. The paper ledger keeps the newest
+approval policy. Broker and engine state are isolated per symbol. The paper
+ledger keeps the newest
 `FATHIYA_TRADING_MAX_RECEIPTS` cycles and prunes older cycles in bounded
 batches.

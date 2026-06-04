@@ -40,6 +40,8 @@ class RuntimeConfig:
     trading_sqlite_path: Path
     trading_mode: str
     trading_symbol: str
+    trading_market_provider: str
+    trading_market_timeout_seconds: float
     trading_tick_seconds: float
     trading_initial_cash: float
     trading_max_order_notional: float
@@ -50,6 +52,7 @@ class RuntimeConfig:
     trading_slippage_bps: float
     trading_signal_window: int
     trading_signal_threshold: float
+    trading_evaluation_deadband: float
     trading_max_receipts: int
 
     @classmethod
@@ -141,7 +144,20 @@ class RuntimeConfig:
                 "runtime/fathiya_trading.db",
             ),
             trading_mode=os.getenv("FATHIYA_TRADING_MODE", "paper").strip().lower(),
-            trading_symbol=os.getenv("FATHIYA_TRADING_SYMBOL", "SIM-USD").strip().upper(),
+            trading_symbol=os.getenv("FATHIYA_TRADING_SYMBOL", "BTC-USD").strip().upper(),
+            trading_market_provider=os.getenv(
+                "FATHIYA_TRADING_MARKET_PROVIDER",
+                "coinbase_spot",
+            )
+            .strip()
+            .lower(),
+            trading_market_timeout_seconds=max(
+                0.1,
+                min(
+                    10.0,
+                    float(os.getenv("FATHIYA_TRADING_MARKET_TIMEOUT_SECONDS", "0.8")),
+                ),
+            ),
             trading_tick_seconds=max(
                 0.05,
                 min(60.0, float(os.getenv("FATHIYA_TRADING_TICK_SECONDS", "1"))),
@@ -183,6 +199,13 @@ class RuntimeConfig:
                 min(
                     1.0,
                     float(os.getenv("FATHIYA_TRADING_SIGNAL_THRESHOLD", "0.001")),
+                ),
+            ),
+            trading_evaluation_deadband=max(
+                0.0,
+                min(
+                    0.1,
+                    float(os.getenv("FATHIYA_TRADING_EVALUATION_DEADBAND", "0.00005")),
                 ),
             ),
             trading_max_receipts=max(

@@ -5,8 +5,11 @@ import time
 import unittest
 from decimal import Decimal
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from fathiya_runtime.trading import (
+    CoinbaseSpotMarket,
+    FallbackMarketDataProvider,
     MomentumSignalModel,
     PaperBroker,
     PaperTradingAgent,
@@ -67,6 +70,10 @@ class PaperTradingAgentTests(unittest.TestCase):
         self.assertLessEqual(cycles[2]["portfolio"]["position_notional"], 200.01)
         self.assertIn("daily_pnl", cycles[2]["portfolio"])
         self.assertEqual(len(agent.recent(10)), 5)
+        quality = agent.status()["prediction_quality"]
+        self.assertGreaterEqual(quality["evaluated_count"], 2)
+        self.assertIsNotNone(quality["directional_accuracy"])
+        self.assertEqual(quality["latest_evaluation"]["symbol"], "TEST-USD")
 
     def test_background_loop_runs_at_configured_cadence_and_stops(self) -> None:
         agent = self.build_agent(interval_seconds=0.05)
@@ -143,6 +150,78 @@ class PaperTradingAgentTests(unittest.TestCase):
         self.assertFalse(blocked["risk"]["allowed"])
         self.assertEqual(blocked["risk"]["reason"], "daily_loss_limit_reached")
         self.assertIsNone(blocked["fill"])
+
+    def test_coinbase_market_parses_public_spot_price(self) -> None:
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "data": {"amount": "62989.58", "base": "BTC", "currency": "USD"}
+        }
+        with patch("fathiya_runtime.trading.requests.get", return_value=response) as get:
+            market = CoinbaseSpotMarket("BTC-USD", timeout_seconds=0.4)
+            tick = market.next_tick()
+
+        self.assertEqual(tick.symbol, "BTC-USD")
+        self.assertEqual(tick.price, Decimal("62989.58000000"))
+        self.assertEqual(tick.source, "coinbase_spot")
+        self.assertEqual(market.health()["success_count"], 1)
+        get.assert_called_once()
+
+    def test_fallback_market_tick_is_observed_but_never_filled(self) -> None:
+        primary = CoinbaseSpotMarket("BTC-USD")
+        market = FallbackMarketDataProvider(
+            primary,
+            SyntheticSecondMarket("BTC-USD", changes=["0.01"]),
+        )
+        agent = PaperTradingAgent(
+            symbol="BTC-USD",
+            ledger=self.ledger,
+            market=market,
+            signal_model=MomentumSignalModel(window=2, threshold=0.001),
+            broker=PaperBroker(initial_cash="1000"),
+            risk=TradingRiskEngine(
+                max_order_notional="100",
+                max_position_notional="200",
+                daily_loss_limit="100",
+                min_order_notional="10",
+            ),
+        )
+
+        with patch.object(primary, "next_tick", side_effect=RuntimeError("offline")):
+            agent.run_cycle()
+            blocked = agent.run_cycle()
+
+        self.assertEqual(blocked["prediction"]["action"], "buy")
+        self.assertFalse(blocked["risk"]["allowed"])
+        self.assertEqual(blocked["risk"]["reason"], "fallback_market_tick")
+        self.assertIsNone(blocked["fill"])
+        self.assertTrue(agent.status()["market_health"]["fallback_active"])
+        self.assertEqual(agent.status()["prediction_quality"]["evaluated_count"], 0)
+
+    def test_symbol_state_and_history_are_isolated(self) -> None:
+        first = self.build_agent(changes=["0.01"])
+        second = PaperTradingAgent(
+            symbol="OTHER-USD",
+            ledger=self.ledger,
+            market=SyntheticSecondMarket("OTHER-USD", changes=["0.01"]),
+            signal_model=MomentumSignalModel(window=2, threshold=0.001),
+            broker=PaperBroker(initial_cash="2000"),
+            risk=TradingRiskEngine(
+                max_order_notional="100",
+                max_position_notional="200",
+                daily_loss_limit="100",
+                min_order_notional="10",
+            ),
+        )
+
+        first.run_cycle()
+        second.run_cycle()
+
+        self.assertEqual(first.status()["cycle_count"], 1)
+        self.assertEqual(second.status()["cycle_count"], 1)
+        self.assertEqual(first.recent(1)[0]["tick"]["symbol"], "TEST-USD")
+        self.assertEqual(second.recent(1)[0]["tick"]["symbol"], "OTHER-USD")
+        self.assertEqual(self.ledger.count(), 2)
 
 
 if __name__ == "__main__":

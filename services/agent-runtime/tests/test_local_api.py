@@ -27,6 +27,8 @@ class LocalAgentApiTests(unittest.TestCase):
         )
         os.environ["FATHIYA_TRADING_TICK_SECONDS"] = "0.05"
         os.environ["FATHIYA_TRADING_MODE"] = "paper"
+        os.environ["FATHIYA_TRADING_MARKET_PROVIDER"] = "synthetic_second_market"
+        os.environ["FATHIYA_TRADING_SYMBOL"] = "SIM-USD"
         os.environ["FATHIYA_ENABLE_HF_RETRIEVAL"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_GENERATION"] = "false"
         os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"] = "false"

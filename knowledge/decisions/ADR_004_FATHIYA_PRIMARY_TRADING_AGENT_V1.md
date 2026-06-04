@@ -18,8 +18,13 @@ speeds:
 
 Every cycle records the observed tick, prediction, risk result, optional fill,
 portfolio state, latency, and a unique receipt. The first implementation is
-paper-only, long-only, and uses a deterministic synthetic feed until a broker
-market-data connector is selected.
+paper-only and long-only. It observes public Coinbase spot data by default,
+evaluates eligible predictions against the next tick, and keeps broker and
+engine state isolated per symbol.
+
+Provider failure activates a labeled synthetic fallback for observability only.
+The risk engine blocks fills and prediction scoring on fallback ticks so
+simulated prices cannot be mistaken for market evidence.
 
 ## Live Activation Gates
 
@@ -37,6 +42,8 @@ Changing `FATHIYA_TRADING_MODE` away from `paper` blocks the agent in v1.
 ## Consequences
 
 - The agent can be measured and improved now without risking funds.
+- Prediction quality is recorded from observed outcomes instead of claimed by
+  the model.
 - Heavy AI models can inform strategy without controlling timing or bypassing
   deterministic risk checks.
 - Broker credentials and live-order code remain a separate reviewed change.

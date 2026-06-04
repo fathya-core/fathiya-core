@@ -40,4 +40,6 @@ never receive or expose broker secrets.
 5. Request explicit action-time approval before enabling any live order path.
 
 Current state: no broker or exchange account is configured. The local agent
-runs against a synthetic feed and paper ledger only.
+uses public Coinbase spot data and a local paper ledger. Public market data
+does not require credentials. A labeled synthetic fallback is observation-only
+and cannot create paper fills.

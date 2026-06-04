@@ -155,12 +155,46 @@ export type AgentTradingStatus = {
   symbol: string;
   cycle_target_seconds: number;
   market_provider: string;
+  current_market_source: string | null;
+  market_health: {
+    provider: string;
+    active_source?: string | null;
+    fallback_active?: boolean;
+    fallback_count?: number;
+    last_error?: string | null;
+    primary?: {
+      provider: string;
+      success_count: number;
+      failure_count: number;
+      last_error: string | null;
+    } | null;
+  } | null;
   signal_model: string;
   cycle_count: number;
   last_error: string | null;
   latest_receipt_id: string | null;
   latest_cycle: AgentTradingCycle | null;
   portfolio: AgentTradingCycle["portfolio"];
+  prediction_quality: {
+    evaluated_count: number;
+    correct_count: number;
+    directional_accuracy: number | null;
+    cumulative_strategy_return_bps: number;
+    average_strategy_return_bps: number;
+    latest_evaluation: {
+      receipt_id: string;
+      symbol: string;
+      model: string;
+      action: "buy" | "sell" | "hold";
+      entry_price: number;
+      exit_price: number;
+      realized_return: number;
+      strategy_return_bps: number;
+      correct: boolean;
+      horizon_seconds: number;
+      evaluated_at: string;
+    } | null;
+  };
   risk_limits: {
     max_order_notional: number;
     max_position_notional: number;
