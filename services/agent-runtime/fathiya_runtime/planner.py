@@ -523,6 +523,15 @@ def _fallback_steps(
         if tool in available and not any(step["tool"] == tool for step in steps):
             steps.append({"tool": tool, "description": description, "args": args or {}})
 
+    integration_probe = _integration_probe_step(prompt)
+    if integration_probe:
+        add(
+            integration_probe["tool"],
+            integration_probe["description"],
+            integration_probe["args"],
+        )
+        return steps[:max_tool_steps]
+
     urls = re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
     if urls and any(term in text for term in ("ingest", "استوعب", "احفظ", "تقرير", "report")):
         add(
@@ -798,6 +807,33 @@ def _trading_strategy_refresh_step(prompt: str) -> dict[str, Any] | None:
         "tool": "trading_strategy_refresh",
         "description": "تحديث مستشار استراتيجية التداول عبر OpenRouter أو Hugging Face",
         "args": {},
+    }
+
+
+def _integration_probe_step(prompt: str) -> dict[str, Any] | None:
+    match = re.search(
+        r"(?:integration\s+probe|فحص\s+اتصال)\s*:\s*([a-z0-9_-]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    integration_id = match.group(1).strip()
+    allowed = {
+        "local_execution_mesh",
+        "huggingface_local",
+        "openrouter",
+        "supabase",
+        "n8n_local",
+        "zapier_mcp",
+        "broker_testnet",
+    }
+    if integration_id not in allowed:
+        return None
+    return {
+        "tool": "integration_probe",
+        "description": f"فحص اتصال {integration_id} عبر أداة مسجلة",
+        "args": {"integration_id": integration_id},
     }
 
 

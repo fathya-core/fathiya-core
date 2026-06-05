@@ -1109,6 +1109,13 @@ def _deterministic_synthesis(
                 follow_up.append(
                     f"بوابات محلية تحتاج إكمالًا: {', '.join(degraded)}."
                 )
+        elif tool == "integration_probe":
+            integration_id = result.get("integration_id", "unknown")
+            status = result.get("status", "unknown")
+            summary = result.get("summary", "لم يسجل الفحص ملخصًا.")
+            evidence.append(f"فحص الاتصال {integration_id}: {status}. {summary}")
+            if not result.get("ok"):
+                follow_up.append(f"أكمل إعداد {integration_id} ثم أعد تشغيل فحص الاتصال.")
         elif tool == "agent_delegate":
             provider = result.get("provider", "غير معروف")
             if result.get("delegated"):

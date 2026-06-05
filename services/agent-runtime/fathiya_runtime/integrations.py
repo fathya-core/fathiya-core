@@ -97,6 +97,11 @@ def build_integration_readiness(
             "connected_apps": ready_capabilities,
             "probe_path": "/api/agent/integrations/local_execution_mesh/probe",
             "probe_label": "اختبار الشبكة",
+            "task_label": "تشغيل وكيل الشبكة",
+            "task_prompt": (
+                "integration probe: local_execution_mesh\n"
+                "اعرض كتالوج الأدوات والوكلاء وافحص شبكة التنفيذ المحلية، ثم سجل إيصالًا."
+            ),
             "details": {
                 "ready_count": len(ready_capabilities),
                 "partial_count": len(partial_capabilities),
@@ -121,6 +126,11 @@ def build_integration_readiness(
             "connected_apps": [],
             "probe_path": "/api/agent/integrations/huggingface_local/probe",
             "probe_label": "اختبار المحلي",
+            "task_label": "تشغيل وكيل النموذج",
+            "task_prompt": (
+                "integration probe: huggingface_local\n"
+                "افحص Hugging Face المحلي والنماذج المحلية المتاحة، ثم سجل إيصالًا."
+            ),
             "details": {
                 "retrieval_enabled": config.enable_hf_retrieval,
                 "generation_enabled": config.enable_local_generation,
@@ -148,6 +158,11 @@ def build_integration_readiness(
             "settings_label": "إعداد OpenRouter محليًا",
             "probe_path": "/api/agent/integrations/openrouter/probe",
             "probe_label": "اختبار الجاهزية",
+            "task_label": "تشغيل وكيل OpenRouter",
+            "task_prompt": (
+                "integration probe: openrouter\n"
+                "افحص جاهزية OpenRouter للمحرك المحلي دون صرف tokens، ثم سجل إيصالًا."
+            ),
             "details": {"model": config.openrouter_model},
         },
         {
@@ -180,6 +195,11 @@ def build_integration_readiness(
             "settings_label": "إعداد Supabase محليًا",
             "probe_path": "/api/agent/integrations/supabase/probe",
             "probe_label": "اختبار القناة",
+            "task_label": "تشغيل وكيل القناة",
+            "task_prompt": (
+                "integration probe: supabase\n"
+                "افحص قناة Supabase للموقع والمشغل المحلي دون كشف المفاتيح، ثم سجل إيصالًا."
+            ),
             "details": {
                 "active_store": config.store,
                 "restart_required": not supabase_active,
@@ -215,6 +235,11 @@ def build_integration_readiness(
             "settings_label": "إعداد n8n محليًا",
             "probe_path": "/api/agent/integrations/n8n_local/probe",
             "probe_label": "اختبار n8n",
+            "task_label": "تشغيل وكيل n8n",
+            "task_prompt": (
+                "integration probe: n8n_local\n"
+                "افحص n8n المحلي وبوابة n8n_health، ثم سجل إيصالًا."
+            ),
             "details": {"base_url": config.n8n_base_url},
         },
         {
@@ -256,6 +281,11 @@ def build_integration_readiness(
             ),
             "probe_path": "/api/agent/integrations/zapier_mcp/probe",
             "probe_label": "اختبار Zapier",
+            "task_label": "تشغيل وكيل Zapier",
+            "task_prompt": (
+                "integration probe: zapier_mcp\n"
+                "افحص Zapier MCP ومخزون التطبيقات والإجراءات المتاحة، ثم سجل إيصالًا."
+            ),
             "details": {
                 "app_count": len(zapier_apps),
                 "action_count": int(inventory.get("zapier_action_count", 0)),
@@ -302,6 +332,11 @@ def build_integration_readiness(
             "settings_label": "إعداد Testnet محليًا",
             "probe_path": "/api/agent/integrations/broker_testnet/probe",
             "probe_label": "اختبار Testnet",
+            "task_label": "تشغيل وكيل Testnet",
+            "task_prompt": (
+                "integration probe: broker_testnet\n"
+                "افحص جاهزية حساب التداول التجريبي دون إرسال أوامر، ثم سجل إيصالًا."
+            ),
             "details": {
                 "provider": testnet["provider"],
                 "environment": testnet["environment"],

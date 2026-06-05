@@ -410,8 +410,8 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
 
     def _probe_integration(self, integration_id: str) -> None:
         try:
-            result = _integration_probe(self.server, integration_id)
-        except KeyError:
+            result = self.server.tools.integration_probe(integration_id)
+        except ValueError:
             return self._send_error(HTTPStatus.NOT_FOUND, "Unknown integration probe")
         except Exception as exc:
             return self._send_json(

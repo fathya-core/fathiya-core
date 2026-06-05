@@ -103,6 +103,11 @@ spend model tokens or contact Supabase. n8n uses the read-only health profile,
 Zapier checks OAuth status and the cached tool inventory, and Testnet does not
 contact the broker until local Testnet credentials exist.
 
+The same probe is registered in the runtime tool catalog as `integration_probe`.
+The integrations panel exposes a `تشغيل وكيل` action that queues a normal agent
+task such as `integration probe: zapier_mcp`; the worker then records progress
+and a receipt through the same task pipeline used by larger operator requests.
+
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,
 Supabase, n8n, and Binance Spot Testnet credentials through

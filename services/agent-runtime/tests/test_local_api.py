@@ -153,6 +153,14 @@ class LocalAgentApiTests(unittest.TestCase):
             20,
         )
         self.assertEqual(
+            integration_by_id["zapier_mcp"]["task_prompt"].splitlines()[0],
+            "integration probe: zapier_mcp",
+        )
+        self.assertEqual(
+            integration_by_id["openrouter"]["task_prompt"].splitlines()[0],
+            "integration probe: openrouter",
+        )
+        self.assertEqual(
             integration_by_id["broker_testnet"]["status"],
             "needs_operator",
         )
@@ -329,6 +337,32 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(detail["task"]["status"], "completed")
         self.assertEqual(detail["task"]["progress"], 100)
         self.assertEqual(len(detail["receipts"]), 1)
+
+        integration_probe_task = requests.post(
+            f"{self.base_url}/api/agent/tasks",
+            headers=self.headers,
+            json={
+                "title": "فحص اتصال: Zapier MCP",
+                "prompt": integration_by_id["zapier_mcp"]["task_prompt"],
+            },
+            timeout=5,
+        ).json()["task"]
+        self.assertEqual(integration_probe_task["status"], "queued")
+        AgentWorker(self.config, self.store, tools=self.server.tools).start(once=True)
+        integration_probe_detail = requests.get(
+            f"{self.base_url}/api/agent/tasks/{integration_probe_task['id']}",
+            headers=self.headers,
+            timeout=5,
+        ).json()
+        self.assertEqual(integration_probe_detail["task"]["status"], "completed")
+        self.assertEqual(len(integration_probe_detail["receipts"]), 1)
+        integration_probe_result = integration_probe_detail["task"]["result"]["tool_results"][0][
+            "result"
+        ]
+        self.assertEqual(integration_probe_result["tool"], "integration_probe")
+        self.assertEqual(integration_probe_result["integration_id"], "zapier_mcp")
+        self.assertTrue(integration_probe_result["secret_safe"])
+        self.assertNotIn("selected_api", str(integration_probe_detail))
 
         sensitive = requests.post(
             f"{self.base_url}/api/agent/tasks",

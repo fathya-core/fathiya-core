@@ -84,6 +84,7 @@ class ToolExecutor:
             "connector_catalog": self._connector_catalog,
             "connector_profile": self._connector_profile,
             "connected_tool_inventory": self._connected_tool_inventory,
+            "integration_probe": self._integration_probe,
             "zapier_action_catalog": self._zapier_action_catalog,
             "zapier_action": self._zapier_action,
             "kali_tool_inventory": self._kali_tool_inventory,
@@ -110,6 +111,12 @@ class ToolExecutor:
                     "Probe the local execution mesh and report which agent, automation, model, security, and engineering runtimes are actually ready.",
                     "runtime",
                     inputs=("refresh",),
+                ),
+                ToolSpec(
+                    "integration_probe",
+                    "Run one secret-safe readiness probe for a named integration and return receipt-safe evidence.",
+                    "runtime",
+                    inputs=("integration_id",),
                 ),
                 ToolSpec(
                     "agent_delegate",
@@ -469,6 +476,177 @@ class ToolExecutor:
             )
         return result
 
+    def integration_probe(self, integration_id: str) -> dict[str, Any]:
+        checked_at = datetime.now(UTC).isoformat()
+        if integration_id == "local_execution_mesh":
+            result = self._local_capability_inventory("", {}, [])
+            ready_count = int(result.get("ready_count") or 0)
+            capability_count = int(result.get("capability_count") or 0)
+            partial_count = int(result.get("partial_count") or 0)
+            ok = bool(capability_count and ready_count == capability_count)
+            return _integration_probe_payload(
+                integration_id,
+                ok=ok,
+                status="ready" if ok else "partial" if ready_count else "needs_setup",
+                summary=(
+                    f"{ready_count} من {capability_count} بوابات التنفيذ جاهزة"
+                    + (f" و{partial_count} جزئية." if partial_count else ".")
+                ),
+                checked_at=checked_at,
+                action="local_capability_inventory",
+                details={
+                    "ready_count": ready_count,
+                    "partial_count": partial_count,
+                    "capability_count": capability_count,
+                },
+            )
+        if integration_id == "huggingface_local":
+            retrieval = bool(self.config.enable_hf_retrieval)
+            generation = bool(self.config.enable_local_generation)
+            ok = retrieval or generation
+            return _integration_probe_payload(
+                integration_id,
+                ok=ok,
+                status="ready" if ok else "needs_setup",
+                summary=(
+                    "النماذج المحلية مفعلة للاسترجاع أو التوليد."
+                    if ok
+                    else "النماذج المحلية غير مفعلة في إعدادات المشغّل."
+                ),
+                checked_at=checked_at,
+                action="configuration_check",
+                details={
+                    "retrieval_enabled": retrieval,
+                    "generation_enabled": generation,
+                    "retrieval_model": self.config.hf_model,
+                    "generation_model": self.config.local_model,
+                    "network_call": False,
+                },
+            )
+        if integration_id == "openrouter":
+            configured = bool(self.config.openrouter_api_key)
+            return _integration_probe_payload(
+                integration_id,
+                ok=configured,
+                status="ready" if configured else "needs_setup",
+                summary=(
+                    "مفتاح OpenRouter موجود محليًا؛ المكالمات الثقيلة جاهزة عند طلب الوكيل."
+                    if configured
+                    else "OpenRouter ينتظر مفتاحًا محليًا؛ لم تُجر مكالمة نموذج."
+                ),
+                checked_at=checked_at,
+                action="configuration_check",
+                details={
+                    "configured": configured,
+                    "model": self.config.openrouter_model,
+                    "network_call": False,
+                    "cost_incurred": False,
+                },
+            )
+        if integration_id == "supabase":
+            configured = bool(
+                self.config.supabase_url and self.config.supabase_service_role_key
+            )
+            active = configured and self.config.store == "supabase"
+            return _integration_probe_payload(
+                integration_id,
+                ok=active,
+                status="ready" if active else "partial" if configured else "needs_setup",
+                summary=(
+                    "Supabase مفعّل كقناة مهام حالية."
+                    if active
+                    else "بيانات Supabase موجودة، لكن المشغّل الحالي ما زال على SQLite."
+                    if configured
+                    else "Supabase ينتظر URL ومفتاح خدمة محلي."
+                ),
+                checked_at=checked_at,
+                action="configuration_check",
+                details={
+                    "configured": configured,
+                    "active_store": self.config.store,
+                    "network_call": False,
+                },
+            )
+        if integration_id == "n8n_local":
+            result = self._connector_profile("", {"profile": "n8n_health"}, [])
+            ok = bool(result.get("available") and result.get("executed"))
+            return _integration_probe_payload(
+                integration_id,
+                ok=ok,
+                status="ready" if ok else "partial",
+                summary=(
+                    "n8n المحلي استجاب لفحص الصحة."
+                    if ok
+                    else "تعذر تأكيد استجابة n8n المحلي."
+                ),
+                checked_at=checked_at,
+                action="connector_profile:n8n_health",
+                details=_connector_result_evidence(result),
+            )
+        if integration_id == "zapier_mcp":
+            status = self.zapier.status()
+            inventory = self._connected_tool_inventory("", {}, [])
+            connected = bool(status.get("connected"))
+            app_count = int(inventory.get("zapier_app_count") or 0)
+            action_count = int(inventory.get("zapier_action_count") or 0)
+            ok = connected and app_count > 0
+            return _integration_probe_payload(
+                integration_id,
+                ok=ok,
+                status="ready" if ok else "partial" if app_count else "needs_setup",
+                summary=(
+                    f"Zapier OAuth المباشر جاهز، والمخزون يعرض {app_count} تطبيقًا و{action_count} إجراء."
+                    if connected
+                    else f"مخزون Zapier يعرض {app_count} تطبيقًا و{action_count} إجراء، لكن OAuth المحلي المباشر لم يكتمل."
+                ),
+                checked_at=checked_at,
+                action="oauth_status_and_inventory",
+                details={
+                    "direct_oauth_connected": connected,
+                    "app_count": app_count,
+                    "action_count": action_count,
+                    "endpoint": status.get("endpoint"),
+                },
+            )
+        if integration_id == "broker_testnet":
+            status = self._trading_testnet_gateway().status()
+            configured = bool(status.get("configured"))
+            probe = self._trading_testnet_gateway().probe() if configured else status
+            authenticated = bool(probe.get("authenticated"))
+            reachable = bool(probe.get("reachable")) if configured else False
+            ok = configured and reachable and authenticated
+            return _integration_probe_payload(
+                integration_id,
+                ok=ok,
+                status="ready" if ok else "partial" if configured else "needs_operator",
+                summary=(
+                    "حساب Testnet استجاب وجرى التحقق من المصادقة."
+                    if ok
+                    else "مفاتيح Testnet موجودة لكن التحقق لم ينجح بعد."
+                    if configured
+                    else "Testnet ينتظر مفاتيح محلية؛ لم يُرسل أي طلب وساطة."
+                ),
+                checked_at=checked_at,
+                action="testnet_status" if not configured else "testnet_probe",
+                details={
+                    key: probe.get(key)
+                    for key in (
+                        "provider",
+                        "environment",
+                        "configured",
+                        "execution_enabled",
+                        "symbol",
+                        "reachable",
+                        "authenticated",
+                        "can_trade",
+                        "base_host",
+                        "error",
+                    )
+                    if key in probe
+                },
+            )
+        raise ValueError(f"Unknown integration probe: {integration_id}")
+
     def _tool_catalog(
         self,
         _prompt: str,
@@ -620,6 +798,17 @@ class ToolExecutor:
         }
         self._capability_cache = (now, result)
         return result
+
+    def _integration_probe(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        integration_id = str(args.get("integration_id") or "").strip()
+        if not integration_id:
+            raise ValueError("integration_probe requires integration_id")
+        return self.integration_probe(integration_id)
 
     def _probe_cli(
         self,
@@ -1797,3 +1986,45 @@ def _json_object(raw: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Model advisory must be a JSON object")
     return payload
+
+
+def _integration_probe_payload(
+    integration_id: str,
+    *,
+    ok: bool,
+    status: str,
+    summary: str,
+    checked_at: str,
+    action: str,
+    details: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "available": True,
+        "executed": True,
+        "integration_id": integration_id,
+        "ok": ok,
+        "status": status,
+        "summary": summary,
+        "checked_at": checked_at,
+        "secret_safe": True,
+        "action": action,
+        "details": details,
+    }
+
+
+def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: result.get(key)
+        for key in (
+            "profile",
+            "provider",
+            "method",
+            "configured",
+            "available",
+            "executed",
+            "execution_failed",
+            "status_code",
+            "error",
+        )
+        if key in result
+    }

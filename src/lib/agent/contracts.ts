@@ -145,6 +145,8 @@ export type AgentIntegrationReadiness = {
   settings_label?: string | null;
   probe_path?: string | null;
   probe_label?: string | null;
+  task_prompt?: string | null;
+  task_label?: string | null;
   details: Record<string, Json>;
 };
 

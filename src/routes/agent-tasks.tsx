@@ -116,6 +116,7 @@ function AgentTasksPage() {
     Record<string, AgentIntegrationProbeResult>
   >({});
   const [probingIntegration, setProbingIntegration] = useState<string | null>(null);
+  const [startingIntegrationTask, setStartingIntegrationTask] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -396,6 +397,28 @@ function AgentTasksPage() {
       setError(String(probeError));
     } finally {
       setProbingIntegration(null);
+    }
+  }
+
+  async function startIntegrationTask(integration: AgentIntegrationReadiness) {
+    if (!localMode || !integration.task_prompt) return;
+    setStartingIntegrationTask(integration.id);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: `فحص اتصال: ${integration.name}`,
+        prompt: integration.task_prompt,
+      };
+      const data = await agentApi<{ task: AgentTask }>(null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingIntegrationTask(null);
     }
   }
 
@@ -916,6 +939,23 @@ function AgentTasksPage() {
                                   <Activity />
                                 )}
                                 {integration.probe_label ?? "اختبار الاتصال"}
+                              </Button>
+                            )}
+                            {integration.task_prompt && (
+                              <Button
+                                type="button"
+                                variant="default"
+                                size="sm"
+                                className="mt-2 h-7 text-[10px]"
+                                disabled={startingIntegrationTask === integration.id}
+                                onClick={() => void startIntegrationTask(integration)}
+                              >
+                                {startingIntegrationTask === integration.id ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Play />
+                                )}
+                                {integration.task_label ?? "تشغيل وكيل"}
                               </Button>
                             )}
                             {integrationProbes[integration.id] && (
