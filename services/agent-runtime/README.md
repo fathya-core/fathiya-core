@@ -108,6 +108,17 @@ The integrations panel exposes a `تشغيل وكيل` action that queues a norm
 task such as `integration probe: zapier_mcp`; the worker then records progress
 and a receipt through the same task pipeline used by larger operator requests.
 
+`agent_mesh_audit` is the wide operator scan for the execution mesh. It runs as
+a normal read-only task and collects the local tool catalog, execution mesh,
+Zapier MCP inventory, direct OAuth state, n8n status, Kali WSL tools, model
+readiness, connector profiles, and the primary paper-trading agent snapshot into
+one receipt-safe result. The `/agent-tasks` page exposes this as `تشغيل شبكة
+الوكلاء`, which queues a task beginning with:
+
+```text
+agent mesh audit:
+```
+
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,
 Supabase, n8n, and Binance Spot Testnet credentials through

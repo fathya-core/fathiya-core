@@ -108,6 +108,15 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(task["status"], "awaiting_approval")
         self.assertEqual(classify_risk(task["prompt"]).risk_class, "financial")
 
+    def test_agent_mesh_audit_is_read_only_even_when_it_mentions_scanning(self) -> None:
+        risk = classify_risk(
+            "agent mesh audit:\n"
+            "استكشف شبكة الوكلاء ووكيل التداول وKali دون تنفيذ أوامر مالية."
+        )
+
+        self.assertEqual(risk.risk_class, "internal_owned")
+        self.assertFalse(risk.requires_approval)
+
     def test_negated_external_action_does_not_require_approval(self) -> None:
         risk = classify_risk(
             "افحص جاهزية حساب التداول التجريبي وسجل النتيجة دون إرسال أي أمر"

@@ -11,7 +11,10 @@ from .retrieval import RetrievedSource
 FAST_CONTROL_TOOLS = frozenset(
     {"trading_status", "trading_start", "trading_stop", "trading_tick"}
 )
-DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {"trading_strategy_refresh"}
+DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
+    "agent_mesh_audit",
+    "trading_strategy_refresh",
+}
 
 
 def step_signature(tool: str, args: dict[str, Any] | None = None) -> str:
@@ -32,26 +35,32 @@ def build_plan(
     *,
     max_tool_steps: int = 6,
 ) -> list[dict[str, Any]]:
-    tool_steps = fast_control_steps(task["prompt"], tool_catalog)
-    if tool_steps:
-        planner_mode = "local_fast_control"
+    direct_mesh_step = _agent_mesh_audit_step(task["prompt"])
+    if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
+        tool_steps = [direct_mesh_step]
+        planner_mode = "local_agent_mesh_audit"
         planner_error = None
     else:
-        tool_steps, planner_mode, planner_error = _model_steps(
-            task,
-            sources,
-            model,
-            tool_catalog,
-            max_tool_steps,
-        )
-        if not tool_steps:
-            tool_steps = _fallback_steps(
-                task["prompt"],
+        tool_steps = fast_control_steps(task["prompt"], tool_catalog)
+        if tool_steps:
+            planner_mode = "local_fast_control"
+            planner_error = None
+        else:
+            tool_steps, planner_mode, planner_error = _model_steps(
+                task,
+                sources,
+                model,
                 tool_catalog,
                 max_tool_steps,
-                source_guidance=sources if task.get("knowledge_mission") else [],
             )
-            planner_mode = "local_fallback"
+            if not tool_steps:
+                tool_steps = _fallback_steps(
+                    task["prompt"],
+                    tool_catalog,
+                    max_tool_steps,
+                    source_guidance=sources if task.get("knowledge_mission") else [],
+                )
+                planner_mode = "local_fallback"
 
     plan: list[dict[str, Any]] = [
         {
@@ -100,6 +109,13 @@ def build_plan(
         }
     )
     return plan
+
+
+def _tool_is_available(tool: str, tool_catalog: list[dict[str, Any]]) -> bool:
+    return any(
+        str(item.get("name") or "") == tool and bool(item.get("configured", True))
+        for item in tool_catalog
+    )
 
 
 def build_follow_up_decision(
@@ -523,6 +539,15 @@ def _fallback_steps(
         if tool in available and not any(step["tool"] == tool for step in steps):
             steps.append({"tool": tool, "description": description, "args": args or {}})
 
+    agent_mesh_audit = _agent_mesh_audit_step(prompt)
+    if agent_mesh_audit:
+        add(
+            agent_mesh_audit["tool"],
+            agent_mesh_audit["description"],
+            agent_mesh_audit["args"],
+        )
+        return steps[:max_tool_steps]
+
     integration_probe = _integration_probe_step(prompt)
     if integration_probe:
         add(
@@ -807,6 +832,46 @@ def _trading_strategy_refresh_step(prompt: str) -> dict[str, Any] | None:
         "tool": "trading_strategy_refresh",
         "description": "تحديث مستشار استراتيجية التداول عبر OpenRouter أو Hugging Face",
         "args": {},
+    }
+
+
+def _agent_mesh_audit_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    broad_agent_terms = (
+        "agent mesh",
+        "execution mesh",
+        "agent runtime",
+        "all tools",
+        "tool inventory",
+        "كل الأدوات",
+        "كل الادوات",
+        "جميع الأدوات",
+        "جميع الادوات",
+        "شبكة الوكلاء",
+        "محرك الوكلاء",
+        "محرك وكلاء",
+        "شبكة التنفيذ",
+        "استكشف ادوات",
+        "استكشف الأدوات",
+        "استكشف كل",
+        "شغل محرك",
+        "شغّل محرك",
+        "تشغيل محرك",
+        "فحص شامل للوكلاء",
+        "مسح الوكلاء",
+        "مسح شبكة",
+    )
+    explicit = re.search(
+        r"(?:agent\s+mesh\s+audit|مسح\s+شبكة\s+الوكلاء)\s*:",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not explicit and not any(term in text for term in broad_agent_terms):
+        return None
+    return {
+        "tool": "agent_mesh_audit",
+        "description": "تشغيل مسح تنفيذي شامل لشبكة الوكلاء والأدوات",
+        "args": {"refresh": True},
     }
 
 

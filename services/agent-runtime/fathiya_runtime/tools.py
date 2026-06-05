@@ -71,6 +71,7 @@ class ToolExecutor:
         self._handlers: dict[str, ToolHandler] = {
             "tool_catalog": self._tool_catalog,
             "local_capability_inventory": self._local_capability_inventory,
+            "agent_mesh_audit": self._agent_mesh_audit,
             "agent_delegate": self._agent_delegate,
             "internal_echo": self._internal_echo,
             "repo_status": self._repo_status,
@@ -109,6 +110,12 @@ class ToolExecutor:
                 ToolSpec(
                     "local_capability_inventory",
                     "Probe the local execution mesh and report which agent, automation, model, security, and engineering runtimes are actually ready.",
+                    "runtime",
+                    inputs=("refresh",),
+                ),
+                ToolSpec(
+                    "agent_mesh_audit",
+                    "Run a secret-safe execution-mesh audit across local agents, models, connectors, Zapier MCP inventory, n8n, Kali, and the primary trading agent.",
                     "runtime",
                     inputs=("refresh",),
                 ),
@@ -809,6 +816,239 @@ class ToolExecutor:
         if not integration_id:
             raise ValueError("integration_probe requires integration_id")
         return self.integration_probe(integration_id)
+
+    def _agent_mesh_audit(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        refresh = bool(args.get("refresh", True))
+        captured_at = datetime.now(UTC).isoformat()
+        tool_catalog = self.catalog()
+        capabilities = self._local_capability_inventory("", {"refresh": refresh}, [])
+        connectors = self.connector_catalog()
+        connected_inventory = self._connected_tool_inventory("", {}, [])
+        zapier_direct = self._zapier_action_catalog(
+            "",
+            {"refresh": bool(args.get("refresh_zapier", False))},
+            [],
+        )
+        n8n_status = self._n8n_status("", {}, [])
+        try:
+            n8n_workflows = self._n8n_workflows("", {}, [])
+        except requests.RequestException as exc:
+            n8n_workflows = {
+                "available": False,
+                "status_code": None,
+                "workflows": None,
+                "error": f"{type(exc).__name__}: n8n workflow listing failed",
+            }
+        kali = self._kali_tool_inventory("", {}, [])
+        trading = self._trading_status("", {}, [])
+        integration_ids = (
+            "local_execution_mesh",
+            "huggingface_local",
+            "openrouter",
+            "supabase",
+            "n8n_local",
+            "zapier_mcp",
+            "broker_testnet",
+        )
+        integration_probes: dict[str, dict[str, Any]] = {}
+        for integration_id in integration_ids:
+            try:
+                probe = self.integration_probe(integration_id)
+                integration_probes[integration_id] = {
+                    "ok": probe.get("ok"),
+                    "status": probe.get("status"),
+                    "summary": probe.get("summary"),
+                    "action": probe.get("action"),
+                    "secret_safe": True,
+                }
+            except Exception as exc:
+                integration_probes[integration_id] = {
+                    "ok": False,
+                    "status": "failed",
+                    "summary": f"{type(exc).__name__}: audit probe failed",
+                    "action": "agent_mesh_audit",
+                    "secret_safe": True,
+                }
+
+        ready_capabilities = [
+            capability
+            for capability in capabilities.get("capabilities", [])
+            if isinstance(capability, dict)
+            and capability.get("status") in {"active", "ready"}
+        ]
+        partial_capabilities = [
+            capability
+            for capability in capabilities.get("capabilities", [])
+            if isinstance(capability, dict)
+            and capability.get("status") in {"partial", "degraded"}
+        ]
+        configured_connectors = [
+            connector for connector in connectors if connector.get("configured")
+        ]
+        zapier_apps = connected_inventory.get("zapier_apps", [])
+        zapier_app_count = int(connected_inventory.get("zapier_app_count") or 0)
+        zapier_action_count = int(connected_inventory.get("zapier_action_count") or 0)
+        direct_connected = bool(zapier_direct.get("connected"))
+        workflows_payload = n8n_workflows.get("workflows")
+        workflow_count = (
+            len(workflows_payload) if isinstance(workflows_payload, list) else None
+        )
+        trading_status = trading.get("trading", {})
+        quality = (
+            trading_status.get("prediction_quality", {})
+            if isinstance(trading_status, dict)
+            else {}
+        )
+
+        next_actions = _agent_mesh_next_actions(
+            integration_probes=integration_probes,
+            connectors=connectors,
+            zapier_direct=zapier_direct,
+            n8n_workflows=n8n_workflows,
+            kali=kali,
+        )
+        summary = {
+            "tool_count": len(tool_catalog),
+            "capability_count": int(capabilities.get("capability_count") or 0),
+            "ready_capability_count": len(ready_capabilities),
+            "partial_capability_count": len(partial_capabilities),
+            "connector_count": len(connectors),
+            "configured_connector_count": len(configured_connectors),
+            "zapier_app_count": zapier_app_count,
+            "zapier_action_count": zapier_action_count,
+            "zapier_direct_oauth_connected": direct_connected,
+            "n8n_available": bool(n8n_status.get("available")),
+            "n8n_workflow_count": workflow_count,
+            "kali_status": kali.get("status"),
+            "kali_found_tool_count": len(kali.get("found_commands", [])),
+            "trading_running": bool(trading_status.get("running"))
+            if isinstance(trading_status, dict)
+            else False,
+            "trading_symbol": trading_status.get("symbol")
+            if isinstance(trading_status, dict)
+            else None,
+            "trading_cycle_seconds": trading_status.get("cycle_target_seconds")
+            if isinstance(trading_status, dict)
+            else None,
+            "trading_evaluated_predictions": quality.get("evaluated_count"),
+        }
+        return {
+            "available": True,
+            "executed": True,
+            "secret_safe": True,
+            "captured_at": captured_at,
+            "summary": summary,
+            "execution_policy": {
+                "audit_mode": "read_only",
+                "automatic_internal_execution": True,
+                "external_writes_require_approval": True,
+                "live_trading_requires_explicit_testnet_enablement": True,
+                "live_security_testing_requires_approval": True,
+            },
+            "tools": [
+                {
+                    "name": item.get("name"),
+                    "category": item.get("category"),
+                    "configured": item.get("configured", True),
+                    "requires_approval": item.get("requires_approval", False),
+                    "read_only": item.get("read_only", True),
+                }
+                for item in tool_catalog
+            ],
+            "capabilities": [
+                {
+                    key: capability.get(key)
+                    for key in (
+                        "id",
+                        "name",
+                        "status",
+                        "available",
+                        "installed",
+                        "authenticated",
+                        "execution_mode",
+                        "requires_approval",
+                    )
+                    if key in capability
+                }
+                for capability in capabilities.get("capabilities", [])
+                if isinstance(capability, dict)
+            ],
+            "connectors": connectors,
+            "connected_tools": {
+                "captured_at": connected_inventory.get("captured_at"),
+                "zapier_app_count": zapier_app_count,
+                "zapier_action_count": zapier_action_count,
+                "top_zapier_apps": [
+                    {
+                        "name": app.get("name"),
+                        "action_count": app.get("action_count"),
+                    }
+                    for app in zapier_apps[:12]
+                    if isinstance(app, dict)
+                ],
+                "agent_provider_actions": connected_inventory.get(
+                    "agent_provider_actions",
+                    {},
+                ),
+            },
+            "zapier_direct": {
+                "connected": direct_connected,
+                "app_count": zapier_direct.get("app_count"),
+                "action_count": zapier_direct.get("action_count"),
+                "error": zapier_direct.get("error"),
+            },
+            "n8n": {
+                "status": _connector_result_evidence(n8n_status),
+                "workflows_available": bool(n8n_workflows.get("available")),
+                "workflow_count": workflow_count,
+                "error": n8n_workflows.get("error"),
+                "status_code": n8n_workflows.get("status_code"),
+            },
+            "kali": {
+                "status": kali.get("status"),
+                "available": kali.get("available"),
+                "distro": kali.get("distro"),
+                "found_commands": kali.get("found_commands", []),
+                "missing_commands": kali.get("missing_commands", []),
+                "error": kali.get("error"),
+            },
+            "trading": {
+                "running": trading_status.get("running")
+                if isinstance(trading_status, dict)
+                else None,
+                "mode": trading_status.get("mode")
+                if isinstance(trading_status, dict)
+                else None,
+                "symbol": trading_status.get("symbol")
+                if isinstance(trading_status, dict)
+                else None,
+                "cycle_target_seconds": trading_status.get("cycle_target_seconds")
+                if isinstance(trading_status, dict)
+                else None,
+                "live_execution_enabled": trading_status.get("live_execution_enabled")
+                if isinstance(trading_status, dict)
+                else False,
+                "current_market_source": trading_status.get("current_market_source")
+                if isinstance(trading_status, dict)
+                else None,
+                "prediction_quality": quality,
+            },
+            "integration_probes": integration_probes,
+            "next_actions": next_actions,
+            "executable_prompts": [
+                "شغّل وكيل التداول الورقي",
+                "حدّث مستشار استراتيجية وكيل التداول",
+                "integration probe: openrouter",
+                "integration probe: zapier_mcp",
+                "zapier action: <app>/<action> params:{...}",
+                "فوّض إلى Manus خطة تنفيذ هذا الهدف بعد الموافقة",
+            ],
+        }
 
     def _probe_cli(
         self,
@@ -1737,6 +1977,22 @@ class ToolExecutor:
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         commands = ["nmap", "nuclei", "httpx", "subfinder", "git", "python3"]
+        if not shutil.which("wsl.exe"):
+            return {
+                "available": False,
+                "status": "unavailable",
+                "distro": self.config.kali_wsl_distro,
+                "requested_commands": commands,
+                "found": [],
+                "found_commands": [],
+                "missing_commands": commands,
+                "execution_failed": False,
+                "error": "wsl.exe is not installed or not on PATH",
+                "command": ["wsl.exe", "-d", self.config.kali_wsl_distro],
+                "return_code": 127,
+                "stdout": "",
+                "stderr": "",
+            }
         # Explicit commands avoid WSL argument translation dropping a shell loop variable.
         script = "; ".join(f"command -v {command} || true" for command in commands)
         result = self._run(
@@ -1986,6 +2242,87 @@ def _json_object(raw: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Model advisory must be a JSON object")
     return payload
+
+
+def _agent_mesh_next_actions(
+    *,
+    integration_probes: dict[str, dict[str, Any]],
+    connectors: list[dict[str, Any]],
+    zapier_direct: dict[str, Any],
+    n8n_workflows: dict[str, Any],
+    kali: dict[str, Any],
+) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+
+    def add(action_id: str, title: str, prompt: str, reason: str) -> None:
+        actions.append(
+            {
+                "id": action_id,
+                "title": title,
+                "prompt": prompt,
+                "reason": reason,
+            }
+        )
+
+    if integration_probes.get("openrouter", {}).get("status") != "ready":
+        add(
+            "configure_openrouter",
+            "تفعيل OpenRouter",
+            "integration probe: openrouter",
+            "المهام الثقيلة تحتاج مفتاح OpenRouter محلي حتى يعمل التخطيط والتقييم بالنماذج.",
+        )
+    if integration_probes.get("huggingface_local", {}).get("status") != "ready":
+        add(
+            "enable_huggingface_local",
+            "تفعيل Hugging Face المحلي",
+            "integration probe: huggingface_local",
+            "الاسترجاع والتوليد المحليين يخففان الاعتماد على الشبكة ويعطيان المحرك ذاكرة أقرب.",
+        )
+    if not zapier_direct.get("connected"):
+        add(
+            "connect_zapier_oauth",
+            "ربط Zapier MCP المحلي",
+            "integration probe: zapier_mcp",
+            "مخزون Zapier متاح، لكن التنفيذ المباشر يحتاج OAuth محليًا بدل كلمات مرور في المحادثة.",
+        )
+    if not n8n_workflows.get("available"):
+        add(
+            "configure_n8n_api",
+            "تفعيل قراءة n8n",
+            "افحص n8n واعرض مساراته",
+            "قراءة workflows تحتاج N8N_API_KEY حتى يستطيع المحرك توجيه الأتمتة بدل الاكتفاء بالصحة.",
+        )
+    missing_connector_env = sorted(
+        {
+            str(name)
+            for connector in connectors
+            for name in connector.get("missing_env", [])
+            if name
+        }
+    )
+    if missing_connector_env:
+        add(
+            "configure_agent_bridges",
+            "إكمال جسور Cursor وManus وZapier",
+            "اعرض جاهزية جسور Cursor وManus وZapier ثم جهز الناقص",
+            "بعض الموصلات التنفيذية تنتظر إعدادات محلية: "
+            + ", ".join(missing_connector_env[:8]),
+        )
+    if kali.get("status") != "active":
+        add(
+            "prepare_kali",
+            "تجهيز Kali WSL",
+            "افحص أدوات Kali الدفاعية",
+            "وكيل الأمن يحتاج أدوات Kali جاهزة للفحص الدفاعي، مع بقاء الفحص الحي تحت الموافقة.",
+        )
+    if integration_probes.get("broker_testnet", {}).get("status") != "ready":
+        add(
+            "configure_testnet",
+            "ربط Testnet للتداول",
+            "integration probe: broker_testnet",
+            "التنفيذ المالي الحقيقي يبقى مقفلًا؛ أول خطوة آمنة هي Testnet محلي مع مفاتيح غير مكشوفة.",
+        )
+    return actions
 
 
 def _integration_probe_payload(

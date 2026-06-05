@@ -117,6 +117,16 @@ class LocalAgentApiTests(unittest.TestCase):
         capability_probe = capabilities_response.json()["capabilities"]
         self.assertEqual(capability_probe["capability_count"], 10)
         self.assertGreaterEqual(capability_probe["ready_count"], 1)
+        tools_response = requests.get(
+            f"{self.base_url}/api/agent/tools",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(tools_response.status_code, 200)
+        tools_by_name = {item["name"]: item for item in tools_response.json()["tools"]}
+        self.assertIn("agent_mesh_audit", tools_by_name)
+        self.assertEqual(tools_by_name["agent_mesh_audit"]["category"], "runtime")
+        self.assertFalse(tools_by_name["agent_mesh_audit"]["requires_approval"])
 
         integrations_response = requests.get(
             f"{self.base_url}/api/agent/integrations",
@@ -363,6 +373,38 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(integration_probe_result["integration_id"], "zapier_mcp")
         self.assertTrue(integration_probe_result["secret_safe"])
         self.assertNotIn("selected_api", str(integration_probe_detail))
+
+        mesh_task = requests.post(
+            f"{self.base_url}/api/agent/tasks",
+            headers=self.headers,
+            json={
+                "title": "مسح شبكة الوكلاء",
+                "prompt": (
+                    "agent mesh audit:\n"
+                    "استكشف كل الأدوات والوكلاء والحسابات محليًا، "
+                    "وتحقق من وكيل التداول الأساسي ضمن المسح."
+                ),
+            },
+            timeout=5,
+        ).json()["task"]
+        self.assertEqual(mesh_task["status"], "queued")
+        AgentWorker(self.config, self.store, tools=self.server.tools).start(once=True)
+        mesh_detail = requests.get(
+            f"{self.base_url}/api/agent/tasks/{mesh_task['id']}",
+            headers=self.headers,
+            timeout=5,
+        ).json()
+        self.assertEqual(mesh_detail["task"]["status"], "completed")
+        self.assertEqual(len(mesh_detail["receipts"]), 1)
+        mesh_result = mesh_detail["task"]["result"]["tool_results"][0]["result"]
+        self.assertEqual(mesh_result["tool"], "agent_mesh_audit")
+        self.assertTrue(mesh_result["secret_safe"])
+        self.assertGreaterEqual(mesh_result["summary"]["tool_count"], 20)
+        self.assertGreaterEqual(mesh_result["summary"]["zapier_app_count"], 20)
+        self.assertIn("trading_symbol", mesh_result["summary"])
+        self.assertGreaterEqual(len(mesh_result["next_actions"]), 1)
+        self.assertIn("مسح شبكة الوكلاء", mesh_detail["task"]["result"]["synthesis"])
+        self.assertNotIn("local-api-test-bridge-token", str(mesh_detail))
 
         sensitive = requests.post(
             f"{self.base_url}/api/agent/tasks",

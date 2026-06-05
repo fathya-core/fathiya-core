@@ -81,32 +81,36 @@ within the configured watch interval and completes with a receipt.
 11. Use `تشغيل وكيل` from an integration card, then confirm a normal task is
     queued, `integration_probe` runs through the worker, and the result appears
     in the progress log and receipts panel.
-12. Submit a read-only exact action such as:
+12. Use `تشغيل شبكة الوكلاء` from `/agent-tasks`. Confirm the queued task runs
+    `agent_mesh_audit`, reports tool, capability, connector, Zapier, n8n, Kali,
+    model, and paper-trading readiness in one receipt-safe result, and lists the
+    next executable prompts.
+13. Submit a read-only exact action such as:
    `Zapier action: GitHub / Find Repository`
    with repository parameters. Confirm it completes automatically and the
    receipt contains the friendly app/action names but no `selected_api`.
-13. Submit a Zapier write action and confirm it remains in
+14. Submit a Zapier write action and confirm it remains in
     `awaiting_approval` until the operator approves it.
-14. Submit `اعرض الموصلات ونفّذ الفحوصات الجاهزة`, then confirm the task shows
+15. Submit `اعرض الموصلات ونفّذ الفحوصات الجاهزة`, then confirm the task shows
     at least two agent rounds: the first discovers connector readiness and the
     second runs the newly discovered configured read-only check.
-15. Confirm a sensitive follow-up stores an execution checkpoint and resumes
+16. Confirm a sensitive follow-up stores an execution checkpoint and resumes
     after approval without replaying completed rounds.
-16. Submit a broad local-tool task and confirm `local_capability_inventory`
+17. Submit a broad local-tool task and confirm `local_capability_inventory`
     reports live readiness for the local execution mesh.
-17. Submit an `agent_delegate` request and confirm it stops at
+18. Submit an `agent_delegate` request and confirm it stops at
     `awaiting_approval` before invoking Claude Code, Cursor, or Manus.
-18. In Kali WSL, run `cursor-agent status`. The runtime treats an installed but
+19. In Kali WSL, run `cursor-agent status`. The runtime treats an installed but
     unauthenticated Cursor Agent as partial, never ready. Complete
     `cursor-agent login` only as the operator, then submit an `auto` delegation
     and confirm the runtime prefers an authenticated local agent.
-19. Submit `افحص جاهزية حساب التداول التجريبي`. Confirm Binance Spot Testnet
+20. Submit `افحص جاهزية حساب التداول التجريبي`. Confirm Binance Spot Testnet
     public reachability is reported without credentials. After adding Testnet
     keys locally, validate an order through `/api/v3/order/test` before enabling
     `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED`.
-20. Restart the local control plane and confirm the primary paper-trading agent
+21. Restart the local control plane and confirm the primary paper-trading agent
     resumes automatically when `FATHIYA_TRADING_AUTOSTART=true`.
-21. Place a new report in the continuous knowledge inbox. Confirm the watcher
+22. Place a new report in the continuous knowledge inbox. Confirm the watcher
     queues it once, the worker persists it before planning, and an unchanged
     report is not duplicated after restart.
 

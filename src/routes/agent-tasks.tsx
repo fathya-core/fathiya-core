@@ -100,6 +100,12 @@ const STATUS_LABELS: Record<AgentTaskStatus, string> = {
   canceled: "ملغاة",
 };
 
+const AGENT_MESH_AUDIT_PROMPT = [
+  "agent mesh audit:",
+  "استكشف شبكة وكلاء فتحية كاملة: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، جسور Cursor وManus، ووكيل التداول الأساسي.",
+  "نفذ الفحوصات الآمنة والمتاحة فقط، ثم سجل ما يعمل وما يحتاج ربطًا وما هي أوامر التشغيل التالية.",
+].join("\n");
+
 function AgentTasksPage() {
   const localMode = isLocalAgentRuntime;
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -129,6 +135,7 @@ function AgentTasksPage() {
   const [reportContent, setReportContent] = useState("");
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
+  const [startingMeshAudit, setStartingMeshAudit] = useState(false);
   const [tradingActing, setTradingActing] = useState(false);
   const [intakeActing, setIntakeActing] = useState(false);
   const [error, setError] = useState("");
@@ -339,6 +346,28 @@ function AgentTasksPage() {
     }
   }
 
+  async function startAgentMeshAudit() {
+    if (!hasAccess) return;
+    setStartingMeshAudit(true);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: "مسح شبكة الوكلاء",
+        prompt: AGENT_MESH_AUDIT_PROMPT,
+      };
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingMeshAudit(false);
+    }
+  }
+
   async function taskAction(action: "approve" | "cancel") {
     if (!hasAccess || !selectedId) return;
     setActing(true);
@@ -540,10 +569,25 @@ function AgentTasksPage() {
             <div className="min-w-0 space-y-4">
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
-                  <CardTitle className="text-sm">مهمة جديدة</CardTitle>
-                  <CardDescription>
-                    العمليات الداخلية تبدأ تلقائيًا. المال والفحص الحي والحذف والنشر تحتاج موافقة.
-                  </CardDescription>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm">مهمة جديدة</CardTitle>
+                      <CardDescription>
+                        العمليات الداخلية تبدأ تلقائيًا. المال والفحص الحي والحذف والنشر تحتاج موافقة.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 shrink-0 text-[10px]"
+                      onClick={() => void startAgentMeshAudit()}
+                      disabled={startingMeshAudit}
+                    >
+                      {startingMeshAudit ? <Loader2 className="animate-spin" /> : <Play />}
+                      تشغيل شبكة الوكلاء
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <form className="space-y-3" onSubmit={createTask}>

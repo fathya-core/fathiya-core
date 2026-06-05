@@ -997,6 +997,21 @@ def _compact_tool_results(tool_results: list[dict[str, Any]]) -> list[dict[str, 
         for key in ("found_commands", "missing_commands"):
             if isinstance(result.get(key), list):
                 summary[key] = result[key][:20]
+        if result.get("tool") == "agent_mesh_audit":
+            mesh_summary = result.get("summary", {})
+            if isinstance(mesh_summary, dict):
+                summary["mesh_summary"] = mesh_summary
+            next_actions = result.get("next_actions", [])
+            if isinstance(next_actions, list):
+                summary["next_actions"] = [
+                    {
+                        "id": action.get("id"),
+                        "title": action.get("title"),
+                        "prompt": action.get("prompt"),
+                    }
+                    for action in next_actions[:12]
+                    if isinstance(action, dict)
+                ]
         if result.get("stdout"):
             summary["stdout"] = str(result["stdout"])[:600]
         compact.append(summary)
@@ -1034,6 +1049,8 @@ def _required_synthesis_anchors(
             required.append(("delegate", "تفويض", "وكيل"))
         elif tool == "connected_tool_inventory":
             required.append(("zapier", "زابير"))
+        elif tool == "agent_mesh_audit":
+            required.append(("agent", "mesh", "شبكة", "وكلاء"))
         elif tool in {"zapier_action_catalog", "zapier_action"}:
             required.append(("zapier", "زابير"))
         elif tool == "connector_catalog":
@@ -1116,6 +1133,26 @@ def _deterministic_synthesis(
             evidence.append(f"فحص الاتصال {integration_id}: {status}. {summary}")
             if not result.get("ok"):
                 follow_up.append(f"أكمل إعداد {integration_id} ثم أعد تشغيل فحص الاتصال.")
+        elif tool == "agent_mesh_audit":
+            summary = result.get("summary", {})
+            if isinstance(summary, dict):
+                evidence.append(
+                    "مسح شبكة الوكلاء أثبت "
+                    f"{summary.get('tool_count', 0)} أداة، "
+                    f"{summary.get('ready_capability_count', 0)} من "
+                    f"{summary.get('capability_count', 0)} بوابات جاهزة، "
+                    f"{summary.get('configured_connector_count', 0)} من "
+                    f"{summary.get('connector_count', 0)} موصلات مهيأة، "
+                    f"{summary.get('zapier_app_count', 0)} تطبيق Zapier و"
+                    f"{summary.get('zapier_action_count', 0)} إجراء، "
+                    f"ووكيل التداول على {summary.get('trading_symbol', 'رمز غير معروف')} "
+                    f"بنبضة {summary.get('trading_cycle_seconds', 'غير معروفة')} ثانية."
+                )
+            next_actions = result.get("next_actions", [])
+            if isinstance(next_actions, list):
+                for action in next_actions[:6]:
+                    if isinstance(action, dict) and action.get("title"):
+                        follow_up.append(str(action["title"]))
         elif tool == "agent_delegate":
             provider = result.get("provider", "غير معروف")
             if result.get("delegated"):
