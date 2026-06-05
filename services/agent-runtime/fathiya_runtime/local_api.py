@@ -39,6 +39,10 @@ SETTINGS_PATH = re.compile(
     r"^/api/agent/settings(?:/(?P<group>[a-z0-9_-]+))?$",
     re.IGNORECASE,
 )
+INTEGRATION_PROBE_PATH = re.compile(
+    r"^/api/agent/integrations/(?P<integration_id>[a-z0-9_-]+)/probe$",
+    re.IGNORECASE,
+)
 
 
 class LocalAgentHTTPServer(ThreadingHTTPServer):
@@ -323,6 +327,9 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                 )
         if path == CONNECTOR_DISPATCH_PATH:
             return self._dispatch_connector()
+        probe_match = INTEGRATION_PROBE_PATH.fullmatch(path)
+        if probe_match:
+            return self._probe_integration(probe_match.group("integration_id"))
         if path == "/api/agent/tasks":
             try:
                 body = self._json_body()
@@ -400,6 +407,27 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
             progress=task["progress"],
         )
         return self._send_json({"task": self.server.store.get_task(task["id"])})
+
+    def _probe_integration(self, integration_id: str) -> None:
+        try:
+            result = _integration_probe(self.server, integration_id)
+        except KeyError:
+            return self._send_error(HTTPStatus.NOT_FOUND, "Unknown integration probe")
+        except Exception as exc:
+            return self._send_json(
+                {
+                    "integration_id": integration_id,
+                    "ok": False,
+                    "status": "failed",
+                    "summary": f"فشل اختبار الاتصال: {type(exc).__name__}",
+                    "checked_at": now_iso(),
+                    "secret_safe": True,
+                    "action": "probe_failed",
+                    "details": {"error_type": type(exc).__name__},
+                },
+                HTTPStatus.BAD_GATEWAY,
+            )
+        return self._send_json(result)
 
     def _dispatch_connector(self) -> None:
         expected_token = self.server.config.connector_dispatch_token
@@ -669,6 +697,226 @@ def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "error",
         )
         if key in result
+    }
+
+
+def _integration_probe(
+    server: LocalAgentHTTPServer,
+    integration_id: str,
+) -> dict[str, Any]:
+    checked_at = now_iso()
+    if integration_id == "local_execution_mesh":
+        result = server.tools.execute(
+            "local_capability_inventory",
+            "اختبر شبكة التنفيذ المحلية",
+        )
+        ready_count = int(result.get("ready_count") or 0)
+        capability_count = int(result.get("capability_count") or 0)
+        partial_count = int(result.get("partial_count") or 0)
+        ok = bool(capability_count and ready_count == capability_count)
+        return _probe_payload(
+            integration_id,
+            ok=ok,
+            status="ready" if ok else "partial" if ready_count else "needs_setup",
+            summary=(
+                f"{ready_count} من {capability_count} بوابات التنفيذ جاهزة"
+                + (f" و{partial_count} جزئية." if partial_count else ".")
+            ),
+            checked_at=checked_at,
+            action="local_capability_inventory",
+            details={
+                "ready_count": ready_count,
+                "partial_count": partial_count,
+                "capability_count": capability_count,
+            },
+        )
+    if integration_id == "huggingface_local":
+        retrieval = bool(server.config.enable_hf_retrieval)
+        generation = bool(server.config.enable_local_generation)
+        ok = retrieval or generation
+        return _probe_payload(
+            integration_id,
+            ok=ok,
+            status="ready" if ok else "needs_setup",
+            summary=(
+                "النماذج المحلية مفعلة للاسترجاع أو التوليد."
+                if ok
+                else "النماذج المحلية غير مفعلة في إعدادات المشغّل."
+            ),
+            checked_at=checked_at,
+            action="configuration_check",
+            details={
+                "retrieval_enabled": retrieval,
+                "generation_enabled": generation,
+                "retrieval_model": server.config.hf_model,
+                "generation_model": server.config.local_model,
+                "network_call": False,
+            },
+        )
+    if integration_id == "openrouter":
+        configured = bool(server.config.openrouter_api_key)
+        return _probe_payload(
+            integration_id,
+            ok=configured,
+            status="ready" if configured else "needs_setup",
+            summary=(
+                "مفتاح OpenRouter موجود محليًا؛ المكالمات الثقيلة جاهزة عند طلب الوكيل."
+                if configured
+                else "OpenRouter ينتظر مفتاحًا محليًا؛ لم تُجر مكالمة نموذج."
+            ),
+            checked_at=checked_at,
+            action="configuration_check",
+            details={
+                "configured": configured,
+                "model": server.config.openrouter_model,
+                "network_call": False,
+                "cost_incurred": False,
+            },
+        )
+    if integration_id == "supabase":
+        configured = bool(
+            server.config.supabase_url and server.config.supabase_service_role_key
+        )
+        active = configured and server.config.store == "supabase"
+        return _probe_payload(
+            integration_id,
+            ok=active,
+            status="ready" if active else "partial" if configured else "needs_setup",
+            summary=(
+                "Supabase مفعّل كقناة مهام حالية."
+                if active
+                else "بيانات Supabase موجودة، لكن المشغّل الحالي ما زال على SQLite."
+                if configured
+                else "Supabase ينتظر URL ومفتاح خدمة محلي."
+            ),
+            checked_at=checked_at,
+            action="configuration_check",
+            details={
+                "configured": configured,
+                "active_store": server.config.store,
+                "network_call": False,
+            },
+        )
+    if integration_id == "n8n_local":
+        result = server.tools.execute(
+            "connector_profile",
+            "اختبر صحة خدمة n8n المحلية",
+            {"profile": "n8n_health"},
+        )
+        ok = bool(result.get("available") and result.get("executed"))
+        evidence = _connector_result_evidence(result)
+        return _probe_payload(
+            integration_id,
+            ok=ok,
+            status="ready" if ok else "partial",
+            summary=(
+                "n8n المحلي استجاب لفحص الصحة."
+                if ok
+                else "تعذر تأكيد استجابة n8n المحلي."
+            ),
+            checked_at=checked_at,
+            action="connector_profile:n8n_health",
+            details=evidence,
+        )
+    if integration_id == "zapier_mcp":
+        status = server.tools.zapier.status()
+        inventory = server.tools.execute(
+            "connected_tool_inventory",
+            "اختبر مخزون Zapier MCP الآمن",
+        )
+        connected = bool(status.get("connected"))
+        app_count = int(inventory.get("zapier_app_count") or 0)
+        action_count = int(inventory.get("zapier_action_count") or 0)
+        ok = connected and app_count > 0
+        return _probe_payload(
+            integration_id,
+            ok=ok,
+            status="ready" if ok else "partial" if app_count else "needs_setup",
+            summary=(
+                f"Zapier OAuth المباشر جاهز، والمخزون يعرض {app_count} تطبيقًا و{action_count} إجراء."
+                if connected
+                else f"مخزون Zapier يعرض {app_count} تطبيقًا و{action_count} إجراء، لكن OAuth المحلي المباشر لم يكتمل."
+            ),
+            checked_at=checked_at,
+            action="oauth_status_and_inventory",
+            details={
+                "direct_oauth_connected": connected,
+                "app_count": app_count,
+                "action_count": action_count,
+                "endpoint": status.get("endpoint"),
+            },
+        )
+    if integration_id == "broker_testnet":
+        status = server.tools.execute(
+            "trading_testnet_status",
+            "اختبر حالة وسيط التداول التجريبي",
+            {},
+        )["testnet"]
+        configured = bool(status.get("configured"))
+        probe = (
+            server.tools.execute(
+                "trading_testnet_status",
+                "اختبر اتصال وسيط التداول التجريبي",
+                {"probe": True},
+            )["testnet"]
+            if configured
+            else status
+        )
+        authenticated = bool(probe.get("authenticated"))
+        reachable = bool(probe.get("reachable")) if configured else False
+        ok = configured and reachable and authenticated
+        return _probe_payload(
+            integration_id,
+            ok=ok,
+            status="ready" if ok else "partial" if configured else "needs_operator",
+            summary=(
+                "حساب Testnet استجاب وجرى التحقق من المصادقة."
+                if ok
+                else "مفاتيح Testnet موجودة لكن التحقق لم ينجح بعد."
+                if configured
+                else "Testnet ينتظر مفاتيح محلية؛ لم يُرسل أي طلب وساطة."
+            ),
+            checked_at=checked_at,
+            action="testnet_status" if not configured else "testnet_probe",
+            details={
+                key: probe.get(key)
+                for key in (
+                    "provider",
+                    "environment",
+                    "configured",
+                    "execution_enabled",
+                    "symbol",
+                    "reachable",
+                    "authenticated",
+                    "can_trade",
+                    "base_host",
+                    "error",
+                )
+                if key in probe
+            },
+        )
+    raise KeyError(integration_id)
+
+
+def _probe_payload(
+    integration_id: str,
+    *,
+    ok: bool,
+    status: str,
+    summary: str,
+    checked_at: str,
+    action: str,
+    details: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "integration_id": integration_id,
+        "ok": ok,
+        "status": status,
+        "summary": summary,
+        "checked_at": checked_at,
+        "secret_safe": True,
+        "action": action,
+        "details": details,
     }
 
 

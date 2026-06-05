@@ -159,6 +159,25 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertFalse(
             integration_by_id["broker_testnet"]["details"]["live_execution_enabled"]
         )
+        openrouter_probe = requests.post(
+            f"{self.base_url}/api/agent/integrations/openrouter/probe",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(openrouter_probe.status_code, 200)
+        self.assertFalse(openrouter_probe.json()["ok"])
+        self.assertEqual(openrouter_probe.json()["status"], "needs_setup")
+        self.assertTrue(openrouter_probe.json()["secret_safe"])
+        self.assertFalse(openrouter_probe.json()["details"]["network_call"])
+        testnet_probe = requests.post(
+            f"{self.base_url}/api/agent/integrations/broker_testnet/probe",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(testnet_probe.status_code, 200)
+        self.assertFalse(testnet_probe.json()["ok"])
+        self.assertEqual(testnet_probe.json()["status"], "needs_operator")
+        self.assertNotIn("api_key", testnet_probe.text.lower())
         settings_response = requests.get(
             f"{self.base_url}/api/agent/settings",
             headers=self.headers,
@@ -196,6 +215,22 @@ class LocalAgentApiTests(unittest.TestCase):
             requests.get(f"{self.base_url}/healthz", headers=self.headers, timeout=5)
             .json()["agent_loop"]["openrouter_configured"]
         )
+        openrouter_probe_ready = requests.post(
+            f"{self.base_url}/api/agent/integrations/openrouter/probe",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(openrouter_probe_ready.status_code, 200)
+        self.assertTrue(openrouter_probe_ready.json()["ok"])
+        self.assertEqual(openrouter_probe_ready.json()["status"], "ready")
+        self.assertFalse(openrouter_probe_ready.json()["details"]["cost_incurred"])
+        self.assertNotIn("local-openrouter-test-key", openrouter_probe_ready.text)
+        unknown_probe = requests.post(
+            f"{self.base_url}/api/agent/integrations/nope/probe",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(unknown_probe.status_code, 404)
         invalid_n8n_url = requests.post(
             f"{self.base_url}/api/agent/settings/n8n_local",
             headers=self.headers,

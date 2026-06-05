@@ -59,6 +59,7 @@ import type {
   AgentConnectorBridge,
   AgentConnectorProfile,
   AgentIntegrationReadiness,
+  AgentIntegrationProbeResult,
   AgentIntegrationStatus,
   AgentIntegrationSummary,
   AgentKnowledgeIntakeStatus,
@@ -111,6 +112,10 @@ function AgentTasksPage() {
   );
   const [localSettings, setLocalSettings] = useState<AgentLocalSettingsResponse | null>(null);
   const [selectedSettingsGroup, setSelectedSettingsGroup] = useState<string | null>(null);
+  const [integrationProbes, setIntegrationProbes] = useState<
+    Record<string, AgentIntegrationProbeResult>
+  >({});
+  const [probingIntegration, setProbingIntegration] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -374,6 +379,23 @@ function AgentTasksPage() {
       setError(String(actionError));
     } finally {
       setIntakeActing(false);
+    }
+  }
+
+  async function probeIntegration(integration: AgentIntegrationReadiness) {
+    if (!localMode || !integration.probe_path) return;
+    setProbingIntegration(integration.id);
+    setError("");
+    try {
+      const result = await agentApi<AgentIntegrationProbeResult>(null, integration.probe_path, {
+        method: "POST",
+      });
+      setIntegrationProbes((current) => ({ ...current, [integration.id]: result }));
+      await loadIntegrations();
+    } catch (probeError) {
+      setError(String(probeError));
+    } finally {
+      setProbingIntegration(null);
     }
   }
 
@@ -878,6 +900,26 @@ function AgentTasksPage() {
                                 <Settings2 />
                                 {integration.settings_label}
                               </Button>
+                            )}
+                            {integration.probe_path && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 h-7 text-[10px]"
+                                disabled={probingIntegration === integration.id}
+                                onClick={() => void probeIntegration(integration)}
+                              >
+                                {probingIntegration === integration.id ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Activity />
+                                )}
+                                {integration.probe_label ?? "اختبار الاتصال"}
+                              </Button>
+                            )}
+                            {integrationProbes[integration.id] && (
+                              <IntegrationProbeNotice probe={integrationProbes[integration.id]} />
                             )}
                             {integration.missing_env.length > 0 && (
                               <p
@@ -1447,6 +1489,31 @@ function credentialPolicyLabel(integration: AgentIntegrationReadiness) {
   if (integration.credential_policy === "oauth_managed") return "OAuth آمن";
   if (integration.credential_policy === "local_server_only") return "مفتاح محلي فقط";
   return "لا توجد بيانات دخول";
+}
+
+function IntegrationProbeNotice({ probe }: { probe: AgentIntegrationProbeResult }) {
+  return (
+    <div
+      className={cn(
+        "mt-2 rounded-md border p-2 text-[10px]",
+        probe.ok
+          ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-300"
+          : "border-amber-500/20 bg-amber-500/5 text-amber-200",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-semibold">{probe.ok ? "اختبار ناجح" : "اختبار يحتاج إجراء"}</span>
+        <span dir="ltr" className="font-mono text-[9px] opacity-75">
+          {formatDate(probe.checked_at)}
+        </span>
+      </div>
+      <p className="mt-1 break-words">{probe.summary}</p>
+      <p dir="ltr" className="mt-1 break-all text-left font-mono text-[9px] opacity-70">
+        {probe.action}
+      </p>
+      <TechnicalDetails label="تفاصيل اختبار الاتصال" value={probe.details} />
+    </div>
+  );
 }
 
 function integrationActionHref(path: string) {

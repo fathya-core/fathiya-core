@@ -96,6 +96,13 @@ account. It reports only status, missing environment variable names, connected
 OAuth app names, and the next safe operator action. It never returns passwords,
 API-key values, webhook URLs, or broker credentials.
 
+`POST /api/agent/integrations/:id/probe` runs a secret-safe check for one
+integration and returns a short operator summary plus bounded technical
+details. OpenRouter and Supabase probes are configuration-only, so they do not
+spend model tokens or contact Supabase. n8n uses the read-only health profile,
+Zapier checks OAuth status and the cached tool inventory, and Testnet does not
+contact the broker until local Testnet credentials exist.
+
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,
 Supabase, n8n, and Binance Spot Testnet credentials through

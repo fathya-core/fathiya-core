@@ -143,6 +143,19 @@ export type AgentIntegrationReadiness = {
   action_label?: string | null;
   settings_path?: string | null;
   settings_label?: string | null;
+  probe_path?: string | null;
+  probe_label?: string | null;
+  details: Record<string, Json>;
+};
+
+export type AgentIntegrationProbeResult = {
+  integration_id: string;
+  ok: boolean;
+  status: AgentIntegrationStatus | "failed";
+  summary: string;
+  checked_at: string;
+  secret_safe: true;
+  action: string;
   details: Record<string, Json>;
 };
 

@@ -95,6 +95,8 @@ def build_integration_readiness(
             ),
             "missing_env": [],
             "connected_apps": ready_capabilities,
+            "probe_path": "/api/agent/integrations/local_execution_mesh/probe",
+            "probe_label": "اختبار الشبكة",
             "details": {
                 "ready_count": len(ready_capabilities),
                 "partial_count": len(partial_capabilities),
@@ -117,6 +119,8 @@ def build_integration_readiness(
             else "فعّل FATHIYA_ENABLE_HF_RETRIEVAL أو FATHIYA_ENABLE_LOCAL_GENERATION محليًا.",
             "missing_env": [],
             "connected_apps": [],
+            "probe_path": "/api/agent/integrations/huggingface_local/probe",
+            "probe_label": "اختبار المحلي",
             "details": {
                 "retrieval_enabled": config.enable_hf_retrieval,
                 "generation_enabled": config.enable_local_generation,
@@ -142,6 +146,8 @@ def build_integration_readiness(
             "connected_apps": [],
             "settings_path": "/api/agent/settings/openrouter",
             "settings_label": "إعداد OpenRouter محليًا",
+            "probe_path": "/api/agent/integrations/openrouter/probe",
+            "probe_label": "اختبار الجاهزية",
             "details": {"model": config.openrouter_model},
         },
         {
@@ -172,6 +178,8 @@ def build_integration_readiness(
             "connected_apps": [],
             "settings_path": "/api/agent/settings/supabase",
             "settings_label": "إعداد Supabase محليًا",
+            "probe_path": "/api/agent/integrations/supabase/probe",
+            "probe_label": "اختبار القناة",
             "details": {
                 "active_store": config.store,
                 "restart_required": not supabase_active,
@@ -205,6 +213,8 @@ def build_integration_readiness(
             "connected_apps": [],
             "settings_path": "/api/agent/settings/n8n_local",
             "settings_label": "إعداد n8n محليًا",
+            "probe_path": "/api/agent/integrations/n8n_local/probe",
+            "probe_label": "اختبار n8n",
             "details": {"base_url": config.n8n_base_url},
         },
         {
@@ -244,6 +254,8 @@ def build_integration_readiness(
                 if zapier_direct_ready
                 else "ربط Zapier MCP محليًا"
             ),
+            "probe_path": "/api/agent/integrations/zapier_mcp/probe",
+            "probe_label": "اختبار Zapier",
             "details": {
                 "app_count": len(zapier_apps),
                 "action_count": int(inventory.get("zapier_action_count", 0)),
@@ -288,6 +300,8 @@ def build_integration_readiness(
             "connected_apps": [],
             "settings_path": "/api/agent/settings/broker_testnet",
             "settings_label": "إعداد Testnet محليًا",
+            "probe_path": "/api/agent/integrations/broker_testnet/probe",
+            "probe_label": "اختبار Testnet",
             "details": {
                 "provider": testnet["provider"],
                 "environment": testnet["environment"],
