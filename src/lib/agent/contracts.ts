@@ -125,6 +125,33 @@ export type AgentConnectorBridge = {
   allowed_profiles: string[];
 };
 
+export type AgentZapierInventoryApp = {
+  app: string;
+  action_count: number;
+  modes: string[];
+};
+
+export type AgentProviderActionSet = {
+  read?: string[];
+  approval_gated_write?: string[];
+};
+
+export type AgentConnectedToolInventory = {
+  available: boolean;
+  captured_at?: string | null;
+  zapier_app_count: number;
+  zapier_action_count: number;
+  zapier_apps: AgentZapierInventoryApp[];
+  agent_provider_actions: Record<string, AgentProviderActionSet>;
+  direct_zapier_mcp?: {
+    connected: boolean;
+    direct_execution?: boolean;
+    endpoint?: string;
+    error?: string | null;
+  } | null;
+  zapier_mcp_status?: Record<string, Json>;
+};
+
 export type AgentIntegrationStatus = "ready" | "partial" | "needs_setup" | "needs_operator";
 
 export type AgentIntegrationReadiness = {

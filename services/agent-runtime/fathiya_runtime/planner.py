@@ -557,6 +557,16 @@ def _fallback_steps(
         )
         return steps[:max_tool_steps]
 
+    zapier_action = _zapier_action_step(prompt)
+    if zapier_action:
+        add("zapier_action_catalog", "قراءة كتالوج إجراءات Zapier MCP المباشر")
+        add(
+            zapier_action["tool"],
+            zapier_action["description"],
+            zapier_action["args"],
+        )
+        return steps[:max_tool_steps]
+
     urls = re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
     if urls and any(term in text for term in ("ingest", "استوعب", "احفظ", "تقرير", "report")):
         add(
@@ -648,13 +658,6 @@ def _fallback_steps(
             strategy_refresh["tool"],
             strategy_refresh["description"],
             strategy_refresh["args"],
-        )
-    zapier_action = _zapier_action_step(prompt)
-    if zapier_action:
-        add(
-            zapier_action["tool"],
-            zapier_action["description"],
-            zapier_action["args"],
         )
     agent_delegate = _agent_delegate_step(prompt)
     if agent_delegate:

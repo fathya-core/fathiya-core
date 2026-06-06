@@ -70,53 +70,56 @@ within the configured watch interval and completes with a receipt.
 8. In the integrations panel, select `ربط Zapier MCP محليًا`, complete OAuth,
    then confirm `fathiya-runtime zapier-actions --refresh` returns the live app
    and action counts without printing credentials.
-9. From the loopback `/agent-tasks` page, open the local setup action for
+9. In `مشغّل Zapier المقروء`, select one listed read action. Confirm it queues a
+   normal task with a `Zapier action: <app> / <action>` prompt and preserves the
+   normal approval/progress/receipt flow.
+10. From the loopback `/agent-tasks` page, open the local setup action for
    OpenRouter, Supabase, n8n, execution-mesh bridge URLs, or Binance Spot
    Testnet. Confirm saved values are never returned by `GET /api/agent/settings`,
    and confirm a production-origin page cannot write local settings.
-10. Use the integration probe button for OpenRouter, Supabase, n8n, Zapier MCP,
+11. Use the integration probe button for OpenRouter, Supabase, n8n, Zapier MCP,
     and Binance Spot Testnet. Confirm each result is secret-safe, and confirm
     OpenRouter probes do not spend model tokens while Testnet probes do not
     contact the broker until local Testnet credentials exist.
-11. Use `تشغيل وكيل` from an integration card, then confirm a normal task is
+12. Use `تشغيل وكيل` from an integration card, then confirm a normal task is
     queued, `integration_probe` runs through the worker, and the result appears
     in the progress log and receipts panel.
-12. Use `تشغيل شبكة الوكلاء` from `/agent-tasks`. Confirm the queued task runs
+13. Use `تشغيل شبكة الوكلاء` from `/agent-tasks`. Confirm the queued task runs
     `agent_mesh_audit`, reports tool, capability, connector, Zapier, n8n, Kali,
     model, and paper-trading readiness in one receipt-safe result, and lists the
     next executable prompts.
-13. From the completed mesh-audit result, use one `next_actions` item. Confirm
+14. From the completed mesh-audit result, use one `next_actions` item. Confirm
     setup actions open the matching local settings sheet, OAuth actions open the
     local authorization route, and task actions queue a normal task that is
     selected, executed through the worker, and recorded with its own receipt.
-14. Submit a read-only exact action such as:
+15. Submit a read-only exact action such as:
    `Zapier action: GitHub / Find Repository`
    with repository parameters. Confirm it completes automatically and the
    receipt contains the friendly app/action names but no `selected_api`.
-15. Submit a Zapier write action and confirm it remains in
+16. Submit a Zapier write action and confirm it remains in
     `awaiting_approval` until the operator approves it.
-16. Submit `اعرض الموصلات ونفّذ الفحوصات الجاهزة`, then confirm the task shows
+17. Submit `اعرض الموصلات ونفّذ الفحوصات الجاهزة`, then confirm the task shows
     at least two agent rounds: the first discovers connector readiness and the
     second runs the newly discovered configured read-only check.
-17. Confirm a sensitive follow-up stores an execution checkpoint and resumes
+18. Confirm a sensitive follow-up stores an execution checkpoint and resumes
     after approval without replaying completed rounds.
-18. Submit a broad local-tool task and confirm `local_capability_inventory`
+19. Submit a broad local-tool task and confirm `local_capability_inventory`
     reports live readiness for the local execution mesh.
-19. Submit an `agent_delegate` request and confirm it stops at
+20. Submit an `agent_delegate` request and confirm it stops at
     `awaiting_approval` before invoking Claude Code, Cursor, or Manus.
-20. In Kali WSL, run `cursor-agent status`. The runtime treats an installed but
+21. In Kali WSL, run `cursor-agent status`. The runtime treats an installed but
     unauthenticated Cursor Agent as partial, never ready. Complete
     `cursor-agent login` only as the operator, then submit an `auto` delegation
     and confirm the runtime prefers an authenticated local agent.
-21. Submit `افحص جاهزية حساب التداول التجريبي`. Confirm Binance Spot Testnet
+22. Submit `افحص جاهزية حساب التداول التجريبي`. Confirm Binance Spot Testnet
     public reachability is reported without credentials. After adding Testnet
     keys locally, validate an order through `/api/v3/order/test` before enabling
     `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED`.
-22. Restart the local control plane and confirm the primary paper-trading agent
+23. Restart the local control plane and confirm the primary paper-trading agent
     resumes automatically when `FATHIYA_TRADING_AUTOSTART=true`. Confirm the
     website trading card shows the latest cycle receipts with action, price,
     latency, risk reason, and receipt id.
-23. Place a new report in the continuous knowledge inbox. Confirm the watcher
+24. Place a new report in the continuous knowledge inbox. Confirm the watcher
     queues it once, the worker persists it before planning, and an unchanged
     report is not duplicated after restart.
 

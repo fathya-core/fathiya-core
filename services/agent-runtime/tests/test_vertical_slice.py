@@ -410,6 +410,36 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(action_step["args"]["action"], "Find Repository")
         self.assertEqual(action_step["args"]["params"]["repo"], "fathiya-core")
 
+    def test_exact_zapier_action_does_not_delegate_when_oauth_is_missing(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        next(item for item in catalog if item["name"] == "zapier_action")[
+            "configured"
+        ] = False
+        plan = build_plan(
+            {
+                "prompt": (
+                    "Zapier action: Manus / Get Tasks\n"
+                    "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية.\n"
+                    "params:{}"
+                )
+            },
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+
+        self.assertIn("zapier_action_catalog", tools)
+        self.assertNotIn("agent_delegate", tools)
+        self.assertNotIn("zapier_action", tools)
+
     def test_canceled_running_task_is_not_completed(self) -> None:
         task = self.store.enqueue("إلغاء", "نفذ اختبار داخلي آمن")
         worker = AgentWorker(self.config, self.store)

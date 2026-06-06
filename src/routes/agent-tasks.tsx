@@ -56,6 +56,7 @@ import {
   parseKnowledgeMissionPrompt,
 } from "@/lib/agent/knowledge-mission";
 import type {
+  AgentConnectedToolInventory,
   AgentConnectorBridge,
   AgentConnectorProfile,
   AgentIntegrationReadiness,
@@ -119,12 +120,20 @@ type AgentMeshNextAction = {
   action_label?: string;
 };
 
+type ZapierReadAction = {
+  id: string;
+  app: string;
+  action: string;
+};
+
 function AgentTasksPage() {
   const localMode = isLocalAgentRuntime;
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [connectors, setConnectors] = useState<AgentConnectorProfile[]>([]);
   const [connectorBridge, setConnectorBridge] = useState<AgentConnectorBridge | null>(null);
+  const [connectedInventory, setConnectedInventory] =
+    useState<AgentConnectedToolInventory | null>(null);
   const [integrations, setIntegrations] = useState<AgentIntegrationReadiness[]>([]);
   const [integrationSummary, setIntegrationSummary] = useState<AgentIntegrationSummary | null>(
     null,
@@ -136,6 +145,7 @@ function AgentTasksPage() {
   >({});
   const [probingIntegration, setProbingIntegration] = useState<string | null>(null);
   const [startingIntegrationTask, setStartingIntegrationTask] = useState<string | null>(null);
+  const [startingZapierReadAction, setStartingZapierReadAction] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [tradingReceipts, setTradingReceipts] = useState<AgentTradingCycle[]>([]);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
@@ -217,9 +227,11 @@ function AgentTasksPage() {
       const data = await agentApi<{
         connectors: AgentConnectorProfile[];
         bridge: AgentConnectorBridge;
+        inventory: AgentConnectedToolInventory;
       }>(null, "/api/agent/connectors");
       setConnectors(data.connectors);
       setConnectorBridge(data.bridge);
+      setConnectedInventory(data.inventory);
     } catch (loadError) {
       setError(String(loadError));
     }
@@ -502,6 +514,32 @@ function AgentTasksPage() {
     }
   }
 
+  async function startZapierReadTask(action: ZapierReadAction) {
+    if (!localMode) return;
+    setStartingZapierReadAction(action.id);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: `قراءة Zapier: ${action.app}/${action.action}`,
+        prompt: [
+          `Zapier action: ${action.app} / ${action.action}`,
+          "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
+          "params:{}",
+        ].join("\n"),
+      };
+      const data = await agentApi<{ task: AgentTask }>(null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingZapierReadAction(null);
+    }
+  }
+
   async function signOut() {
     if (localMode) {
       setTasks([]);
@@ -520,6 +558,10 @@ function AgentTasksPage() {
   const configuredConnectorCount = useMemo(
     () => connectors.filter((connector) => connector.configured).length,
     [connectors],
+  );
+  const zapierReadActions = useMemo(
+    () => buildZapierReadActions(connectedInventory),
+    [connectedInventory],
   );
   const activeSettingsGroup = useMemo(
     () =>
@@ -1121,6 +1163,85 @@ function AgentTasksPage() {
                       لا تُرسل كلمات المرور أو مفاتيح API في المحادثة. حسابات OAuth يديرها مزودها،
                       ومفاتيح الخادم تبقى على الجهاز أو الخادم فقط.
                     </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {localMode && connectedInventory && (
+                <Card className="border-border/60 bg-card/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-sm">
+                      <Cable className="h-4 w-4" />
+                      مشغّل Zapier المقروء
+                    </CardTitle>
+                    <CardDescription>
+                      {connectedInventory.zapier_app_count} تطبيق ·{" "}
+                      {connectedInventory.zapier_action_count} إجراء
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                      <Badge
+                        className={cn(
+                          "font-normal",
+                          connectedInventory.direct_zapier_mcp?.connected
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-amber-500/30 bg-amber-500/10 text-amber-300",
+                        )}
+                      >
+                        {connectedInventory.direct_zapier_mcp?.connected
+                          ? "OAuth مباشر جاهز"
+                          : "OAuth المباشر غير مربوط"}
+                      </Badge>
+                      {!connectedInventory.direct_zapier_mcp?.connected && (
+                        <Button asChild variant="outline" size="sm" className="h-7 text-[10px]">
+                          <a href={integrationActionHref("/api/agent/oauth/zapier/start")}>
+                            <KeyRound />
+                            ربط Zapier OAuth
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                    {zapierReadActions.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground">
+                        لا توجد أفعال قراءة مسماة في المخزون الحالي.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {zapierReadActions.map((action) => (
+                          <div
+                            key={action.id}
+                            className="rounded-md border border-border/50 bg-background/30 p-2"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="break-words text-[11px] font-semibold">
+                                  {action.app}
+                                </p>
+                                <p className="break-words text-[10px] text-muted-foreground">
+                                  {action.action}
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 shrink-0 text-[10px]"
+                                disabled={startingZapierReadAction === action.id}
+                                onClick={() => void startZapierReadTask(action)}
+                              >
+                                {startingZapierReadAction === action.id ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Play />
+                                )}
+                                إرسال كمهمة
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -2087,6 +2208,19 @@ function followUpActionLabel(action: AgentMeshNextAction) {
   if (mode === "settings") return "فتح الإعداد";
   if (mode === "oauth") return action.action_label || "ربط OAuth";
   return "تشغيل المتابعة";
+}
+
+function buildZapierReadActions(inventory: AgentConnectedToolInventory | null): ZapierReadAction[] {
+  if (!inventory?.agent_provider_actions) return [];
+  return Object.entries(inventory.agent_provider_actions)
+    .flatMap(([app, actionSet]) =>
+      (actionSet.read ?? []).map((action) => ({
+        id: `${app}:${action}`,
+        app,
+        action,
+      })),
+    )
+    .slice(0, 6);
 }
 
 function JsonBlock({ value }: { value: unknown }) {
