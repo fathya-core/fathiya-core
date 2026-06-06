@@ -5,6 +5,8 @@ from typing import Any, Protocol
 
 import requests
 
+from .quiet_io import quiet_huggingface_output
+
 
 class ModelClient(Protocol):
     model: str
@@ -123,32 +125,34 @@ class LocalHuggingFaceClient:
     ) -> str:
         if not self.available:
             raise RuntimeError("Local Hugging Face generation is not enabled")
-        self._load()
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
         if json_mode:
             messages[0]["content"] += " Return one valid JSON object and no markdown."
-        if hasattr(self._tokenizer, "apply_chat_template"):
-            rendered = self._tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
+        with quiet_huggingface_output():
+            self._load()
+            if hasattr(self._tokenizer, "apply_chat_template"):
+                rendered = self._tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+            else:
+                rendered = f"System: {system}\nUser: {user}\nAssistant:"
+            inputs = self._tokenizer(rendered, return_tensors="pt")
+            generated = self._model.generate(
+                **inputs,
+                max_new_tokens=min(self.max_new_tokens, max_new_tokens or self.max_new_tokens),
+                max_time=self.max_generation_seconds,
+                do_sample=False,
+                pad_token_id=self._tokenizer.eos_token_id,
             )
-        else:
-            rendered = f"System: {system}\nUser: {user}\nAssistant:"
-        inputs = self._tokenizer(rendered, return_tensors="pt")
-        generated = self._model.generate(
-            **inputs,
-            max_new_tokens=min(self.max_new_tokens, max_new_tokens or self.max_new_tokens),
-            max_time=self.max_generation_seconds,
-            do_sample=False,
-            pad_token_id=self._tokenizer.eos_token_id,
-        )
-        new_tokens = generated[0][inputs["input_ids"].shape[1] :]
-        self.last_provider = "huggingface_local"
-        return self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+            new_tokens = generated[0][inputs["input_ids"].shape[1] :]
+            decoded = self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+            self.last_provider = "huggingface_local"
+            return decoded
 
     def evaluate(self, prompt: str, result: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -169,11 +173,12 @@ class LocalHuggingFaceClient:
     def _load(self) -> None:
         if self._tokenizer is not None and self._model is not None:
             return
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        with quiet_huggingface_output():
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        self._tokenizer = AutoTokenizer.from_pretrained(self.model)
-        self._model = AutoModelForCausalLM.from_pretrained(self.model)
-        self._model.eval()
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model)
+            self._model = AutoModelForCausalLM.from_pretrained(self.model)
+            self._model.eval()
 
 
 class AgentModelRouter:

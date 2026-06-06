@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .quiet_io import quiet_huggingface_output
+
 
 @dataclass
 class RetrievedSource:
@@ -91,20 +93,22 @@ class KnowledgeRetriever:
         limit: int,
     ) -> list[RetrievedSource] | None:
         try:
-            from sentence_transformers import SentenceTransformer, util
-            if not documents:
-                return []
-            if self._encoder is None:
-                self._encoder = SentenceTransformer(self.hf_model, device="cpu")
-            snippets = [f"{path.name}\n{text[:1600]}" for path, text in documents]
-            embeddings = self._encoder.encode(
-                snippets,
-                convert_to_tensor=True,
-                show_progress_bar=False,
-            )
-            query_embedding = self._encoder.encode(query, convert_to_tensor=True)
-            scores = util.cos_sim(query_embedding, embeddings)[0]
-            top = scores.topk(k=min(limit, len(documents)))
+            with quiet_huggingface_output():
+                from sentence_transformers import SentenceTransformer, util
+
+                if not documents:
+                    return []
+                if self._encoder is None:
+                    self._encoder = SentenceTransformer(self.hf_model, device="cpu")
+                snippets = [f"{path.name}\n{text[:1600]}" for path, text in documents]
+                embeddings = self._encoder.encode(
+                    snippets,
+                    convert_to_tensor=True,
+                    show_progress_bar=False,
+                )
+                query_embedding = self._encoder.encode(query, convert_to_tensor=True)
+                scores = util.cos_sim(query_embedding, embeddings)[0]
+                top = scores.topk(k=min(limit, len(documents)))
             return [
                 RetrievedSource(
                     path=str(documents[int(index)][0].relative_to(self.root)),

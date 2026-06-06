@@ -21,6 +21,7 @@ from fathiya_runtime.knowledge_mission import (
 )
 from fathiya_runtime.models import AgentModelRouter, OpenRouterClient
 from fathiya_runtime.planner import build_follow_up_decision, build_plan, step_signature
+from fathiya_runtime.quiet_io import quiet_huggingface_output
 from fathiya_runtime.retrieval import KnowledgeRetriever, RetrievedSource
 from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
@@ -556,6 +557,26 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertTrue(evaluation["passed"])
         self.assertEqual(evaluation["mode"], "local_deterministic_evaluation")
         local_complete.assert_not_called()
+
+    def test_quiet_huggingface_output_survives_broken_service_stdio(self) -> None:
+        class BrokenStream:
+            def write(self, _value: str) -> None:
+                raise OSError(22, "Invalid argument")
+
+            def flush(self) -> None:
+                raise OSError(22, "Invalid argument")
+
+        original_stdout = sys.stdout
+        original_stderr = sys.stderr
+        try:
+            sys.stdout = BrokenStream()  # type: ignore[assignment]
+            sys.stderr = BrokenStream()  # type: ignore[assignment]
+            with quiet_huggingface_output():
+                print("hidden hf progress")
+                sys.stderr.write("hidden warning")
+        finally:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
 
     def test_short_model_synthesis_is_rejected_for_evidence_summary(self) -> None:
         self.assertFalse(_is_useful_synthesis("###"))
