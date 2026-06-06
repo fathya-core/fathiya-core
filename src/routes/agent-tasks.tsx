@@ -913,6 +913,14 @@ function AgentTasksPage() {
                       />
                       <InfoField label="الدورات" value={String(trading.cycle_count)} />
                       <InfoField
+                        label="آخر نبضة"
+                        value={cadenceLatestLabel(trading.execution_cadence)}
+                      />
+                      <InfoField
+                        label="متوسط النبض"
+                        value={formatSeconds(trading.execution_cadence.average_interval_seconds)}
+                      />
+                      <InfoField
                         label="مصدر السوق"
                         value={marketSourceLabel(trading.current_market_source)}
                       />
@@ -2308,6 +2316,17 @@ function formatPercent(value: number) {
     style: "percent",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatSeconds(value: number | null) {
+  if (value === null) return "--";
+  return `${formatNumber(value)} ث`;
+}
+
+function cadenceLatestLabel(cadence: AgentTradingStatus["execution_cadence"]) {
+  const latest = formatSeconds(cadence.latest_interval_seconds);
+  if (cadence.within_target === null) return latest;
+  return `${latest} · ${cadence.within_target ? "ضمن الهدف" : "متأخرة"}`;
 }
 
 function isFallbackMarket(source: string | null) {

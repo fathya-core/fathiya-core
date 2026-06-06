@@ -313,6 +313,15 @@ export type AgentTradingStatus = {
   last_error: string | null;
   latest_receipt_id: string | null;
   latest_cycle: AgentTradingCycle | null;
+  execution_cadence: {
+    target_seconds: number;
+    target_tolerance_seconds: number;
+    sample_count: number;
+    latest_interval_seconds: number | null;
+    average_interval_seconds: number | null;
+    max_interval_seconds: number | null;
+    within_target: boolean | null;
+  };
   portfolio: AgentTradingCycle["portfolio"];
   prediction_quality: {
     evaluated_count: number;

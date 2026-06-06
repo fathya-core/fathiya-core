@@ -1014,6 +1014,43 @@ class TradingLedger:
         }
 
 
+def _cycle_cadence(
+    cycles: list[dict[str, Any]],
+    target_seconds: float,
+) -> dict[str, Any]:
+    timestamps: list[datetime] = []
+    for cycle in cycles:
+        created_at = str(cycle.get("created_at") or "")
+        try:
+            timestamps.append(datetime.fromisoformat(created_at))
+        except ValueError:
+            continue
+    timestamps.sort()
+    intervals = [
+        (timestamps[index] - timestamps[index - 1]).total_seconds()
+        for index in range(1, len(timestamps))
+    ]
+    latest = intervals[-1] if intervals else None
+    average = sum(intervals) / len(intervals) if intervals else None
+    maximum = max(intervals) if intervals else None
+    tolerance = max(target_seconds * 1.5, target_seconds + 0.25)
+    return {
+        "target_seconds": round(float(target_seconds), 3),
+        "target_tolerance_seconds": round(float(tolerance), 3),
+        "sample_count": len(intervals),
+        "latest_interval_seconds": round(float(latest), 3)
+        if latest is not None
+        else None,
+        "average_interval_seconds": round(float(average), 3)
+        if average is not None
+        else None,
+        "max_interval_seconds": round(float(maximum), 3)
+        if maximum is not None
+        else None,
+        "within_target": latest <= tolerance if latest is not None else None,
+    }
+
+
 class PaperTradingAgent:
     def __init__(
         self,
@@ -1230,7 +1267,7 @@ class PaperTradingAgent:
     def status(self) -> dict[str, Any]:
         with self._lock:
             mark_price = self._last_price
-            recent = self.ledger.recent(1, symbol=self.symbol)
+            recent = self.ledger.recent(20, symbol=self.symbol)
             latest = self._last_cycle or (recent[0] if recent else None)
             market_health = getattr(self.market, "health", None)
             return {
@@ -1262,6 +1299,7 @@ class PaperTradingAgent:
                 "last_error": self._last_error,
                 "latest_receipt_id": latest.get("receipt_id") if latest else None,
                 "latest_cycle": latest,
+                "execution_cadence": _cycle_cadence(recent, self.interval_seconds),
                 "portfolio": self.broker.portfolio(mark_price),
                 "prediction_quality": self.ledger.quality(self.symbol),
                 "risk_limits": self.risk.as_dict(),

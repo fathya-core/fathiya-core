@@ -140,6 +140,11 @@ class PaperTradingAgentTests(unittest.TestCase):
         self.assertGreaterEqual(quality["evaluated_count"], 2)
         self.assertIsNotNone(quality["directional_accuracy"])
         self.assertEqual(quality["latest_evaluation"]["symbol"], "TEST-USD")
+        cadence = agent.status()["execution_cadence"]
+        self.assertEqual(cadence["target_seconds"], 0.05)
+        self.assertGreaterEqual(cadence["sample_count"], 4)
+        self.assertIsNotNone(cadence["latest_interval_seconds"])
+        self.assertTrue(cadence["within_target"])
 
     def test_background_loop_runs_at_configured_cadence_and_stops(self) -> None:
         agent = self.build_agent(interval_seconds=0.05)
