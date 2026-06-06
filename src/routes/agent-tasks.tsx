@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   ArrowRight,
+  BrainCircuit,
   Cable,
   CheckCircle2,
   ChevronDown,
@@ -448,7 +449,7 @@ function AgentTasksPage() {
     }
   }
 
-  async function tradingAction(action: "start" | "stop" | "tick") {
+  async function tradingAction(action: "start" | "stop" | "tick" | "strategy-refresh") {
     if (!localMode) return;
     setTradingActing(true);
     setError("");
@@ -1046,6 +1047,20 @@ function AgentTasksPage() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>تنفيذ نبضة paper واحدة</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => void tradingAction("strategy-refresh")}
+                            disabled={tradingActing}
+                          >
+                            <BrainCircuit />
+                            <span className="sr-only">تحديث مستشار نموذج التداول</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>تحديث مستشار نموذج التداول</TooltipContent>
                       </Tooltip>
                     </div>
                     <p

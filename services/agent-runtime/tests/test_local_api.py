@@ -478,6 +478,18 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertTrue(paper_cycle["receipt_id"].startswith("TR-"))
         self.assertEqual(paper_cycle["mode"], "paper")
 
+        strategy_refresh = requests.post(
+            f"{self.base_url}/api/agent/trading/strategy-refresh",
+            headers=self.headers,
+            timeout=5,
+        ).json()
+        self.assertTrue(strategy_refresh["strategy"]["fallback"])
+        self.assertEqual(strategy_refresh["strategy"]["advisory"]["action"], "hold")
+        self.assertFalse(strategy_refresh["strategy"]["live_execution_enabled"])
+        self.assertFalse(
+            strategy_refresh["trading"]["strategy_advisory_policy"]["can_originate_orders"]
+        )
+
         started_trading = requests.post(
             f"{self.base_url}/api/agent/trading/start",
             headers=self.headers,

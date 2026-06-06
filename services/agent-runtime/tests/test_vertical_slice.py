@@ -5,6 +5,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
@@ -1029,6 +1030,29 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(result["model_provider"], "deterministic_fallback")
         self.assertEqual(result["advisory"]["action"], "hold")
         self.assertEqual(result["advisory"]["confidence"], 0.0)
+
+    def test_trading_strategy_refresh_times_out_to_safe_fallback(self) -> None:
+        executor = ToolExecutor(self.config)
+        model = Mock()
+        model.available = True
+
+        def slow_complete(*_args: object, **_kwargs: object) -> str:
+            time.sleep(0.2)
+            return '{"action":"buy","confidence":0.99,"rationale":"late"}'
+
+        model.complete.side_effect = slow_complete
+        executor.set_model_router(model)
+
+        result = executor.execute(
+            "trading_strategy_refresh",
+            "حدّث مستشار استراتيجية وكيل التداول",
+            {"model_timeout_seconds": 0.01},
+        )
+
+        self.assertTrue(result["fallback"])
+        self.assertEqual(result["error_type"], "TimeoutError")
+        self.assertEqual(result["advisory"]["action"], "hold")
+        self.assertFalse(result["live_execution_enabled"])
 
     def test_trading_strategy_refresh_task_completes_with_safe_fallback(self) -> None:
         task = self.store.enqueue(

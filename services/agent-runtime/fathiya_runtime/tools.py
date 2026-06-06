@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -1497,7 +1499,7 @@ class ToolExecutor:
     def _trading_strategy_refresh(
         self,
         prompt: str,
-        _args: dict[str, Any],
+        args: dict[str, Any],
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         trading = self._trading_agent()
@@ -1522,9 +1524,16 @@ class ToolExecutor:
         confidence = 0.0
         rationale = "No configured model produced a valid advisory; no veto is applied."
         model = self._model_router
+        model_timeout_seconds = _bounded_float(
+            args.get("model_timeout_seconds", 6.0),
+            default=6.0,
+            minimum=0.05,
+            maximum=60.0,
+        )
         if model and model.available:
             try:
-                raw = model.complete(
+                raw = _complete_model_with_timeout(
+                    model,
                     (
                         "You are the FATHIYA paper-trading strategy advisor. "
                         "Return one JSON object only with action, confidence, and rationale. "
@@ -1544,6 +1553,7 @@ class ToolExecutor:
                         },
                         ensure_ascii=False,
                     ),
+                    timeout_seconds=model_timeout_seconds,
                     json_mode=True,
                     max_new_tokens=180,
                 )
@@ -1578,6 +1588,7 @@ class ToolExecutor:
             "model_provider": provider,
             "fallback": fallback,
             "error_type": error_type,
+            "model_timeout_seconds": model_timeout_seconds,
             "advisory": advisory,
             "policy": status["strategy_advisory_policy"],
             "live_execution_enabled": False,
@@ -2242,6 +2253,68 @@ def _json_object(raw: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Model advisory must be a JSON object")
     return payload
+
+
+def _bounded_float(
+    value: Any,
+    *,
+    default: float,
+    minimum: float,
+    maximum: float,
+) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        parsed = default
+    return max(minimum, min(maximum, parsed))
+
+
+def _complete_model_with_timeout(
+    model: ModelClient,
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    timeout_seconds: float,
+    json_mode: bool,
+    max_new_tokens: int,
+) -> str:
+    results: queue.Queue[tuple[str, str | BaseException]] = queue.Queue(maxsize=1)
+
+    def run() -> None:
+        try:
+            results.put(
+                (
+                    "ok",
+                    model.complete(
+                        system_prompt,
+                        user_prompt,
+                        json_mode=json_mode,
+                        max_new_tokens=max_new_tokens,
+                    ),
+                ),
+                block=False,
+            )
+        except BaseException as exc:  # pragma: no cover - re-raised by caller
+            try:
+                results.put(("error", exc), block=False)
+            except queue.Full:
+                pass
+
+    thread = threading.Thread(
+        target=run,
+        name="fathiya-trading-advisor-refresh",
+        daemon=True,
+    )
+    thread.start()
+    try:
+        status, payload = results.get(timeout=timeout_seconds)
+    except queue.Empty as exc:
+        raise TimeoutError("Trading strategy advisor timed out") from exc
+    if status == "error":
+        if isinstance(payload, BaseException):
+            raise payload
+        raise RuntimeError(str(payload))
+    return str(payload)
 
 
 def _agent_mesh_next_actions(

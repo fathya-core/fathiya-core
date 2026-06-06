@@ -28,7 +28,7 @@ TASK_PATH = re.compile(
 )
 CONNECTOR_DISPATCH_PATH = "/api/agent/connector-dispatch"
 TRADING_PATH = re.compile(
-    r"^/api/agent/trading(?:/(?P<action>status|receipts|start|stop|tick))?$",
+    r"^/api/agent/trading(?:/(?P<action>status|receipts|start|stop|tick|strategy-refresh))?$",
     re.IGNORECASE,
 )
 INTAKE_PATH = re.compile(
@@ -310,13 +310,30 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                 return self._send_json({"intake": self.server.intake.start()})
             return self._send_json({"intake": self.server.intake.stop()})
         trading_match = TRADING_PATH.fullmatch(path)
-        if trading_match and trading_match.group("action") in {"start", "stop", "tick"}:
+        if trading_match and trading_match.group("action") in {
+            "start",
+            "stop",
+            "tick",
+            "strategy-refresh",
+        }:
             try:
                 action = trading_match.group("action")
                 if action == "start":
                     return self._send_json({"trading": self.server.trading.start()})
                 if action == "stop":
                     return self._send_json({"trading": self.server.trading.stop()})
+                if action == "strategy-refresh":
+                    result = self.server.tools.execute(
+                        "trading_strategy_refresh",
+                        "حدّث مستشار استراتيجية وكيل التداول",
+                        {"model_timeout_seconds": 4.0},
+                    )
+                    return self._send_json(
+                        {
+                            "strategy": result,
+                            "trading": self.server.trading.status(),
+                        }
+                    )
                 return self._send_json({"cycle": self.server.trading.tick_once()})
             except RuntimeError as exc:
                 return self._send_error(HTTPStatus.CONFLICT, str(exc))
