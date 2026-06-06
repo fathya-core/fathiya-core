@@ -534,6 +534,7 @@ def _fallback_steps(
         if bool(item.get("configured", True))
     }
     steps: list[dict[str, Any]] = []
+    connector_profiles = _profile_names(available.get("connector_profile", {}))
 
     def add(tool: str, description: str, args: dict[str, Any] | None = None) -> None:
         if tool in available and not any(step["tool"] == tool for step in steps):
@@ -554,6 +555,15 @@ def _fallback_steps(
             integration_probe["tool"],
             integration_probe["description"],
             integration_probe["args"],
+        )
+        return steps[:max_tool_steps]
+
+    connector_profile = _connector_profile_step(prompt, connector_profiles)
+    if connector_profile:
+        add(
+            connector_profile["tool"],
+            connector_profile["description"],
+            connector_profile["args"],
         )
         return steps[:max_tool_steps]
 
@@ -668,7 +678,6 @@ def _fallback_steps(
         )
 
     profiles = _profile_names(available.get("command_profile", {}))
-    connector_profiles = _profile_names(available.get("connector_profile", {}))
     if "n8n" in text and "n8n_health" in connector_profiles:
         add(
             "connector_profile",
@@ -938,6 +947,40 @@ def _zapier_action_step(prompt: str) -> dict[str, Any] | None:
             "instructions": prompt[:2_000],
             "output": "Return the action result and receipt-safe identifiers.",
         },
+    }
+
+
+def _connector_profile_step(
+    prompt: str,
+    configured_profiles: set[str],
+) -> dict[str, Any] | None:
+    match = re.search(
+        r"(?:connector\s+profile|ملف\s+الموصل)\s*:\s*([a-zA-Z0-9_.-]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    profile = match.group(1).strip()
+    if profile not in configured_profiles:
+        return None
+    payload: dict[str, Any] = {}
+    payload_match = re.search(
+        r"(?:payload|params|query)\s*:\s*(\{[^\n]*\})",
+        prompt,
+        re.IGNORECASE,
+    )
+    if payload_match:
+        try:
+            parsed = json.loads(payload_match.group(1))
+            if isinstance(parsed, dict):
+                payload = parsed
+        except json.JSONDecodeError:
+            payload = {}
+    return {
+        "tool": "connector_profile",
+        "description": f"تشغيل موصل {profile}",
+        "args": {"profile": profile, "payload": payload},
     }
 
 

@@ -257,6 +257,8 @@ params: {"repo":"fathiya-core","owner":"fathiya-core"}
 The `/agent-tasks` page also exposes a `مشغّل Zapier المقروء` card sourced from
 the connected-tool inventory. It turns known read actions into queued agent
 tasks, and shows the local OAuth action when direct execution is not connected.
+Configured connector profiles in the `الموصلات` card can also be launched as
+normal receipt-backed tasks, starting with `n8n_health`.
 
 Inspect the local connection without exposing credentials:
 

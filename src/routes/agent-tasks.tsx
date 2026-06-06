@@ -146,6 +146,7 @@ function AgentTasksPage() {
   const [probingIntegration, setProbingIntegration] = useState<string | null>(null);
   const [startingIntegrationTask, setStartingIntegrationTask] = useState<string | null>(null);
   const [startingZapierReadAction, setStartingZapierReadAction] = useState<string | null>(null);
+  const [startingConnectorProfile, setStartingConnectorProfile] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
   const [tradingReceipts, setTradingReceipts] = useState<AgentTradingCycle[]>([]);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
@@ -537,6 +538,32 @@ function AgentTasksPage() {
       setError(String(taskError));
     } finally {
       setStartingZapierReadAction(null);
+    }
+  }
+
+  async function startConnectorTask(connector: AgentConnectorProfile) {
+    if (!localMode || !connector.configured) return;
+    setStartingConnectorProfile(connector.name);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: `تشغيل موصل: ${connector.provider}/${connector.name}`,
+        prompt: [
+          `Connector profile: ${connector.name}`,
+          `نفذ موصل ${connector.provider} المسمى ${connector.name} عبر مشغل فتحية، ثم سجل التقدم والإيصال.`,
+          "payload:{}",
+        ].join("\n"),
+      };
+      const data = await agentApi<{ task: AgentTask }>(null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingConnectorProfile(null);
     }
   }
 
@@ -1271,30 +1298,46 @@ function AgentTasksPage() {
                     ) : (
                       <div className="divide-y divide-border/50">
                         {connectors.map((connector) => (
-                          <div
-                            key={connector.name}
-                            className="flex items-center justify-between gap-3 px-4 py-2.5"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-semibold">
-                                {connector.provider} · {connector.name}
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                {connector.method}
-                                {connector.requires_approval ? " · يحتاج موافقة" : " · تلقائي"}
-                                {connector.bridge_dispatch_allowed && " · عبر جسر n8n"}
-                              </p>
+                          <div key={connector.name} className="px-4 py-2.5">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold">
+                                  {connector.provider} · {connector.name}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                  {connector.method}
+                                  {connector.requires_approval ? " · يحتاج موافقة" : " · تلقائي"}
+                                  {connector.bridge_dispatch_allowed && " · عبر جسر n8n"}
+                                </p>
+                              </div>
+                              <Badge
+                                className={cn(
+                                  "shrink-0",
+                                  connector.configured
+                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                    : "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                                )}
+                              >
+                                {connector.configured ? "جاهز" : "يحتاج إعداد"}
+                              </Badge>
                             </div>
-                            <Badge
-                              className={cn(
-                                "shrink-0",
-                                connector.configured
-                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                  : "border-amber-500/30 bg-amber-500/10 text-amber-400",
-                              )}
-                            >
-                              {connector.configured ? "جاهز" : "يحتاج إعداد"}
-                            </Badge>
+                            {connector.configured && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-2 h-7 text-[10px]"
+                                disabled={startingConnectorProfile === connector.name}
+                                onClick={() => void startConnectorTask(connector)}
+                              >
+                                {startingConnectorProfile === connector.name ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Play />
+                                )}
+                                تشغيل كمهمة
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>

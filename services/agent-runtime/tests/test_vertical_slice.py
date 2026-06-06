@@ -1195,6 +1195,31 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(len(connector_steps), 1)
         self.assertEqual(connector_steps[0]["args"]["profile"], "n8n_health")
 
+    def test_exact_connector_profile_prompt_runs_only_that_connector(self) -> None:
+        plan = build_plan(
+            {
+                "prompt": (
+                    "Connector profile: n8n_health\n"
+                    "نفذ موصل n8n المسمى n8n_health عبر مشغل فتحية.\n"
+                    "payload:{}"
+                )
+            },
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            ToolExecutor(self.config).catalog(),
+            max_tool_steps=6,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+
+        self.assertEqual(tools, ["connector_profile"])
+        self.assertEqual(plan[1]["args"]["profile"], "n8n_health")
+
     def test_fallback_plan_executes_multiple_connected_tools(self) -> None:
         task = self.store.enqueue(
             "تشغيل متعدد",
