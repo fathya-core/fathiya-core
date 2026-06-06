@@ -354,6 +354,7 @@ class AgentWorker:
 
                 round_tools = [*round_completed_tools]
                 for index, execution_step in enumerate(execution_steps, start=1):
+                    execution_args = self._execution_args(task, execution_step)
                     start_progress = round_progress_start + int(
                         ((index - 1) / len(execution_steps))
                         * (round_progress_end - round_progress_start)
@@ -374,17 +375,17 @@ class AgentWorker:
                         {
                             "round": round_number,
                             "tool": execution_step["tool"],
-                            "args": execution_step.get("args", {}),
+                            "args": execution_args,
                         },
                     )
                     tool_result = self.tools.execute(
                         execution_step["tool"],
                         execution_task["prompt"],
-                        execution_step.get("args", {}),
+                        execution_args,
                         tool_results,
                     )
                     seen_signatures.add(
-                        step_signature(execution_step["tool"], execution_step.get("args"))
+                        step_signature(execution_step["tool"], execution_args)
                     )
                     round_tools.append(execution_step["tool"])
                     tool_results.append(
@@ -657,6 +658,34 @@ class AgentWorker:
             )
         finally:
             self.store.heartbeat_worker(self.config.worker_id, "online")
+
+    def _execution_args(
+        self,
+        task: dict[str, Any],
+        execution_step: dict[str, Any],
+    ) -> dict[str, Any]:
+        args = dict(execution_step.get("args") or {})
+        if (
+            execution_step.get("tool") == "connector_profile"
+            and args.get("profile") == "n8n_fathiya_webhook"
+        ):
+            payload = args.get("payload")
+            payload = dict(payload) if isinstance(payload, dict) else {}
+            target_profile = str(
+                payload.get("profile") or args.get("target_profile") or "n8n_health",
+            ).strip()
+            payload.update(
+                {
+                    "task_id": task["id"],
+                    "profile": target_profile,
+                    "approval_state": str(task.get("approval_state") or "pending"),
+                    "source": "fathiya-agent-runtime",
+                },
+            )
+            payload.setdefault("payload", {})
+            payload.setdefault("query", {})
+            args["payload"] = payload
+        return args
 
     def _progress(
         self,

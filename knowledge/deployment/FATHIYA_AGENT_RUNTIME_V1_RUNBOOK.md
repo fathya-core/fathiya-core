@@ -163,9 +163,11 @@ cd services/agent-runtime
   `selected_api` argument. The local direct OAuth gateway resolves and forwards
   it itself once the operator completes the local Zapier OAuth connection.
 - n8n `2.23.2` is active locally and responds on port `5678`.
-- n8n API workflow listing requires `N8N_API_KEY`. The local n8n CLI currently
-  fails migrations with `temporary_webhook_entity already exists`; back up and
-  repair the n8n SQLite database before importing or publishing the FATHIYA
-  webhook bridge.
+- The FATHIYA n8n connector gateway is imported and published locally. The
+  gateway process must run with `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`,
+  `FATHIYA_CONNECTOR_DISPATCH_URL`, and `FATHIYA_CONNECTOR_DISPATCH_TOKEN` so
+  approved webhook requests can call back into `/api/agent/connector-dispatch`.
+- n8n API workflow listing still requires `N8N_API_KEY`; this is separate from
+  the published local webhook gateway.
 - Production verification requires applying the Supabase migration and
   deploying this branch to `fathya-core.com`.

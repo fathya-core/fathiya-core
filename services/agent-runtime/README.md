@@ -223,6 +223,10 @@ re-validates the task and approval state, rejects the n8n ingress profile to
 prevent loops, executes only explicitly bridge-enabled connector profiles, and
 writes a bounded receipt.
 
+When running the imported n8n gateway locally, set
+`N8N_BLOCK_ENV_ACCESS_IN_NODE=false` so the workflow can read
+`FATHIYA_CONNECTOR_DISPATCH_URL` and `FATHIYA_CONNECTOR_DISPATCH_TOKEN`.
+
 For local SQLite tasks:
 
 ```powershell

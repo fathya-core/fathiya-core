@@ -1589,6 +1589,28 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(gated["task"]["risk_class"], "external")
         self.assertEqual(gated["events"][-1]["payload"]["gated_steps"][0]["tool"], "connector_profile")
 
+    def test_n8n_gateway_connector_payload_uses_current_task_gate(self) -> None:
+        task = self.store.enqueue("بوابة n8n", "نفذ بوابة n8n")
+        self.store.update_task(task["id"], approval_state="approved")
+        approved = self.store.get_task(task["id"])
+        worker = AgentWorker(self.config, self.store)
+
+        args = worker._execution_args(
+            approved,
+            {
+                "tool": "connector_profile",
+                "args": {"profile": "n8n_fathiya_webhook"},
+            },
+        )
+
+        self.assertEqual(args["profile"], "n8n_fathiya_webhook")
+        self.assertEqual(args["payload"]["task_id"], task["id"])
+        self.assertEqual(args["payload"]["approval_state"], "approved")
+        self.assertEqual(args["payload"]["profile"], "n8n_health")
+        self.assertEqual(args["payload"]["source"], "fathiya-agent-runtime")
+        self.assertEqual(args["payload"]["payload"], {})
+        self.assertEqual(args["payload"]["query"], {})
+
     def test_zapier_write_action_plan_waits_for_dynamic_approval(self) -> None:
         task = self.store.enqueue("بوابة Zapier MCP", "نفذ مهمة داخلية")
         worker = AgentWorker(self.config, self.store)

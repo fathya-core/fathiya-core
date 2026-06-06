@@ -35,6 +35,15 @@ The command stores the token under the ignored `runtime/` directory. Supply the
 same value to n8n as `FATHIYA_CONNECTOR_DISPATCH_TOKEN` when starting the
 approved workflow.
 
+n8n `2.23.x` blocks `$env` access inside workflow expressions unless explicitly
+allowed. Start the local gateway process with
+`N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, plus:
+
+```powershell
+$env:FATHIYA_CONNECTOR_DISPATCH_URL="http://127.0.0.1:8765/api/agent/connector-dispatch"
+$env:FATHIYA_CONNECTOR_DISPATCH_TOKEN=(Get-Content .\runtime\connector_dispatch.token -Raw).Trim()
+```
+
 ## Validation
 
 Run the structural checks without touching the current n8n database:
