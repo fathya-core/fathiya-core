@@ -71,9 +71,9 @@ within the configured watch interval and completes with a receipt.
    then confirm `fathiya-runtime zapier-actions --refresh` returns the live app
    and action counts without printing credentials.
 9. From the loopback `/agent-tasks` page, open the local setup action for
-   OpenRouter, Supabase, n8n, or Binance Spot Testnet. Confirm saved values are
-   never returned by `GET /api/agent/settings`, and confirm a production-origin
-   page cannot write local settings.
+   OpenRouter, Supabase, n8n, execution-mesh bridge URLs, or Binance Spot
+   Testnet. Confirm saved values are never returned by `GET /api/agent/settings`,
+   and confirm a production-origin page cannot write local settings.
 10. Use the integration probe button for OpenRouter, Supabase, n8n, Zapier MCP,
     and Binance Spot Testnet. Confirm each result is secret-safe, and confirm
     OpenRouter probes do not spend model tokens while Testnet probes do not

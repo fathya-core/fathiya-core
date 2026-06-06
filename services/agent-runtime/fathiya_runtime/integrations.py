@@ -95,6 +95,8 @@ def build_integration_readiness(
             ),
             "missing_env": [],
             "connected_apps": ready_capabilities,
+            "settings_path": "/api/agent/settings/local_execution_mesh",
+            "settings_label": "إعداد جسور الوكلاء",
             "probe_path": "/api/agent/integrations/local_execution_mesh/probe",
             "probe_label": "اختبار الشبكة",
             "task_label": "تشغيل وكيل الشبكة",

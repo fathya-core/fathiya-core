@@ -128,7 +128,8 @@ receipt ledger.
 
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,
-Supabase, n8n, and Binance Spot Testnet credentials through
+Supabase, n8n, local execution mesh bridge URLs, and Binance Spot Testnet
+credentials through
 `POST /api/agent/settings/:group` only when the browser page itself is served
 from a loopback origin. Values are stored under ignored local runtime data,
 never returned by the API, and applied to the running agent tools when a full

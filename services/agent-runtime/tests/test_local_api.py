@@ -148,6 +148,14 @@ class LocalAgentApiTests(unittest.TestCase):
             integration_by_id["local_execution_mesh"]["details"]["ready_count"],
             1,
         )
+        self.assertEqual(
+            integration_by_id["local_execution_mesh"]["settings_path"],
+            "/api/agent/settings/local_execution_mesh",
+        )
+        self.assertEqual(
+            integration_by_id["local_execution_mesh"]["settings_label"],
+            "إعداد جسور الوكلاء",
+        )
         self.assertEqual(integration_by_id["openrouter"]["status"], "needs_setup")
         self.assertIn(
             "OPENROUTER_API_KEY",
@@ -205,6 +213,22 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertTrue(settings_response.json()["write_allowed"])
         self.assertFalse(settings_response.json()["security"]["values_returned"])
         self.assertNotIn("local-api-test-bridge-token", settings_response.text)
+        settings_by_id = {
+            item["id"]: item for item in settings_response.json()["groups"]
+        }
+        self.assertIn("local_execution_mesh", settings_by_id)
+        mesh_setting_fields = {
+            field["name"] for field in settings_by_id["local_execution_mesh"]["fields"]
+        }
+        self.assertEqual(
+            {
+                "FATHIYA_CURSOR_AGENT_URL",
+                "FATHIYA_MANUS_AGENT_URL",
+                "FATHIYA_ZAPIER_WEBHOOK_URL",
+                "FATHIYA_N8N_WEBHOOK_URL",
+            },
+            mesh_setting_fields,
+        )
 
         remote_settings_write = requests.post(
             f"{self.base_url}/api/agent/settings/openrouter",
@@ -403,6 +427,15 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertGreaterEqual(mesh_result["summary"]["zapier_app_count"], 20)
         self.assertIn("trading_symbol", mesh_result["summary"])
         self.assertGreaterEqual(len(mesh_result["next_actions"]), 1)
+        mesh_actions = {action["id"]: action for action in mesh_result["next_actions"]}
+        self.assertEqual(
+            mesh_actions["configure_agent_bridges"]["ui_action"],
+            "settings",
+        )
+        self.assertEqual(
+            mesh_actions["configure_agent_bridges"]["settings_group"],
+            "local_execution_mesh",
+        )
         self.assertIn("مسح شبكة الوكلاء", mesh_detail["task"]["result"]["synthesis"])
         self.assertNotIn("local-api-test-bridge-token", str(mesh_detail))
 

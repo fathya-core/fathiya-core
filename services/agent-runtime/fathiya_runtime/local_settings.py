@@ -69,6 +69,41 @@ LOCAL_SETTINGS_GROUPS: dict[str, dict[str, Any]] = {
             },
         ),
     },
+    "local_execution_mesh": {
+        "name": "جسور الوكلاء",
+        "description": "روابط Webhook وBridge التي تسمح بتفويض Cursor وManus وZapier وn8n بعد الموافقة.",
+        "restart_required": False,
+        "fields": (
+            {
+                "name": "FATHIYA_CURSOR_AGENT_URL",
+                "label": "Cursor bridge URL",
+                "kind": "url",
+                "required": False,
+                "placeholder": "https://...",
+            },
+            {
+                "name": "FATHIYA_MANUS_AGENT_URL",
+                "label": "Manus bridge URL",
+                "kind": "url",
+                "required": False,
+                "placeholder": "https://...",
+            },
+            {
+                "name": "FATHIYA_ZAPIER_WEBHOOK_URL",
+                "label": "Zapier webhook URL",
+                "kind": "url",
+                "required": False,
+                "placeholder": "https://hooks.zapier.com/...",
+            },
+            {
+                "name": "FATHIYA_N8N_WEBHOOK_URL",
+                "label": "n8n webhook URL",
+                "kind": "url",
+                "required": False,
+                "placeholder": "http://127.0.0.1:5678/webhook/...",
+            },
+        ),
+    },
     "broker_testnet": {
         "name": "Binance Spot Testnet",
         "description": "حساب تداول تجريبي فقط؛ التنفيذ الحقيقي غير مدعوم.",

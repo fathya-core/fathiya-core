@@ -2330,13 +2330,27 @@ def _agent_mesh_next_actions(
             if name
         }
     )
-    if missing_connector_env:
+    bridge_missing_env = [
+        name
+        for name in missing_connector_env
+        if name
+        in {
+            "FATHIYA_CURSOR_AGENT_URL",
+            "FATHIYA_MANUS_AGENT_URL",
+            "FATHIYA_N8N_WEBHOOK_URL",
+            "FATHIYA_ZAPIER_WEBHOOK_URL",
+        }
+    ]
+    if bridge_missing_env:
         add(
             "configure_agent_bridges",
             "إكمال جسور Cursor وManus وZapier",
             "اعرض جاهزية جسور Cursor وManus وZapier ثم جهز الناقص",
             "بعض الموصلات التنفيذية تنتظر إعدادات محلية: "
-            + ", ".join(missing_connector_env[:8]),
+            + ", ".join(bridge_missing_env[:8]),
+            ui_action="settings",
+            settings_group="local_execution_mesh",
+            integration_id="local_execution_mesh",
         )
     if kali.get("status") != "active":
         add(
