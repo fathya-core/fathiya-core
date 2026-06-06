@@ -111,6 +111,11 @@ type AgentMeshNextAction = {
   title: string;
   prompt: string;
   reason: string;
+  ui_action?: "task" | "settings" | "oauth";
+  settings_group?: string;
+  integration_id?: string;
+  action_path?: string;
+  action_label?: string;
 };
 
 function AgentTasksPage() {
@@ -396,6 +401,19 @@ function AgentTasksPage() {
     } finally {
       setStartingFollowUpPrompt(null);
     }
+  }
+
+  async function handleFollowUpAction(action: AgentMeshNextAction) {
+    const mode = followUpActionMode(action);
+    if (mode === "settings") {
+      setSelectedSettingsGroup(action.settings_group ?? null);
+      return;
+    }
+    if (mode === "oauth") {
+      window.location.assign(integrationActionHref(action.action_path ?? ""));
+      return;
+    }
+    await startFollowUpTask(action);
   }
 
   async function taskAction(action: "approve" | "cancel") {
@@ -1159,7 +1177,7 @@ function AgentTasksPage() {
               startingFollowUpPrompt={startingFollowUpPrompt}
               onApprove={() => void taskAction("approve")}
               onCancel={() => void taskAction("cancel")}
-              onStartFollowUp={(action) => void startFollowUpTask(action)}
+              onStartFollowUp={(action) => void handleFollowUpAction(action)}
             />
           </div>
         </main>
@@ -1787,42 +1805,50 @@ function TaskResultSummary({
             </Badge>
           </div>
           <div className="space-y-2">
-            {nextActions.map((action) => (
-              <div
-                key={`${action.id}-${action.prompt}`}
-                className="rounded-md border border-border/50 bg-background/35 p-2"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words text-[11px] font-semibold">{action.title}</p>
-                    <p className="mt-1 break-words text-[10px] text-muted-foreground">
-                      {action.reason}
-                    </p>
-                    <p
-                      dir="ltr"
-                      className="mt-1 break-all text-left font-mono text-[9px] text-muted-foreground"
+            {nextActions.map((action) => {
+              const mode = followUpActionMode(action);
+              const starting = mode === "task" && startingFollowUpPrompt === action.prompt;
+              return (
+                <div
+                  key={`${action.id}-${action.prompt}`}
+                  className="rounded-md border border-border/50 bg-background/35 p-2"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-[11px] font-semibold">{action.title}</p>
+                      <p className="mt-1 break-words text-[10px] text-muted-foreground">
+                        {action.reason}
+                      </p>
+                      <p
+                        dir="ltr"
+                        className="mt-1 break-all text-left font-mono text-[9px] text-muted-foreground"
+                      >
+                        {action.prompt}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 shrink-0 text-[10px]"
+                      onClick={() => onStartFollowUp(action)}
+                      disabled={starting}
                     >
-                      {action.prompt}
-                    </p>
+                      {starting ? (
+                        <Loader2 className="animate-spin" />
+                      ) : mode === "settings" ? (
+                        <Settings2 />
+                      ) : mode === "oauth" ? (
+                        <KeyRound />
+                      ) : (
+                        <Play />
+                      )}
+                      {followUpActionLabel(action)}
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 shrink-0 text-[10px]"
-                    onClick={() => onStartFollowUp(action)}
-                    disabled={startingFollowUpPrompt === action.prompt}
-                  >
-                    {startingFollowUpPrompt === action.prompt ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Play />
-                    )}
-                    تشغيل المتابعة
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1968,6 +1994,14 @@ function extractAgentMeshNextActions(result: Record<string, unknown>): AgentMesh
       const title = typeof action?.title === "string" ? action.title.trim() : "";
       const prompt = typeof action?.prompt === "string" ? action.prompt.trim() : "";
       const reason = typeof action?.reason === "string" ? action.reason.trim() : "";
+      const uiAction = parseFollowUpUiAction(action?.ui_action);
+      const settingsGroup =
+        typeof action?.settings_group === "string" ? action.settings_group.trim() : "";
+      const integrationId =
+        typeof action?.integration_id === "string" ? action.integration_id.trim() : "";
+      const actionPath = typeof action?.action_path === "string" ? action.action_path.trim() : "";
+      const actionLabel =
+        typeof action?.action_label === "string" ? action.action_label.trim() : "";
       if (!id || !title || !prompt || seen.has(prompt)) continue;
       seen.add(prompt);
       actions.push({
@@ -1975,10 +2009,32 @@ function extractAgentMeshNextActions(result: Record<string, unknown>): AgentMesh
         title,
         prompt,
         reason: reason || "تشغيل المتابعة عبر نفس مشغّل المهام والإيصالات.",
+        ...(uiAction ? { ui_action: uiAction } : {}),
+        ...(settingsGroup ? { settings_group: settingsGroup } : {}),
+        ...(integrationId ? { integration_id: integrationId } : {}),
+        ...(actionPath ? { action_path: actionPath } : {}),
+        ...(actionLabel ? { action_label: actionLabel } : {}),
       });
     }
   }
   return actions.slice(0, 8);
+}
+
+function parseFollowUpUiAction(value: unknown): AgentMeshNextAction["ui_action"] | undefined {
+  return value === "settings" || value === "oauth" || value === "task" ? value : undefined;
+}
+
+function followUpActionMode(action: AgentMeshNextAction): "task" | "settings" | "oauth" {
+  if (action.ui_action === "settings" && action.settings_group) return "settings";
+  if (action.ui_action === "oauth" && action.action_path) return "oauth";
+  return "task";
+}
+
+function followUpActionLabel(action: AgentMeshNextAction) {
+  const mode = followUpActionMode(action);
+  if (mode === "settings") return "فتح الإعداد";
+  if (mode === "oauth") return action.action_label || "ربط OAuth";
+  return "تشغيل المتابعة";
 }
 
 function JsonBlock({ value }: { value: unknown }) {

@@ -2254,15 +2254,34 @@ def _agent_mesh_next_actions(
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
 
-    def add(action_id: str, title: str, prompt: str, reason: str) -> None:
-        actions.append(
-            {
-                "id": action_id,
-                "title": title,
-                "prompt": prompt,
-                "reason": reason,
-            }
-        )
+    def add(
+        action_id: str,
+        title: str,
+        prompt: str,
+        reason: str,
+        *,
+        ui_action: str = "task",
+        settings_group: str | None = None,
+        integration_id: str | None = None,
+        action_path: str | None = None,
+        action_label: str | None = None,
+    ) -> None:
+        action: dict[str, Any] = {
+            "id": action_id,
+            "title": title,
+            "prompt": prompt,
+            "reason": reason,
+            "ui_action": ui_action,
+        }
+        if settings_group:
+            action["settings_group"] = settings_group
+        if integration_id:
+            action["integration_id"] = integration_id
+        if action_path:
+            action["action_path"] = action_path
+        if action_label:
+            action["action_label"] = action_label
+        actions.append(action)
 
     if integration_probes.get("openrouter", {}).get("status") != "ready":
         add(
@@ -2270,6 +2289,9 @@ def _agent_mesh_next_actions(
             "تفعيل OpenRouter",
             "integration probe: openrouter",
             "المهام الثقيلة تحتاج مفتاح OpenRouter محلي حتى يعمل التخطيط والتقييم بالنماذج.",
+            ui_action="settings",
+            settings_group="openrouter",
+            integration_id="openrouter",
         )
     if integration_probes.get("huggingface_local", {}).get("status") != "ready":
         add(
@@ -2277,6 +2299,7 @@ def _agent_mesh_next_actions(
             "تفعيل Hugging Face المحلي",
             "integration probe: huggingface_local",
             "الاسترجاع والتوليد المحليين يخففان الاعتماد على الشبكة ويعطيان المحرك ذاكرة أقرب.",
+            integration_id="huggingface_local",
         )
     if not zapier_direct.get("connected"):
         add(
@@ -2284,6 +2307,10 @@ def _agent_mesh_next_actions(
             "ربط Zapier MCP المحلي",
             "integration probe: zapier_mcp",
             "مخزون Zapier متاح، لكن التنفيذ المباشر يحتاج OAuth محليًا بدل كلمات مرور في المحادثة.",
+            ui_action="oauth",
+            integration_id="zapier_mcp",
+            action_path="/api/agent/oauth/zapier/start",
+            action_label="ربط Zapier OAuth",
         )
     if not n8n_workflows.get("available"):
         add(
@@ -2291,6 +2318,9 @@ def _agent_mesh_next_actions(
             "تفعيل قراءة n8n",
             "افحص n8n واعرض مساراته",
             "قراءة workflows تحتاج N8N_API_KEY حتى يستطيع المحرك توجيه الأتمتة بدل الاكتفاء بالصحة.",
+            ui_action="settings",
+            settings_group="n8n_local",
+            integration_id="n8n_local",
         )
     missing_connector_env = sorted(
         {
@@ -2314,6 +2344,7 @@ def _agent_mesh_next_actions(
             "تجهيز Kali WSL",
             "افحص أدوات Kali الدفاعية",
             "وكيل الأمن يحتاج أدوات Kali جاهزة للفحص الدفاعي، مع بقاء الفحص الحي تحت الموافقة.",
+            integration_id="kali_wsl",
         )
     if integration_probes.get("broker_testnet", {}).get("status") != "ready":
         add(
@@ -2321,6 +2352,9 @@ def _agent_mesh_next_actions(
             "ربط Testnet للتداول",
             "integration probe: broker_testnet",
             "التنفيذ المالي الحقيقي يبقى مقفلًا؛ أول خطوة آمنة هي Testnet محلي مع مفاتيح غير مكشوفة.",
+            ui_action="settings",
+            settings_group="broker_testnet",
+            integration_id="broker_testnet",
         )
     return actions
 

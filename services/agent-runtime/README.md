@@ -120,9 +120,11 @@ agent mesh audit:
 ```
 
 When that task completes, the result panel renders the audit's `next_actions`
-as `تشغيل المتابعة` buttons. Each button queues a new normal task with the
-suggested prompt, so follow-up work still flows through the same risk classifier,
-approval gate, progress log, and receipt ledger.
+as executable follow-up buttons. Setup actions can open the matching local
+settings sheet, OAuth actions can open the local authorization route, and task
+actions queue a new normal task with the suggested prompt. Execution follow-ups
+still flow through the same risk classifier, approval gate, progress log, and
+receipt ledger.
 
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,

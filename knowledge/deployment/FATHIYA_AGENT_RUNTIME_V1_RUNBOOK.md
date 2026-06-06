@@ -85,9 +85,10 @@ within the configured watch interval and completes with a receipt.
     `agent_mesh_audit`, reports tool, capability, connector, Zapier, n8n, Kali,
     model, and paper-trading readiness in one receipt-safe result, and lists the
     next executable prompts.
-13. From the completed mesh-audit result, press `تشغيل المتابعة` on one
-    `next_actions` item. Confirm a new normal task is queued, selected, executed
-    through the worker, and recorded with its own receipt.
+13. From the completed mesh-audit result, use one `next_actions` item. Confirm
+    setup actions open the matching local settings sheet, OAuth actions open the
+    local authorization route, and task actions queue a normal task that is
+    selected, executed through the worker, and recorded with its own receipt.
 14. Submit a read-only exact action such as:
    `Zapier action: GitHub / Find Repository`
    with repository parameters. Confirm it completes automatically and the
