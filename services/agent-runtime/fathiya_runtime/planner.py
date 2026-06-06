@@ -9,7 +9,13 @@ from .retrieval import RetrievedSource
 
 
 FAST_CONTROL_TOOLS = frozenset(
-    {"trading_status", "trading_start", "trading_stop", "trading_tick"}
+    {
+        "trading_status",
+        "trading_start",
+        "trading_stop",
+        "trading_tick",
+        "trading_strategy_refresh",
+    }
 )
 DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
     "agent_mesh_audit",
@@ -241,7 +247,7 @@ def fast_control_steps(
         for item in tool_catalog
         if bool(item.get("configured", True))
     }
-    step = _trading_control_step(prompt)
+    step = _trading_strategy_refresh_step(prompt) or _trading_control_step(prompt)
     return [step] if step and step["tool"] in available else []
 
 
@@ -638,13 +644,21 @@ def _fallback_steps(
         for term in ("security", "أمن", "اختراق", "ثغرات", "فحص أمني")
     ):
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})
-    trading_control = _trading_control_step(prompt)
-    if trading_control:
+    strategy_refresh = _trading_strategy_refresh_step(prompt)
+    if strategy_refresh:
         add(
-            trading_control["tool"],
-            trading_control["description"],
-            trading_control["args"],
+            strategy_refresh["tool"],
+            strategy_refresh["description"],
+            strategy_refresh["args"],
         )
+    else:
+        trading_control = _trading_control_step(prompt)
+        if trading_control:
+            add(
+                trading_control["tool"],
+                trading_control["description"],
+                trading_control["args"],
+            )
     if any(
         term in safe_text
         for term in (
@@ -661,13 +675,6 @@ def _fallback_steps(
             "trading_testnet_status",
             "فحص جاهزية بوابة وسيط التداول التجريبي",
             {"probe": any(term in safe_text for term in ("probe", "افحص", "تحقق", "اختبر"))},
-        )
-    strategy_refresh = _trading_strategy_refresh_step(prompt)
-    if strategy_refresh:
-        add(
-            strategy_refresh["tool"],
-            strategy_refresh["description"],
-            strategy_refresh["args"],
         )
     agent_delegate = _agent_delegate_step(prompt)
     if agent_delegate:
@@ -824,6 +831,8 @@ def _trading_strategy_refresh_step(prompt: str) -> dict[str, Any] | None:
         "trading agent strategy",
         "مستشار التداول",
         "مستشار الاستراتيجية",
+        "مستشار استراتيجية",
+        "مستشار استراتيجيه",
         "استراتيجية وكيل التداول",
         "استراتيجيه وكيل التداول",
     )

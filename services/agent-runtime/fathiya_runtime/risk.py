@@ -51,12 +51,28 @@ READ_ONLY_AGENT_MESH_AUDIT = re.compile(
     re.IGNORECASE,
 )
 
+SAFE_TRADING_SIMULATION = re.compile(
+    r"(?:paper|simulate|simulation|simulated|backtest|sandbox|testnet|test\s+net|"
+    r"status|probe|readiness|strategy|advisor|forecast|prediction|quality|"
+    r"ورقي|محاكاة|محاكي|تجريبي|اختبار|حالة|جاهزية|افحص|تحقق|استراتيجية|"
+    r"استراتيجيه|مستشار|تنبؤ|توقع|جودة)",
+    re.IGNORECASE,
+)
+
+REAL_TRADING_INTENT = re.compile(
+    r"(?:real|live|actual|submit|market\s+order|حقيقي|فعلي|مباشر|إرسال\s+أمر|"
+    r"ارسل\s+أمر|نفذ\s+أمر|نفّذ\s+أمر|أمر\s+سوق)",
+    re.IGNORECASE,
+)
+
 
 def classify_risk(prompt: str) -> RiskDecision:
     prompt = operator_request(prompt)
     if READ_ONLY_AGENT_MESH_AUDIT.search(prompt):
         return RiskDecision(risk_class="internal_owned", requires_approval=False)
     prompt = NEGATED_RISK_ACTION.sub("", prompt)
+    if SAFE_TRADING_SIMULATION.search(prompt) and not REAL_TRADING_INTENT.search(prompt):
+        prompt = RISK_PATTERNS[1][1].sub("", prompt)
     for risk_class, pattern in RISK_PATTERNS:
         if pattern.search(prompt):
             return RiskDecision(risk_class=risk_class, requires_approval=True)

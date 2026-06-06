@@ -110,6 +110,19 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(task["status"], "awaiting_approval")
         self.assertEqual(classify_risk(task["prompt"]).risk_class, "financial")
 
+    def test_paper_and_testnet_trading_requests_do_not_wait_for_approval(self) -> None:
+        examples = [
+            "run a paper buy/sell strategy refresh and record the prediction quality",
+            "افحص جاهزية حساب التداول التجريبي testnet دون إرسال أمر حقيقي",
+            "حدّث مستشار استراتيجية التداول الورقي وتوقع الاتجاه القادم",
+        ]
+
+        for prompt in examples:
+            with self.subTest(prompt=prompt):
+                risk = classify_risk(prompt)
+                self.assertEqual(risk.risk_class, "internal_owned")
+                self.assertFalse(risk.requires_approval)
+
     def test_agent_mesh_audit_is_read_only_even_when_it_mentions_scanning(self) -> None:
         risk = classify_risk(
             "agent mesh audit:\n"
@@ -895,6 +908,26 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             [step["tool"] for step in refresh_plan if step.get("kind") == "tool"],
             ["trading_strategy_refresh"],
         )
+        advisory_prediction_plan = build_plan(
+            {
+                "prompt": (
+                    "حدّث مستشار استراتيجية وكيل التداول الورقي "
+                    "وتوقع الاتجاه القادم وسجل جودة التنبؤ"
+                )
+            },
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertEqual(
+            [
+                step["tool"]
+                for step in advisory_prediction_plan
+                if step.get("kind") == "tool"
+            ],
+            ["trading_strategy_refresh"],
+        )
 
     def test_trading_tools_share_one_paper_agent(self) -> None:
         executor = ToolExecutor(self.config)
@@ -1073,7 +1106,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertFalse(result["live_execution_enabled"])
         self.assertEqual(
             detail["task"]["result"]["model_trace"]["synthesis_provider"],
-            "local_deterministic_tool_summary",
+            "local_deterministic_fast_control",
         )
 
     def test_kali_inventory_uses_wsl_safe_explicit_commands(self) -> None:

@@ -587,6 +587,16 @@ function AgentTasksPage() {
     () => connectors.filter((connector) => connector.configured).length,
     [connectors],
   );
+  const automaticConnectorCount = useMemo(
+    () =>
+      connectors.filter((connector) => connector.configured && !connector.requires_approval)
+        .length,
+    [connectors],
+  );
+  const engineReadyCount = integrationSummary?.ready ?? 0;
+  const enginePartialCount = integrationSummary?.partial ?? 0;
+  const zapierActionCount = connectedInventory?.zapier_action_count ?? 0;
+  const zapierAppCount = connectedInventory?.zapier_app_count ?? 0;
   const zapierReadActions = useMemo(
     () => buildZapierReadActions(connectedInventory),
     [connectedInventory],
@@ -686,6 +696,74 @@ function AgentTasksPage() {
             </Alert>
           )}
 
+          {localMode && (
+            <section className="mb-4 border-y border-border/60 bg-muted/15 py-3">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                      محرك محلي
+                    </Badge>
+                    <Badge
+                      className={cn(
+                        intake?.running
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-border bg-muted/30 text-muted-foreground",
+                      )}
+                    >
+                      الاستيعاب {intake?.running ? "يعمل" : "متوقف"}
+                    </Badge>
+                    <Badge
+                      className={cn(
+                        trading?.running
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-border bg-muted/30 text-muted-foreground",
+                      )}
+                    >
+                      التداول {trading?.running ? "ينبض" : "متوقف"}
+                    </Badge>
+                    <Badge variant="outline">
+                      Zapier {zapierAppCount} تطبيق · {zapierActionCount} إجراء
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
+                    <InfoField label="مهام نشطة" value={String(activeCount)} />
+                    <InfoField
+                      label="بوابات جاهزة"
+                      value={`${engineReadyCount}+${enginePartialCount}`}
+                    />
+                    <InfoField
+                      label="موصلات تلقائية"
+                      value={`${automaticConnectorCount}/${connectors.length}`}
+                    />
+                    <InfoField
+                      label="نبض التداول"
+                      value={
+                        trading
+                          ? cadenceLatestLabel(trading.execution_cadence)
+                          : "--"
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <p className="font-semibold text-emerald-300">تلقائي الآن</p>
+                    <p className="mt-1 text-muted-foreground">
+                      التقارير، المستودع، n8n الجاهز، Paper/Testnet، ومستشار التداول.
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
+                    <p className="font-semibold text-amber-300">بوابة مخاطر فقط</p>
+                    <p className="mt-1 text-muted-foreground">
+                      أموال حقيقية، فحص حي خارجي، حذف، نشر، أو إرسال خارجي.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
             <div className="min-w-0 space-y-4">
               <Card className="border-border/60 bg-card/50">
@@ -694,7 +772,7 @@ function AgentTasksPage() {
                     <div className="min-w-0">
                       <CardTitle className="text-sm">مهمة جديدة</CardTitle>
                       <CardDescription>
-                        العمليات الداخلية تبدأ تلقائيًا. المال والفحص الحي والحذف والنشر تحتاج موافقة.
+                        التشغيل المحلي وPaper/Testnet والاستيعاب يبدأ تلقائيًا؛ بوابة المخاطر تظهر فقط عند الفعل العالي الأثر.
                       </CardDescription>
                     </div>
                     <Button
