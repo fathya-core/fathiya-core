@@ -106,6 +106,13 @@ const AGENT_MESH_AUDIT_PROMPT = [
   "نفذ الفحوصات الآمنة والمتاحة فقط، ثم سجل ما يعمل وما يحتاج ربطًا وما هي أوامر التشغيل التالية.",
 ].join("\n");
 
+type AgentMeshNextAction = {
+  id: string;
+  title: string;
+  prompt: string;
+  reason: string;
+};
+
 function AgentTasksPage() {
   const localMode = isLocalAgentRuntime;
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -136,6 +143,7 @@ function AgentTasksPage() {
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
   const [startingMeshAudit, setStartingMeshAudit] = useState(false);
+  const [startingFollowUpPrompt, setStartingFollowUpPrompt] = useState<string | null>(null);
   const [tradingActing, setTradingActing] = useState(false);
   const [intakeActing, setIntakeActing] = useState(false);
   const [error, setError] = useState("");
@@ -365,6 +373,28 @@ function AgentTasksPage() {
       setError(String(taskError));
     } finally {
       setStartingMeshAudit(false);
+    }
+  }
+
+  async function startFollowUpTask(action: AgentMeshNextAction) {
+    if (!hasAccess || !action.prompt.trim()) return;
+    setStartingFollowUpPrompt(action.prompt);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: action.title || "متابعة تنفيذية",
+        prompt: action.prompt,
+      };
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingFollowUpPrompt(null);
     }
   }
 
@@ -1126,8 +1156,10 @@ function AgentTasksPage() {
             <TaskDetail
               detail={detail}
               acting={acting}
+              startingFollowUpPrompt={startingFollowUpPrompt}
               onApprove={() => void taskAction("approve")}
               onCancel={() => void taskAction("cancel")}
+              onStartFollowUp={(action) => void startFollowUpTask(action)}
             />
           </div>
         </main>
@@ -1361,13 +1393,17 @@ function IntegrationSettingsSheet({
 function TaskDetail({
   detail,
   acting,
+  startingFollowUpPrompt,
   onApprove,
   onCancel,
+  onStartFollowUp,
 }: {
   detail: AgentTaskDetail | null;
   acting: boolean;
+  startingFollowUpPrompt: string | null;
   onApprove: () => void;
   onCancel: () => void;
+  onStartFollowUp: (action: AgentMeshNextAction) => void;
 }) {
   if (!detail) {
     return (
@@ -1505,7 +1541,11 @@ function TaskDetail({
                 {task.result !== null && (
                   <div>
                     <p className="mb-2 text-xs font-semibold">النتيجة النهائية</p>
-                    <TaskResultSummary value={task.result} />
+                    <TaskResultSummary
+                      value={task.result}
+                      startingFollowUpPrompt={startingFollowUpPrompt}
+                      onStartFollowUp={onStartFollowUp}
+                    />
                     <TechnicalDetails label="النتيجة التقنية الكاملة" value={task.result} />
                   </div>
                 )}
@@ -1680,12 +1720,21 @@ function ReceiptEvidenceSummary({ evidence }: { evidence: unknown }) {
   );
 }
 
-function TaskResultSummary({ value }: { value: unknown }) {
+function TaskResultSummary({
+  value,
+  startingFollowUpPrompt,
+  onStartFollowUp,
+}: {
+  value: unknown;
+  startingFollowUpPrompt: string | null;
+  onStartFollowUp: (action: AgentMeshNextAction) => void;
+}) {
   const result = asRecord(value);
   if (!result) {
     return <p className="text-xs text-muted-foreground">النتيجة غير قابلة للعرض المختصر.</p>;
   }
 
+  const nextActions = extractAgentMeshNextActions(result);
   const synthesis = typeof result.synthesis === "string" ? result.synthesis : null;
   const evaluation = asRecord(result.evaluation);
   const evaluationPassed = typeof evaluation?.passed === "boolean" ? evaluation.passed : null;
@@ -1729,6 +1778,54 @@ function TaskResultSummary({ value }: { value: unknown }) {
   return (
     <div className="space-y-3">
       {synthesis && <p className="whitespace-pre-wrap break-words text-xs">{synthesis}</p>}
+      {nextActions.length > 0 && (
+        <div className="rounded-md border border-sky-500/20 bg-sky-500/5 p-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold">متابعات قابلة للتنفيذ</span>
+            <Badge variant="outline" className="text-[9px] font-normal">
+              {nextActions.length} أوامر
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            {nextActions.map((action) => (
+              <div
+                key={`${action.id}-${action.prompt}`}
+                className="rounded-md border border-border/50 bg-background/35 p-2"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-[11px] font-semibold">{action.title}</p>
+                    <p className="mt-1 break-words text-[10px] text-muted-foreground">
+                      {action.reason}
+                    </p>
+                    <p
+                      dir="ltr"
+                      className="mt-1 break-all text-left font-mono text-[9px] text-muted-foreground"
+                    >
+                      {action.prompt}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 shrink-0 text-[10px]"
+                    onClick={() => onStartFollowUp(action)}
+                    disabled={startingFollowUpPrompt === action.prompt}
+                  >
+                    {startingFollowUpPrompt === action.prompt ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Play />
+                    )}
+                    تشغيل المتابعة
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {(evaluationSummary || sourceCount > 0) && (
         <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
           {evaluationPassed !== null && (
@@ -1854,6 +1951,34 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function extractAgentMeshNextActions(result: Record<string, unknown>): AgentMeshNextAction[] {
+  const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+  const actions: AgentMeshNextAction[] = [];
+  const seen = new Set<string>();
+  for (const item of toolResults) {
+    const row = asRecord(item);
+    const toolResult = asRecord(row?.result);
+    if (toolResult?.tool !== "agent_mesh_audit") continue;
+    const rawActions = Array.isArray(toolResult.next_actions) ? toolResult.next_actions : [];
+    for (const rawAction of rawActions) {
+      const action = asRecord(rawAction);
+      const id = typeof action?.id === "string" ? action.id.trim() : "";
+      const title = typeof action?.title === "string" ? action.title.trim() : "";
+      const prompt = typeof action?.prompt === "string" ? action.prompt.trim() : "";
+      const reason = typeof action?.reason === "string" ? action.reason.trim() : "";
+      if (!id || !title || !prompt || seen.has(prompt)) continue;
+      seen.add(prompt);
+      actions.push({
+        id,
+        title,
+        prompt,
+        reason: reason || "تشغيل المتابعة عبر نفس مشغّل المهام والإيصالات.",
+      });
+    }
+  }
+  return actions.slice(0, 8);
 }
 
 function JsonBlock({ value }: { value: unknown }) {
