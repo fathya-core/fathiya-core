@@ -113,7 +113,9 @@ within the configured watch interval and completes with a receipt.
     keys locally, validate an order through `/api/v3/order/test` before enabling
     `FATHIYA_TRADING_TESTNET_EXECUTION_ENABLED`.
 22. Restart the local control plane and confirm the primary paper-trading agent
-    resumes automatically when `FATHIYA_TRADING_AUTOSTART=true`.
+    resumes automatically when `FATHIYA_TRADING_AUTOSTART=true`. Confirm the
+    website trading card shows the latest cycle receipts with action, price,
+    latency, risk reason, and receipt id.
 23. Place a new report in the continuous knowledge inbox. Confirm the watcher
     queues it once, the worker persists it before planning, and an unchanged
     report is not duplicated after restart.

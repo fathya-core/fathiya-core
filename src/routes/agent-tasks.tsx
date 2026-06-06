@@ -65,6 +65,7 @@ import type {
   AgentKnowledgeIntakeStatus,
   AgentLocalSettingsGroup,
   AgentLocalSettingsResponse,
+  AgentTradingCycle,
   AgentTask,
   AgentTaskDetail,
   AgentTaskStatus,
@@ -136,6 +137,7 @@ function AgentTasksPage() {
   const [probingIntegration, setProbingIntegration] = useState<string | null>(null);
   const [startingIntegrationTask, setStartingIntegrationTask] = useState<string | null>(null);
   const [trading, setTrading] = useState<AgentTradingStatus | null>(null);
+  const [tradingReceipts, setTradingReceipts] = useState<AgentTradingCycle[]>([]);
   const [intake, setIntake] = useState<AgentKnowledgeIntakeStatus | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AgentTaskDetail | null>(null);
@@ -226,11 +228,12 @@ function AgentTasksPage() {
   const loadTrading = useCallback(async () => {
     if (!localMode) return;
     try {
-      const data = await agentApi<{ trading: AgentTradingStatus }>(
-        null,
-        "/api/agent/trading/status",
-      );
-      setTrading(data.trading);
+      const [statusData, receiptsData] = await Promise.all([
+        agentApi<{ trading: AgentTradingStatus }>(null, "/api/agent/trading/status"),
+        agentApi<{ receipts: AgentTradingCycle[] }>(null, "/api/agent/trading/receipts"),
+      ]);
+      setTrading(statusData.trading);
+      setTradingReceipts(receiptsData.receipts.slice(0, 5));
     } catch (loadError) {
       setError(String(loadError));
     }
@@ -887,6 +890,55 @@ function AgentTasksPage() {
                           ? `${trading.latest_cycle.prediction.action} · ${trading.latest_cycle.risk.reason}`
                           : "لم تبدأ دورة التنبؤ بعد."}
                       </p>
+                    </div>
+                    <div className="rounded-md border border-border/50 bg-background/30">
+                      <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
+                        <span className="text-[10px] font-semibold">آخر نبضات التنفيذ</span>
+                        <Badge variant="outline" className="font-mono text-[9px] font-normal">
+                          {trading.latest_receipt_id || "--"}
+                        </Badge>
+                      </div>
+                      <div className="divide-y divide-border/50">
+                        {tradingReceipts.length === 0 ? (
+                          <p className="px-3 py-3 text-[10px] text-muted-foreground">
+                            لم تُسجل إيصالات تداول بعد.
+                          </p>
+                        ) : (
+                          tradingReceipts.map((cycle) => (
+                            <div key={cycle.receipt_id} className="px-3 py-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-mono text-[9px] text-muted-foreground">
+                                    {formatDate(cycle.created_at)}
+                                  </p>
+                                  <p className="mt-0.5 break-words text-[10px] font-semibold">
+                                    {tradingActionLabel(cycle.prediction.action)} ·{" "}
+                                    {formatPercent(cycle.prediction.confidence)} ·{" "}
+                                    {formatNumber(cycle.tick.price)}
+                                  </p>
+                                </div>
+                                <Badge
+                                  className={cn(
+                                    "shrink-0 text-[9px] font-normal",
+                                    cycle.status === "executed"
+                                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                      : "border-border bg-muted/30 text-muted-foreground",
+                                  )}
+                                >
+                                  {cycle.status === "executed" ? "Paper" : "رصد"}
+                                </Badge>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-[9px] text-muted-foreground">
+                                <span>{cycle.risk.reason}</span>
+                                <span>{cycle.latency_ms.toFixed(2)} ms</span>
+                                <span dir="ltr" className="break-all font-mono">
+                                  {cycle.receipt_id}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -2108,4 +2160,13 @@ function advisoryLabel(advisory: AgentTradingStatus["strategy_advisory"]) {
   if (!advisory) return "--";
   const state = advisory.active ? "نشطة" : "منتهية";
   return `${advisory.action} · ${formatPercent(advisory.confidence)} · ${state}`;
+}
+
+function tradingActionLabel(action: AgentTradingCycle["prediction"]["action"]) {
+  const labels: Record<AgentTradingCycle["prediction"]["action"], string> = {
+    buy: "شراء",
+    sell: "بيع",
+    hold: "انتظار",
+  };
+  return labels[action];
 }

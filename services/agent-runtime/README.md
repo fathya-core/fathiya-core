@@ -296,7 +296,10 @@ control it. Example local website requests:
 The local control plane shares one trading-agent instance between the direct
 trading API and the task worker. A task-started loop therefore appears
 immediately in the website trading card and can be stopped through either
-surface. Explicit status, start, stop, and single-tick requests use a
+surface. The website trading card also renders the latest cycle receipts so the
+operator can audit the per-second prediction, risk decision, paper fill state,
+latency, and receipt id without opening technical JSON. Explicit status, start,
+stop, and single-tick requests use a
 deterministic fast-control path: they bypass knowledge retrieval and model
 generation, while broader trading research requests continue through the full
 knowledge and model pipeline.
