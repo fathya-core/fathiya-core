@@ -74,6 +74,7 @@ class ToolExecutor:
             "tool_catalog": self._tool_catalog,
             "local_capability_inventory": self._local_capability_inventory,
             "agent_mesh_audit": self._agent_mesh_audit,
+            "agent_mesh_execute": self._agent_mesh_execute,
             "agent_delegate": self._agent_delegate,
             "internal_echo": self._internal_echo,
             "repo_status": self._repo_status,
@@ -120,6 +121,13 @@ class ToolExecutor:
                     "Run a secret-safe execution-mesh audit across local agents, models, connectors, Zapier MCP inventory, n8n, Kali, and the primary trading agent.",
                     "runtime",
                     inputs=("refresh",),
+                ),
+                ToolSpec(
+                    "agent_mesh_execute",
+                    "Execute the safe local agent mesh now: inventory, connector readiness, paper-trading advisor refresh, n8n/Kali probes, and receipt-safe evidence without external writes.",
+                    "runtime",
+                    read_only=False,
+                    inputs=("refresh", "max_steps"),
                 ),
                 ToolSpec(
                     "integration_probe",
@@ -1050,6 +1058,185 @@ class ToolExecutor:
                 "zapier action: <app>/<action> params:{...}",
                 "فوّض إلى Manus خطة تنفيذ هذا الهدف بعد الموافقة",
             ],
+        }
+
+    def _agent_mesh_execute(
+        self,
+        prompt: str,
+        args: dict[str, Any],
+        context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        refresh = bool(args.get("refresh", True))
+        max_steps = _bounded_int(args.get("max_steps", 10), default=10, minimum=3, maximum=16)
+        captured_at = datetime.now(UTC).isoformat()
+        safe_executions: list[dict[str, Any]] = []
+        skipped_high_risk: list[dict[str, Any]] = []
+
+        def run_safe(
+            tool: str,
+            description: str,
+            tool_args: dict[str, Any] | None = None,
+        ) -> dict[str, Any] | None:
+            if len(safe_executions) >= max_steps:
+                return None
+            safe_args = tool_args or {}
+            requirement = self.approval_requirement(tool, safe_args)
+            if requirement.required:
+                skipped_high_risk.append(
+                    {
+                        "tool": tool,
+                        "description": description,
+                        "risk_class": requirement.risk_class,
+                        "reason": requirement.reason,
+                    }
+                )
+                return None
+            try:
+                result = self.execute(tool, description, safe_args, context)
+            except ToolExecutionError as exc:
+                result = exc.result
+            except Exception as exc:
+                result = {
+                    "tool": tool,
+                    "available": False,
+                    "executed": False,
+                    "execution_failed": True,
+                    "error": f"{type(exc).__name__}: safe mesh step failed",
+                }
+            safe_executions.append(
+                {
+                    "tool": tool,
+                    "description": description,
+                    "args": {
+                        key: value
+                        for key, value in safe_args.items()
+                        if key not in {"payload", "params", "token", "api_key", "secret"}
+                    },
+                    "result": _agent_mesh_step_evidence(result),
+                }
+            )
+            return result
+
+        capabilities = run_safe(
+            "local_capability_inventory",
+            "فحص شبكة التنفيذ المحلية والنماذج والبوابات الجاهزة",
+            {"refresh": refresh},
+        )
+        connected_inventory = run_safe(
+            "connected_tool_inventory",
+            "قراءة موصلات Zapier MCP ووكلاء الحساب المتاحين",
+        )
+        connector_catalog_result = run_safe(
+            "connector_catalog",
+            "قراءة كتالوج الموصلات المعرّفة في المستودع",
+        )
+        run_safe("kali_tool_inventory", "قراءة أدوات Kali WSL الدفاعية المتاحة")
+        run_safe("trading_status", "قراءة حالة وكيل التداول Paper الأساسي")
+        run_safe(
+            "trading_strategy_refresh",
+            "تحديث مستشار استراتيجية وكيل التداول Paper بمهلة قصيرة",
+            {"model_timeout_seconds": 3.0},
+        )
+        run_safe(
+            "trading_testnet_status",
+            "قراءة جاهزية وسيط التداول التجريبي دون إرسال أمر",
+            {"probe": False},
+        )
+
+        connectors = (
+            connector_catalog_result.get("profiles")
+            if isinstance(connector_catalog_result, dict)
+            and isinstance(connector_catalog_result.get("profiles"), list)
+            else self.connector_catalog()
+        )
+        for connector in connectors:
+            if not isinstance(connector, dict):
+                continue
+            if len(safe_executions) >= max_steps:
+                break
+            profile = str(connector.get("name") or "").strip()
+            if not profile:
+                continue
+            if connector.get("requires_approval") or not connector.get("read_only", True):
+                skipped_high_risk.append(
+                    {
+                        "tool": "connector_profile",
+                        "description": f"تخطي موصل {profile}",
+                        "risk_class": connector.get("risk_class", "external"),
+                        "reason": "connector profile is write/external or requires approval",
+                        "configured": bool(connector.get("configured")),
+                        "profile": profile,
+                    }
+                )
+                continue
+            if not connector.get("configured"):
+                continue
+            run_safe(
+                "connector_profile",
+                f"تنفيذ موصل القراءة الآمن {profile}",
+                {"profile": profile},
+            )
+
+        failed_steps = [
+            step
+            for step in safe_executions
+            if isinstance(step.get("result"), dict)
+            and step["result"].get("execution_failed")
+        ]
+        ready_count = (
+            int(capabilities.get("ready_count") or 0)
+            if isinstance(capabilities, dict)
+            else None
+        )
+        zapier_app_count = (
+            int(connected_inventory.get("zapier_app_count") or 0)
+            if isinstance(connected_inventory, dict)
+            else None
+        )
+        zapier_action_count = (
+            int(connected_inventory.get("zapier_action_count") or 0)
+            if isinstance(connected_inventory, dict)
+            else None
+        )
+        next_actions = _agent_mesh_next_actions(
+            integration_probes={},
+            connectors=self.connector_catalog(),
+            zapier_direct={},
+            n8n_workflows={},
+            kali={},
+        )
+        return {
+            "available": True,
+            "executed": True,
+            "secret_safe": True,
+            "action": "agent_mesh_execute",
+            "captured_at": captured_at,
+            "summary": {
+                "safe_execution_count": len(safe_executions),
+                "failed_step_count": len(failed_steps),
+                "skipped_high_risk_count": len(skipped_high_risk),
+                "ready_capability_count": ready_count,
+                "zapier_app_count": zapier_app_count,
+                "zapier_action_count": zapier_action_count,
+                "paper_trading_advisor_refreshed": any(
+                    step.get("tool") == "trading_strategy_refresh"
+                    and isinstance(step.get("result"), dict)
+                    and step["result"].get("executed")
+                    for step in safe_executions
+                ),
+            },
+            "execution_policy": {
+                "mode": "safe_execute",
+                "automatic_internal_execution": True,
+                "approval_gated_steps_skipped": True,
+                "external_writes_require_approval": True,
+                "live_trading_requires_explicit_testnet_enablement": True,
+                "live_security_testing_requires_approval": True,
+            },
+            "safe_executions": safe_executions,
+            "skipped_high_risk": skipped_high_risk,
+            "next_actions": next_actions,
+            "operator_prompt": prompt[:1000],
         }
 
     def _probe_cli(
@@ -2269,6 +2456,20 @@ def _bounded_float(
     return max(minimum, min(maximum, parsed))
 
 
+def _bounded_int(
+    value: Any,
+    *,
+    default: int,
+    minimum: int,
+    maximum: int,
+) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        parsed = default
+    return max(minimum, min(maximum, parsed))
+
+
 def _complete_model_with_timeout(
     model: ModelClient,
     system_prompt: str,
@@ -2483,6 +2684,111 @@ def _connector_result_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "execution_failed",
             "status_code",
             "error",
+        )
+        if key in result
+    }
+
+
+def _agent_mesh_step_evidence(result: dict[str, Any]) -> dict[str, Any]:
+    tool = str(result.get("tool") or "")
+    if tool in {"connector_profile", "n8n_status", "n8n_workflows"}:
+        return _connector_result_evidence(result)
+    if tool == "local_capability_inventory":
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "ready_count": result.get("ready_count"),
+            "partial_count": result.get("partial_count"),
+            "capability_count": result.get("capability_count"),
+            "cached": result.get("cached"),
+        }
+    if tool == "connected_tool_inventory":
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "zapier_app_count": result.get("zapier_app_count"),
+            "zapier_action_count": result.get("zapier_action_count"),
+            "agent_provider_actions": result.get("agent_provider_actions"),
+        }
+    if tool == "connector_catalog":
+        connectors = (
+            result.get("profiles")
+            if isinstance(result.get("profiles"), list)
+            else result
+            if isinstance(result, list)
+            else []
+        )
+        return {
+            "available": True,
+            "executed": True,
+            "profile_count": len(connectors),
+            "configured_count": sum(
+                1 for connector in connectors if connector.get("configured")
+            ),
+            "read_only_configured": [
+                connector.get("name")
+                for connector in connectors
+                if connector.get("configured")
+                and connector.get("read_only", True)
+                and not connector.get("requires_approval")
+            ],
+        }
+    if tool == "kali_tool_inventory":
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "status": result.get("status"),
+            "distro": result.get("distro"),
+            "found_commands": result.get("found_commands", []),
+            "missing_commands": result.get("missing_commands", []),
+            "error": result.get("error"),
+        }
+    if tool == "trading_status":
+        trading = result.get("trading") if isinstance(result.get("trading"), dict) else {}
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "running": trading.get("running"),
+            "symbol": trading.get("symbol"),
+            "mode": trading.get("mode"),
+            "latest_receipt_id": trading.get("latest_receipt_id"),
+            "execution_cadence": trading.get("execution_cadence"),
+        }
+    if tool == "trading_strategy_refresh":
+        advisory = result.get("advisory") if isinstance(result.get("advisory"), dict) else {}
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed"),
+            "model_provider": result.get("model_provider"),
+            "fallback": result.get("fallback"),
+            "error_type": result.get("error_type"),
+            "advisory": {
+                "action": advisory.get("action"),
+                "confidence": advisory.get("confidence"),
+                "provider": advisory.get("provider"),
+            },
+            "live_execution_enabled": result.get("live_execution_enabled"),
+        }
+    if tool == "trading_testnet_status":
+        testnet = result.get("testnet") if isinstance(result.get("testnet"), dict) else {}
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "action": result.get("action"),
+            "configured": testnet.get("configured"),
+            "execution_enabled": testnet.get("execution_enabled"),
+            "real_funds_possible": testnet.get("real_funds_possible"),
+        }
+    return {
+        key: result.get(key)
+        for key in (
+            "available",
+            "executed",
+            "execution_failed",
+            "status",
+            "status_code",
+            "error",
+            "action",
         )
         if key in result
     }

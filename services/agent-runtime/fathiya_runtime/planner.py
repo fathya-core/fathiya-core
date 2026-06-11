@@ -19,6 +19,7 @@ FAST_CONTROL_TOOLS = frozenset(
 )
 DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
     "agent_mesh_audit",
+    "agent_mesh_execute",
     "trading_strategy_refresh",
 }
 
@@ -41,10 +42,16 @@ def build_plan(
     *,
     max_tool_steps: int = 6,
 ) -> list[dict[str, Any]]:
-    direct_mesh_step = _agent_mesh_audit_step(task["prompt"])
+    direct_mesh_step = _agent_mesh_execute_step(task["prompt"]) or _agent_mesh_audit_step(
+        task["prompt"]
+    )
     if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
         tool_steps = [direct_mesh_step]
-        planner_mode = "local_agent_mesh_audit"
+        planner_mode = (
+            "local_agent_mesh_execute"
+            if direct_mesh_step["tool"] == "agent_mesh_execute"
+            else "local_agent_mesh_audit"
+        )
         planner_error = None
     else:
         tool_steps = fast_control_steps(task["prompt"], tool_catalog)
@@ -546,12 +553,12 @@ def _fallback_steps(
         if tool in available and not any(step["tool"] == tool for step in steps):
             steps.append({"tool": tool, "description": description, "args": args or {}})
 
-    agent_mesh_audit = _agent_mesh_audit_step(prompt)
-    if agent_mesh_audit:
+    agent_mesh = _agent_mesh_execute_step(prompt) or _agent_mesh_audit_step(prompt)
+    if agent_mesh:
         add(
-            agent_mesh_audit["tool"],
-            agent_mesh_audit["description"],
-            agent_mesh_audit["args"],
+            agent_mesh["tool"],
+            agent_mesh["description"],
+            agent_mesh["args"],
         )
         return steps[:max_tool_steps]
 
@@ -893,6 +900,50 @@ def _agent_mesh_audit_step(prompt: str) -> dict[str, Any] | None:
         "tool": "agent_mesh_audit",
         "description": "تشغيل مسح تنفيذي شامل لشبكة الوكلاء والأدوات",
         "args": {"refresh": True},
+    }
+
+
+def _agent_mesh_execute_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    explicit = re.search(
+        r"(?:agent\s+mesh\s+execute|safe\s+mesh\s+execute|تشغيل\s+شبكة\s+الوكلاء)\s*:",
+        prompt,
+        re.IGNORECASE,
+    )
+    audit_terms = (
+        "agent mesh audit",
+        "read only",
+        "read-only",
+        "audit only",
+        "inventory only",
+        "مسح فقط",
+        "قراءة فقط",
+        "دون تنفيذ",
+    )
+    execute_terms = (
+        "agent mesh execute",
+        "safe mesh execute",
+        "run agent mesh",
+        "execute agent mesh",
+        "تشغيل شبكة الوكلاء",
+        "شغّل شبكة الوكلاء",
+        "شغل شبكة الوكلاء",
+        "نفّذ شبكة الوكلاء",
+        "نفذ شبكة الوكلاء",
+        "تشغيل المحرك",
+        "شغّل المحرك",
+        "شغل المحرك",
+        "شغل محرك",
+        "شغّل محرك",
+    )
+    if not explicit and not any(term in text for term in execute_terms):
+        return None
+    if any(term in text for term in audit_terms):
+        return None
+    return {
+        "tool": "agent_mesh_execute",
+        "description": "تشغيل شبكة الوكلاء الآمنة وتنفيذ الأدوات الداخلية الجاهزة",
+        "args": {"refresh": True, "max_steps": 12},
     }
 
 

@@ -132,6 +132,15 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(risk.risk_class, "internal_owned")
         self.assertFalse(risk.requires_approval)
 
+    def test_agent_mesh_execute_is_safe_internal_execution(self) -> None:
+        risk = classify_risk(
+            "agent mesh execute:\n"
+            "تشغيل شبكة الوكلاء الآمنة ووكيل التداول الورقي دون أموال حقيقية أو إرسال خارجي."
+        )
+
+        self.assertEqual(risk.risk_class, "internal_owned")
+        self.assertFalse(risk.requires_approval)
+
     def test_negated_external_action_does_not_require_approval(self) -> None:
         risk = classify_risk(
             "افحص جاهزية حساب التداول التجريبي وسجل النتيجة دون إرسال أي أمر"
@@ -928,6 +937,28 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             ],
             ["trading_strategy_refresh"],
         )
+        mesh_execute_plan = build_plan(
+            {"prompt": "تشغيل شبكة الوكلاء الآمنة الآن"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertEqual(
+            [step["tool"] for step in mesh_execute_plan if step.get("kind") == "tool"],
+            ["agent_mesh_execute"],
+        )
+        mesh_audit_plan = build_plan(
+            {"prompt": "agent mesh audit:\nاستكشف فقط"},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertEqual(
+            [step["tool"] for step in mesh_audit_plan if step.get("kind") == "tool"],
+            ["agent_mesh_audit"],
+        )
 
     def test_trading_tools_share_one_paper_agent(self) -> None:
         executor = ToolExecutor(self.config)
@@ -1198,6 +1229,54 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(result["profile"], "n8n_health")
         self.assertEqual(request.call_args.args[0], "GET")
         self.assertEqual(request.call_args.args[1], "http://127.0.0.1:5678/healthz")
+
+    def test_agent_mesh_execute_runs_safe_tools_and_skips_gated_connectors(self) -> None:
+        executor = ToolExecutor(self.config)
+        trading = Mock()
+        trading.status.return_value = {
+            "running": True,
+            "symbol": "TEST-USD",
+            "mode": "paper",
+            "current_market_source": "synthetic",
+            "latest_cycle": None,
+            "latest_receipt_id": "TR-test",
+            "portfolio": {},
+            "prediction_quality": {},
+            "risk_limits": {},
+            "strategy_advisory_policy": {"mode": "veto_only"},
+            "live_execution_enabled": False,
+            "execution_cadence": {"latest_interval_seconds": 1.0},
+        }
+        trading.update_advisory.return_value = {
+            "active": True,
+            "action": "hold",
+            "confidence": 0.0,
+            "provider": "deterministic_fallback",
+        }
+        response = Mock(ok=True, status_code=200, text='{"status":"ok"}')
+
+        with (
+            patch.object(executor, "_trading_agent", return_value=trading),
+            patch("fathiya_runtime.tools.requests.request", return_value=response),
+        ):
+            result = executor.execute(
+                "agent_mesh_execute",
+                "تشغيل شبكة الوكلاء الآمنة الآن",
+                {"max_steps": 12},
+            )
+
+        tools = [step["tool"] for step in result["safe_executions"]]
+        self.assertIn("local_capability_inventory", tools)
+        self.assertIn("connected_tool_inventory", tools)
+        self.assertIn("trading_strategy_refresh", tools)
+        self.assertIn("connector_profile", tools)
+        self.assertGreaterEqual(result["summary"]["safe_execution_count"], 5)
+        self.assertTrue(result["summary"]["paper_trading_advisor_refreshed"])
+        self.assertIn(
+            "zapier_fathiya_webhook",
+            {step.get("profile") for step in result["skipped_high_risk"]},
+        )
+        self.assertTrue(result["secret_safe"])
 
     def test_connector_network_error_does_not_leak_webhook_url(self) -> None:
         previous = os.environ.get("FATHIYA_ZAPIER_WEBHOOK_URL")
@@ -1766,6 +1845,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         self.assertIn("knowledge_ingest_url", by_name)
         self.assertIn("local_capability_inventory", by_name)
+        self.assertIn("agent_mesh_execute", by_name)
         self.assertIn("agent_delegate", by_name)
         self.assertIn("trading_testnet_status", by_name)
         self.assertIn("trading_testnet_order", by_name)

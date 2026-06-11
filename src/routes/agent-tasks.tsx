@@ -103,10 +103,10 @@ const STATUS_LABELS: Record<AgentTaskStatus, string> = {
   canceled: "ملغاة",
 };
 
-const AGENT_MESH_AUDIT_PROMPT = [
-  "agent mesh audit:",
-  "استكشف شبكة وكلاء فتحية كاملة: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، جسور Cursor وManus، ووكيل التداول الأساسي.",
-  "نفذ الفحوصات الآمنة والمتاحة فقط، ثم سجل ما يعمل وما يحتاج ربطًا وما هي أوامر التشغيل التالية.",
+const AGENT_MESH_EXECUTE_PROMPT = [
+  "agent mesh execute:",
+  "شغّل شبكة وكلاء فتحية الآمنة: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، جسور Cursor وManus، ووكيل التداول الأساسي.",
+  "نفّذ فقط الأدوات الداخلية أو القراءة أو Paper/Testnet التي لا تحتاج موافقة، ثم سجل ما عمل وما تخطّيته بسبب بوابة المخاطر.",
 ].join("\n");
 
 type AgentMeshNextAction = {
@@ -161,7 +161,7 @@ function AgentTasksPage() {
   const [reportContent, setReportContent] = useState("");
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
-  const [startingMeshAudit, setStartingMeshAudit] = useState(false);
+  const [startingMeshExecute, setStartingMeshExecute] = useState(false);
   const [startingFollowUpPrompt, setStartingFollowUpPrompt] = useState<string | null>(null);
   const [tradingActing, setTradingActing] = useState(false);
   const [intakeActing, setIntakeActing] = useState(false);
@@ -376,14 +376,14 @@ function AgentTasksPage() {
     }
   }
 
-  async function startAgentMeshAudit() {
+  async function startAgentMeshExecute() {
     if (!hasAccess) return;
-    setStartingMeshAudit(true);
+    setStartingMeshExecute(true);
     setError("");
     try {
       const body: CreateAgentTaskBody = {
-        title: "مسح شبكة الوكلاء",
-        prompt: AGENT_MESH_AUDIT_PROMPT,
+        title: "تشغيل شبكة الوكلاء",
+        prompt: AGENT_MESH_EXECUTE_PROMPT,
       };
       const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
         method: "POST",
@@ -394,7 +394,7 @@ function AgentTasksPage() {
     } catch (taskError) {
       setError(String(taskError));
     } finally {
-      setStartingMeshAudit(false);
+      setStartingMeshExecute(false);
     }
   }
 
@@ -780,10 +780,10 @@ function AgentTasksPage() {
                       size="sm"
                       variant="outline"
                       className="h-8 shrink-0 text-[10px]"
-                      onClick={() => void startAgentMeshAudit()}
-                      disabled={startingMeshAudit}
+                      onClick={() => void startAgentMeshExecute()}
+                      disabled={startingMeshExecute}
                     >
-                      {startingMeshAudit ? <Loader2 className="animate-spin" /> : <Play />}
+                      {startingMeshExecute ? <Loader2 className="animate-spin" /> : <Play />}
                       تشغيل شبكة الوكلاء
                     </Button>
                   </div>
@@ -2303,7 +2303,9 @@ function extractAgentMeshNextActions(result: Record<string, unknown>): AgentMesh
   for (const item of toolResults) {
     const row = asRecord(item);
     const toolResult = asRecord(row?.result);
-    if (toolResult?.tool !== "agent_mesh_audit") continue;
+    if (toolResult?.tool !== "agent_mesh_audit" && toolResult?.tool !== "agent_mesh_execute") {
+      continue;
+    }
     const rawActions = Array.isArray(toolResult.next_actions) ? toolResult.next_actions : [];
     for (const rawAction of rawActions) {
       const action = asRecord(rawAction);

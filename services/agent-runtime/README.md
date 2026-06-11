@@ -108,23 +108,26 @@ The integrations panel exposes a `تشغيل وكيل` action that queues a norm
 task such as `integration probe: zapier_mcp`; the worker then records progress
 and a receipt through the same task pipeline used by larger operator requests.
 
-`agent_mesh_audit` is the wide operator scan for the execution mesh. It runs as
-a normal read-only task and collects the local tool catalog, execution mesh,
-Zapier MCP inventory, direct OAuth state, n8n status, Kali WSL tools, model
-readiness, connector profiles, and the primary paper-trading agent snapshot into
-one receipt-safe result. The `/agent-tasks` page exposes this as `تشغيل شبكة
-الوكلاء`, which queues a task beginning with:
+`agent_mesh_audit` remains the wide read-only operator scan for the execution
+mesh. `agent_mesh_execute` is the safe execution surface behind the
+`/agent-tasks` button `تشغيل شبكة الوكلاء`: it runs the local capability
+inventory, connected Zapier inventory, connector catalog, Kali inventory, paper
+trading status, paper-trading advisor refresh, Testnet readiness, and configured
+read-only connector profiles into one receipt-safe result. Approval-gated
+external writes, live security actions, real money actions, and destructive
+actions are skipped and recorded in the result instead of being executed. The UI
+queues a task beginning with:
 
 ```text
-agent mesh audit:
+agent mesh execute:
 ```
 
-When that task completes, the result panel renders the audit's `next_actions`
-as executable follow-up buttons. Setup actions can open the matching local
-settings sheet, OAuth actions can open the local authorization route, and task
-actions queue a new normal task with the suggested prompt. Execution follow-ups
-still flow through the same risk classifier, approval gate, progress log, and
-receipt ledger.
+When that task completes, the result panel renders `next_actions` from either
+`agent_mesh_execute` or `agent_mesh_audit` as executable follow-up buttons. Setup
+actions can open the matching local settings sheet, OAuth actions can open the
+local authorization route, and task actions queue a new normal task with the
+suggested prompt. Execution follow-ups still flow through the same risk
+classifier, approval gate, progress log, and receipt ledger.
 
 `GET /api/agent/settings` returns only allowlisted field metadata and whether
 each field is configured. The local integrations panel can write OpenRouter,
