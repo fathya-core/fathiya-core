@@ -948,7 +948,7 @@ def _agent_mesh_execute_step(prompt: str) -> dict[str, Any] | None:
     return {
         "tool": "agent_mesh_execute",
         "description": "تشغيل شبكة الوكلاء الآمنة وتنفيذ الأدوات الداخلية الجاهزة",
-        "args": {"refresh": True, "max_steps": 12},
+        "args": {"refresh": True, "max_steps": 16},
     }
 
 

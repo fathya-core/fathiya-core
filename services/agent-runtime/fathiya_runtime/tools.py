@@ -1067,10 +1067,11 @@ class ToolExecutor:
         context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         refresh = bool(args.get("refresh", True))
-        max_steps = _bounded_int(args.get("max_steps", 10), default=10, minimum=3, maximum=16)
+        max_steps = _bounded_int(args.get("max_steps", 16), default=16, minimum=3, maximum=24)
         captured_at = datetime.now(UTC).isoformat()
         safe_executions: list[dict[str, Any]] = []
         skipped_high_risk: list[dict[str, Any]] = []
+        integration_probes: dict[str, dict[str, Any]] = {}
 
         def run_safe(
             tool: str,
@@ -1147,6 +1148,28 @@ class ToolExecutor:
             "قراءة جاهزية وسيط التداول التجريبي دون إرسال أمر",
             {"probe": False},
         )
+        for integration_id in (
+            "local_execution_mesh",
+            "huggingface_local",
+            "openrouter",
+            "supabase",
+            "n8n_local",
+            "zapier_mcp",
+            "broker_testnet",
+        ):
+            probe_result = run_safe(
+                "integration_probe",
+                f"فحص جاهزية تكامل {integration_id}",
+                {"integration_id": integration_id},
+            )
+            if isinstance(probe_result, dict):
+                integration_probes[integration_id] = {
+                    "ok": probe_result.get("ok"),
+                    "status": probe_result.get("status"),
+                    "summary": probe_result.get("summary"),
+                    "action": probe_result.get("action"),
+                    "secret_safe": True,
+                }
 
         connectors = (
             connector_catalog_result.get("profiles")
@@ -1157,8 +1180,6 @@ class ToolExecutor:
         for connector in connectors:
             if not isinstance(connector, dict):
                 continue
-            if len(safe_executions) >= max_steps:
-                break
             profile = str(connector.get("name") or "").strip()
             if not profile:
                 continue
@@ -1175,6 +1196,8 @@ class ToolExecutor:
                 )
                 continue
             if not connector.get("configured"):
+                continue
+            if len(safe_executions) >= max_steps:
                 continue
             run_safe(
                 "connector_profile",
@@ -1206,8 +1229,19 @@ class ToolExecutor:
         zapier_direct_connected = (
             bool(zapier_direct.get("connected")) if isinstance(zapier_direct, dict) else False
         )
+        ready_integrations = [
+            probe
+            for probe in integration_probes.values()
+            if isinstance(probe, dict) and probe.get("ok")
+        ]
+        partial_integrations = [
+            probe
+            for probe in integration_probes.values()
+            if isinstance(probe, dict)
+            and probe.get("status") in {"partial", "needs_setup", "needs_operator"}
+        ]
         next_actions = _agent_mesh_next_actions(
-            integration_probes={},
+            integration_probes=integration_probes,
             connectors=self.connector_catalog(),
             zapier_direct=zapier_direct if isinstance(zapier_direct, dict) else {},
             n8n_workflows={},
@@ -1236,6 +1270,9 @@ class ToolExecutor:
                 "zapier_direct_error": zapier_direct.get("error")
                 if isinstance(zapier_direct, dict)
                 else None,
+                "integration_probe_count": len(integration_probes),
+                "ready_integration_count": len(ready_integrations),
+                "partial_integration_count": len(partial_integrations),
                 "paper_trading_advisor_refreshed": any(
                     step.get("tool") == "trading_strategy_refresh"
                     and isinstance(step.get("result"), dict)
@@ -1253,6 +1290,7 @@ class ToolExecutor:
             },
             "safe_executions": safe_executions,
             "skipped_high_risk": skipped_high_risk,
+            "integration_probes": integration_probes,
             "next_actions": next_actions,
             "operator_prompt": prompt[:1000],
         }
@@ -2765,6 +2803,18 @@ def _agent_mesh_step_evidence(result: dict[str, Any]) -> dict[str, Any]:
                 and connector.get("read_only", True)
                 and not connector.get("requires_approval")
             ],
+        }
+    if tool == "integration_probe":
+        details = result.get("details") if isinstance(result.get("details"), dict) else {}
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "integration_id": result.get("integration_id"),
+            "ok": result.get("ok"),
+            "status": result.get("status"),
+            "summary": result.get("summary"),
+            "action": result.get("action"),
+            "details": details,
         }
     if tool == "kali_tool_inventory":
         return {

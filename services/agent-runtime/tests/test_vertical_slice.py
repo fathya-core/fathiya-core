@@ -1342,19 +1342,23 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             result = executor.execute(
                 "agent_mesh_execute",
                 "تشغيل شبكة الوكلاء الآمنة الآن",
-                {"max_steps": 12},
+                {"max_steps": 16},
             )
 
         tools = [step["tool"] for step in result["safe_executions"]]
         self.assertIn("local_capability_inventory", tools)
         self.assertIn("connected_tool_inventory", tools)
         self.assertIn("zapier_action_catalog", tools)
+        self.assertIn("integration_probe", tools)
         self.assertIn("trading_strategy_refresh", tools)
         self.assertIn("connector_profile", tools)
         self.assertGreaterEqual(result["summary"]["safe_execution_count"], 5)
         self.assertTrue(result["summary"]["zapier_direct_oauth_connected"])
         self.assertEqual(result["summary"]["zapier_direct_app_count"], 2)
         self.assertEqual(result["summary"]["zapier_direct_action_count"], 4)
+        self.assertEqual(result["summary"]["integration_probe_count"], 7)
+        self.assertIn("openrouter", result["integration_probes"])
+        self.assertIn("zapier_mcp", result["integration_probes"])
         self.assertTrue(result["summary"]["paper_trading_advisor_refreshed"])
         zapier_catalog.assert_called_once_with("", force=False)
         self.assertIn(
