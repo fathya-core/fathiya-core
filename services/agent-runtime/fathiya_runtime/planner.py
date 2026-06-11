@@ -4,6 +4,7 @@ import json
 import re
 from typing import Any
 
+from .knowledge_mission import operator_request
 from .models import ModelClient
 from .retrieval import RetrievedSource
 
@@ -42,8 +43,10 @@ def build_plan(
     *,
     max_tool_steps: int = 6,
 ) -> list[dict[str, Any]]:
-    direct_mesh_step = _agent_mesh_execute_step(task["prompt"]) or _agent_mesh_audit_step(
-        task["prompt"]
+    operator_prompt = operator_request(str(task["prompt"]))
+    planner_task = {**task, "prompt": operator_prompt}
+    direct_mesh_step = _agent_mesh_execute_step(operator_prompt) or _agent_mesh_audit_step(
+        operator_prompt
     )
     if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
         tool_steps = [direct_mesh_step]
@@ -54,13 +57,13 @@ def build_plan(
         )
         planner_error = None
     else:
-        tool_steps = fast_control_steps(task["prompt"], tool_catalog)
+        tool_steps = fast_control_steps(operator_prompt, tool_catalog)
         if tool_steps:
             planner_mode = "local_fast_control"
             planner_error = None
         else:
             tool_steps, planner_mode, planner_error = _model_steps(
-                task,
+                planner_task,
                 sources,
                 model,
                 tool_catalog,
@@ -68,7 +71,7 @@ def build_plan(
             )
             if not tool_steps:
                 tool_steps = _fallback_steps(
-                    task["prompt"],
+                    operator_prompt,
                     tool_catalog,
                     max_tool_steps,
                     source_guidance=sources if task.get("knowledge_mission") else [],
@@ -143,6 +146,7 @@ def build_follow_up_decision(
     max_tool_steps: int = 6,
 ) -> dict[str, Any]:
     planner_error: str | None = None
+    operator_prompt = operator_request(str(task["prompt"]))
     if model.available:
         try:
             plan_complete = getattr(model, "plan_complete", model.complete)
@@ -157,7 +161,7 @@ def build_follow_up_decision(
                 ),
                 json.dumps(
                     {
-                        "request": task["prompt"],
+                        "request": operator_prompt,
                         "round_completed": round_number,
                         "max_new_tool_steps": max_tool_steps,
                         "retrieved_sources": [
@@ -194,7 +198,7 @@ def build_follow_up_decision(
                 payload.get("steps", []),
                 tool_catalog,
                 max_tool_steps,
-                operator_prompt=task["prompt"],
+                operator_prompt=operator_prompt,
                 knowledge_mission=bool(task.get("knowledge_mission")),
             )
             steps = _without_seen_steps(steps, seen_signatures)
@@ -219,7 +223,7 @@ def build_follow_up_decision(
             planner_error = f"{type(exc).__name__}: {str(exc)[:500]}"
 
     steps = _deterministic_follow_up_steps(
-        task["prompt"],
+        operator_prompt,
         tool_results,
         seen_signatures,
         max_tool_steps,
@@ -228,7 +232,7 @@ def build_follow_up_decision(
         steps,
         tool_catalog,
         max_tool_steps,
-        operator_prompt=task["prompt"],
+        operator_prompt=operator_prompt,
         knowledge_mission=bool(task.get("knowledge_mission")),
     )
     steps = _without_seen_steps(steps, seen_signatures)
@@ -267,6 +271,7 @@ def _model_steps(
 ) -> tuple[list[dict[str, Any]], str, str | None]:
     if not model.available:
         return [], "local_fallback", None
+    operator_prompt = operator_request(str(task["prompt"]))
     compact_catalog = _compact_catalog(tool_catalog)
     source_map = [
         {"path": source.path, "excerpt": source.excerpt[:500], "score": source.score}
@@ -287,7 +292,7 @@ def _model_steps(
             ),
             json.dumps(
                 {
-                    "request": task["prompt"],
+                    "request": operator_prompt,
                     "max_tool_steps": max_tool_steps,
                     "retrieved_sources": source_map,
                     "tools": compact_catalog,
@@ -311,7 +316,7 @@ def _model_steps(
             requested,
             tool_catalog,
             max_tool_steps,
-            operator_prompt=task["prompt"],
+            operator_prompt=operator_prompt,
             knowledge_mission=bool(task.get("knowledge_mission")),
         )
         provider = getattr(model, "last_provider", "openrouter")
