@@ -1322,6 +1322,21 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         with (
             patch.object(executor, "_trading_agent", return_value=trading),
+            patch.object(
+                executor.zapier,
+                "action_catalog",
+                return_value={
+                    "available": True,
+                    "connected": True,
+                    "provider": "Zapier MCP",
+                    "app_count": 2,
+                    "action_count": 4,
+                    "apps": [
+                        {"app": "Gmail", "action_count": 2},
+                        {"app": "GitHub", "action_count": 2},
+                    ],
+                },
+            ) as zapier_catalog,
             patch("fathiya_runtime.tools.requests.request", return_value=response),
         ):
             result = executor.execute(
@@ -1333,10 +1348,15 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         tools = [step["tool"] for step in result["safe_executions"]]
         self.assertIn("local_capability_inventory", tools)
         self.assertIn("connected_tool_inventory", tools)
+        self.assertIn("zapier_action_catalog", tools)
         self.assertIn("trading_strategy_refresh", tools)
         self.assertIn("connector_profile", tools)
         self.assertGreaterEqual(result["summary"]["safe_execution_count"], 5)
+        self.assertTrue(result["summary"]["zapier_direct_oauth_connected"])
+        self.assertEqual(result["summary"]["zapier_direct_app_count"], 2)
+        self.assertEqual(result["summary"]["zapier_direct_action_count"], 4)
         self.assertTrue(result["summary"]["paper_trading_advisor_refreshed"])
+        zapier_catalog.assert_called_once_with("", force=False)
         self.assertIn(
             "zapier_fathiya_webhook",
             {step.get("profile") for step in result["skipped_high_risk"]},

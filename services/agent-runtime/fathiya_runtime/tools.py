@@ -1126,6 +1126,11 @@ class ToolExecutor:
             "connected_tool_inventory",
             "قراءة موصلات Zapier MCP ووكلاء الحساب المتاحين",
         )
+        zapier_direct = run_safe(
+            "zapier_action_catalog",
+            "قراءة كتالوج Zapier MCP المباشر عبر OAuth المحلي إن كان متصلًا",
+            {"refresh": False},
+        )
         connector_catalog_result = run_safe(
             "connector_catalog",
             "قراءة كتالوج الموصلات المعرّفة في المستودع",
@@ -1198,10 +1203,13 @@ class ToolExecutor:
             if isinstance(connected_inventory, dict)
             else None
         )
+        zapier_direct_connected = (
+            bool(zapier_direct.get("connected")) if isinstance(zapier_direct, dict) else False
+        )
         next_actions = _agent_mesh_next_actions(
             integration_probes={},
             connectors=self.connector_catalog(),
-            zapier_direct={},
+            zapier_direct=zapier_direct if isinstance(zapier_direct, dict) else {},
             n8n_workflows={},
             kali={},
         )
@@ -1218,6 +1226,16 @@ class ToolExecutor:
                 "ready_capability_count": ready_count,
                 "zapier_app_count": zapier_app_count,
                 "zapier_action_count": zapier_action_count,
+                "zapier_direct_oauth_connected": zapier_direct_connected,
+                "zapier_direct_app_count": zapier_direct.get("app_count")
+                if isinstance(zapier_direct, dict)
+                else None,
+                "zapier_direct_action_count": zapier_direct.get("action_count")
+                if isinstance(zapier_direct, dict)
+                else None,
+                "zapier_direct_error": zapier_direct.get("error")
+                if isinstance(zapier_direct, dict)
+                else None,
                 "paper_trading_advisor_refreshed": any(
                     step.get("tool") == "trading_strategy_refresh"
                     and isinstance(step.get("result"), dict)
@@ -2709,6 +2727,21 @@ def _agent_mesh_step_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "zapier_app_count": result.get("zapier_app_count"),
             "zapier_action_count": result.get("zapier_action_count"),
             "agent_provider_actions": result.get("agent_provider_actions"),
+        }
+    if tool == "zapier_action_catalog":
+        apps = result.get("apps") if isinstance(result.get("apps"), list) else []
+        actions = result.get("actions") if isinstance(result.get("actions"), list) else []
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "connected": result.get("connected"),
+            "provider": result.get("provider"),
+            "app": result.get("app"),
+            "app_count": result.get("app_count"),
+            "action_count": result.get("action_count"),
+            "apps": apps[:12],
+            "actions": actions[:12],
+            "error": result.get("error"),
         }
     if tool == "connector_catalog":
         connectors = (
