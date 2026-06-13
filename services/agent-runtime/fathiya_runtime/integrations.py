@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
 from typing import Any
 
 from .config import RuntimeConfig
@@ -40,6 +42,14 @@ def build_integration_readiness(
     n8n_workflows_ready = bool(
         connector_by_name.get("n8n_workflows", {}).get("configured")
     )
+    n8n_cli_ready = bool(
+        shutil.which("n8n")
+        or shutil.which("n8n.cmd")
+        or (Path.home() / "AppData" / "Roaming" / "npm" / "n8n.cmd").exists()
+    )
+    n8n_catalog_ready = bool(n8n_workflows_ready or n8n_cli_ready)
+    n8n_ready = bool(n8n_health_ready and n8n_catalog_ready)
+    n8n_partial = bool(n8n_health_ready or n8n_catalog_ready)
     hugging_face_ready = config.enable_hf_retrieval or config.enable_local_generation
     testnet = BinanceSpotTestnetGateway.from_config(config).status()
     capability_rows = [
@@ -213,25 +223,29 @@ def build_integration_readiness(
             "category": "automation",
             "status": (
                 "ready"
-                if n8n_health_ready and n8n_workflows_ready
+                if n8n_ready
                 else "partial"
-                if n8n_health_ready
+                if n8n_partial
                 else "needs_setup"
             ),
             "connection_mode": "local_service",
             "account_required": False,
             "credential_policy": "local_server_only",
             "summary": "الخدمة ومساراتها الموثقة جاهزة."
-            if n8n_health_ready and n8n_workflows_ready
+            if n8n_ready
             else "خدمة n8n المحلية جاهزة، لكن قراءة المسارات تحتاج مفتاح API."
             if n8n_health_ready
+            else "مسارات n8n قابلة للقراءة عبر CLI، لكن نقطة صحة الخدمة بطيئة أو غير متاحة."
+            if n8n_catalog_ready
             else "خدمة n8n المحلية غير مهيأة.",
             "next_step": "لا إجراء مطلوب."
-            if n8n_health_ready and n8n_workflows_ready
+            if n8n_ready
             else "أضف N8N_API_KEY محليًا لقراءة المسارات."
             if n8n_health_ready
+            else "أعد تشغيل n8n أو افتح واجهته المحلية إذا احتجت health endpoint، مع بقاء CLI fallback فعالًا."
+            if n8n_catalog_ready
             else "شغّل n8n المحلي واربط عنوانه.",
-            "missing_env": [] if n8n_workflows_ready else ["N8N_API_KEY"],
+            "missing_env": [] if n8n_catalog_ready else ["N8N_API_KEY"],
             "connected_apps": [],
             "settings_path": "/api/agent/settings/n8n_local",
             "settings_label": "إعداد n8n محليًا",
@@ -242,7 +256,12 @@ def build_integration_readiness(
                 "integration probe: n8n_local\n"
                 "افحص n8n المحلي وبوابة n8n_health، ثم سجل إيصالًا."
             ),
-            "details": {"base_url": config.n8n_base_url},
+            "details": {
+                "base_url": config.n8n_base_url,
+                "workflow_source": "rest_api" if n8n_workflows_ready else "local_cli",
+                "health_ready": n8n_health_ready,
+                "catalog_ready": n8n_catalog_ready,
+            },
         },
         {
             "id": "zapier_mcp",

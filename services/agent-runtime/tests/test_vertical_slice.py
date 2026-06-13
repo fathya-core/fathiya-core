@@ -8,6 +8,7 @@ import tempfile
 import time
 import unittest
 from contextlib import closing
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -28,7 +29,12 @@ from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
 from fathiya_runtime.tools import ToolExecutionError, ToolExecutor
 from fathiya_runtime.worker import AgentWorker, _deterministic_synthesis, _is_useful_synthesis
-from fathiya_runtime.zapier_mcp import StreamableHttpMCPClient, ZapierMCPGateway, ZapierTokenStore
+from fathiya_runtime.zapier_mcp import (
+    StreamableHttpMCPClient,
+    ZapierMCPError,
+    ZapierMCPGateway,
+    ZapierTokenStore,
+)
 
 
 class AgentRuntimeVerticalSliceTests(unittest.TestCase):
@@ -538,6 +544,27 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertIn("zapier_action_catalog", tools)
         self.assertNotIn("agent_delegate", tools)
         self.assertNotIn("zapier_action", tools)
+
+    def test_local_operator_word_does_not_trigger_agent_delegate(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        next(item for item in catalog if item["name"] == "agent_delegate")["configured"] = True
+        plan = build_plan(
+            {"prompt": "اعرض n8n workflows عبر المشغل المحلي وسجل إيصال التنفيذ"},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+
+        self.assertIn("n8n_workflows", tools)
+        self.assertNotIn("agent_delegate", tools)
 
     def test_canceled_running_task_is_not_completed(self) -> None:
         task = self.store.enqueue("إلغاء", "نفذ اختبار داخلي آمن")
@@ -1304,6 +1331,111 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(result["profile"], "n8n_health")
         self.assertEqual(request.call_args.args[0], "GET")
         self.assertEqual(request.call_args.args[1], "http://127.0.0.1:5678/healthz")
+
+    def test_n8n_workflows_falls_back_to_local_cli_without_api_key(self) -> None:
+        executor = ToolExecutor(self.config)
+
+        with patch.object(
+            executor,
+            "_run",
+            return_value={
+                "command": ["n8n.cmd", "list:workflow"],
+                "return_code": 0,
+                "stdout": "FathiyaConnectorGatewayV1|FATHIYA Connector Gateway v1\n",
+                "stderr": "",
+            },
+        ) as run:
+            result = executor.execute("n8n_workflows", "اعرض مسارات n8n")
+
+        self.assertTrue(result["available"])
+        self.assertEqual(result["source"], "local_cli")
+        self.assertEqual(result["workflow_count"], 1)
+        self.assertEqual(result["workflows"][0]["id"], "FathiyaConnectorGatewayV1")
+        self.assertIn("N8N_API_KEY", result["api_error"])
+        self.assertEqual(run.call_args.args[0][-1], "list:workflow")
+
+    def test_connector_profile_n8n_workflows_falls_back_to_cli_when_api_rejects(self) -> None:
+        executor = ToolExecutor(self.config)
+        response = Mock(ok=False, status_code=401, text='{"message":"unauthorized"}')
+
+        with (
+            patch.dict(os.environ, {"N8N_API_KEY": "invalid-test-key"}, clear=False),
+            patch("fathiya_runtime.tools.requests.request", return_value=response),
+            patch.object(
+                executor,
+                "_run",
+                return_value={
+                    "command": ["n8n.cmd", "list:workflow"],
+                    "return_code": 0,
+                    "stdout": "FathiyaConnectorGatewayV1|FATHIYA Connector Gateway v1\n",
+                    "stderr": "",
+                },
+            ),
+        ):
+            result = executor.execute(
+                "connector_profile",
+                "افحص مسارات n8n",
+                {"profile": "n8n_workflows"},
+            )
+
+        self.assertTrue(result["available"])
+        self.assertTrue(result["executed"])
+        self.assertEqual(result["status_code"], 401)
+        self.assertEqual(result["source"], "local_cli")
+        self.assertIn("HTTP 401", result["api_error"])
+        self.assertEqual(result["response"]["workflow_count"], 1)
+        self.assertEqual(
+            result["response"]["workflows"][0]["name"],
+            "FATHIYA Connector Gateway v1",
+        )
+
+    def test_zapier_action_catalog_falls_back_to_inventory_when_live_payload_invalid(self) -> None:
+        inventory_path = Path(self.temp.name) / "connected_tool_inventory_v1.json"
+        inventory_path.write_text(
+            json.dumps(
+                {
+                    "zapier_apps": [
+                        {
+                            "app": "GitHub",
+                            "action_count": 39,
+                            "modes": ["read", "approval_gated_write"],
+                        }
+                    ],
+                    "additional_zapier_mcp_sources": [
+                        {
+                            "name": "codex_personal_zapier_mcp",
+                            "apps": [
+                                {
+                                    "app": "Gmail",
+                                    "action_count": 20,
+                                    "modes": ["read"],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        executor = ToolExecutor(replace(self.config, tool_inventory_path=inventory_path))
+
+        with (
+            patch.object(
+                executor.zapier,
+                "action_catalog",
+                side_effect=ZapierMCPError("invalid payload"),
+            ),
+            patch.object(executor.zapier, "status", return_value={"connected": True}),
+        ):
+            result = executor.execute("zapier_action_catalog", "اعرض إجراءات زابير")
+
+        self.assertTrue(result["available"])
+        self.assertTrue(result["connected"])
+        self.assertFalse(result["live_available"])
+        self.assertEqual(result["source"], "connected_tool_inventory_fallback")
+        self.assertEqual(result["app_count"], 2)
+        self.assertEqual(result["action_count"], 59)
+        self.assertEqual([item["app"] for item in result["apps"]], ["GitHub", "Gmail"])
 
     def test_agent_mesh_execute_runs_safe_tools_and_skips_gated_connectors(self) -> None:
         executor = ToolExecutor(self.config)

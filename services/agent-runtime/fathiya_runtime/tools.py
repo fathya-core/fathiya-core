@@ -20,7 +20,7 @@ import requests
 from .config import RuntimeConfig
 from .models import ModelClient
 from .trading import BinanceSpotTestnetGateway, PaperTradingAgent
-from .zapier_mcp import ZapierMCPGateway
+from .zapier_mcp import ZapierMCPError, ZapierMCPGateway
 
 
 @dataclass(frozen=True)
@@ -2033,7 +2033,7 @@ class ToolExecutor:
                 response = requests.get(
                     f"{self.config.n8n_base_url}{path}",
                     headers=headers,
-                    timeout=5,
+                    timeout=2,
                 )
                 if response.ok:
                     version = self._run(["n8n.cmd", "--version"], cwd=self.config.repo_root)
@@ -2056,21 +2056,79 @@ class ToolExecutor:
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         headers = {"X-N8N-API-KEY": self.config.n8n_api_key} if self.config.n8n_api_key else {}
-        response = requests.get(
-            f"{self.config.n8n_base_url}/api/v1/workflows",
-            headers=headers,
-            params={"limit": 50},
-            timeout=15,
-        )
-        text = response.text[:20_000]
-        try:
-            payload = response.json()
-        except requests.JSONDecodeError:
-            payload = {"raw": text}
+        if self.config.n8n_api_key:
+            try:
+                response = requests.get(
+                    f"{self.config.n8n_base_url}/api/v1/workflows",
+                    headers=headers,
+                    params={"limit": 50},
+                    timeout=15,
+                )
+                text = response.text[:20_000]
+                try:
+                    payload = response.json()
+                except requests.JSONDecodeError:
+                    payload = {"raw": text}
+                if response.ok:
+                    return {
+                        "available": True,
+                        "status_code": response.status_code,
+                        "source": "rest_api",
+                        "workflows": payload,
+                    }
+                api_error = f"n8n API returned HTTP {response.status_code}"
+            except requests.RequestException as exc:
+                api_error = f"n8n API request failed: {exc}"
+        else:
+            api_error = "N8N_API_KEY is not configured; using local CLI fallback"
+
+        cli = self._n8n_cli_workflows()
+        if cli["available"]:
+            return {
+                "available": True,
+                "status_code": None,
+                "source": "local_cli",
+                "api_error": api_error,
+                "workflows": cli["workflows"],
+                "workflow_count": cli["workflow_count"],
+            }
         return {
-            "available": response.ok,
-            "status_code": response.status_code,
-            "workflows": payload,
+            "available": False,
+            "status_code": None,
+            "source": "local_cli",
+            "api_error": api_error,
+            "workflows": [],
+            "workflow_count": 0,
+            "error": cli["error"],
+        }
+
+    def _n8n_cli_workflows(self) -> dict[str, Any]:
+        command = _n8n_cli_command()
+        result = self._run([command, "list:workflow"], cwd=self.config.repo_root, timeout=30)
+        if result["return_code"] != 0:
+            return {
+                "available": False,
+                "workflow_count": 0,
+                "workflows": [],
+                "error": result["stderr"] or "n8n workflow CLI listing failed",
+            }
+        workflows: list[dict[str, str]] = []
+        for raw_line in result["stdout"].splitlines():
+            line = _strip_ansi(raw_line).strip()
+            if not line or line.startswith("$ ") or line.lower().startswith("usage"):
+                continue
+            workflow_id, separator, name = line.partition("|")
+            workflows.append(
+                {
+                    "id": workflow_id.strip(),
+                    "name": name.strip() if separator else workflow_id.strip(),
+                }
+            )
+        return {
+            "available": True,
+            "workflow_count": len(workflows),
+            "workflows": workflows,
+            "error": None,
         }
 
     def _n8n_webhook(
@@ -2157,6 +2215,13 @@ class ToolExecutor:
                 timeout=timeout,
             )
         except requests.RequestException as exc:
+            if requested == "n8n_workflows" and method == "GET":
+                return self._n8n_connector_workflows_fallback(
+                    profile,
+                    method,
+                    api_error=f"{type(exc).__name__}: connector request failed",
+                    status_code=None,
+                )
             return {
                 "profile": requested,
                 "provider": profile.get("provider", "connector"),
@@ -2173,6 +2238,13 @@ class ToolExecutor:
             response_payload: Any = json.loads(text) if text else None
         except json.JSONDecodeError:
             response_payload = text
+        if requested == "n8n_workflows" and method == "GET" and not response.ok:
+            return self._n8n_connector_workflows_fallback(
+                profile,
+                method,
+                api_error=f"Connector returned HTTP {response.status_code}",
+                status_code=response.status_code,
+            )
         return {
             "profile": requested,
             "provider": profile.get("provider", "connector"),
@@ -2184,6 +2256,34 @@ class ToolExecutor:
             "status_code": response.status_code,
             "error": None if response.ok else f"Connector returned HTTP {response.status_code}",
             "response": response_payload,
+        }
+
+    def _n8n_connector_workflows_fallback(
+        self,
+        profile: dict[str, Any],
+        method: str,
+        *,
+        api_error: str,
+        status_code: int | None,
+    ) -> dict[str, Any]:
+        cli = self._n8n_cli_workflows()
+        return {
+            "profile": "n8n_workflows",
+            "provider": profile.get("provider", "connector"),
+            "method": method,
+            "configured": True,
+            "available": bool(cli["available"]),
+            "executed": bool(cli["available"]),
+            "execution_failed": False,
+            "status_code": status_code,
+            "source": "local_cli",
+            "error": None if cli["available"] else cli["error"] or api_error,
+            "api_error": api_error,
+            "response": {
+                "source": "local_cli",
+                "workflow_count": cli["workflow_count"],
+                "workflows": cli["workflows"],
+            },
         }
 
     def _connected_tool_inventory(
@@ -2224,10 +2324,64 @@ class ToolExecutor:
         args: dict[str, Any],
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        return self.zapier.action_catalog(
-            str(args.get("app") or ""),
-            force=bool(args.get("refresh")),
-        )
+        app = str(args.get("app") or "")
+        try:
+            return self.zapier.action_catalog(
+                app,
+                force=bool(args.get("refresh")),
+            )
+        except ZapierMCPError as exc:
+            return self._zapier_action_catalog_fallback(app, str(exc))
+
+    def _zapier_action_catalog_fallback(self, app: str, error: str) -> dict[str, Any]:
+        status = self.zapier.status()
+        base: dict[str, Any] = {
+            "available": False,
+            "connected": bool(status.get("connected")),
+            "provider": "Zapier MCP",
+            "source": "connected_tool_inventory_fallback",
+            "live_available": False,
+            "error": error,
+            "apps": [],
+            "app_count": 0,
+            "action_count": 0,
+        }
+        if not self.config.tool_inventory_path.exists():
+            return base
+        try:
+            inventory = json.loads(
+                self.config.tool_inventory_path.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            return base
+        apps = _combined_zapier_apps(inventory)
+        requested = app.strip().casefold()
+        if requested:
+            match = next(
+                (
+                    item
+                    for item in apps
+                    if str(item.get("app") or "").casefold() == requested
+                ),
+                None,
+            )
+            if not match:
+                return base
+            return {
+                **base,
+                "available": True,
+                "app": match.get("app"),
+                "app_count": 1,
+                "action_count": int(match.get("action_count") or 0),
+                "apps": [match],
+            }
+        return {
+            **base,
+            "available": bool(apps),
+            "app_count": len(apps),
+            "action_count": sum(int(item.get("action_count") or 0) for item in apps),
+            "apps": apps,
+        }
 
     def _zapier_action(
         self,
@@ -2608,6 +2762,20 @@ def _combined_zapier_apps(inventory: dict[str, Any]) -> list[dict[str, Any]]:
         if isinstance(source, dict):
             absorb(source.get("apps", []), str(source.get("name") or "zapier_mcp"))
     return sorted(merged.values(), key=lambda item: str(item.get("app", "")).casefold())
+
+
+def _n8n_cli_command() -> str:
+    discovered = shutil.which("n8n") or shutil.which("n8n.cmd")
+    if discovered:
+        return discovered
+    windows_candidate = Path.home() / "AppData" / "Roaming" / "npm" / "n8n.cmd"
+    if windows_candidate.exists():
+        return str(windows_candidate)
+    return "n8n.cmd" if os.name == "nt" else "n8n"
+
+
+def _strip_ansi(value: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", value)
 
 
 def _complete_model_with_timeout(

@@ -741,7 +741,7 @@ def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
         "شغّل",
         "شغل",
     )
-    if not any(term in text for term in delegation_terms):
+    if not any(_contains_whole_term(text, term) for term in delegation_terms):
         return None
     if any(term in text for term in ("claude code", "claude", "كلود")):
         provider = "claude_code"
@@ -774,6 +774,16 @@ def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
             "mode": "execute" if execute else "plan",
         },
     }
+
+
+def _contains_whole_term(text: str, term: str) -> bool:
+    return bool(
+        re.search(
+            rf"(?<![\w\u0600-\u06FF]){re.escape(term)}(?![\w\u0600-\u06FF])",
+            text,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _trading_control_step(prompt: str) -> dict[str, Any] | None:
