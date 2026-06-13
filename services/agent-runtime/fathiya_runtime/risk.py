@@ -52,7 +52,8 @@ READ_ONLY_AGENT_MESH_AUDIT = re.compile(
 )
 
 SAFE_AGENT_MESH_EXECUTE = re.compile(
-    r"^\s*(?:agent\s+mesh\s+execute|safe\s+mesh\s+execute|تشغيل\s+شبكة\s+الوكلاء)\s*:",
+    r"^\s*(?:FATHIYA_EXECUTION_OS_MISSION_V1\s*)?"
+    r"(?:agent\s+mesh\s+execute|safe\s+mesh\s+execute|تشغيل\s+شبكة\s+الوكلاء)\s*:",
     re.IGNORECASE,
 )
 

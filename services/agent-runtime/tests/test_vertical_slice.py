@@ -141,6 +141,16 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(risk.risk_class, "internal_owned")
         self.assertFalse(risk.requires_approval)
 
+    def test_execution_os_marker_is_safe_internal_mesh_execution(self) -> None:
+        risk = classify_risk(
+            "FATHIYA_EXECUTION_OS_MISSION_V1\n"
+            "agent mesh execute:\n"
+            "ابدأ وكيل التداول الورقي واترك الأفعال عالية الأثر لبوابة المخاطر."
+        )
+
+        self.assertEqual(risk.risk_class, "internal_owned")
+        self.assertFalse(risk.requires_approval)
+
     def test_negated_external_action_does_not_require_approval(self) -> None:
         risk = classify_risk(
             "افحص جاهزية حساب التداول التجريبي وسجل النتيجة دون إرسال أي أمر"
@@ -1366,6 +1376,69 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             {step.get("profile") for step in result["skipped_high_risk"]},
         )
         self.assertTrue(result["secret_safe"])
+
+    def test_agent_mesh_execute_mission_can_start_primary_paper_trading(self) -> None:
+        executor = ToolExecutor(self.config)
+        trading = Mock()
+        status = {
+            "running": False,
+            "symbol": "TEST-USD",
+            "mode": "paper",
+            "cycle_target_seconds": 1.0,
+            "current_market_source": "synthetic",
+            "latest_cycle": None,
+            "latest_receipt_id": None,
+            "portfolio": {},
+            "prediction_quality": {},
+            "risk_limits": {},
+            "strategy_advisory_policy": {"mode": "veto_only"},
+            "live_execution_enabled": False,
+            "execution_cadence": {"latest_interval_seconds": None},
+        }
+        trading.status.return_value = status
+        trading.start.return_value = {
+            **status,
+            "running": True,
+            "execution_cadence": {"latest_interval_seconds": 1.0},
+        }
+        trading.update_advisory.return_value = {
+            "active": True,
+            "action": "hold",
+            "confidence": 0.0,
+            "provider": "deterministic_fallback",
+        }
+
+        with (
+            patch.object(executor, "_trading_agent", return_value=trading),
+            patch.object(
+                executor.zapier,
+                "action_catalog",
+                return_value={
+                    "available": False,
+                    "connected": False,
+                    "provider": "Zapier MCP",
+                    "error": "not connected",
+                    "apps": [],
+                    "action_count": 0,
+                },
+            ),
+        ):
+            result = executor.execute(
+                "agent_mesh_execute",
+                (
+                    "FATHIYA_EXECUTION_OS_MISSION_V1\n"
+                    "agent mesh execute:\n"
+                    "ابدأ وكيل التداول الورقي واجعل التنبؤ والتنفيذ الورقي بنبض الثانية."
+                ),
+                {"max_steps": 20},
+            )
+
+        tools = [step["tool"] for step in result["safe_executions"]]
+        self.assertIn("trading_start", tools)
+        self.assertTrue(result["summary"]["paper_trading_start_requested"])
+        self.assertTrue(result["summary"]["paper_trading_started"])
+        self.assertTrue(result["summary"]["paper_trading_running"])
+        trading.start.assert_called_once()
 
     def test_connector_network_error_does_not_leak_webhook_url(self) -> None:
         previous = os.environ.get("FATHIYA_ZAPIER_WEBHOOK_URL")

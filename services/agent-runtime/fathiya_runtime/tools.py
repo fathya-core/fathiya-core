@@ -1067,8 +1067,9 @@ class ToolExecutor:
         context: list[dict[str, Any]],
     ) -> dict[str, Any]:
         refresh = bool(args.get("refresh", True))
-        max_steps = _bounded_int(args.get("max_steps", 16), default=16, minimum=3, maximum=24)
+        max_steps = _bounded_int(args.get("max_steps", 20), default=20, minimum=3, maximum=24)
         captured_at = datetime.now(UTC).isoformat()
+        start_primary_trading = _agent_mesh_requests_trading_start(prompt)
         safe_executions: list[dict[str, Any]] = []
         skipped_high_risk: list[dict[str, Any]] = []
         integration_probes: dict[str, dict[str, Any]] = {}
@@ -1143,6 +1144,15 @@ class ToolExecutor:
             "تحديث مستشار استراتيجية وكيل التداول Paper بمهلة قصيرة",
             {"model_timeout_seconds": 3.0},
         )
+        if start_primary_trading:
+            run_safe(
+                "trading_start",
+                "تشغيل وكيل التداول Paper الأساسي بنبض الثانية",
+            )
+            run_safe(
+                "trading_status",
+                "قراءة حالة وكيل التداول Paper بعد التشغيل",
+            )
         run_safe(
             "trading_testnet_status",
             "قراءة جاهزية وسيط التداول التجريبي دون إرسال أمر",
@@ -1273,6 +1283,19 @@ class ToolExecutor:
                 "integration_probe_count": len(integration_probes),
                 "ready_integration_count": len(ready_integrations),
                 "partial_integration_count": len(partial_integrations),
+                "paper_trading_start_requested": start_primary_trading,
+                "paper_trading_started": any(
+                    step.get("tool") == "trading_start"
+                    and isinstance(step.get("result"), dict)
+                    and step["result"].get("executed")
+                    for step in safe_executions
+                ),
+                "paper_trading_running": any(
+                    step.get("tool") in {"trading_status", "trading_start"}
+                    and isinstance(step.get("result"), dict)
+                    and step["result"].get("running")
+                    for step in safe_executions
+                ),
                 "paper_trading_advisor_refreshed": any(
                     step.get("tool") == "trading_strategy_refresh"
                     and isinstance(step.get("result"), dict)
@@ -2177,13 +2200,16 @@ class ToolExecutor:
                 "error": "Connected tool inventory is missing",
             }
         inventory = json.loads(path.read_text(encoding="utf-8"))
-        apps = inventory.get("zapier_apps", [])
+        apps = _combined_zapier_apps(inventory)
         return {
             "available": True,
             "path": str(path),
             "captured_at": inventory.get("captured_at"),
             "policy": inventory.get("policy", {}),
             "zapier_mcp_status": inventory.get("zapier_mcp_status", {}),
+            "additional_zapier_mcp_sources": inventory.get(
+                "additional_zapier_mcp_sources", []
+            ),
             "local_tools": inventory.get("local_tools", []),
             "zapier_app_count": len(apps),
             "zapier_action_count": sum(int(app.get("action_count", 0)) for app in apps),
@@ -2526,6 +2552,64 @@ def _bounded_int(
     return max(minimum, min(maximum, parsed))
 
 
+def _agent_mesh_requests_trading_start(prompt: str) -> bool:
+    text = prompt.casefold()
+    return any(
+        term in text
+        for term in (
+            "fathiya_execution_os_mission_v1",
+            "start_primary_trading",
+            "start primary trading",
+            "ابدأ وكيل التداول الورقي",
+            "ابدأ وكيل التداول",
+            "شغّل وكيل التداول الورقي",
+            "شغل وكيل التداول الورقي",
+            "تشغيل وكيل التداول الورقي",
+            "ينبض بالثانية",
+            "بنبض الثانية",
+        )
+    )
+
+
+def _combined_zapier_apps(inventory: dict[str, Any]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+
+    def absorb(apps: Any, source: str) -> None:
+        if not isinstance(apps, list):
+            return
+        for item in apps:
+            if not isinstance(item, dict) or not item.get("app"):
+                continue
+            name = str(item["app"])
+            existing = merged.setdefault(
+                name,
+                {
+                    "app": name,
+                    "action_count": 0,
+                    "modes": [],
+                    "sources": [],
+                },
+            )
+            try:
+                action_count = int(item.get("action_count", 0))
+            except (TypeError, ValueError):
+                action_count = 0
+            existing["action_count"] = max(int(existing["action_count"]), action_count)
+            modes = item.get("modes", [])
+            if isinstance(modes, list):
+                for mode in modes:
+                    if isinstance(mode, str) and mode not in existing["modes"]:
+                        existing["modes"].append(mode)
+            if source and source not in existing["sources"]:
+                existing["sources"].append(source)
+
+    absorb(inventory.get("zapier_apps", []), "fathya_core_zapier")
+    for source in inventory.get("additional_zapier_mcp_sources", []):
+        if isinstance(source, dict):
+            absorb(source.get("apps", []), str(source.get("name") or "zapier_mcp"))
+    return sorted(merged.values(), key=lambda item: str(item.get("app", "")).casefold())
+
+
 def _complete_model_with_timeout(
     model: ModelClient,
     system_prompt: str,
@@ -2826,16 +2910,18 @@ def _agent_mesh_step_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "missing_commands": result.get("missing_commands", []),
             "error": result.get("error"),
         }
-    if tool == "trading_status":
+    if tool in {"trading_status", "trading_start", "trading_stop"}:
         trading = result.get("trading") if isinstance(result.get("trading"), dict) else {}
         return {
             "available": result.get("available"),
             "executed": result.get("executed", True),
+            "action": result.get("action"),
             "running": trading.get("running"),
             "symbol": trading.get("symbol"),
             "mode": trading.get("mode"),
             "latest_receipt_id": trading.get("latest_receipt_id"),
             "execution_cadence": trading.get("execution_cadence"),
+            "cycle_target_seconds": trading.get("cycle_target_seconds"),
         }
     if tool == "trading_strategy_refresh":
         advisory = result.get("advisory") if isinstance(result.get("advisory"), dict) else {}

@@ -109,6 +109,16 @@ const AGENT_MESH_EXECUTE_PROMPT = [
   "نفّذ فقط الأدوات الداخلية أو القراءة أو Paper/Testnet التي لا تحتاج موافقة، ثم سجل ما عمل وما تخطّيته بسبب بوابة المخاطر.",
 ].join("\n");
 
+const FATHIYA_EXECUTION_OS_PROMPT = [
+  "agent mesh execute:",
+  "FATHIYA_EXECUTION_OS_MISSION_V1",
+  "شغّل محرك فتحية التنفيذي كشبكة وكلاء لا كتحليل فقط.",
+  "ابدأ وكيل التداول الورقي إذا كان متوقفًا، وفعّل مستشار الاستراتيجية، واجعل التنبؤ والتنفيذ الورقي بنبض الثانية هو الأولوية الأولى.",
+  "افحص جاهزية Hugging Face المحلي وOpenRouter وSupabase وn8n المحلي وZapier MCP وKali WSL وBroker Testnet.",
+  "استخدم جرد Zapier وموفري الوكلاء مثل Manus وCursor وChatGPT وApify كقدرات تنفيذ، مع ترك الأفعال عالية الأثر لبوابة المخاطر.",
+  "سجل إيصالًا واضحًا: ما نُفّذ فعليًا، ما أصبح جاهزًا، ما يحتاج ربطًا، وما هي المتابعة التنفيذية التالية.",
+].join("\n");
+
 type AgentMeshNextAction = {
   id: string;
   title: string;
@@ -162,6 +172,7 @@ function AgentTasksPage() {
   const [creating, setCreating] = useState(false);
   const [acting, setActing] = useState(false);
   const [startingMeshExecute, setStartingMeshExecute] = useState(false);
+  const [startingExecutionOs, setStartingExecutionOs] = useState(false);
   const [startingFollowUpPrompt, setStartingFollowUpPrompt] = useState<string | null>(null);
   const [tradingActing, setTradingActing] = useState(false);
   const [intakeActing, setIntakeActing] = useState(false);
@@ -395,6 +406,28 @@ function AgentTasksPage() {
       setError(String(taskError));
     } finally {
       setStartingMeshExecute(false);
+    }
+  }
+
+  async function startExecutionOsMission() {
+    if (!hasAccess) return;
+    setStartingExecutionOs(true);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: "تشغيل محرك فتحية التنفيذي",
+        prompt: FATHIYA_EXECUTION_OS_PROMPT,
+      };
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingExecutionOs(false);
     }
   }
 
@@ -775,17 +808,29 @@ function AgentTasksPage() {
                         التشغيل المحلي وPaper/Testnet والاستيعاب يبدأ تلقائيًا؛ بوابة المخاطر تظهر فقط عند الفعل العالي الأثر.
                       </CardDescription>
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-8 shrink-0 text-[10px]"
-                      onClick={() => void startAgentMeshExecute()}
-                      disabled={startingMeshExecute}
-                    >
-                      {startingMeshExecute ? <Loader2 className="animate-spin" /> : <Play />}
-                      تشغيل شبكة الوكلاء
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 shrink-0 text-[10px]"
+                        onClick={() => void startExecutionOsMission()}
+                        disabled={startingExecutionOs}
+                      >
+                        {startingExecutionOs ? <Loader2 className="animate-spin" /> : <Play />}
+                        تشغيل المحرك التنفيذي
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 shrink-0 text-[10px]"
+                        onClick={() => void startAgentMeshExecute()}
+                        disabled={startingMeshExecute}
+                      >
+                        {startingMeshExecute ? <Loader2 className="animate-spin" /> : <Activity />}
+                        فحص شبكة الوكلاء
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -2069,6 +2114,7 @@ function TaskResultSummary({
     return <p className="text-xs text-muted-foreground">النتيجة غير قابلة للعرض المختصر.</p>;
   }
 
+  const meshResult = extractAgentMeshRuntimeResult(result);
   const nextActions = extractAgentMeshNextActions(result);
   const synthesis = typeof result.synthesis === "string" ? result.synthesis : null;
   const evaluation = asRecord(result.evaluation);
@@ -2113,6 +2159,7 @@ function TaskResultSummary({
   return (
     <div className="space-y-3">
       {synthesis && <p className="whitespace-pre-wrap break-words text-xs">{synthesis}</p>}
+      {meshResult && <AgentMeshRuntimePanel value={meshResult} />}
       {nextActions.length > 0 && (
         <div className="rounded-md border border-sky-500/20 bg-sky-500/5 p-3">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -2255,6 +2302,100 @@ function TaskResultSummary({
   );
 }
 
+function AgentMeshRuntimePanel({ value }: { value: Record<string, unknown> }) {
+  const summary = asRecord(value.summary) ?? {};
+  const probes = asRecord(value.integration_probes) ?? {};
+  const safeExecutions = Array.isArray(value.safe_executions)
+    ? value.safe_executions.flatMap((item) => {
+        const row = asRecord(item);
+        const tool = typeof row?.tool === "string" ? row.tool : "";
+        return tool ? [tool] : [];
+      })
+    : [];
+  const skippedCount = Array.isArray(value.skipped_high_risk)
+    ? value.skipped_high_risk.length
+    : 0;
+  const probeRows = Object.entries(probes).flatMap(([id, raw]) => {
+    const probe = asRecord(raw);
+    if (!probe) return [];
+    return [
+      {
+        id,
+        ok: Boolean(probe.ok),
+        status: typeof probe.status === "string" ? probe.status : "unknown",
+        summary: typeof probe.summary === "string" ? probe.summary : "",
+      },
+    ];
+  });
+
+  return (
+    <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold">ملخص تشغيل المحرك</span>
+        <Badge className="border-emerald-500/30 bg-emerald-500/10 text-[9px] text-emerald-300">
+          {String(value.action ?? "agent_mesh_execute")}
+        </Badge>
+      </div>
+      <div className="grid gap-2 text-[10px] sm:grid-cols-4">
+        <InfoField label="خطوات منفذة" value={String(summary.safe_execution_count ?? "--")} />
+        <InfoField label="فحوصات تكامل" value={String(summary.integration_probe_count ?? "--")} />
+        <InfoField
+          label="التداول الورقي"
+          value={
+            summary.paper_trading_running
+              ? "يعمل"
+              : summary.paper_trading_started
+                ? "بدأ"
+                : "لم يبدأ"
+          }
+        />
+        <InfoField label="تخطيات مخاطر" value={String(skippedCount)} />
+      </div>
+      {probeRows.length > 0 && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {probeRows.map((probe) => (
+            <div key={probe.id} className="rounded-md border border-border/50 bg-background/35 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <span dir="ltr" className="break-all text-left font-mono text-[10px]">
+                  {probe.id}
+                </span>
+                <Badge
+                  className={cn(
+                    "shrink-0 text-[9px] font-normal",
+                    probe.ok
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-300",
+                  )}
+                >
+                  {probe.status}
+                </Badge>
+              </div>
+              {probe.summary && (
+                <p className="mt-1 break-words text-[10px] text-muted-foreground">
+                  {probe.summary}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {safeExecutions.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {safeExecutions.map((tool, index) => (
+            <Badge
+              key={`${tool}-${index}`}
+              variant="outline"
+              className="font-mono text-[9px] font-normal"
+            >
+              {tool}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExecutionCheckpointNotice({ value }: { value: unknown }) {
   const result = asRecord(value);
   const checkpoint = asRecord(result?.execution_checkpoint);
@@ -2337,6 +2478,20 @@ function extractAgentMeshNextActions(result: Record<string, unknown>): AgentMesh
     }
   }
   return actions.slice(0, 8);
+}
+
+function extractAgentMeshRuntimeResult(
+  result: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+  for (const item of toolResults) {
+    const row = asRecord(item);
+    const toolResult = asRecord(row?.result);
+    if (toolResult?.tool === "agent_mesh_execute" || toolResult?.tool === "agent_mesh_audit") {
+      return toolResult;
+    }
+  }
+  return null;
 }
 
 function parseFollowUpUiAction(value: unknown): AgentMeshNextAction["ui_action"] | undefined {
