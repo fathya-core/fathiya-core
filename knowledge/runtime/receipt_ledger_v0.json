@@ -275,6 +275,19 @@
       "error": null,
       "approval_reference": "operator_all_permissions_internal_and_site_activation",
       "next_step": "merge branch and verify https://fathya-core.com/api/learning/status returns learning_foundation_active"
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-fathiya-knowledge-understanding-v1",
+      "timestamp": "2026-06-14T12:12:11Z",
+      "source_request": "agent-runtime-task-1ee19690-e45c-498e-898f-3d6a1a757903",
+      "queue": "Knowledge Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Awareness/security learning cards, comprehension evals, runtime map, operator boundary profile template, and runtime receipt AR-20260614120951174186-1ee19690",
+      "output_artifact": "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-fathiya-knowledge-understanding-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_knowledge_study_internal_only",
+      "next_step": "Use the understood=true proof as a teaching anchor for trading, security lab, and tool agents while operator boundaries remain pending definition."
     }
   ],
   "required_receipt_fields": [

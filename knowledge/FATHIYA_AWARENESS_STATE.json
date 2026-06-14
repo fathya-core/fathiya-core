@@ -2,8 +2,8 @@
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
   "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": "Knowledge corpus learning layer: imported awareness/security files are now converted into learning cards, comprehension evals, and an operator-owned boundary profile template. Project-specific allowed/disallowed boundaries remain pending operator definition.",
-  "last_updated": "2026-06-14T14:59:57+03:00",
+  "current_focus": "Knowledge understanding proof completed: FATHIYA studied the imported awareness/security learning cards, evals, runtime map, and operator boundary template, then recorded an understood=true result with runtime receipt evidence and scenario-transfer evals.",
+  "last_updated": "2026-06-14T15:12:11+03:00",
   "active_queue_count": 0,
   "blocked_items": [
     {
@@ -28,6 +28,17 @@
     }
   ],
   "latest_receipts": [
+    {
+      "receipt_id": "AR-20260614120951174186-1ee19690",
+      "task_id": "1ee19690-e45c-498e-898f-3d6a1a757903",
+      "summary": "FATHIYA completed a knowledge-understanding session over the awareness/security learning cards, evals, runtime map, and boundary profile; reviewed proof recorded in receipt-2026-06-14-fathiya-knowledge-understanding-v1.",
+      "planner_provider": "local_knowledge_only",
+      "synthesis_provider": "openrouter",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "retrieval_mode": "huggingface",
+      "understood": true,
+      "source_count": 5
+    },
     {
       "receipt_id": "AR-20260614071616197227-5dff5158",
       "task_id": "5dff5158-3c0a-4064-ace1-7060aa7cf661",
@@ -91,6 +102,8 @@
     "knowledge/evaluations/FATHIYA_AWARENESS_SECURITY_COMPREHENSION_EVALS_v1.json",
     "knowledge/learning/FATHIYA_KNOWLEDGE_TO_AGENT_RUNTIME_MAP_v1.md",
     "knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json",
+    "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_UNDERSTANDING_RESULT_v1.md",
+    "knowledge/runtime/receipts/receipt-2026-06-14-fathiya-knowledge-understanding-v1.json",
     "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
     "services/agent-runtime/tools/import_awareness_security_corpus.py"
   ],
@@ -101,5 +114,5 @@
     "Binance Spot Testnet API key/secret for testnet validation",
     "Cursor local browser login and Docker daemon startup for full local mesh"
   ],
-  "next_recommended_action": "Use the learning cards and comprehension evals to teach agents from the imported corpus, then let the operator fill the boundary profile that defines which sensitive actions are allowed, approval-gated, or disabled."
+  "next_recommended_action": "Use the understood=true proof as the teaching anchor for the trading agent, security lab agent, and tool agents; then let the operator fill the boundary profile when ready."
 }
