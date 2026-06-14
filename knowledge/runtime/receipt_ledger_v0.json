@@ -4,6 +4,32 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-bugcrowd-webcom-understanding-v1",
+      "timestamp": "2026-06-14T19:54:10Z",
+      "source_request": "agent-runtime-task-a3d24a6a-836e-46e8-bf2e-e8930fe91ad0",
+      "queue": "Security Lab Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Web.com Bugcrowd scope map, target card, and intake report",
+      "output_artifact": "knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bugcrowd-webcom-understanding-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_approved_knowledge_only_live_security_classification",
+      "next_step": "Select one exact in-scope target and build a narrow passive-first hypothesis plan before any live request beyond normal browsing"
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-bugcrowd-webcom-scope-intake-v1",
+      "timestamp": "2026-06-14T19:38:44Z",
+      "source_request": "operator-authenticated-bugcrowd-webdotcom-page",
+      "queue": "Security Lab Queue",
+      "adapter": "codex_browser_plus_repo_artifact",
+      "input_artifact": "Authenticated Bugcrowd Web.com engagement page read by the operator browser; operator reports identity verification completed",
+      "output_artifact": "knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json + knowledge/security/targets/TARGET_BUGCROWD_WEBCOM_v1.json + knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_SCOPE_INTAKE_REPORT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bugcrowd-webcom-scope-intake-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_logged_into_bugcrowd_for_scope_reading_only",
+      "next_step": "Queue a knowledge-only agent task to confirm FATHIYA understands the Web.com scope before any live testing"
+    },
+    {
       "receipt_id": "receipt-2026-06-14-bug-bounty-deep-discovery-v1",
       "timestamp": "2026-06-14T18:57:39Z",
       "source_request": "agent-runtime-task-cb3ba998-8539-481d-a3e0-27d4514a554e",

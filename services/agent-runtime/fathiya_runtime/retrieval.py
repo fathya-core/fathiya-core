@@ -29,15 +29,33 @@ class KnowledgeRetriever:
     def search(self, query: str, limit: int = 5) -> list[RetrievedSource]:
         self.last_error = None
         documents = self._documents()
+        explicit = self._explicit_sources(query, documents, limit)
+        explicit_paths = {source.path for source in explicit}
+        documents = [
+            (path, text)
+            for path, text in documents
+            if str(path.relative_to(self.root)) not in explicit_paths
+        ]
+        remaining_limit = max(limit - len(explicit), 0)
+        if remaining_limit == 0:
+            self.last_mode = "explicit_paths"
+            return explicit
         if self.enable_hf:
-            results = self._hf_search(query, documents, limit)
+            results = self._hf_search(query, documents, remaining_limit)
             if results is not None:
-                self.last_mode = "huggingface"
-                return results
-            self.last_mode = "keyword_fallback"
+                self.last_mode = (
+                    "explicit_paths+huggingface" if explicit else "huggingface"
+                )
+                return [*explicit, *results]
+            self.last_mode = (
+                "explicit_paths+keyword_fallback" if explicit else "keyword_fallback"
+            )
         else:
-            self.last_mode = "keyword"
-        return self._keyword_search(query, documents, limit)
+            self.last_mode = "explicit_paths+keyword" if explicit else "keyword"
+        return [
+            *explicit,
+            *self._keyword_search(query, documents, remaining_limit),
+        ][:limit]
 
     def _documents(self) -> list[tuple[Path, str]]:
         if not self.root.exists():
@@ -121,6 +139,58 @@ class KnowledgeRetriever:
             self.last_error = f"{type(exc).__name__}: {str(exc)[:500]}"
             return None
 
+    def _explicit_sources(
+        self,
+        query: str,
+        documents: list[tuple[Path, str]],
+        limit: int,
+    ) -> list[RetrievedSource]:
+        if limit <= 0:
+            return []
+        by_relative = {
+            str(path.relative_to(self.root)).replace("\\", "/").lower(): (path, text)
+            for path, text in documents
+        }
+        requested: list[str] = []
+        for match in re.findall(
+            r"(?:\.?[\\/])?(?:knowledge[\\/])?[\w./\\-]+\.(?:md|txt|json)",
+            query,
+            flags=re.IGNORECASE,
+        ):
+            candidate = match.strip().strip("`'\".,);:")
+            candidate = candidate.replace("\\", "/").lstrip("./")
+            if candidate.lower().startswith("knowledge/"):
+                candidate = candidate[len("knowledge/") :]
+            candidate = candidate.lower()
+            if candidate and candidate not in requested:
+                requested.append(candidate)
+
+        results: list[RetrievedSource] = []
+        for candidate in requested:
+            if len(results) >= limit:
+                break
+            item = by_relative.get(candidate)
+            if item is None:
+                item = next(
+                    (
+                        (path, text)
+                        for relative, (path, text) in by_relative.items()
+                        if relative.endswith("/" + candidate) or relative.endswith(candidate)
+                    ),
+                    None,
+                )
+            if item is None:
+                continue
+            path, text = item
+            results.append(
+                RetrievedSource(
+                    path=str(path.relative_to(self.root)),
+                    score=1.0,
+                    excerpt=self._source_excerpt(text),
+                )
+            )
+        return results
+
     @staticmethod
     def _terms(text: str) -> list[str]:
         return [term.lower() for term in re.findall(r"[\w\u0600-\u06ff-]{3,}", text)]
@@ -132,3 +202,7 @@ class KnowledgeRetriever:
         indexes = [lower.find(term) for term in query_terms if lower.find(term) >= 0]
         start = max(min(indexes, default=0) - 120, 0)
         return flattened[start : start + 500]
+
+    @staticmethod
+    def _source_excerpt(text: str) -> str:
+        return "\n".join(line.strip() for line in text.strip().splitlines())[:4_000]

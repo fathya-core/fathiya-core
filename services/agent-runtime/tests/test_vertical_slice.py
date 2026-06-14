@@ -28,7 +28,12 @@ from fathiya_runtime.retrieval import KnowledgeRetriever, RetrievedSource
 from fathiya_runtime.risk import classify_risk
 from fathiya_runtime.store import SQLiteTaskStore
 from fathiya_runtime.tools import ToolExecutionError, ToolExecutor
-from fathiya_runtime.worker import AgentWorker, _deterministic_synthesis, _is_useful_synthesis
+from fathiya_runtime.worker import (
+    AgentWorker,
+    _deterministic_synthesis,
+    _is_useful_synthesis,
+    _source_grounded_synthesis,
+)
 from fathiya_runtime.zapier_mcp import (
     StreamableHttpMCPClient,
     ZapierMCPError,
@@ -655,6 +660,91 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].path, "runtime.md")
         self.assertEqual(retriever.last_mode, "keyword_fallback")
+
+    def test_retrieval_pins_explicit_knowledge_paths(self) -> None:
+        knowledge = Path(self.temp.name) / "knowledge"
+        scope_dir = knowledge / "security" / "scope_maps"
+        scope_dir.mkdir(parents=True)
+        filler = " ".join(["filler"] * 120)
+        (scope_dir / "SCOPE_MAP_BUGCROWD_WEBCOM_v1.json").write_text(
+            json.dumps(
+                {
+                    "intro": filler,
+                    "in_scope": [
+                        "https://www.networksolutions.com/",
+                        "https://www.bluehost.com/",
+                        "https://www.hostgator.com/",
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (knowledge / "runtime.md").write_text(
+            "Bugcrowd Web.com generic runtime note",
+            encoding="utf-8",
+        )
+        retriever = KnowledgeRetriever(knowledge)
+
+        results = retriever.search(
+            "اقرأ knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json",
+            limit=1,
+        )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(
+            results[0].path,
+            str(Path("security") / "scope_maps" / "SCOPE_MAP_BUGCROWD_WEBCOM_v1.json"),
+        )
+        self.assertEqual(results[0].score, 1.0)
+        self.assertIn("https://www.hostgator.com/", results[0].excerpt)
+        self.assertEqual(retriever.last_mode, "explicit_paths")
+
+    def test_explicit_source_synthesis_extracts_scope_values(self) -> None:
+        payload = {
+            "in_scope": [
+                {"asset": "https://www.networksolutions.com/"},
+                {"asset": "https://www.bluehost.com/"},
+                {"asset": "https://www.hostgator.com/"},
+            ],
+            "out_of_scope": [
+                {"asset": "*.networksolutions.com"},
+                {"asset": "*.bluehost.com"},
+                {"asset": "*.hostgator.com"},
+            ],
+            "required_testing_headers": [
+                {
+                    "name": "X-Request-Purpose",
+                    "value": "Research",
+                    "required": True,
+                }
+            ],
+            "submission_gate": {"operator_reports_completed": True},
+            "fathiya_execution_boundary": {
+                "blocked_now": ["Automated external scanning"],
+                "allowed_now": ["Build a passive, target-specific test plan."],
+            },
+        }
+
+        synthesis = _source_grounded_synthesis(
+            "اذكر القيم الدقيقة من knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json",
+            [
+                RetrievedSource(
+                    path="security\\scope_maps\\SCOPE_MAP_BUGCROWD_WEBCOM_v1.json",
+                    score=1.0,
+                    excerpt=json.dumps(payload),
+                )
+            ],
+        )
+
+        self.assertIsNotNone(synthesis)
+        assert synthesis is not None
+        self.assertIn("https://www.networksolutions.com/", synthesis)
+        self.assertIn("https://www.bluehost.com/", synthesis)
+        self.assertIn("https://www.hostgator.com/", synthesis)
+        self.assertIn("*.networksolutions.com", synthesis)
+        self.assertIn("X-Request-Purpose: Research", synthesis)
+        self.assertIn("Operator reports Bugcrowd identity verification completed", synthesis)
+        self.assertNotIn("X-Bugcrowd-Token", synthesis)
 
     def test_openrouter_evaluation_falls_back_on_provider_error(self) -> None:
         client = OpenRouterClient("configured-key", "test-model")
