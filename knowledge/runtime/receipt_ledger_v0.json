@@ -4,6 +4,19 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-bugcrowd-bluehost-passive-plan-v1",
+      "timestamp": "2026-06-14T20:00:46Z",
+      "source_request": "operator-reports-bugcrowd-identity-verification-complete",
+      "queue": "Security Lab Queue",
+      "adapter": "codex_repo_artifact",
+      "input_artifact": "Web.com Bugcrowd exact scope understanding result and target card",
+      "output_artifact": "knowledge/reports/study/FATHIYA_BUGCROWD_BLUEHOST_PASSIVE_PLAN_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bugcrowd-bluehost-passive-plan-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_reports_bugcrowd_identity_completed_passive_only",
+      "next_step": "Open Bluehost known issues in Bugcrowd, choose one narrow manual objective, and create a live-test gate record before any production testing"
+    },
+    {
       "receipt_id": "receipt-2026-06-14-bugcrowd-webcom-understanding-v1",
       "timestamp": "2026-06-14T19:54:10Z",
       "source_request": "agent-runtime-task-a3d24a6a-836e-46e8-bf2e-e8930fe91ad0",
