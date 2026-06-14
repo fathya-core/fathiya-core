@@ -8,7 +8,15 @@ export interface AIModel {
 }
 
 export const AI_MODELS: readonly AIModel[] = [
-  // OpenRouter
+  // OpenRouter free routing
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "Nemotron 3 Super (مجاني قوي)", tier: "free", provider: "openrouter" },
+  { id: "nex-agi/nex-n2-pro:free", label: "Nex-N2-Pro (مجاني Agentic)", tier: "free", provider: "openrouter" },
+  { id: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (مجاني)", tier: "free", provider: "openrouter" },
+  { id: "qwen/qwen3-next-80b-a3b-instruct:free", label: "Qwen3 Next 80B (مجاني)", tier: "free", provider: "openrouter" },
+  { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (مجاني)", tier: "free", provider: "openrouter" },
+  { id: "openai/gpt-oss-120b:free", label: "gpt-oss 120B (مجاني)", tier: "free", provider: "openrouter" },
+  { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (مجاني)", tier: "free", provider: "openrouter" },
+  // OpenRouter paid/fast options
   { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (سريع)", tier: "fast", provider: "openrouter" },
   { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", tier: "premium", provider: "openrouter" },
   { id: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick", tier: "fast", provider: "openrouter" },
@@ -24,7 +32,7 @@ export const AI_MODELS: readonly AIModel[] = [
   { id: "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", label: "DeepSeek R1 32B (HF)", tier: "free", provider: "huggingface" },
 ] as const;
 
-export const DEFAULT_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
 export const DEFAULT_PROVIDER: Provider = "openrouter";
 
 export function getModelProvider(modelId: string): Provider {

@@ -1,0 +1,80 @@
+{
+  "schema_version": "FATHIYA_OPERATOR_BOUNDARY_PROFILE_v1",
+  "status": "pending_operator_definition",
+  "purpose": "Operator-owned boundary profile. This file is intentionally a template until the operator defines what FATHIYA may do automatically, what requires approval, and what remains disabled.",
+  "owner": "operator",
+  "last_updated": null,
+  "default_runtime_behavior_while_pending": {
+    "mode": "boundary_pending_for_sensitive_actions",
+    "description": "Knowledge, planning, read-only local checks, receipts, and currently configured paper-mode trading may continue. Sensitive or state-changing actions should be labeled boundary_pending until the operator fills this profile."
+  },
+  "boundary_sections_to_define": [
+    {
+      "id": "trading",
+      "questions": [
+        "Which modes are allowed automatically: paper, testnet, broker-connected, or none?",
+        "What model authority is allowed: critique, veto, confirm, originate, or another role?",
+        "What risk limits, max order sizes, daily loss limits, and receipt requirements apply?"
+      ],
+      "operator_decision": null
+    },
+    {
+      "id": "security_lab",
+      "questions": [
+        "Which assets count as owned or in-scope?",
+        "Which tools may run in local labs automatically?",
+        "Which live activities require explicit per-task approval or are out of scope?"
+      ],
+      "operator_decision": null
+    },
+    {
+      "id": "connectors_and_automation",
+      "questions": [
+        "Which Zapier, n8n, MCP, and connector actions are read-only?",
+        "Which actions may write, publish, notify, mutate accounts, or trigger workflows?",
+        "What confirmation and receipt evidence is required?"
+      ],
+      "operator_decision": null
+    },
+    {
+      "id": "credentials_and_accounts",
+      "questions": [
+        "Where may secrets be stored?",
+        "Which agents may use which credentials?",
+        "What account actions require operator confirmation?"
+      ],
+      "operator_decision": null
+    },
+    {
+      "id": "filesystem_and_repository",
+      "questions": [
+        "Which paths are owned workspace paths?",
+        "Which file edits may be automatic?",
+        "Which deletes, moves, branch operations, commits, pushes, or deployments require confirmation?"
+      ],
+      "operator_decision": null
+    },
+    {
+      "id": "publication_and_external_communication",
+      "questions": [
+        "Which channels may FATHIYA draft for?",
+        "Which channels may FATHIYA publish to?",
+        "What review, approval, and receipt are required?"
+      ],
+      "operator_decision": null
+    }
+  ],
+  "receipt_requirements_to_define": [
+    "source paths or source IDs",
+    "operator boundary section used",
+    "tool contract used",
+    "action executed or boundary_pending",
+    "approval evidence when applicable",
+    "result summary and errors"
+  ],
+  "notes": [
+    "This template does not grant new permissions by itself.",
+    "Agents should not invent operator preferences when operator_decision is null.",
+    "When a request hits an undefined boundary, the correct project status is boundary_pending."
+  ]
+}

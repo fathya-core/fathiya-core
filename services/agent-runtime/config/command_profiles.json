@@ -1,0 +1,50 @@
+{
+  "schema_version": "fathiya_command_profiles_v1",
+  "profiles": [
+    {
+      "name": "git_status",
+      "description": "Read the canonical repository working-tree status.",
+      "command": ["git", "status", "--short", "--branch"],
+      "cwd": "repo",
+      "timeout_seconds": 30,
+      "risk_class": "internal_owned",
+      "requires_approval": false
+    },
+    {
+      "name": "repo_build",
+      "description": "Build the canonical repository with its existing npm build script.",
+      "command": ["npm.cmd", "run", "build"],
+      "cwd": "repo",
+      "timeout_seconds": 300,
+      "risk_class": "internal_owned",
+      "requires_approval": false
+    },
+    {
+      "name": "repo_typecheck",
+      "description": "Run the canonical repository TypeScript checks.",
+      "command": ["npm.cmd", "run", "typecheck"],
+      "cwd": "repo",
+      "timeout_seconds": 300,
+      "risk_class": "internal_owned",
+      "requires_approval": false
+    },
+    {
+      "name": "repo_lint",
+      "description": "Run the canonical repository lint checks.",
+      "command": ["npm.cmd", "run", "lint"],
+      "cwd": "repo",
+      "timeout_seconds": 300,
+      "risk_class": "internal_owned",
+      "requires_approval": false
+    },
+    {
+      "name": "runtime_tests",
+      "description": "Run the local FATHIYA agent-runtime unit tests.",
+      "command": ["python", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "cwd": "service",
+      "timeout_seconds": 300,
+      "risk_class": "internal_owned",
+      "requires_approval": false
+    }
+  ]
+}

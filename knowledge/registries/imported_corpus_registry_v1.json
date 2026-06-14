@@ -1,0 +1,42 @@
+{
+  "schema_version": "FATHIYA_IMPORTED_CORPUS_REGISTRY_v1",
+  "status": "active",
+  "purpose": "Register operator-provided external corpora that should inform FATHIYA agents through retrieval and policy-gated playbooks.",
+  "corpora": [
+    {
+      "corpus_id": "awareness_knowledge_roadmap_security_2026_05_15",
+      "title": "Awareness, Knowledge Roadmap, and Security Corpus",
+      "source_zip_sha256": "98fc9802a6a18f9692e15e9bd13ca3559e429e891e3079b71ded6ac86bea138b",
+      "manifest_path": "knowledge/intake/runtime/awareness_knowledge_roadmap_security_2026_05_15_manifest.json",
+      "knowledge_raw_root": "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
+      "file_count": 152,
+      "dominant_categories": [
+        "agentic_ai_security",
+        "security_lab_pentest",
+        "detection_threat_intel",
+        "osint_attack_surface",
+        "infrastructure_cloud_linux",
+        "career_roadmap_tools",
+        "general_awareness"
+      ],
+      "fathiya_planes": [
+        "Tool / Automation Plane",
+        "Knowledge / RAG Plane",
+        "Understanding / Evaluation Plane",
+        "Security Lab Plane"
+      ],
+      "policy_boundary": "Operator boundary profile pending. Use the corpus for knowledge, lab planning, detection engineering, and agent/tool design while routing sensitive or state-changing actions to the operator-defined boundary profile.",
+      "default_mode": "Knowledge + Boundary-Aware Planning",
+      "operator_boundary_profile": "knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json",
+      "operator_boundary_pending_for": [
+        "live external scanning or probing",
+        "exploitation or vulnerability validation",
+        "credential access or secret handling",
+        "destructive action",
+        "third-party target activity",
+        "external webhooks, workflow activation, or publication",
+        "testnet, broker-connected, or real-money trading decisions"
+      ]
+    }
+  ]
+}

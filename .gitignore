@@ -12,6 +12,7 @@ dist
 dist-ssr
 .output
 .vinxi
+.netlify/
 .tanstack/**
 .nitro
 *.local
@@ -31,3 +32,11 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.venv/
+__pycache__/
+*.py[cod]
+services/agent-runtime/runtime/
+services/agent-runtime/memory/
+services/agent-runtime/*.egg-info/
+services/agent-runtime/tools/security_core/fathiya_core/memory/*.db
+knowledge/intake/runtime/

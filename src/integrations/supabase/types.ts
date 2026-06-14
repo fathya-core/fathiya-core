@@ -14,6 +14,177 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_receipts: {
+        Row: {
+          created_at: string
+          evidence: Json
+          id: string
+          receipt_id: string
+          status: string
+          summary: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          receipt_id: string
+          status: string
+          summary: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evidence?: Json
+          id?: string
+          receipt_id?: string
+          status?: string
+          summary?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_task_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: number
+          message: string
+          payload: Json
+          progress: number | null
+          status: string | null
+          step: string | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: number
+          message: string
+          payload?: Json
+          progress?: number | null
+          status?: string | null
+          step?: string | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: number
+          message?: string
+          payload?: Json
+          progress?: number | null
+          status?: string | null
+          step?: string | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_tasks: {
+        Row: {
+          approval_state: string
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          error_message: string | null
+          id: string
+          last_heartbeat_at: string | null
+          plan: Json
+          progress: number
+          prompt: string
+          requires_approval: boolean
+          result: Json | null
+          risk_class: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          approval_state?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          plan?: Json
+          progress?: number
+          prompt: string
+          requires_approval?: boolean
+          result?: Json | null
+          risk_class?: string
+          started_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          approval_state?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          plan?: Json
+          progress?: number
+          prompt?: string
+          requires_approval?: boolean
+          result?: Json | null
+          risk_class?: string
+          started_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          worker_id?: string | null
+        }
+        Relationships: []
+      }
+      agent_workers: {
+        Row: {
+          capabilities: Json
+          created_at: string
+          id: string
+          last_heartbeat_at: string | null
+          metadata: Json
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capabilities?: Json
+          created_at?: string
+          id: string
+          last_heartbeat_at?: string | null
+          metadata?: Json
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capabilities?: Json
+          created_at?: string
+          id?: string
+          last_heartbeat_at?: string | null
+          metadata?: Json
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_runs: {
         Row: {
           created_at: string

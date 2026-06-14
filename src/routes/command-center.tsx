@@ -15,6 +15,7 @@ import {
   SquareStack,
   TriangleAlert,
   Workflow,
+  ListChecks,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +94,13 @@ function CommandCenterPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/agent-tasks"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              Agent Tasks
+            </Link>
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"

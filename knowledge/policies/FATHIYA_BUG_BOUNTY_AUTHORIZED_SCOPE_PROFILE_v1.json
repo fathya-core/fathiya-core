@@ -1,0 +1,94 @@
+{
+  "schema_version": "FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1",
+  "status": "template_active",
+  "created_at": "2026-06-14T17:10:00+03:00",
+  "purpose": "Define the evidence FATHIYA must have before moving a bug bounty task from learning/planning to non-loopback live testing.",
+  "operator_boundary_mode": "pending_operator_definition",
+  "default_mode": "planning_and_local_lab_only_until_target_scope_record_exists",
+  "scope_record_required_fields": [
+    "program_name",
+    "platform",
+    "program_policy_url_or_uploaded_text",
+    "target_asset",
+    "asset_type",
+    "in_scope_statement",
+    "out_of_scope_statement",
+    "allowed_test_types",
+    "disallowed_test_types",
+    "rate_limit_or_noise_limit",
+    "test_accounts_available",
+    "reporting_channel",
+    "operator_scope_confirmation_timestamp"
+  ],
+  "allowed_without_scope_record": [
+    "study_official_sources",
+    "study_local_corpus",
+    "write_target_scope_request",
+    "write_passive_recon_plan",
+    "analyze_user_provided_evidence",
+    "draft_report_from_user_provided_evidence",
+    "run_loopback_lab_targets",
+    "run_local_json_markdown_validation",
+    "run_comprehension_evals"
+  ],
+  "requires_scope_record": [
+    "non_loopback_active_scanning",
+    "hexstrike_lab_scan_against_non_loopback_target",
+    "nmap_or_port_scanning",
+    "nuclei_against_public_target",
+    "burp_automation_against_public_target",
+    "fuzzing_or_content_discovery",
+    "authenticated_testing_on_third_party_program",
+    "callback_based_ssrf_validation_against_live_program",
+    "rate_sensitive_tests"
+  ],
+  "requires_separate_operator_approval_even_with_scope": [
+    "destructive_or_state_changing_tests",
+    "credential_or_token_exposure_handling",
+    "tests_that_access_third_party_user_data",
+    "high_rate_or_disruptive_scans",
+    "social_engineering",
+    "phishing",
+    "denial_of_service",
+    "payment_or_financial_flow_testing",
+    "real_trade_or_real_money_actions"
+  ],
+  "tool_profiles": {
+    "loopback_lab": {
+      "target_patterns": [
+        "127.0.0.1",
+        "localhost",
+        "::1"
+      ],
+      "tools": [
+        "hexstrike_lab_scan",
+        "kali_tool_inventory",
+        "security_core_plan",
+        "knowledge_search"
+      ],
+      "approval": "operator_requested_local_lab"
+    },
+    "authorized_public_program": {
+      "target_patterns": [
+        "must_match_scope_record"
+      ],
+      "tools": [
+        "knowledge_search",
+        "passive_recon_plan",
+        "low_noise_active_profile_pending_runtime_implementation"
+      ],
+      "approval": "scope_record_plus_runtime_profile"
+    }
+  },
+  "receipt_requirements": [
+    "scope_record_id_or_scope_missing_reason",
+    "selected_learning_card_ids",
+    "selected_eval_ids",
+    "target_classification",
+    "allowed_next_action",
+    "tools_used",
+    "manual_validation_status",
+    "report_path_or_reason_not_report_ready"
+  ],
+  "note": "This profile does not replace the operator's future boundary rules. It records the minimum evidence gate needed for FATHIYA to behave like a bug bounty agent instead of a blind scanner."
+}

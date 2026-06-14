@@ -175,15 +175,15 @@ openrouter_model_routing [ active ]
 
 OpenRouter Model Slots
 ----------------------
-default    VITE_OPENROUTER_DEFAULT_MODEL    [ not set ]
-fast       VITE_OPENROUTER_FAST_MODEL       [ not set ]
-reasoning  VITE_OPENROUTER_REASONING_MODEL  [ not set ]
-critic     VITE_OPENROUTER_CRITIC_MODEL     [ not set ]
-structured VITE_OPENROUTER_STRUCTURED_MODEL [ not set ]
+default    OPENROUTER_DEFAULT_MODEL    [ not set ]
+fast       OPENROUTER_FAST_MODEL       [ not set ]
+reasoning  OPENROUTER_REASONING_MODEL  [ not set ]
+critic     OPENROUTER_CRITIC_MODEL     [ not set ]
+structured OPENROUTER_STRUCTURED_MODEL [ not set ]
 
 Missing Env Vars
 ----------------
-VITE_OPENROUTER_API_KEY          [ required ]
+OPENROUTER_API_KEY               [ required, server only ]
 FATHIYA_PUBLIC_APP_URL           [ required ]
 ...
 

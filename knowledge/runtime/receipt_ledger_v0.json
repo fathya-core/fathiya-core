@@ -4,6 +4,32 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-bug-bounty-learning-v1",
+      "timestamp": "2026-06-14T17:05:23Z",
+      "source_request": "agent-runtime-task-9ea67b24-d4ef-4649-a6e1-322c5c94f24f",
+      "queue": "Knowledge Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to teach FATHIYA bug bounty from official web sources and local awareness/security files",
+      "output_artifact": "knowledge/learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json + knowledge/evaluations/FATHIYA_BUG_BOUNTY_COMPREHENSION_EVALS_v1.json + knowledge/policies/FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1.json + knowledge/templates/FATHIYA_BUG_BOUNTY_REPORT_TEMPLATE_v1.md + knowledge/reports/study/FATHIYA_BUG_BOUNTY_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-learning-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_approved_knowledge_only_bug_bounty_learning",
+      "next_step": "Create or load an authorized program target scope record before any non-loopback active bug bounty testing; otherwise continue with planning, local labs, and report drafting from provided evidence"
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1",
+      "timestamp": "2026-06-14T13:26:43Z",
+      "source_request": "agent-runtime-task-90c182c6-0d0a-42d5-b792-08539a714190",
+      "queue": "Security Lab Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to use HexStrike-AI and scan a penetration-testing lab target",
+      "output_artifact": "knowledge/audit/FATHIYA_HEXSTRIKE_JUICE_SHOP_LOCAL_SCAN_REPORT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_local_loopback_lab_scan_only",
+      "next_step": "Use hexstrike_lab_scan for local labs by default; define target scope and approval-gated profiles before non-loopback scans"
+    },
+    {
       "receipt_id": "receipt-2026-05-16-command-center-hardening-v0",
       "timestamp": "2026-05-16T00:00:00Z",
       "source_request": "rt-2026-05-16-command-center-hardening-v0",
@@ -275,6 +301,32 @@
       "error": null,
       "approval_reference": "operator_all_permissions_internal_and_site_activation",
       "next_step": "merge branch and verify https://fathya-core.com/api/learning/status returns learning_foundation_active"
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-fathiya-knowledge-understanding-v1",
+      "timestamp": "2026-06-14T12:12:11Z",
+      "source_request": "agent-runtime-task-1ee19690-e45c-498e-898f-3d6a1a757903",
+      "queue": "Knowledge Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Awareness/security learning cards, comprehension evals, runtime map, operator boundary profile template, and runtime receipt AR-20260614120951174186-1ee19690",
+      "output_artifact": "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-fathiya-knowledge-understanding-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_knowledge_study_internal_only",
+      "next_step": "Use the understood=true proof as a teaching anchor for trading, security lab, and tool agents while operator boundaries remain pending definition."
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1",
+      "timestamp": "2026-06-14T12:25:00Z",
+      "source_request": "agent-runtime-task-22a9e319-fb12-45cb-acba-27e961396a60",
+      "queue": "Security Lab Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to test the bug bounty penetration-testing lab and confirm Kali reachability if needed.",
+      "output_artifact": "knowledge/audit/FATHIYA_BUG_BOUNTY_LAB_KALI_READINESS_REPORT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_local_readiness_test_only",
+      "next_step": "Use the ready Kali-backed bug bounty lab for local planning and owned-scope preparation; define target scope and operator boundaries before any live testing."
     }
   ],
   "required_receipt_fields": [

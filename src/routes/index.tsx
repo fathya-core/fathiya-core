@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Shield,
   SquareStack,
+  ListChecks,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 
@@ -127,6 +128,18 @@ function OpsConsole() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <RunAllButton index={idx} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/agent-tasks"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition-colors duration-150"
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                      مهام الوكلاء
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>الطابور الحي والإيصالات</TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
