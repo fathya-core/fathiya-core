@@ -10,9 +10,9 @@ evaluation, lab design, defensive detection, and owned-scope preparation.
 The primary operating goal remains an agentic execution system. The first
 specialist is the paper-trading agent, which runs a one-second local prediction
 and execution loop. Security material from this corpus protects the runtime,
-tool contracts, connector design, and lab validation. It does not authorize
-real-money trading, live exploitation, third-party probing, credential access,
-or destructive action.
+tool contracts, connector design, and lab validation. Project-specific allowed
+and disallowed boundaries are operator-owned and pending definition in
+`knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json`.
 
 ## Canonical Corpus Anchors
 
@@ -30,9 +30,9 @@ The agent must answer five questions before turning corpus knowledge into work:
    detection, tool automation, or evaluation?
 2. Is the material reference-only, review-before-use, or execution-capable?
 3. Is the target owned, local, simulated, testnet, or external/third-party?
-4. Which tool contract, playbook, and approval gate apply?
+4. Which tool contract, playbook, and operator boundary section apply?
 5. What receipt will prove what happened, what was read, what was executed, and
-   what was blocked?
+   what still needs an operator boundary decision?
 
 ## Agentic AI, MCP, HexStrike, Cursor, Gemini
 
@@ -47,9 +47,8 @@ Relevant corpus examples include:
 FATHIYA should convert these into architecture checks: context boundaries,
 prompt-injection resistance, tool-call validation, least privilege,
 deterministic receipts, and reversible lab workflows. The agent may learn
-orchestration patterns from the corpus, but it must not connect offensive tools
-to live targets without a Target Card, scope approval, tool contract, and
-receipt.
+orchestration patterns from the corpus, then route any tool authority question
+through the operator boundary profile, Target Card, tool contract, and receipt.
 
 ## Security Lab And Owned-Scope Testing
 
@@ -61,10 +60,9 @@ Relevant corpus examples include:
 - `aks-020-82d02e1e14` and `aks-021-b6ce1a01ab` - HexStrike lab workflows
 
 FATHIYA may use this material to build isolated labs, design checklists,
-prepare benign validation plans, and map required logs. Live scanning,
-exploitation, credential handling, persistence, lateral movement, or public
-target activity remains blocked until the runtime has explicit scope and a
-receiptable approval path.
+prepare benign validation plans, and map required logs. Live activity is
+`boundary_pending` until the operator defines scope and authority in the
+operator boundary profile.
 
 ## OSINT And Attack Surface
 
@@ -75,9 +73,9 @@ Relevant corpus examples include:
 - imported bug-bounty/recon sources under the same raw corpus root
 
 FATHIYA can use these sources for owned-asset inventory, report templates,
-privacy-preserving exposure maps, and passive research planning. It must not
-perform doxxing, credential collection, rate-limit abuse, or third-party
-targeting.
+privacy-preserving exposure maps, and passive research planning. External
+lookups, personal-data handling, and active enumeration must be resolved through
+the operator boundary profile.
 
 ## Detection Engineering And Threat Intelligence
 
@@ -102,12 +100,11 @@ agent by improving runtime reliability:
 - evaluation discipline so models explain decisions rather than memorize notes;
 - security boundaries around broker/testnet credentials and automation.
 
-The one-second trading loop may continue in paper mode automatically. Testnet
-orders require configured testnet credentials and policy controls. Real-money
-orders require a separate explicit approval path and must not be inferred from
-this corpus.
+The one-second trading loop may continue in the currently configured mode.
+Testnet, broker-connected, or real-money trading boundaries are not inferred
+from this corpus; they are defined later by the operator boundary profile.
 
-## Execution Policy
+## Boundary-Aware Execution Policy
 
 Allowed automatically:
 
@@ -116,7 +113,7 @@ Allowed automatically:
 - run read-only inventories of local tools, connectors, and owned runtime state;
 - run the paper-trading loop and read paper-trading receipts.
 
-Requires approval:
+Operator boundary pending:
 
 - external webhooks or workflow activation;
 - Kali, Burp, Nmap, Shodan, HexStrike, or similar live target use;
@@ -124,9 +121,14 @@ Requires approval:
   that can change money, accounts, infrastructure, or third-party systems;
 - deletion, persistence, destructive testing, or publication.
 
+These are not a final boundary list. They are the areas the operator will
+define later in
+`knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json`.
+
 ## Comprehension Check
 
-An acceptable agent answer must cite the manifest or imported raw paths, classify
-at least one source from each major area, explain what is learned, and name what
-is blocked before execution. A stronger answer also connects the corpus to
-FATHIYA's queue, policy, tool-contract, adapter, evaluation, and receipt flow.
+An acceptable agent answer must cite the manifest or imported raw paths,
+classify at least one source from each major area, explain what is learned, and
+name what boundary decision is still needed before execution. A stronger answer
+also connects the corpus to FATHIYA's queue, operator boundary profile,
+tool-contract, adapter, evaluation, and receipt flow.

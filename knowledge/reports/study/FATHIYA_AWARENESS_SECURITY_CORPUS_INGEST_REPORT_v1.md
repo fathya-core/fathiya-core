@@ -4,7 +4,14 @@
 
 The uploaded `AWARENESS_KNOWLEDGE_ROADMAP-and-securty.zip` is now a primary imported operator corpus for FATHIYA. Markdown sources were copied into `knowledge/raw/imports/...` using stable ASCII filenames, while every original filename is preserved in the manifest. Spreadsheet and PDF files were converted into searchable Markdown summaries. Raw extracted copies remain in the local runtime import directory.
 
-This corpus contains execution-capable security material. It is for learning, lab planning, owned-scope preparation, detection engineering, and agent/tool design. Live testing, exploitation, credential access, destructive actions, third-party activity, and real-money trading remain blocked unless FATHIYA has target scope, an applicable tool contract, explicit approval, and a receipt.
+This corpus contains execution-capable security material. It is for learning,
+lab planning, owned-scope preparation, detection engineering, and agent/tool
+design. Project-specific allowed and disallowed boundaries are operator-owned
+and pending definition in
+`knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json`.
+Until the operator fills that profile, sensitive or state-changing actions are
+recorded as `boundary_pending` instead of being treated as permanently decided
+by this report.
 
 ## Inventory
 
@@ -59,10 +66,10 @@ This corpus contains execution-capable security material. It is for learning, la
 ## Operating Interpretation
 
 - AI-agent, MCP, Cursor, Gemini, HexStrike, prompt-injection, and autonomous-security material routes through PLAYBOOK_002 and PLAYBOOK_004 before it becomes a tool, workflow, or agent capability.
-- Pentest, recon, OSINT, AD, cloud, Kubernetes, Burp, Nmap, IDOR, upload, and bug-bounty material routes through PLAYBOOK_005 and remains preparation-only unless a Target Card and written policy authorize activity.
+- Pentest, recon, OSINT, AD, cloud, Kubernetes, Burp, Nmap, IDOR, upload, and bug-bounty material routes through PLAYBOOK_005 and remains boundary-aware planning unless the operator boundary profile defines scope and authority.
 - Detection engineering, threat intelligence, SOC, endpoint, and incident material can be used immediately for defensive lab plans, detections, report templates, and knowledge cards.
 - Career, roadmap, tool-stack, and learning material feeds the Knowledge/RAG and Understanding/Evaluation planes.
-- Execution-capable snippets are not execution permission. They become lab notes, checklists, local-only examples, or blocked approval items depending on scope.
+- Execution-capable snippets are not execution permission. They become lab notes, checklists, local-only examples, or boundary-pending items depending on the operator-defined scope.
 
 ## Generated Artifacts
 
@@ -74,5 +81,5 @@ This corpus contains execution-capable security material. It is for learning, la
 ## Comprehension Check Prompt
 
 ```text
-استرجع corpus awareness_knowledge_roadmap_security_2026_05_15 واصنع خريطة فهم: AI agents، security lab، OSINT/recon، detection engineering، tool contracts، وما هو مسموح أو ممنوع قبل التنفيذ. سجل إيصالًا.
+استرجع corpus awareness_knowledge_roadmap_security_2026_05_15 واصنع خريطة فهم: AI agents، security lab، OSINT/recon، detection engineering، tool contracts، وما هو مسموح الآن وما ينتظر تعريف حدود المشغل قبل التنفيذ. سجل إيصالًا.
 ```

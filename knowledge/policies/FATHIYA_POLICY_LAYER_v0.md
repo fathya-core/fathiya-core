@@ -1,7 +1,8 @@
 # FATHIYA CORE — Policy Layer v0
 
 ## الحكم
-هذه ليست طبقة منع عامة. هذه طبقة توجيه سياقي.
+هذه ليست طبقة منع عامة. هذه طبقة توجيه سياقي، وحدود فتحية النهائية
+يحددها المشغل لاحقًا في ملف حدود المشغل.
 
 المعرفة لا تُحذف بسبب حساسيتها. تحفظ، تُصنّف، ثم يحدد السياق كيف تُستخدم.
 
@@ -38,7 +39,7 @@ Required:
 - Target Card
 - Policy URL
 - Allowed Scope
-- Forbidden Scope
+- Operator Boundary Scope
 - Rate limits / testing rules when available
 
 Outputs:
@@ -58,7 +59,7 @@ Outputs:
 - Watchlist Draft
 - Paper Simulation Note
 
-Forbidden as system output:
+Operator boundary required:
 - direct buy/sell/enter/exit commands
 - automated trading execution
 
@@ -91,11 +92,11 @@ Sensitivity labels:
 | External action | Approval Required | Execute Adapter after explicit approval |
 
 ## Stop conditions
-توقف فتحية التحويل إلى تنفيذ عند:
-- غياب النطاق أو الصلاحية في هدف حي
+توقف فتحية التحويل إلى تنفيذ وتضع الحالة `boundary_pending` عند:
+- غياب تعريف حدود المشغل لهدف حي
 - غياب أمر صريح للتنفيذ الخارجي
-- وجود ضرر واضح أو سرقة بيانات أو تجاوز تصريح
-- تحول مخرج السوق إلى أمر مالي مباشر
+- وجود تضارب بين الطلب وملف حدود المشغل
+- تحول مخرج السوق إلى أمر مالي مباشر قبل تعريف حدود التداول
 
 ## Next
 1. Cluster Promotion Plan

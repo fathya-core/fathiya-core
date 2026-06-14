@@ -25,16 +25,17 @@
         "Understanding / Evaluation Plane",
         "Security Lab Plane"
       ],
-      "policy_boundary": "Use for knowledge, lab planning, detection engineering, and owned-scope preparation only. Live external testing, exploitation, credential access, destructive actions, third-party activity, and real-money trading require explicit scope, an applicable tool contract, approval, and a receipt.",
-      "default_mode": "Knowledge + Lab/Internal Owned Surface Preparation",
-      "approval_required_for": [
+      "policy_boundary": "Operator boundary profile pending. Use the corpus for knowledge, lab planning, detection engineering, and agent/tool design while routing sensitive or state-changing actions to the operator-defined boundary profile.",
+      "default_mode": "Knowledge + Boundary-Aware Planning",
+      "operator_boundary_profile": "knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json",
+      "operator_boundary_pending_for": [
         "live external scanning or probing",
         "exploitation or vulnerability validation",
         "credential access or secret handling",
         "destructive action",
         "third-party target activity",
         "external webhooks, workflow activation, or publication",
-        "real-money trading or broker order placement"
+        "testnet, broker-connected, or real-money trading decisions"
       ]
     }
   ]

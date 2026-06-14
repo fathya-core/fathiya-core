@@ -2,8 +2,8 @@
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
   "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": "Free OpenRouter model routing: agents prefer strong free remote models for planning, synthesis, and evaluation; the trading advisor uses a faster free model with a short timeout while preserving local fallbacks and policy gates.",
-  "last_updated": "2026-06-14T13:57:57+03:00",
+  "current_focus": "Knowledge corpus learning layer: imported awareness/security files are now converted into learning cards, comprehension evals, and an operator-owned boundary profile template. Project-specific allowed/disallowed boundaries remain pending operator definition.",
+  "last_updated": "2026-06-14T14:59:57+03:00",
   "active_queue_count": 0,
   "blocked_items": [
     {
@@ -87,14 +87,19 @@
     "knowledge/registries/imported_corpus_registry_v1.json",
     "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_CORPUS_INGEST_REPORT_v1.md",
     "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_CORPUS_COMPREHENSION_MAP_v1.md",
+    "knowledge/learning/FATHIYA_AWARENESS_SECURITY_AGENT_LEARNING_CARDS_v1.json",
+    "knowledge/evaluations/FATHIYA_AWARENESS_SECURITY_COMPREHENSION_EVALS_v1.json",
+    "knowledge/learning/FATHIYA_KNOWLEDGE_TO_AGENT_RUNTIME_MAP_v1.md",
+    "knowledge/policies/FATHIYA_OPERATOR_BOUNDARY_PROFILE_PENDING_v1.json",
     "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
     "services/agent-runtime/tools/import_awareness_security_corpus.py"
   ],
   "blockers": [
+    "Operator boundary profile is pending; sensitive or state-changing actions should be recorded as boundary_pending until the operator defines them",
     "OpenRouter billing/credits only for explicitly selected paid models; free fallback routing and fast free trading advisory are active",
     "Supabase service credentials for production queue",
     "Binance Spot Testnet API key/secret for testnet validation",
     "Cursor local browser login and Docker daemon startup for full local mesh"
   ],
-  "next_recommended_action": "Use the free OpenRouter chain to refresh bounded learning/evaluation cards for the primary trading agent and the security lab, while keeping live trading, live security testing, and external connector writes behind approval."
+  "next_recommended_action": "Use the learning cards and comprehension evals to teach agents from the imported corpus, then let the operator fill the boundary profile that defines which sensitive actions are allowed, approval-gated, or disabled."
 }

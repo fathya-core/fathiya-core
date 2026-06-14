@@ -56,9 +56,9 @@ Source references:
 6. The first specialist execution agent is the trading agent. It currently runs
    paper-only with a one-second deterministic loop. Models may advise in
    veto-only mode but cannot originate trades or bypass risk checks.
-7. The security lab is authorization-first. Owned-surface preparation is allowed;
-   live scanning, probing, exploitation, credential access, or third-party
-   testing remains blocked until written scope and policy exist.
+7. The security lab is operator-boundary-first. Owned-surface preparation is
+   allowed; live security activity is `boundary_pending` until the operator
+   defines written scope and authority.
 8. OpenRouter routing must prefer the free candidate chain for remote planning,
    synthesis, and evaluation. If a configured primary such as `openrouter/auto`
    fails because it routes to a paid model, the runtime falls through to strong
@@ -180,16 +180,17 @@ Source references:
 
 The security lab must prepare, reason, and document before active testing:
 
-1. No target-specific work without a Target Card.
-2. Owned project context permits preparation artifacts only until a written
-   policy is published.
-3. Allowed now: target card, scope map, boundary note, local checklist,
+1. Target-specific work must identify the Target Card or mark the scope as
+   boundary_pending.
+2. Owned project context permits preparation artifacts while the operator
+   boundary profile is pending.
+3. Current automatic outputs: target card, scope map, boundary note, local checklist,
    defensive plan, evidence template, report draft.
-4. Blocked without policy/approval: live external scanning, probing,
-   exploitation, credential access, destructive action, third-party activity,
+4. Boundary-pending until the operator defines it: live external security
+   activity, credential handling, destructive action, third-party activity,
    rate-based enumeration, and private data access.
-5. Kali WSL tools can be inventoried and used for local defensive planning; live
-   use against external targets requires scope and approval.
+5. Kali WSL tools can be inventoried and used for local defensive planning;
+   live use is governed by the operator boundary profile.
 
 Source references:
 
@@ -204,14 +205,15 @@ memorize instructions:
 
 1. Retrieve at least three relevant source artifacts from `knowledge/`.
 2. State which playbook applies and why.
-3. State whether policy allows automatic execution, requires approval, or blocks
-   the task pending context.
+3. State whether the operator boundary allows automatic execution, requires
+   approval, or is still boundary_pending.
 4. If a tool is needed, identify the tool contract or draft contract.
 5. Prefer read-only and local evidence before external tools.
 6. Execute only safe internal/read-only steps automatically.
-7. For approval-gated work, create a payload preview or blocker instead of
-   silently executing.
-8. Write or preserve a receipt for completed, failed, blocked, or approved work.
+7. For boundary-pending work, create a payload preview or boundary note instead
+   of silently executing.
+8. Write or preserve a receipt for completed, failed, approved, or
+   boundary-pending work.
 9. Run critic/evaluation when the task affects trading, security, external
    actions, architecture, or model routing.
 10. When current runtime state conflicts with older knowledge, prefer live
@@ -222,7 +224,7 @@ memorize instructions:
 These prompts can be submitted as local tasks to validate the agent:
 
 - "استرجع مصادر فتحية الأساسية واشرح لماذا المشروع operating layer وليس vault فقط، ثم سجل إيصالًا."
-- "راجع قواعد وكيل التداول الورقي وحدد ما هو مسموح وممنوع قبل Testnet، ثم سجل إيصالًا."
+- "راجع قواعد وكيل التداول الورقي وحدد ما هو مسموح الآن وما ينتظر تعريف حدود المشغل قبل Testnet، ثم سجل إيصالًا."
 - "راجع مختبر الأمن وحدد ما يمكن فعله الآن وما يحتاج policy مكتوبة، ثم سجل إيصالًا."
 - "اعرض كتالوج الأدوات، اختر playbook مناسب لكل فئة، وحدد أيها يحتاج موافقة، ثم سجل إيصالًا."
 - "قارن الحالة الحية الحالية مع connected_tool_inventory_v1 وحدد أي drift دون كشف أسرار، ثم سجل إيصالًا."
