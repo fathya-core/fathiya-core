@@ -51,6 +51,7 @@ class AgentWorker:
         self.model = AgentModelRouter(
             config.openrouter_api_key,
             config.openrouter_model,
+            config.openrouter_model_candidates,
             enable_local_generation=config.enable_local_generation,
             local_model=config.local_model,
             local_max_new_tokens=config.local_max_new_tokens,
@@ -565,6 +566,8 @@ class AgentWorker:
                 ],
                 "synthesis_provider": self.synthesis_mode,
                 "last_provider": self.model.last_provider,
+                "last_openrouter_model": self.model.openrouter.last_model,
+                "openrouter_model_candidates": list(self.model.openrouter.models),
                 "provider_fallbacks": self.model.last_error,
             }
             result = {

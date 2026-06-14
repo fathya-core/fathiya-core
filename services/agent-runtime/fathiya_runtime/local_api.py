@@ -326,7 +326,12 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     result = self.server.tools.execute(
                         "trading_strategy_refresh",
                         "حدّث مستشار استراتيجية وكيل التداول",
-                        {"model_timeout_seconds": 4.0},
+                        {
+                            "model_override": self.server.config.trading_advisory_model,
+                            "model_timeout_seconds": (
+                                self.server.config.trading_advisory_timeout_seconds
+                            ),
+                        },
                     )
                     return self._send_json(
                         {
@@ -786,6 +791,12 @@ def _integration_probe(
             details={
                 "configured": configured,
                 "model": server.config.openrouter_model,
+                "model_candidates": list(server.config.openrouter_model_candidates),
+                "trading_advisory_model": server.config.trading_advisory_model,
+                "trading_advisory_model_candidates": list(
+                    server.config.trading_advisory_model_candidates
+                ),
+                "free_model_routing": True,
                 "network_call": False,
                 "cost_incurred": False,
             },

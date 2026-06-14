@@ -59,6 +59,12 @@ Source references:
 7. The security lab is authorization-first. Owned-surface preparation is allowed;
    live scanning, probing, exploitation, credential access, or third-party
    testing remains blocked until written scope and policy exist.
+8. OpenRouter routing must prefer the free candidate chain for remote planning,
+   synthesis, and evaluation. If a configured primary such as `openrouter/auto`
+   fails because it routes to a paid model, the runtime falls through to strong
+   free models before using local fallbacks. The trading advisor has its own
+   faster free-model route and short timeout so the one-second paper loop is not
+   blocked by heavyweight planning models.
 
 Source references:
 
@@ -68,6 +74,9 @@ Source references:
 - `knowledge/decisions/ADR_004_FATHIYA_DEPLOYMENT_ARCHITECTURE_MCP_SDK.md`
 - `knowledge/decisions/ADR_004_FATHIYA_PRIMARY_TRADING_AGENT_V1.md`
 - `knowledge/decisions/ADR_005_FATHIYA_AGENTIC_OPERATING_SYSTEM_PLAN.md`
+- `services/agent-runtime/fathiya_runtime/config.py`
+- `services/agent-runtime/fathiya_runtime/models.py`
+- `services/agent-runtime/fathiya_runtime/tools.py`
 
 ## Playbook Routing Rules
 

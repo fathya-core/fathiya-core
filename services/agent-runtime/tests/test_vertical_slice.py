@@ -650,6 +650,43 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(evaluation["mode"], "openrouter_error_fallback")
         self.assertEqual(evaluation["error_type"], "RuntimeError")
 
+    def test_openrouter_client_falls_through_to_free_model_candidates(self) -> None:
+        paid_error_response = Mock()
+        paid_error_response.status_code = 402
+        paid_error_response.text = '{"error":{"message":"Payment required"}}'
+        paid_error_response.json.return_value = {
+            "error": {"message": "Payment required"},
+        }
+        paid_response = Mock()
+        paid_response.raise_for_status.side_effect = requests.HTTPError(
+            "402 Payment Required",
+            response=paid_error_response,
+        )
+        free_response = Mock()
+        free_response.raise_for_status.return_value = None
+        free_response.json.return_value = {
+            "choices": [{"message": {"content": "free model ok"}}],
+        }
+        client = OpenRouterClient(
+            "configured-key",
+            "openrouter/auto",
+            ("nvidia/nemotron-3-super-120b-a12b:free",),
+        )
+
+        with patch(
+            "fathiya_runtime.models.requests.post",
+            side_effect=[paid_response, free_response],
+        ) as post:
+            result = client.complete("system", "user", json_mode=True)
+
+        sent_models = [call.kwargs["json"]["model"] for call in post.call_args_list]
+        self.assertEqual(result, "free model ok")
+        self.assertEqual(
+            sent_models,
+            ["openrouter/auto", "nvidia/nemotron-3-super-120b-a12b:free"],
+        )
+        self.assertEqual(client.last_model, "nvidia/nemotron-3-super-120b-a12b:free")
+
     def test_model_router_falls_back_to_local_huggingface(self) -> None:
         router = AgentModelRouter(
             "configured-key",
@@ -1209,6 +1246,41 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             "veto_only",
         )
         model.complete.assert_called_once()
+
+    def test_trading_strategy_refresh_uses_configured_free_advisory_model(self) -> None:
+        config = replace(
+            self.config,
+            openrouter_api_key="configured-key",
+            trading_advisory_model="openai/gpt-oss-120b:free",
+            trading_advisory_model_candidates=("google/gemma-4-31b-it:free",),
+            trading_advisory_timeout_seconds=6.0,
+        )
+        fake_client = Mock()
+        fake_client.available = True
+        fake_client.last_provider = "openrouter"
+        fake_client.last_model = "openai/gpt-oss-120b:free"
+        fake_client.complete.return_value = (
+            '{"action":"hold","confidence":0.75,"rationale":"fast free advisory"}'
+        )
+
+        with patch(
+            "fathiya_runtime.tools.OpenRouterClient",
+            return_value=fake_client,
+        ) as client_class:
+            result = ToolExecutor(config).execute(
+                "trading_strategy_refresh",
+                "حدّث مستشار استراتيجية وكيل التداول",
+            )
+
+        client_class.assert_called_once_with(
+            "configured-key",
+            "openai/gpt-oss-120b:free",
+            ("google/gemma-4-31b-it:free",),
+        )
+        self.assertFalse(result["fallback"])
+        self.assertEqual(result["model_provider"], "openrouter")
+        self.assertEqual(result["advisory_model"], "openai/gpt-oss-120b:free")
+        self.assertEqual(result["advisory"]["confidence"], 0.75)
 
     def test_trading_strategy_refresh_falls_back_without_model(self) -> None:
         result = ToolExecutor(self.config).execute(

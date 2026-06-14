@@ -9,6 +9,29 @@ from dotenv import load_dotenv
 from .local_settings import LocalSettingsStore
 
 
+DEFAULT_OPENROUTER_MODEL_CANDIDATES = (
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nex-agi/nex-n2-pro:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "qwen/qwen3-coder:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+)
+
+DEFAULT_TRADING_ADVISORY_MODEL_CANDIDATES = (
+    "nex-agi/nex-n2-pro:free",
+    "openai/gpt-oss-20b:free",
+    "openai/gpt-oss-120b:free",
+    "google/gemma-4-31b-it:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+)
+
+
 @dataclass(frozen=True)
 class RuntimeConfig:
     service_root: Path
@@ -37,6 +60,7 @@ class RuntimeConfig:
     local_max_generation_seconds: float
     openrouter_api_key: str
     openrouter_model: str
+    openrouter_model_candidates: tuple[str, ...]
     max_tool_steps: int
     max_agent_rounds: int
     knowledge_watch_enabled: bool
@@ -70,6 +94,9 @@ class RuntimeConfig:
     trading_evaluation_deadband: float
     trading_advisory_ttl_seconds: float
     trading_advisory_min_confidence: float
+    trading_advisory_model: str
+    trading_advisory_model_candidates: tuple[str, ...]
+    trading_advisory_timeout_seconds: float
     trading_max_receipts: int
     trading_testnet_provider: str
     trading_testnet_base_url: str
@@ -189,7 +216,14 @@ class RuntimeConfig:
                 ),
             ),
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY", ""),
-            openrouter_model=os.getenv("OPENROUTER_MODEL", "openrouter/auto"),
+            openrouter_model=os.getenv(
+                "OPENROUTER_MODEL",
+                DEFAULT_OPENROUTER_MODEL_CANDIDATES[0],
+            ),
+            openrouter_model_candidates=_csv_tuple(
+                os.getenv("OPENROUTER_MODEL_CANDIDATES"),
+                DEFAULT_OPENROUTER_MODEL_CANDIDATES,
+            ),
             max_tool_steps=max(1, min(12, int(os.getenv("FATHIYA_MAX_TOOL_STEPS", "6")))),
             max_agent_rounds=max(
                 1,
@@ -323,6 +357,21 @@ class RuntimeConfig:
                     float(os.getenv("FATHIYA_TRADING_ADVISORY_MIN_CONFIDENCE", "0.7")),
                 ),
             ),
+            trading_advisory_model=os.getenv(
+                "FATHIYA_TRADING_ADVISORY_MODEL",
+                DEFAULT_TRADING_ADVISORY_MODEL_CANDIDATES[0],
+            ),
+            trading_advisory_model_candidates=_csv_tuple(
+                os.getenv("FATHIYA_TRADING_ADVISORY_MODEL_CANDIDATES"),
+                DEFAULT_TRADING_ADVISORY_MODEL_CANDIDATES,
+            ),
+            trading_advisory_timeout_seconds=max(
+                1.0,
+                min(
+                    20.0,
+                    float(os.getenv("FATHIYA_TRADING_ADVISORY_TIMEOUT_SECONDS", "6")),
+                ),
+            ),
             trading_max_receipts=max(
                 1_000,
                 min(
@@ -367,3 +416,10 @@ class RuntimeConfig:
                 ),
             ),
         )
+
+
+def _csv_tuple(value: str | None, default: tuple[str, ...]) -> tuple[str, ...]:
+    if not value:
+        return default
+    parsed = tuple(item.strip() for item in value.split(",") if item.strip())
+    return parsed or default

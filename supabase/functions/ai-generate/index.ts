@@ -26,6 +26,10 @@ interface ProviderConfig {
   bodyExtra: Record<string, unknown>;
 }
 
+const DEFAULT_OPENROUTER_FREE_MODEL =
+  "nvidia/nemotron-3-super-120b-a12b:free";
+const DEFAULT_HUGGINGFACE_MODEL = "Qwen/Qwen2.5-72B-Instruct";
+
 function getProviderConfig(
   provider: "openrouter" | "huggingface",
   model: string,
@@ -84,7 +88,11 @@ Deno.serve(async (req: Request) => {
     }
 
     const provider = body.provider || "openrouter";
-    const model = body.model || "google/gemini-2.5-flash";
+    const model =
+      body.model ||
+      (provider === "huggingface"
+        ? DEFAULT_HUGGINGFACE_MODEL
+        : DEFAULT_OPENROUTER_FREE_MODEL);
     const systemPrompt = body.system || "You are a helpful assistant.";
     const userPrompt = body.user;
 

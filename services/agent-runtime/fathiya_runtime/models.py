@@ -8,6 +8,20 @@ import requests
 from .quiet_io import quiet_huggingface_output
 
 
+DEFAULT_OPENROUTER_FREE_MODELS = (
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nex-agi/nex-n2-pro:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "qwen/qwen3-coder:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+)
+
+
 class ModelClient(Protocol):
     model: str
     last_provider: str
@@ -28,11 +42,18 @@ class ModelClient(Protocol):
 
 
 class OpenRouterClient:
-    def __init__(self, api_key: str, model: str):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        fallback_models: tuple[str, ...] = DEFAULT_OPENROUTER_FREE_MODELS,
+    ):
         self.api_key = api_key
-        self.model = model
+        self.models = _ordered_models(model, fallback_models)
+        self.model = self.models[0]
         self.url = "https://openrouter.ai/api/v1/chat/completions"
         self.last_provider = "openrouter"
+        self.last_model = self.model
 
     @property
     def available(self) -> bool:
@@ -48,8 +69,36 @@ class OpenRouterClient:
     ) -> str:
         if not self.available:
             raise RuntimeError("OpenRouter is not configured")
+        errors: list[str] = []
+        for model in self.models:
+            try:
+                payload = self._request_model(
+                    model,
+                    system,
+                    user,
+                    json_mode=json_mode,
+                    max_new_tokens=max_new_tokens,
+                )
+                self.last_provider = "openrouter"
+                self.last_model = model
+                return str(payload["choices"][0]["message"]["content"]).strip()
+            except requests.HTTPError as exc:
+                errors.append(_model_error(model, exc))
+            except Exception as exc:
+                errors.append(f"{model}: {type(exc).__name__}: {str(exc)[:240]}")
+        raise RuntimeError("; ".join(errors) or "OpenRouter request failed")
+
+    def _request_model(
+        self,
+        model: str,
+        system: str,
+        user: str,
+        *,
+        json_mode: bool,
+        max_new_tokens: int | None,
+    ) -> dict[str, Any]:
         body: dict[str, Any] = {
-            "model": self.model,
+            "model": model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -71,9 +120,7 @@ class OpenRouterClient:
             timeout=75,
         )
         response.raise_for_status()
-        payload = response.json()
-        self.last_provider = "openrouter"
-        return str(payload["choices"][0]["message"]["content"]).strip()
+        return response.json()
 
     def evaluate(self, prompt: str, result: dict[str, Any]) -> dict[str, Any]:
         if not self.available:
@@ -186,6 +233,7 @@ class AgentModelRouter:
         self,
         openrouter_api_key: str,
         openrouter_model: str,
+        openrouter_fallback_models: tuple[str, ...] = DEFAULT_OPENROUTER_FREE_MODELS,
         *,
         enable_local_generation: bool,
         local_model: str,
@@ -193,7 +241,11 @@ class AgentModelRouter:
         enable_local_planning: bool = False,
         local_max_generation_seconds: float = 20.0,
     ):
-        self.openrouter = OpenRouterClient(openrouter_api_key, openrouter_model)
+        self.openrouter = OpenRouterClient(
+            openrouter_api_key,
+            openrouter_model,
+            openrouter_fallback_models,
+        )
         self.local = LocalHuggingFaceClient(
             enable_local_generation,
             local_model,
@@ -335,6 +387,29 @@ def _parse_evaluation(raw: str, provider: str) -> dict[str, Any]:
     except (json.JSONDecodeError, ValueError):
         pass
     return {"passed": True, "mode": f"{provider}_text", "summary": raw[:1000]}
+
+
+def _ordered_models(primary: str, fallback_models: tuple[str, ...]) -> tuple[str, ...]:
+    ordered: list[str] = []
+    for raw_model in (primary, *fallback_models):
+        for item in str(raw_model or "").split(","):
+            model = item.strip()
+            if model and model not in ordered:
+                ordered.append(model)
+    return tuple(ordered or DEFAULT_OPENROUTER_FREE_MODELS)
+
+
+def _model_error(model: str, exc: requests.HTTPError) -> str:
+    response = exc.response
+    status = response.status_code if response is not None else "unknown"
+    text = ""
+    if response is not None:
+        try:
+            payload = response.json()
+            text = json.dumps(payload, ensure_ascii=False)[:240]
+        except ValueError:
+            text = response.text[:240]
+    return f"{model}: HTTP {status}: {text or str(exc)[:240]}"
 
 
 def _json_object(raw: str) -> dict[str, Any]:

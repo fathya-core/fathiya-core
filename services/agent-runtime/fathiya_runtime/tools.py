@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 import requests
 
 from .config import RuntimeConfig
-from .models import ModelClient
+from .models import ModelClient, OpenRouterClient
 from .trading import BinanceSpotTestnetGateway, PaperTradingAgent
 from .zapier_mcp import ZapierMCPError, ZapierMCPGateway
 
@@ -556,6 +556,12 @@ class ToolExecutor:
                 details={
                     "configured": configured,
                     "model": self.config.openrouter_model,
+                    "model_candidates": list(self.config.openrouter_model_candidates),
+                    "trading_advisory_model": self.config.trading_advisory_model,
+                    "trading_advisory_model_candidates": list(
+                        self.config.trading_advisory_model_candidates
+                    ),
+                    "free_model_routing": True,
                     "network_call": False,
                     "cost_incurred": False,
                 },
@@ -1142,7 +1148,10 @@ class ToolExecutor:
         run_safe(
             "trading_strategy_refresh",
             "تحديث مستشار استراتيجية وكيل التداول Paper بمهلة قصيرة",
-            {"model_timeout_seconds": 3.0},
+            {
+                "model_override": self.config.trading_advisory_model,
+                "model_timeout_seconds": self.config.trading_advisory_timeout_seconds,
+            },
         )
         if start_primary_trading:
             run_safe(
@@ -1791,15 +1800,20 @@ class ToolExecutor:
         rationale = "No configured model produced a valid advisory; no veto is applied."
         model = self._model_router
         model_timeout_seconds = _bounded_float(
-            args.get("model_timeout_seconds", 6.0),
-            default=6.0,
+            args.get(
+                "model_timeout_seconds",
+                self.config.trading_advisory_timeout_seconds,
+            ),
+            default=self.config.trading_advisory_timeout_seconds,
             minimum=0.05,
             maximum=60.0,
         )
-        if model and model.available:
+        advisor_model = _trading_advisor_model_client(model, self.config, args)
+        advisory_model_id: str | None = None
+        if advisor_model and advisor_model.available:
             try:
                 raw = _complete_model_with_timeout(
-                    model,
+                    advisor_model,
                     (
                         "You are the FATHIYA paper-trading strategy advisor. "
                         "Return one JSON object only with action, confidence, and rationale. "
@@ -1836,7 +1850,12 @@ class ToolExecutor:
                 action = requested_action
                 confidence = max(0.0, min(1.0, requested_confidence))
                 rationale = requested_rationale[:400]
-                provider = str(getattr(model, "last_provider", "model"))[:120]
+                provider = str(getattr(advisor_model, "last_provider", "model"))[:120]
+                advisory_model_id = str(
+                    getattr(advisor_model, "last_model", None)
+                    or getattr(advisor_model, "model", "")
+                    or ""
+                )[:160]
                 fallback = False
             except Exception as exc:
                 error_type = type(exc).__name__
@@ -1855,6 +1874,7 @@ class ToolExecutor:
             "fallback": fallback,
             "error_type": error_type,
             "model_timeout_seconds": model_timeout_seconds,
+            "advisory_model": advisory_model_id,
             "advisory": advisory,
             "policy": status["strategy_advisory_policy"],
             "live_execution_enabled": False,
@@ -2824,6 +2844,37 @@ def _complete_model_with_timeout(
             raise payload
         raise RuntimeError(str(payload))
     return str(payload)
+
+
+def _trading_advisor_model_client(
+    model: ModelClient | None,
+    config: RuntimeConfig,
+    args: dict[str, Any],
+) -> ModelClient | None:
+    model_override = str(
+        args.get("model_override")
+        or args.get("model")
+        or config.trading_advisory_model
+        or ""
+    ).strip()
+    if config.openrouter_api_key and model_override:
+        candidate_override = args.get("model_candidates")
+        if isinstance(candidate_override, str):
+            fallback_models = tuple(
+                item.strip() for item in candidate_override.split(",") if item.strip()
+            )
+        elif isinstance(candidate_override, list):
+            fallback_models = tuple(
+                str(item).strip() for item in candidate_override if str(item).strip()
+            )
+        else:
+            fallback_models = config.trading_advisory_model_candidates
+        return OpenRouterClient(
+            config.openrouter_api_key,
+            model_override,
+            fallback_models,
+        )
+    return model
 
 
 def _agent_mesh_next_actions(

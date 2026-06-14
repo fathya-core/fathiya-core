@@ -175,7 +175,15 @@ def build_integration_readiness(
                 "integration probe: openrouter\n"
                 "افحص جاهزية OpenRouter للمحرك المحلي دون صرف tokens، ثم سجل إيصالًا."
             ),
-            "details": {"model": config.openrouter_model},
+            "details": {
+                "model": config.openrouter_model,
+                "model_candidates": list(config.openrouter_model_candidates),
+                "trading_advisory_model": config.trading_advisory_model,
+                "trading_advisory_model_candidates": list(
+                    config.trading_advisory_model_candidates
+                ),
+                "free_model_routing": True,
+            },
         },
         {
             "id": "supabase",

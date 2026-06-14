@@ -26,7 +26,43 @@ LOCAL_SETTINGS_GROUPS: dict[str, dict[str, Any]] = {
                 "label": "النموذج",
                 "kind": "text",
                 "required": False,
-                "placeholder": "openrouter/auto",
+                "placeholder": "nvidia/nemotron-3-super-120b-a12b:free",
+            },
+            {
+                "name": "OPENROUTER_MODEL_CANDIDATES",
+                "label": "سلسلة النماذج المجانية",
+                "kind": "text",
+                "required": False,
+                "placeholder": (
+                    "nvidia/nemotron-3-super-120b-a12b:free,"
+                    "nex-agi/nex-n2-pro:free,"
+                    "google/gemma-4-31b-it:free"
+                ),
+            },
+            {
+                "name": "FATHIYA_TRADING_ADVISORY_MODEL",
+                "label": "نموذج مستشار التداول",
+                "kind": "text",
+                "required": False,
+                "placeholder": "nex-agi/nex-n2-pro:free",
+            },
+            {
+                "name": "FATHIYA_TRADING_ADVISORY_MODEL_CANDIDATES",
+                "label": "نماذج احتياط مستشار التداول",
+                "kind": "text",
+                "required": False,
+                "placeholder": (
+                    "nex-agi/nex-n2-pro:free,"
+                    "openai/gpt-oss-20b:free,"
+                    "openai/gpt-oss-120b:free"
+                ),
+            },
+            {
+                "name": "FATHIYA_TRADING_ADVISORY_TIMEOUT_SECONDS",
+                "label": "مهلة مستشار التداول بالثواني",
+                "kind": "text",
+                "required": False,
+                "placeholder": "6",
             },
         ),
     },

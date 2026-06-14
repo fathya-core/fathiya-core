@@ -2,14 +2,14 @@
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
   "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": "Imported awareness/security corpus comprehension: make the local runtime retrieve the operator-uploaded corpus, understand it through policy-gated maps, and apply it to FATHIYA agents before expanding external execution.",
-  "last_updated": "2026-06-14T10:17:00+03:00",
+  "current_focus": "Free OpenRouter model routing: agents prefer strong free remote models for planning, synthesis, and evaluation; the trading advisor uses a faster free model with a short timeout while preserving local fallbacks and policy gates.",
+  "last_updated": "2026-06-14T13:57:57+03:00",
   "active_queue_count": 0,
   "blocked_items": [
     {
       "id": "openrouter-billing-402",
-      "summary": "OpenRouter key is present locally, but live model calls return 402 Payment Required.",
-      "next_step": "Operator must enable billing or add credits before heavy remote model planning/evaluation can run."
+      "summary": "OpenRouter paid or auto-routed models may return 402 Payment Required, but the runtime now falls through to a strong free-model candidate chain and the trading advisor has a separate faster free model.",
+      "next_step": "Use the free default model chain for agents and the fast free trading-advisor model; enable billing only when explicitly choosing paid models."
     },
     {
       "id": "supabase-production-queue-missing",
@@ -91,10 +91,10 @@
     "services/agent-runtime/tools/import_awareness_security_corpus.py"
   ],
   "blockers": [
-    "OpenRouter billing/credits for remote heavy planning",
+    "OpenRouter billing/credits only for explicitly selected paid models; free fallback routing and fast free trading advisory are active",
     "Supabase service credentials for production queue",
     "Binance Spot Testnet API key/secret for testnet validation",
     "Cursor local browser login and Docker daemon startup for full local mesh"
   ],
-  "next_recommended_action": "Use the imported corpus to generate bounded learning/evaluation cards for the primary trading agent and the security lab, while keeping live trading, live security testing, and external connector writes behind approval."
+  "next_recommended_action": "Use the free OpenRouter chain to refresh bounded learning/evaluation cards for the primary trading agent and the security lab, while keeping live trading, live security testing, and external connector writes behind approval."
 }
