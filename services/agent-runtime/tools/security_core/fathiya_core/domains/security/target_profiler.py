@@ -200,7 +200,7 @@ class TargetProfiler:
 
         candidates = self._collect_text_candidates(text)
         if candidates:
-            _, _, profile = min(candidates, key=lambda item: (item[0], item[1]))
+            _, _, profile = min(candidates, key=lambda item: (item[1], item[0]))
             return profile
 
         invalid_token = self._find_first_invalid_token(text)
@@ -347,7 +347,7 @@ class TargetProfiler:
         targets: List[TargetProfile] = []
         seen: Set[Tuple[str, str]] = set()
 
-        for _, _, profile in sorted(self._collect_text_candidates(text), key=lambda item: (item[0], item[1])):
+        for _, _, profile in sorted(self._collect_text_candidates(text), key=lambda item: (item[1], item[0])):
             key = (profile.target_type, profile.normalized_target)
             if key not in seen:
                 seen.add(key)

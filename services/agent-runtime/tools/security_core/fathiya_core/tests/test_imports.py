@@ -476,6 +476,19 @@ def test_profiler_text_extraction():
 test("TargetProfiler: URL extraction from text", test_profiler_text_extraction)
 
 
+def test_profiler_prioritizes_url_over_program_domain():
+    from domains.security.target_profiler import TargetProfiler
+    profiler = TargetProfiler()
+    profile = profiler.profile(
+        "Authorized Bugcrowd Web.com target https://www.hostgator.com/my-account/login"
+    )
+    assert profile.target_type == "url"
+    assert profile.normalized_target == "www.hostgator.com"
+
+
+test("TargetProfiler: URL priority over program domain", test_profiler_prioritizes_url_over_program_domain)
+
+
 def test_profiler_extract_multiple():
     from domains.security.target_profiler import TargetProfiler
     profiler = TargetProfiler()

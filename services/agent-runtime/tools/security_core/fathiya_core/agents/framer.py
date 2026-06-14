@@ -113,6 +113,21 @@ class ProblemFramer:
 
         raise ValueError(f"Framer API request failed after retries: {last_error}")
 
+    def _fallback_frame(self, reason: str) -> FramedProblem:
+        return FramedProblem(
+            problem_type="research",
+            clarity_score=6,
+            needs_research=True,
+            needs_clarification=True,
+            missing_information=[reason],
+            handling_strategy="research_first",
+            sub_tasks=[
+                "Confirm authorized scope and stop conditions.",
+                "Collect non-destructive evidence requirements.",
+                "Avoid live probing until missing requirements are resolved.",
+            ],
+        )
+
     def frame(self, user_input: str) -> FramedProblem:
         """تأطير وتشخيص طبيعة المسألة — يرجع FramedProblem"""
         system_instruction: str = """
@@ -203,18 +218,24 @@ sub_tasks
             "response_format": {"type": "json_object"}
         }
 
-        payload: Dict[str, Any] = self._post_with_retry(headers, data)
+        try:
+            payload: Dict[str, Any] = self._post_with_retry(headers, data)
+        except ValueError as e:
+            return self._fallback_frame(str(e)[:240])
 
         try:
             content: str = payload["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as e:
             raise ValueError(f"Unexpected API response structure: {payload}") from e
 
-        parsed_data: Dict[str, Any] = self._extract_json_object(content)
+        try:
+            parsed_data: Dict[str, Any] = self._extract_json_object(content)
+        except ValueError as e:
+            return self._fallback_frame(str(e)[:240])
 
         try:
             validated_data: FramedProblem = FramedProblem(**parsed_data)
         except ValidationError as e:
-            raise ValueError(f"Response does not match FramedProblem schema: {e}") from e
+            return self._fallback_frame(f"Response does not match FramedProblem schema: {e}"[:240])
 
         return validated_data
