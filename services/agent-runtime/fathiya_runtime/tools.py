@@ -2489,6 +2489,8 @@ class ToolExecutor:
         question = str(args.get("target_or_question") or prompt)
         code = (
             "import json,sys;"
+            "sys.stdout.reconfigure(encoding='utf-8', errors='replace');"
+            "sys.stderr.reconfigure(encoding='utf-8', errors='replace');"
             "sys.path.insert(0,'.');"
             "from core.orchestrator import FathiyaOrchestrator;"
             "r=FathiyaOrchestrator().run(sys.argv[1]);"
@@ -2496,7 +2498,15 @@ class ToolExecutor:
             "'analysis':r.get('analysis'),"
             "'session_id':r.get('session_id')},ensure_ascii=False,default=str))"
         )
-        result = self._run([sys.executable, "-c", code, question], cwd=core_root, timeout=90)
+        result = self._run(
+            [sys.executable, "-c", code, question],
+            cwd=core_root,
+            timeout=90,
+            env={
+                "PYTHONIOENCODING": "utf-8",
+                "PYTHONUTF8": "1",
+            },
+        )
         try:
             output = json.loads(result["stdout"])
         except json.JSONDecodeError:
@@ -2654,11 +2664,21 @@ class ToolExecutor:
         }
 
     @staticmethod
-    def _run(command: list[str], *, cwd: Path, timeout: int = 20) -> dict[str, Any]:
+    def _run(
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout: int = 20,
+        env: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        run_env = os.environ.copy()
+        if env:
+            run_env.update(env)
         try:
             completed = subprocess.run(
                 command,
                 cwd=cwd,
+                env=run_env,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

@@ -2275,6 +2275,33 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][0], sys.executable)
         self.assertEqual(result["return_code"], 0)
 
+    def test_security_core_plan_forces_utf8_subprocess_output(self) -> None:
+        executor = ToolExecutor(self.config)
+        payload = json.dumps(
+            {"final_answer": "مختبر الأمن جاهز", "analysis": {}, "session_id": 1},
+            ensure_ascii=False,
+        )
+        with patch.object(
+            executor,
+            "_run",
+            return_value={
+                "return_code": 0,
+                "stdout": payload,
+                "stderr": "",
+                "command": [],
+            },
+        ) as run:
+            result = executor.execute(
+                "security_core_plan",
+                "اختبار مختبر الأمن",
+                {"target_or_question": "مختبر bug bounty محلي"},
+            )
+
+        self.assertEqual(result["output"]["final_answer"], "مختبر الأمن جاهز")
+        self.assertIn("reconfigure(encoding='utf-8'", run.call_args.args[0][2])
+        self.assertEqual(run.call_args.kwargs["env"]["PYTHONIOENCODING"], "utf-8")
+        self.assertEqual(run.call_args.kwargs["env"]["PYTHONUTF8"], "1")
+
     def test_failed_tool_emits_failed_receipt(self) -> None:
         task = self.store.enqueue("فشل أداة", "نفذ اختبار داخلي آمن")
         worker = AgentWorker(self.config, self.store)

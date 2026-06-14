@@ -1,0 +1,63 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1",
+  "timestamp": "2026-06-14T12:25:00Z",
+  "source_request": "agent-runtime-task-22a9e319-fb12-45cb-acba-27e961396a60",
+  "queue": "Security Lab Queue",
+  "adapter": "fathiya_agent_runtime",
+  "mode": "bug_bounty_lab_kali_readiness",
+  "input_artifact": "Operator request to test the bug bounty penetration-testing lab and confirm Kali reachability if needed.",
+  "output_artifact": "knowledge/audit/FATHIYA_BUG_BOUNTY_LAB_KALI_READINESS_REPORT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_requested_local_readiness_test_only",
+  "runtime_receipt": {
+    "receipt_id": "AR-20260614122223388728-22a9e319",
+    "task_id": "22a9e319-fb12-45cb-acba-27e961396a60",
+    "status": "completed",
+    "tools": [
+      "agent_mesh_execute",
+      "kali_tool_inventory",
+      "security_core_plan",
+      "internal_echo"
+    ],
+    "retrieval_mode": "huggingface",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "kali_result": {
+    "reachable": true,
+    "distro": "kali-linux",
+    "status": "active",
+    "found_commands": [
+      "nmap",
+      "nuclei",
+      "httpx",
+      "subfinder",
+      "git",
+      "python3"
+    ],
+    "missing_commands": [],
+    "return_code": 0
+  },
+  "security_core_result": {
+    "executed": true,
+    "live_scan_executed": false,
+    "encoding_fix_applied": true,
+    "encoding_fix_test": "test_security_core_plan_forces_utf8_subprocess_output"
+  },
+  "validation": {
+    "security_core_tests": "77 passed",
+    "agent_runtime_tests": "100 passed",
+    "runtime_health_after_restart": "pass",
+    "post_restart_kali_inventory": "pass",
+    "json_parse": "pass"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "third_party_target_activity_executed": false,
+    "destructive_action_executed": false,
+    "operator_boundary_status": "pending_operator_definition"
+  },
+  "next_step": "Use the lab for local planning and owned-scope preparation; live bug bounty testing requires target scope and operator boundary definition."
+}

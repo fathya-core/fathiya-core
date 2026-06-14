@@ -288,6 +288,19 @@
       "error": null,
       "approval_reference": "operator_requested_knowledge_study_internal_only",
       "next_step": "Use the understood=true proof as a teaching anchor for trading, security lab, and tool agents while operator boundaries remain pending definition."
+    },
+    {
+      "receipt_id": "receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1",
+      "timestamp": "2026-06-14T12:25:00Z",
+      "source_request": "agent-runtime-task-22a9e319-fb12-45cb-acba-27e961396a60",
+      "queue": "Security Lab Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to test the bug bounty penetration-testing lab and confirm Kali reachability if needed.",
+      "output_artifact": "knowledge/audit/FATHIYA_BUG_BOUNTY_LAB_KALI_READINESS_REPORT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_local_readiness_test_only",
+      "next_step": "Use the ready Kali-backed bug bounty lab for local planning and owned-scope preparation; define target scope and operator boundaries before any live testing."
     }
   ],
   "required_receipt_fields": [
