@@ -672,6 +672,28 @@ def _fallback_steps(
         add("kali_tool_inventory", "قراءة الأدوات المتاحة داخل Kali WSL")
     if any(
         term in safe_text
+        for term in (
+            "hexstrike",
+            "hexstrike-ai",
+            "bug bounty",
+            "juice shop",
+            "مختبر اختراق",
+            "مكافأة الثغرات",
+            "مكافاة الثغرات",
+        )
+    ):
+        add(
+            "hexstrike_lab_scan",
+            "فحص مختبر اختراق محلي عبر HexStrike-AI",
+            {
+                "target_url": "http://127.0.0.1:3000",
+                "target_host": "127.0.0.1",
+                "port": "3000",
+                "objective": "quick",
+            },
+        )
+    if any(
+        term in safe_text
         for term in ("security", "أمن", "اختراق", "ثغرات", "فحص أمني")
     ):
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})

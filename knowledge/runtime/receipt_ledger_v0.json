@@ -4,6 +4,19 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1",
+      "timestamp": "2026-06-14T13:26:43Z",
+      "source_request": "agent-runtime-task-90c182c6-0d0a-42d5-b792-08539a714190",
+      "queue": "Security Lab Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to use HexStrike-AI and scan a penetration-testing lab target",
+      "output_artifact": "knowledge/audit/FATHIYA_HEXSTRIKE_JUICE_SHOP_LOCAL_SCAN_REPORT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_requested_local_loopback_lab_scan_only",
+      "next_step": "Use hexstrike_lab_scan for local labs by default; define target scope and approval-gated profiles before non-loopback scans"
+    },
+    {
       "receipt_id": "receipt-2026-05-16-command-center-hardening-v0",
       "timestamp": "2026-05-16T00:00:00Z",
       "source_request": "rt-2026-05-16-command-center-hardening-v0",

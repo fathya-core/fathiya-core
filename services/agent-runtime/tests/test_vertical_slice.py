@@ -271,6 +271,25 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
         self.assertEqual(tools, ["agent_mesh_execute"])
 
+    def test_hexstrike_prompt_selects_local_lab_scan(self) -> None:
+        model = AgentModelRouter(
+            "",
+            "remote-model",
+            enable_local_generation=False,
+            local_model="local-model",
+            local_max_new_tokens=64,
+        )
+        plan = build_plan(
+            {"prompt": "خليه يستخدم hexstrike-ai ويفحص مختبر اختراق محلي"},
+            [],
+            model,
+            ToolExecutor(self.config).catalog(),
+            max_tool_steps=6,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+
+        self.assertIn("hexstrike_lab_scan", tools)
+
     def test_untrusted_mission_content_cannot_trigger_agent_mesh_execute(self) -> None:
         prompt = build_knowledge_mission_prompt(
             "untrusted mesh report",
@@ -1366,6 +1385,89 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertEqual(result["status"], "active")
         self.assertEqual(result["missing_commands"], [])
         self.assertEqual(len(result["found_commands"]), 6)
+
+    def test_hexstrike_lab_scan_rejects_external_targets(self) -> None:
+        executor = ToolExecutor(self.config)
+
+        with self.assertRaises(ValueError):
+            executor.execute(
+                "hexstrike_lab_scan",
+                "افحص هدف خارجي",
+                {"target_url": "https://example.com", "target_host": "example.com"},
+            )
+
+    def test_hexstrike_lab_scan_uses_local_hexstrike_endpoints(self) -> None:
+        executor = ToolExecutor(self.config)
+
+        def response(body: dict, *, ok: bool = True, status_code: int = 200) -> Mock:
+            item = Mock(ok=ok, status_code=status_code, text=json.dumps(body))
+            item.json.return_value = body
+            return item
+
+        with patch(
+            "fathiya_runtime.tools.requests.request",
+            side_effect=[
+                response(
+                    {
+                        "status": "healthy",
+                        "version": "6.0.0",
+                        "all_essential_tools_available": True,
+                        "total_tools_available": 80,
+                        "total_tools_count": 127,
+                    }
+                ),
+                response(
+                    {
+                        "success": True,
+                        "target_profile": {
+                            "target_type": "web_application",
+                            "risk_level": "high",
+                            "services": ["http"],
+                        },
+                    }
+                ),
+                response(
+                    {
+                        "success": True,
+                        "selected_tools": [{"name": "nuclei"}, {"name": "nmap"}],
+                        "tool_count": 2,
+                    }
+                ),
+                response(
+                    {
+                        "success": True,
+                        "return_code": 0,
+                        "stdout": "3000/tcp open http\n",
+                    }
+                ),
+            ],
+        ) as request:
+            result = executor.execute(
+                "hexstrike_lab_scan",
+                "افحص مختبر اختراق محلي",
+                {
+                    "target_url": "http://127.0.0.1:3000",
+                    "target_host": "127.0.0.1",
+                    "port": "3000",
+                },
+            )
+
+        self.assertTrue(result["available"])
+        self.assertEqual(result["analysis"]["target_type"], "web_application")
+        self.assertEqual(result["selected_tools"], ["nuclei", "nmap"])
+        self.assertTrue(result["nmap"]["success"])
+        self.assertEqual(
+            request.call_args_list[0].args[:2],
+            ("GET", "http://127.0.0.1:8888/health"),
+        )
+        self.assertEqual(
+            request.call_args_list[1].args[:2],
+            ("POST", "http://127.0.0.1:8888/api/intelligence/analyze-target"),
+        )
+        self.assertEqual(
+            request.call_args_list[3].kwargs["json"]["additional_args"],
+            "-T2 --max-retries 1 --host-timeout 15s",
+        )
 
     def test_kali_inventory_synthesis_reports_real_availability(self) -> None:
         summary = _deterministic_synthesis(

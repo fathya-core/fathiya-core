@@ -2,8 +2,8 @@
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
   "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": "Bug bounty lab readiness confirmed: the local runtime completed a safe Kali WSL inventory and security_core_plan check, proved Kali reachability, and recorded a receipt without live external scanning.",
-  "last_updated": "2026-06-14T15:25:00+03:00",
+  "current_focus": "HexStrike-AI local lab scan completed: FATHIYA used imported HexStrike knowledge, selected the registered hexstrike_lab_scan tool, scanned local OWASP Juice Shop on loopback, and recorded a runtime receipt without external scanning.",
+  "last_updated": "2026-06-14T16:26:43+03:00",
   "active_queue_count": 0,
   "blocked_items": [
     {
@@ -28,6 +28,17 @@
     }
   ],
   "latest_receipts": [
+    {
+      "receipt_id": "AR-20260614132643119037-90c182c6",
+      "task_id": "90c182c6-0d0a-42d5-b792-08539a714190",
+      "summary": "HexStrike-AI local lab scan completed: retrieved five HexStrike/security sources, used hexstrike_lab_scan, confirmed HexStrike healthy with 80/127 tools, classified Juice Shop as web_application/high risk, and confirmed local port 3000 open via nmap.",
+      "planner_provider": "openrouter",
+      "synthesis_provider": "local_deterministic_rejected_model_synthesis",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "target_url": "http://127.0.0.1:3000",
+      "hexstrike_tools_available": 80,
+      "external_live_testing_executed": false
+    },
     {
       "receipt_id": "AR-20260614122223388728-22a9e319",
       "task_id": "22a9e319-fb12-45cb-acba-27e961396a60",
@@ -100,6 +111,11 @@
       "id": "n8n_local",
       "status": "ready",
       "role": "local workflow health and FATHIYA connector gateway"
+    },
+    {
+      "id": "hexstrike_ai_kali",
+      "status": "ready",
+      "role": "loopback-only local penetration-testing lab scans through Kali WSL"
     }
   ],
   "completed_artifacts": [
@@ -116,6 +132,8 @@
     "knowledge/runtime/receipts/receipt-2026-06-14-fathiya-knowledge-understanding-v1.json",
     "knowledge/audit/FATHIYA_BUG_BOUNTY_LAB_KALI_READINESS_REPORT_v1.md",
     "knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1.json",
+    "knowledge/audit/FATHIYA_HEXSTRIKE_JUICE_SHOP_LOCAL_SCAN_REPORT_v1.md",
+    "knowledge/runtime/receipts/receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1.json",
     "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
     "services/agent-runtime/tools/import_awareness_security_corpus.py"
   ],
@@ -126,5 +144,5 @@
     "Binance Spot Testnet API key/secret for testnet validation",
     "Cursor local browser login and Docker daemon startup for full local mesh"
   ],
-  "next_recommended_action": "Use the ready Kali-backed bug bounty lab for local planning and owned-scope preparation; define target scope and operator boundaries before any live testing."
+  "next_recommended_action": "Use hexstrike_lab_scan for local Juice Shop and other loopback labs; define explicit target scope and approval-gated profiles before any non-loopback testing."
 }

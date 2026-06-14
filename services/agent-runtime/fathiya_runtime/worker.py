@@ -1109,6 +1109,15 @@ def _required_synthesis_anchors(
             )
             if commands:
                 required.append(commands)
+        elif tool == "hexstrike_lab_scan":
+            required.append(("hexstrike", "مختبر", "فحص"))
+            selected = tuple(
+                str(command)
+                for command in result.get("selected_tools", [])
+                if command
+            )
+            if selected:
+                required.append(selected)
         elif tool == "repo_status":
             required.append(("repo", "repository", "مستودع"))
         elif tool == "github_repo_info":
@@ -1284,6 +1293,27 @@ def _deterministic_synthesis(
             else:
                 evidence.append("تعذر الوصول إلى Kali WSL.")
                 follow_up.append("راجع إعداد KALI_WSL_DISTRO وحالة WSL.")
+        elif tool == "hexstrike_lab_scan":
+            analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
+            nmap = result.get("nmap") if isinstance(result.get("nmap"), dict) else {}
+            hexstrike = result.get("hexstrike") if isinstance(result.get("hexstrike"), dict) else {}
+            if result.get("available"):
+                evidence.append(
+                    "HexStrike-AI جاهز "
+                    f"({hexstrike.get('total_tools_available', 'غير معروف')}/"
+                    f"{hexstrike.get('total_tools_count', 'غير معروف')} أدوات)، "
+                    f"وصنف {result.get('target_url', 'الهدف المحلي')} كـ "
+                    f"{analysis.get('target_type', 'هدف غير مصنف')} بمخاطر "
+                    f"{analysis.get('risk_level', 'غير معروفة')}."
+                )
+                evidence.append(
+                    f"فحص nmap عبر HexStrike على {result.get('target_host', '127.0.0.1')}:"
+                    f"{result.get('port', '3000')} "
+                    f"{'نجح' if nmap.get('success') else 'لم يكتمل'}."
+                )
+            else:
+                evidence.append("HexStrike-AI المحلي غير متاح الآن.")
+                follow_up.append("شغل hexstrike_server داخل Kali ثم أعد فحص المختبر المحلي.")
         elif tool.startswith("trading_"):
             trading = result.get("trading")
             cycle = result.get("cycle")

@@ -92,6 +92,7 @@ class ToolExecutor:
             "zapier_action_catalog": self._zapier_action_catalog,
             "zapier_action": self._zapier_action,
             "kali_tool_inventory": self._kali_tool_inventory,
+            "hexstrike_lab_scan": self._hexstrike_lab_scan,
             "security_core_plan": self._security_core_plan,
             "command_profile": self._command_profile,
             "trading_status": self._trading_status,
@@ -241,6 +242,12 @@ class ToolExecutor:
                     "kali_tool_inventory",
                     "Read available defensive tools inside Kali Linux WSL.",
                     "security",
+                ),
+                ToolSpec(
+                    "hexstrike_lab_scan",
+                    "Use the local HexStrike-AI server to analyze and lightly scan an owned loopback lab target.",
+                    "security",
+                    inputs=("target_url", "target_host", "port", "objective"),
                 ),
                 ToolSpec(
                     "security_core_plan",
@@ -2477,6 +2484,132 @@ class ToolExecutor:
             **result,
         }
 
+    def _hexstrike_lab_scan(
+        self,
+        _prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        target_url = _loopback_url(
+            str(args.get("target_url") or args.get("target") or "http://127.0.0.1:3000")
+        )
+        parsed_target = urlparse(target_url)
+        target_host = _loopback_host(
+            str(args.get("target_host") or parsed_target.hostname or "127.0.0.1")
+        )
+        port = _safe_port(str(args.get("port") or parsed_target.port or "3000"))
+        objective = str(args.get("objective") or "quick").strip().lower()
+        if objective not in {"quick", "comprehensive", "stealth"}:
+            objective = "quick"
+        base_url = _loopback_url(str(args.get("hexstrike_url") or "http://127.0.0.1:8888"))
+
+        health = self._hexstrike_request("GET", base_url, "/health", timeout=10)
+        if not health.get("ok"):
+            return {
+                "available": False,
+                "executed": False,
+                "status": "unavailable",
+                "target_url": target_url,
+                "target_host": target_host,
+                "port": port,
+                "error": health.get("error") or health.get("body"),
+                "hexstrike_status_code": health.get("status_code"),
+                "execution_failed": False,
+            }
+
+        analysis = self._hexstrike_request(
+            "POST",
+            base_url,
+            "/api/intelligence/analyze-target",
+            {"target": target_url},
+            timeout=30,
+        )
+        selected = self._hexstrike_request(
+            "POST",
+            base_url,
+            "/api/intelligence/select-tools",
+            {"target": target_url, "objective": objective},
+            timeout=30,
+        )
+        nmap = self._hexstrike_request(
+            "POST",
+            base_url,
+            "/api/tools/nmap",
+            {
+                "target": target_host,
+                "scan_type": "-sT",
+                "ports": port,
+                "additional_args": "-T2 --max-retries 1 --host-timeout 15s",
+                "use_recovery": False,
+            },
+            timeout=60,
+        )
+
+        profile = _json_path(analysis, "body", "target_profile")
+        selected_tools = _json_path(selected, "body", "selected_tools")
+        if not isinstance(profile, dict):
+            profile = {}
+        if not isinstance(selected_tools, list):
+            selected_tools = []
+        nmap_body = nmap.get("body") if isinstance(nmap.get("body"), dict) else {}
+        nmap_stdout = str(nmap_body.get("stdout") or nmap_body.get("output") or "")
+        return {
+            "available": True,
+            "executed": True,
+            "status": "completed",
+            "target_url": target_url,
+            "target_host": target_host,
+            "port": port,
+            "objective": objective,
+            "hexstrike": _hexstrike_health_summary(health.get("body")),
+            "analysis": {
+                "success": bool(_json_path(analysis, "body", "success")),
+                "target_type": profile.get("target_type"),
+                "risk_level": profile.get("risk_level"),
+                "services": profile.get("services"),
+            },
+            "selected_tools": [
+                _tool_name(item)
+                for item in selected_tools[:12]
+                if _tool_name(item)
+            ],
+            "nmap": {
+                "success": bool(nmap_body.get("success", nmap.get("ok"))),
+                "return_code": nmap_body.get("return_code", nmap_body.get("exit_code")),
+                "timed_out": bool(nmap_body.get("timed_out", False)),
+                "stdout_preview": "\n".join(nmap_stdout.splitlines()[:20]),
+            },
+            "execution_failed": False,
+        }
+
+    @staticmethod
+    def _hexstrike_request(
+        method: str,
+        base_url: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+        *,
+        timeout: int,
+    ) -> dict[str, Any]:
+        try:
+            response = requests.request(
+                method,
+                f"{base_url.rstrip('/')}{path}",
+                json=payload,
+                timeout=timeout,
+            )
+        except requests.RequestException as exc:
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        try:
+            body: Any = response.json()
+        except ValueError:
+            body = response.text[:4000]
+        return {
+            "ok": response.ok,
+            "status_code": response.status_code,
+            "body": body,
+        }
+
     def _security_core_plan(
         self,
         prompt: str,
@@ -2716,6 +2849,61 @@ def _json_object(raw: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("Model advisory must be a JSON object")
     return payload
+
+
+def _loopback_url(raw: str) -> str:
+    candidate = raw.strip()
+    parsed = urlparse(candidate)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("HexStrike lab target must be an HTTP(S) loopback URL")
+    _loopback_host(parsed.hostname)
+    return candidate.rstrip("/")
+
+
+def _loopback_host(raw: str) -> str:
+    host = raw.strip().strip("[]").lower()
+    if host in {"127.0.0.1", "localhost", "::1"}:
+        return "127.0.0.1" if host in {"localhost", "::1"} else host
+    raise ValueError("HexStrike lab scan is restricted to loopback targets")
+
+
+def _safe_port(raw: str) -> str:
+    port = raw.strip()
+    if not re.fullmatch(r"\d{1,5}", port):
+        raise ValueError("HexStrike lab scan requires a single numeric port")
+    value = int(port)
+    if value < 1 or value > 65535:
+        raise ValueError("HexStrike lab scan port must be between 1 and 65535")
+    return str(value)
+
+
+def _json_path(payload: dict[str, Any], *keys: str) -> Any:
+    current: Any = payload
+    for key in keys:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def _tool_name(item: Any) -> str:
+    if isinstance(item, dict):
+        return str(item.get("name") or item.get("tool") or "").strip()
+    return str(item).strip()
+
+
+def _hexstrike_health_summary(body: Any) -> dict[str, Any]:
+    if not isinstance(body, dict):
+        return {"status": "unknown"}
+    category_stats = body.get("category_stats")
+    return {
+        "status": body.get("status"),
+        "version": body.get("version"),
+        "all_essential_tools_available": body.get("all_essential_tools_available"),
+        "total_tools_available": body.get("total_tools_available"),
+        "total_tools_count": body.get("total_tools_count"),
+        "category_stats": category_stats if isinstance(category_stats, dict) else {},
+    }
 
 
 def _bounded_float(
@@ -3147,6 +3335,24 @@ def _agent_mesh_step_evidence(result: dict[str, Any]) -> dict[str, Any]:
             "distro": result.get("distro"),
             "found_commands": result.get("found_commands", []),
             "missing_commands": result.get("missing_commands", []),
+            "error": result.get("error"),
+        }
+    if tool == "hexstrike_lab_scan":
+        analysis = result.get("analysis") if isinstance(result.get("analysis"), dict) else {}
+        nmap = result.get("nmap") if isinstance(result.get("nmap"), dict) else {}
+        hexstrike = result.get("hexstrike") if isinstance(result.get("hexstrike"), dict) else {}
+        return {
+            "available": result.get("available"),
+            "executed": result.get("executed", True),
+            "status": result.get("status"),
+            "target_url": result.get("target_url"),
+            "port": result.get("port"),
+            "hexstrike_status": hexstrike.get("status"),
+            "tool_count": hexstrike.get("total_tools_available"),
+            "target_type": analysis.get("target_type"),
+            "risk_level": analysis.get("risk_level"),
+            "selected_tools": result.get("selected_tools", []),
+            "nmap_success": nmap.get("success"),
             "error": result.get("error"),
         }
     if tool in {"trading_status", "trading_start", "trading_stop"}:
