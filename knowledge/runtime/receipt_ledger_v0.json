@@ -4,6 +4,19 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-bug-bounty-learning-v1",
+      "timestamp": "2026-06-14T17:05:23Z",
+      "source_request": "agent-runtime-task-9ea67b24-d4ef-4649-a6e1-322c5c94f24f",
+      "queue": "Knowledge Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to teach FATHIYA bug bounty from official web sources and local awareness/security files",
+      "output_artifact": "knowledge/learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json + knowledge/evaluations/FATHIYA_BUG_BOUNTY_COMPREHENSION_EVALS_v1.json + knowledge/policies/FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1.json + knowledge/templates/FATHIYA_BUG_BOUNTY_REPORT_TEMPLATE_v1.md + knowledge/reports/study/FATHIYA_BUG_BOUNTY_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-learning-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "operator_approved_knowledge_only_bug_bounty_learning",
+      "next_step": "Create or load an authorized program target scope record before any non-loopback active bug bounty testing; otherwise continue with planning, local labs, and report drafting from provided evidence"
+    },
+    {
       "receipt_id": "receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1",
       "timestamp": "2026-06-14T13:26:43Z",
       "source_request": "agent-runtime-task-90c182c6-0d0a-42d5-b792-08539a714190",

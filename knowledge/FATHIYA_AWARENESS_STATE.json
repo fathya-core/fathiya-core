@@ -2,8 +2,8 @@
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
   "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": "HexStrike-AI local lab scan completed: FATHIYA used imported HexStrike knowledge, selected the registered hexstrike_lab_scan tool, scanned local OWASP Juice Shop on loopback, and recorded a runtime receipt without external scanning.",
-  "last_updated": "2026-06-14T16:26:43+03:00",
+  "current_focus": "Bug bounty learning layer completed: FATHIYA studied official web sources plus local awareness/security files, added learning cards/evals/scope profile/report template, and recorded a knowledge-only understanding receipt without external scanning.",
+  "last_updated": "2026-06-14T20:05:23+03:00",
   "active_queue_count": 0,
   "blocked_items": [
     {
@@ -28,6 +28,17 @@
     }
   ],
   "latest_receipts": [
+    {
+      "receipt_id": "AR-20260614170522869433-9ea67b24",
+      "task_id": "9ea67b24-d4ef-4649-a6e1-322c5c94f24f",
+      "summary": "Bug bounty knowledge-only understanding proof completed: retrieved the new bug bounty learning cards plus awareness/security sources, used Hugging Face retrieval and OpenRouter free-model synthesis/evaluation, and executed no active security tools.",
+      "planner_provider": "local_knowledge_only",
+      "synthesis_provider": "openrouter",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "retrieval_mode": "huggingface",
+      "understood": true,
+      "external_live_testing_executed": false
+    },
     {
       "receipt_id": "AR-20260614132643119037-90c182c6",
       "task_id": "90c182c6-0d0a-42d5-b792-08539a714190",
@@ -113,6 +124,11 @@
       "role": "local workflow health and FATHIYA connector gateway"
     },
     {
+      "id": "bug_bounty_agent_learning",
+      "status": "ready_scope_gated",
+      "role": "bug bounty scope parsing, passive planning, local lab transfer, finding validation, and report drafting"
+    },
+    {
       "id": "hexstrike_ai_kali",
       "status": "ready",
       "role": "loopback-only local penetration-testing lab scans through Kali WSL"
@@ -134,6 +150,13 @@
     "knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-lab-kali-readiness-v1.json",
     "knowledge/audit/FATHIYA_HEXSTRIKE_JUICE_SHOP_LOCAL_SCAN_REPORT_v1.md",
     "knowledge/runtime/receipts/receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1.json",
+    "knowledge/learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json",
+    "knowledge/evaluations/FATHIYA_BUG_BOUNTY_COMPREHENSION_EVALS_v1.json",
+    "knowledge/policies/FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1.json",
+    "knowledge/templates/FATHIYA_BUG_BOUNTY_REPORT_TEMPLATE_v1.md",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_WEB_AND_LOCAL_TRAINING_REPORT_v1.md",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_UNDERSTANDING_RESULT_v1.md",
+    "knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-learning-v1.json",
     "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
     "services/agent-runtime/tools/import_awareness_security_corpus.py"
   ],
@@ -144,5 +167,5 @@
     "Binance Spot Testnet API key/secret for testnet validation",
     "Cursor local browser login and Docker daemon startup for full local mesh"
   ],
-  "next_recommended_action": "Use hexstrike_lab_scan for local Juice Shop and other loopback labs; define explicit target scope and approval-gated profiles before any non-loopback testing."
+  "next_recommended_action": "For the next bug bounty target, create or load an authorized scope record from the program policy, then run passive planning and manual validation before any non-loopback active tool profile."
 }
