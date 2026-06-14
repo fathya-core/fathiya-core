@@ -1,0 +1,268 @@
+{
+  "schema_version": "FATHIYA_BUG_BOUNTY_TOOL_ORCHESTRATION_MATRIX_v1",
+  "status": "active",
+  "created_at": "2026-06-14T20:35:00+03:00",
+  "purpose": "Map every currently available FATHIYA runtime tool to bug bounty discovery responsibilities, prerequisites, and receipt evidence.",
+  "tool_rule": "Use all relevant tools by role, not all tools blindly. A tool is relevant only when the phase, scope, inputs, and approval profile match.",
+  "tools": [
+    {
+      "tool": "tool_catalog",
+      "phase": "all",
+      "bug_bounty_use": "Confirm which tools exist and what inputs they require before planning.",
+      "requires_scope_record": false,
+      "evidence": [
+        "tool list",
+        "risk class",
+        "required inputs"
+      ]
+    },
+    {
+      "tool": "local_capability_inventory",
+      "phase": "phase-0-requirements-and-scope",
+      "bug_bounty_use": "Check local execution, model, security, automation, and connector readiness.",
+      "requires_scope_record": false,
+      "evidence": [
+        "ready capability count",
+        "partial/missing capabilities"
+      ]
+    },
+    {
+      "tool": "agent_mesh_audit",
+      "phase": "phase-0-requirements-and-scope",
+      "bug_bounty_use": "Produce a secret-safe readiness snapshot across local agents, connectors, Kali, n8n, Zapier, and trading state.",
+      "requires_scope_record": false,
+      "evidence": [
+        "mesh summary",
+        "next required setup actions"
+      ]
+    },
+    {
+      "tool": "integration_probe",
+      "phase": "phase-0-requirements-and-scope",
+      "bug_bounty_use": "Check one integration such as OpenRouter, Hugging Face, n8n, Zapier, Kali, or broker testnet without exposing secrets.",
+      "requires_scope_record": false,
+      "evidence": [
+        "integration status",
+        "missing setup"
+      ]
+    },
+    {
+      "tool": "web_fetch",
+      "phase": "phase-0-and-phase-1",
+      "bug_bounty_use": "Fetch program policy, official docs, OpenAPI docs, or user-approved public evidence.",
+      "requires_scope_record": false,
+      "safety_condition": "May fetch policy/docs; must not become active vulnerability testing against third-party targets.",
+      "evidence": [
+        "source URL",
+        "retrieved policy or documentation summary"
+      ]
+    },
+    {
+      "tool": "knowledge_ingest_url",
+      "phase": "phase-0-and-phase-1",
+      "bug_bounty_use": "Persist approved program policy or official documentation into local knowledge for future retrieval.",
+      "requires_scope_record": false,
+      "safety_condition": "Use for documentation and policy ingestion, not exploitation.",
+      "evidence": [
+        "stored knowledge path",
+        "source URL"
+      ]
+    },
+    {
+      "tool": "repo_search",
+      "phase": "phase-1-passive-surface-map",
+      "bug_bounty_use": "Search owned code/config/docs for endpoints, auth checks, feature flags, security headers, and report artifacts.",
+      "requires_scope_record": false,
+      "safety_condition": "Owned repository only.",
+      "evidence": [
+        "file path",
+        "matching lines",
+        "reason for relevance"
+      ]
+    },
+    {
+      "tool": "github_repo_info",
+      "phase": "phase-0-and-phase-1",
+      "bug_bounty_use": "Verify canonical repository identity and default branch before using repo evidence.",
+      "requires_scope_record": false,
+      "evidence": [
+        "repository",
+        "default branch"
+      ]
+    },
+    {
+      "tool": "security_core_plan",
+      "phase": "all",
+      "bug_bounty_use": "Reason about vulnerability hypotheses, scope gates, validation paths, and report quality without live probing.",
+      "requires_scope_record": false,
+      "evidence": [
+        "target_or_question",
+        "safe plan",
+        "boundary decisions"
+      ]
+    },
+    {
+      "tool": "kali_tool_inventory",
+      "phase": "phase-0-and-phase-2",
+      "bug_bounty_use": "Confirm Kali tools are present before creating active profiles.",
+      "requires_scope_record": false,
+      "safety_condition": "Inventory only; does not authorize scanning.",
+      "evidence": [
+        "found commands",
+        "missing commands"
+      ]
+    },
+    {
+      "tool": "hexstrike_lab_scan",
+      "phase": "phase-2-low-noise-active-discovery",
+      "bug_bounty_use": "Analyze and lightly scan owned loopback lab targets such as Juice Shop; teach tool-to-finding transfer.",
+      "requires_scope_record": "only if future non-loopback profile exists",
+      "safety_condition": "Currently restricted to loopback targets by runtime guard.",
+      "evidence": [
+        "target URL",
+        "HexStrike health",
+        "selected tools",
+        "nmap status",
+        "lead list"
+      ]
+    },
+    {
+      "tool": "connector_catalog",
+      "phase": "phase-0",
+      "bug_bounty_use": "List connector profiles and whether workflow bridges are configured.",
+      "requires_scope_record": false,
+      "evidence": [
+        "profile count",
+        "configured profiles"
+      ]
+    },
+    {
+      "tool": "connector_profile",
+      "phase": "phase-0-and-phase-2",
+      "bug_bounty_use": "Run read-only connector checks or approved connector profiles such as n8n health/workflows.",
+      "requires_scope_record": "depends_on_profile",
+      "safety_condition": "External write profiles require approval and a scope/receipt reason.",
+      "evidence": [
+        "profile",
+        "status",
+        "read_only flag"
+      ]
+    },
+    {
+      "tool": "n8n_status",
+      "phase": "phase-0",
+      "bug_bounty_use": "Check local n8n health before workflow orchestration.",
+      "requires_scope_record": false,
+      "evidence": [
+        "version",
+        "availability"
+      ]
+    },
+    {
+      "tool": "n8n_workflows",
+      "phase": "phase-0",
+      "bug_bounty_use": "List local workflows that may support approved report routing or intake.",
+      "requires_scope_record": false,
+      "evidence": [
+        "workflow count",
+        "workflow names"
+      ]
+    },
+    {
+      "tool": "n8n_webhook",
+      "phase": "phase-5-report-and-retest",
+      "bug_bounty_use": "Send approved task/report payloads to owned n8n workflows.",
+      "requires_scope_record": true,
+      "safety_condition": "Approval required; no unapproved external action.",
+      "evidence": [
+        "payload purpose",
+        "upstream receipt"
+      ]
+    },
+    {
+      "tool": "connected_tool_inventory",
+      "phase": "phase-0",
+      "bug_bounty_use": "Read Zapier and agent-provider inventory to know whether reporting or delegation routes exist.",
+      "requires_scope_record": false,
+      "evidence": [
+        "Zapier app count",
+        "action count",
+        "agent provider status"
+      ]
+    },
+    {
+      "tool": "zapier_action_catalog",
+      "phase": "phase-0",
+      "bug_bounty_use": "Discover enabled Zapier apps/actions that could support intake, reporting, notifications, or evidence workflows.",
+      "requires_scope_record": false,
+      "evidence": [
+        "app",
+        "actions"
+      ]
+    },
+    {
+      "tool": "zapier_action",
+      "phase": "phase-5-report-and-retest",
+      "bug_bounty_use": "Execute an exact approved Zapier action such as creating a ticket or sending a report notification.",
+      "requires_scope_record": true,
+      "safety_condition": "Approval required; do not submit public reports or external writes without explicit routing profile.",
+      "evidence": [
+        "app",
+        "action",
+        "approval reference"
+      ]
+    },
+    {
+      "tool": "agent_delegate",
+      "phase": "phase-3-and-phase-4",
+      "bug_bounty_use": "Delegate bounded reasoning, code review, or report polish to a ready agent while passing the same scope constraints.",
+      "requires_scope_record": "if task concerns live target",
+      "safety_condition": "Approval required; delegate receives scope and stop conditions.",
+      "evidence": [
+        "provider",
+        "objective",
+        "mode",
+        "scope reference"
+      ]
+    },
+    {
+      "tool": "command_profile",
+      "phase": "internal-validation",
+      "bug_bounty_use": "Run repository build/tests or runtime tests to validate FATHIYA changes.",
+      "requires_scope_record": false,
+      "safety_condition": "Version-controlled local profiles only.",
+      "evidence": [
+        "profile",
+        "return code"
+      ]
+    },
+    {
+      "tool": "internal_echo",
+      "phase": "all",
+      "bug_bounty_use": "Record a decision, missing requirement, or no-tool-needed proof.",
+      "requires_scope_record": false,
+      "evidence": [
+        "message",
+        "receipt"
+      ]
+    }
+  ],
+  "missing_external_tool_notes": [
+    {
+      "tool": "Burp Suite",
+      "status": "not_a_runtime_tool",
+      "how_fathiya_uses_it": "Can request Burp evidence, project files, screenshots, or manual observations from the operator; can delegate setup only if an approved local/connector profile exists later."
+    },
+    {
+      "tool": "ProjectDiscovery tools beyond inventory",
+      "status": "available_in_kali_if_installed_but_not_direct_runtime_execution_profile",
+      "how_fathiya_uses_it": "Runtime may confirm installation through kali_tool_inventory; active execution needs a future approved scoped profile."
+    },
+    {
+      "tool": "Browser plugin and in-app browser",
+      "status": "available_to_codex_for_local/app inspection",
+      "how_fathiya_uses_it": "Useful for local UI and lab inspection; external target interaction still needs scope."
+    }
+  ],
+  "receipt_rule": "Every bug bounty task should record tools considered, tools used, why each tool was or was not allowed, and missing requirements."
+}

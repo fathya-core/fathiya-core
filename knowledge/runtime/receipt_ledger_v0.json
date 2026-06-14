@@ -4,6 +4,19 @@
   "purpose": "Record proof of routed work, adapter actions, validation, and completion state.",
   "receipts": [
     {
+      "receipt_id": "receipt-2026-06-14-bug-bounty-deep-discovery-v1",
+      "timestamp": "2026-06-14T18:57:39Z",
+      "source_request": "agent-runtime-task-cb3ba998-8539-481d-a3e0-27d4514a554e",
+      "queue": "Knowledge Queue",
+      "adapter": "fathiya_agent_runtime",
+      "input_artifact": "Operator request to make sure FATHIYA deeply understands how to find simple and complex vulnerabilities using all relevant tools and asking for or collecting requirements first",
+      "output_artifact": "knowledge/playbooks/FATHIYA_BUG_BOUNTY_DISCOVERY_PLAYBOOK_v1.json + knowledge/playbooks/FATHIYA_BUG_BOUNTY_TOOL_ORCHESTRATION_MATRIX_v1.json + knowledge/policies/FATHIYA_BUG_BOUNTY_REQUIREMENTS_INTAKE_v1.json + knowledge/evaluations/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_EVALS_v1.json + knowledge/reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_UNDERSTANDING_RESULT_v1.md + knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-deep-discovery-v1.json",
+      "status": "completed",
+      "error": null,
+      "approval_reference": "knowledge_only_internal_deep_bug_bounty_understanding",
+      "next_step": "Fill the requirements intake for the next real program target before any non-loopback active testing; use local labs and passive planning until requirements are complete"
+    },
+    {
       "receipt_id": "receipt-2026-06-14-bug-bounty-learning-v1",
       "timestamp": "2026-06-14T17:05:23Z",
       "source_request": "agent-runtime-task-9ea67b24-d4ef-4649-a6e1-322c5c94f24f",

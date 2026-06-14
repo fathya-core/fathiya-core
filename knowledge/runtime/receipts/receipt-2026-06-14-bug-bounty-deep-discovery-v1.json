@@ -1,0 +1,61 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bug-bounty-deep-discovery-v1",
+  "timestamp": "2026-06-14T18:57:39Z",
+  "source_request": "agent-runtime-task-cb3ba998-8539-481d-a3e0-27d4514a554e",
+  "queue": "Knowledge Queue",
+  "adapter": "fathiya_agent_runtime",
+  "mode": "bug_bounty_deep_discovery_knowledge_only",
+  "input_artifact": "Operator request to verify FATHIYA understands deeper bug bounty discovery for simple and complex vulnerabilities using all relevant tools and asking for or collecting missing requirements.",
+  "output_artifact": "knowledge/reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_UNDERSTANDING_RESULT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "knowledge_only_internal_deep_bug_bounty_understanding",
+  "runtime_receipt": {
+    "receipt_id": "AR-20260614185738924825-cb3ba998",
+    "task_id": "cb3ba998-8539-481d-a3e0-27d4514a554e",
+    "status": "completed",
+    "retrieval_mode": "huggingface",
+    "planner_provider": "local_knowledge_only",
+    "synthesis_provider": "openrouter",
+    "evaluation_provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free",
+    "tools": []
+  },
+  "learning_artifacts": [
+    "knowledge/playbooks/FATHIYA_BUG_BOUNTY_DISCOVERY_PLAYBOOK_v1.json",
+    "knowledge/playbooks/FATHIYA_BUG_BOUNTY_TOOL_ORCHESTRATION_MATRIX_v1.json",
+    "knowledge/policies/FATHIYA_BUG_BOUNTY_REQUIREMENTS_INTAKE_v1.json",
+    "knowledge/evaluations/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_EVALS_v1.json",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_TRAINING_REPORT_v1.md",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_UNDERSTANDING_RESULT_v1.md"
+  ],
+  "runtime_retrieved_sources": [
+    "cards/daily/2026-05-17/kc-2026-05-17-security-ai-knowledge-v0.json",
+    "playbooks/FATHIYA_BUG_BOUNTY_TOOL_ORCHESTRATION_MATRIX_v1.json",
+    "playbooks/FATHIYA_BUG_BOUNTY_DISCOVERY_PLAYBOOK_v1.json",
+    "registries/skill_registry_v0.json",
+    "learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json"
+  ],
+  "understanding_checks": {
+    "requirements_first": "pass",
+    "ask_or_collect_missing_requirements": "pass",
+    "simple_vulnerability_discovery_path": "pass",
+    "complex_vulnerability_discovery_path": "pass",
+    "tool_mesh_selection": "pass",
+    "scope_gated_active_tools": "pass",
+    "scanner_output_as_leads": "pass",
+    "manual_validation_before_report": "pass",
+    "stop_conditions": "pass"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "third_party_target_activity_executed": false,
+    "destructive_action_executed": false,
+    "bruteforce_or_exploitation_executed": false,
+    "local_loopback_lab_scan_executed": false,
+    "knowledge_only": true
+  },
+  "next_step": "When the operator provides a real bug bounty target, start by filling FATHIYA_BUG_BOUNTY_REQUIREMENTS_INTAKE_v1 fields and creating a target scope record before any non-loopback active testing."
+}
