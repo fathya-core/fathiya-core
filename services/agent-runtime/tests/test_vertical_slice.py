@@ -566,6 +566,30 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertIn("n8n_workflows", tools)
         self.assertNotIn("agent_delegate", tools)
 
+    def test_knowledge_only_request_never_selects_execution_tools(self) -> None:
+        catalog = ToolExecutor(self.config).catalog()
+        plan = build_plan(
+            {
+                "prompt": (
+                    "knowledge-only: اقرأ corpus أمني عن agents وtools وsecurity وKali "
+                    "واصنع خريطة فهم بدون تشغيل أي أداة تنفيذية."
+                )
+            },
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            catalog,
+            max_tool_steps=6,
+        )
+
+        self.assertEqual(plan[0]["planner_mode"], "local_knowledge_only")
+        self.assertEqual([step["kind"] for step in plan], ["retrieval", "model", "evaluation"])
+
     def test_canceled_running_task_is_not_completed(self) -> None:
         task = self.store.enqueue("إلغاء", "نفذ اختبار داخلي آمن")
         worker = AgentWorker(self.config, self.store)

@@ -23,6 +23,15 @@ DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
     "agent_mesh_execute",
     "trading_strategy_refresh",
 }
+KNOWLEDGE_ONLY_TERMS = (
+    "knowledge-only",
+    "knowledge only",
+    "retrieval-only",
+    "retrieval only",
+    "معرفة فقط",
+    "استرجاع فقط",
+    "تحليل معرفي فقط",
+)
 
 
 def step_signature(tool: str, args: dict[str, Any] | None = None) -> str:
@@ -35,6 +44,11 @@ def step_signature(tool: str, args: dict[str, Any] | None = None) -> str:
     )
 
 
+def knowledge_only_requested(prompt: str) -> bool:
+    text = prompt.casefold()
+    return any(term in text for term in KNOWLEDGE_ONLY_TERMS)
+
+
 def build_plan(
     task: dict[str, Any],
     sources: list[RetrievedSource],
@@ -45,38 +59,43 @@ def build_plan(
 ) -> list[dict[str, Any]]:
     operator_prompt = operator_request(str(task["prompt"]))
     planner_task = {**task, "prompt": operator_prompt}
-    direct_mesh_step = _agent_mesh_execute_step(operator_prompt) or _agent_mesh_audit_step(
-        operator_prompt
-    )
-    if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
-        tool_steps = [direct_mesh_step]
-        planner_mode = (
-            "local_agent_mesh_execute"
-            if direct_mesh_step["tool"] == "agent_mesh_execute"
-            else "local_agent_mesh_audit"
-        )
+    if knowledge_only_requested(operator_prompt):
+        tool_steps = []
+        planner_mode = "local_knowledge_only"
         planner_error = None
     else:
-        tool_steps = fast_control_steps(operator_prompt, tool_catalog)
-        if tool_steps:
-            planner_mode = "local_fast_control"
+        direct_mesh_step = _agent_mesh_execute_step(
+            operator_prompt
+        ) or _agent_mesh_audit_step(operator_prompt)
+        if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
+            tool_steps = [direct_mesh_step]
+            planner_mode = (
+                "local_agent_mesh_execute"
+                if direct_mesh_step["tool"] == "agent_mesh_execute"
+                else "local_agent_mesh_audit"
+            )
             planner_error = None
         else:
-            tool_steps, planner_mode, planner_error = _model_steps(
-                planner_task,
-                sources,
-                model,
-                tool_catalog,
-                max_tool_steps,
-            )
-            if not tool_steps:
-                tool_steps = _fallback_steps(
-                    operator_prompt,
+            tool_steps = fast_control_steps(operator_prompt, tool_catalog)
+            if tool_steps:
+                planner_mode = "local_fast_control"
+                planner_error = None
+            else:
+                tool_steps, planner_mode, planner_error = _model_steps(
+                    planner_task,
+                    sources,
+                    model,
                     tool_catalog,
                     max_tool_steps,
-                    source_guidance=sources if task.get("knowledge_mission") else [],
                 )
-                planner_mode = "local_fallback"
+                if not tool_steps:
+                    tool_steps = _fallback_steps(
+                        operator_prompt,
+                        tool_catalog,
+                        max_tool_steps,
+                        source_guidance=sources if task.get("knowledge_mission") else [],
+                    )
+                    planner_mode = "local_fallback"
 
     plan: list[dict[str, Any]] = [
         {

@@ -1,15 +1,100 @@
 {
   "schema_version": "FATHIYA_AWARENESS_STATE_v0",
-  "status": "draft",
+  "status": "active",
   "purpose": "Track current operational focus, completed artifacts, blockers, and next best action for Command Center UI.",
-  "current_focus": null,
-  "last_updated": null,
+  "current_focus": "Imported awareness/security corpus comprehension: make the local runtime retrieve the operator-uploaded corpus, understand it through policy-gated maps, and apply it to FATHIYA agents before expanding external execution.",
+  "last_updated": "2026-06-14T10:17:00+03:00",
   "active_queue_count": 0,
-  "blocked_items": [],
-  "latest_receipts": [],
-  "open_prs": [],
-  "active_agents": [],
-  "completed_artifacts": [],
-  "blockers": [],
-  "next_recommended_action": null
+  "blocked_items": [
+    {
+      "id": "openrouter-billing-402",
+      "summary": "OpenRouter key is present locally, but live model calls return 402 Payment Required.",
+      "next_step": "Operator must enable billing or add credits before heavy remote model planning/evaluation can run."
+    },
+    {
+      "id": "supabase-production-queue-missing",
+      "summary": "Supabase production queue is not configured; runtime uses local SQLite.",
+      "next_step": "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY locally when ready."
+    },
+    {
+      "id": "broker-testnet-credentials-missing",
+      "summary": "Binance Spot Testnet credentials are not configured; live execution remains disabled.",
+      "next_step": "Add Testnet API key and secret locally, then validate before enabling execution."
+    },
+    {
+      "id": "cursor-docker-partial",
+      "summary": "Cursor Agent local auth and Docker daemon are partial.",
+      "next_step": "Operator login/startup required only when those agents are needed."
+    }
+  ],
+  "latest_receipts": [
+    {
+      "receipt_id": "AR-20260614071616197227-5dff5158",
+      "task_id": "5dff5158-3c0a-4064-ace1-7060aa7cf661",
+      "summary": "Knowledge-only proof retrieved the imported corpus manifest, comprehension map, registry, and policy layer with no execution tool steps.",
+      "planner_provider": "local_knowledge_only",
+      "source_count": 5
+    },
+    {
+      "receipt_id": "AR-20260614070724138166-ffe55713",
+      "task_id": "ffe55713-8bde-487e-816d-45f9965576dc",
+      "summary": "Runtime retrieved awareness/security manifest plus imported raw corpus sources and completed a read-only comprehension run."
+    },
+    {
+      "receipt_id": "AR-20260614064851382351-486822b8",
+      "task_id": "486822b8-3d52-4917-8a36-ac18720f3367",
+      "summary": "Runtime retrieved core FATHIYA operating-system sources and completed the agent comprehension bootstrap check."
+    }
+  ],
+  "open_prs": [
+    {
+      "number": 33,
+      "url": "https://github.com/fathya-core/fathiya-core/pull/33",
+      "branch": "codex/agent-runtime-v1",
+      "latest_commit": "865540ad2ce45eebb645ac6bf4cbd41cdf29408f"
+    }
+  ],
+  "active_agents": [
+    {
+      "id": "fathiya_runtime",
+      "status": "online",
+      "role": "local queue, worker, tool execution, receipts"
+    },
+    {
+      "id": "primary_trading_agent",
+      "status": "running_paper",
+      "role": "one-second paper trading loop"
+    },
+    {
+      "id": "huggingface_local",
+      "status": "ready",
+      "role": "semantic retrieval and local bounded synthesis"
+    },
+    {
+      "id": "zapier_mcp",
+      "status": "ready",
+      "role": "OAuth connected app/action inventory and approval-gated actions"
+    },
+    {
+      "id": "n8n_local",
+      "status": "ready",
+      "role": "local workflow health and FATHIYA connector gateway"
+    }
+  ],
+  "completed_artifacts": [
+    "knowledge/runtime/FATHIYA_AGENT_COMPREHENSION_BOOTSTRAP_v1.md",
+    "knowledge/intake/runtime/awareness_knowledge_roadmap_security_2026_05_15_manifest.json",
+    "knowledge/registries/imported_corpus_registry_v1.json",
+    "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_CORPUS_INGEST_REPORT_v1.md",
+    "knowledge/reports/study/FATHIYA_AWARENESS_SECURITY_CORPUS_COMPREHENSION_MAP_v1.md",
+    "knowledge/raw/imports/awareness_knowledge_roadmap_security_2026_05_15",
+    "services/agent-runtime/tools/import_awareness_security_corpus.py"
+  ],
+  "blockers": [
+    "OpenRouter billing/credits for remote heavy planning",
+    "Supabase service credentials for production queue",
+    "Binance Spot Testnet API key/secret for testnet validation",
+    "Cursor local browser login and Docker daemon startup for full local mesh"
+  ],
+  "next_recommended_action": "Use the imported corpus to generate bounded learning/evaluation cards for the primary trading agent and the security lab, while keeping live trading, live security testing, and external connector writes behind approval."
 }

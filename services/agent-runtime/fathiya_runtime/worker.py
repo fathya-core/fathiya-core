@@ -16,6 +16,7 @@ from .planner import (
     build_follow_up_decision,
     build_plan,
     fast_control_steps,
+    knowledge_only_requested,
     step_signature,
 )
 from .retrieval import KnowledgeRetriever
@@ -192,7 +193,11 @@ class AgentWorker:
                         mission_evidence,
                     )
 
-                direct_control = fast_control_steps(execution_task["prompt"], tool_catalog)
+                direct_control = (
+                    []
+                    if knowledge_only_requested(execution_task["prompt"])
+                    else fast_control_steps(execution_task["prompt"], tool_catalog)
+                )
                 if direct_control:
                     sources = []
                     self._progress(
