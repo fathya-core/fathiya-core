@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FATHIYA - التداول وصيد الثغرات</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080c0f;
+      --panel: #10161b;
+      --panel-soft: #111c20;
+      --border: #25323a;
+      --text: #f3fbf8;
+      --muted: #9fb0ad;
+      --green: #37d99e;
+      --sky: #48bdf0;
+      --amber: #f4c75e;
+      --rose: #f0738a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8, 12, 15, 0.92);
+      backdrop-filter: blur(12px);
+    }
+    .wrap {
+      width: min(1220px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 16px 0;
+    }
+    .top, .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    main.wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
+      gap: 14px;
+      padding-top: 14px;
+    }
+    @media (max-width: 980px) { main.wrap { grid-template-columns: 1fr; } }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 18px; }
+    h2 { font-size: 15px; }
+    h3 { font-size: 13px; overflow-wrap: anywhere; }
+    p { color: var(--muted); line-height: 1.65; }
+    .stack { display: grid; gap: 12px; }
+    .card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .trading { border-color: rgba(55, 217, 158, 0.42); background: #0d1917; }
+    .bounty { border-color: rgba(72, 189, 240, 0.42); background: #0d171d; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 760px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .metric {
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      border-radius: 8px;
+      padding: 11px;
+      min-height: 66px;
+    }
+    .metric span, label { display: block; color: var(--muted); font-size: 11px; }
+    .metric strong { display: block; margin-top: 6px; font-size: 13px; overflow-wrap: anywhere; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+    }
+    .badge.ok { border-color: rgba(55, 217, 158, 0.45); color: var(--green); }
+    .badge.sky { border-color: rgba(72, 189, 240, 0.45); color: var(--sky); }
+    .badge.warn { border-color: rgba(244, 199, 94, 0.45); color: var(--amber); }
+    .badge.bad { border-color: rgba(240, 115, 138, 0.45); color: var(--rose); }
+    label { margin: 11px 0 6px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #33414a;
+      background: #080d10;
+      color: var(--text);
+      border-radius: 7px;
+      padding: 10px 11px;
+      font: inherit;
+      outline: none;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: var(--sky); }
+    button {
+      min-height: 40px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: var(--green);
+      color: #04140e;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 10px 13px;
+    }
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    button.sky {
+      background: var(--sky);
+      color: #051118;
+    }
+    button.danger {
+      background: transparent;
+      color: var(--rose);
+      border-color: rgba(240, 115, 138, 0.45);
+    }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .grid2 { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; }
+    @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+    .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .task {
+      border: 1px solid #233139;
+      border-radius: 8px;
+      padding: 12px;
+      background: #0b1115;
+      margin-top: 10px;
+    }
+    .task.active { border-color: rgba(72, 189, 240, 0.55); }
+    .meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
+    .progress {
+      height: 7px;
+      background: #070b0d;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0;
+      border: 1px solid #1f2b31;
+    }
+    .bar { height: 100%; background: var(--sky); width: 0; }
+    .receipts {
+      display: grid;
+      gap: 8px;
+      max-height: 220px;
+      overflow: auto;
+      padding-left: 4px;
+    }
+    .receipt {
+      border: 1px solid #22313a;
+      background: #0b1115;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+    }
+    pre {
+      direction: ltr;
+      text-align: left;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-height: 520px;
+      overflow: auto;
+      border: 1px solid #22313a;
+      background: #070b0d;
+      border-radius: 8px;
+      padding: 12px;
+      color: #d7eee8;
+      font-size: 11px;
+    }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap top">
+      <div>
+        <h1>فتحية</h1>
+        <p>واجهة مختصرة للتداول وصيد الثغرات فقط - متصلة بالمشغل على <span id="api-label"></span></p>
+      </div>
+      <div class="row">
+        <span class="badge" id="api-status">يتحقق...</span>
+        <span class="badge ok">التداول</span>
+        <span class="badge sky">صيد الثغرات</span>
+        <button class="secondary" id="refresh">تحديث</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="stack">
+      <div class="card trading">
+        <div class="row">
+          <div>
+            <h2>وكيل التداول</h2>
+            <p>نبضات تنبؤ وتنفيذ Paper/Testnet مع إيصال لكل دورة.</p>
+          </div>
+          <span class="badge" id="trading-running">...</span>
+        </div>
+
+        <div class="mini-grid" style="margin-top: 12px;">
+          <div class="metric"><span>الرمز</span><strong id="trade-symbol">--</strong></div>
+          <div class="metric"><span>آخر نبضة</span><strong id="trade-latest">--</strong></div>
+          <div class="metric"><span>دقة التنبؤ</span><strong id="trade-accuracy">--</strong></div>
+          <div class="metric"><span>صافي PnL</span><strong id="trade-pnl">--</strong></div>
+        </div>
+
+        <div class="card" style="margin-top: 10px; padding: 11px; background:#0b1115;">
+          <div class="row">
+            <strong style="font-size: 12px;">آخر قرار</strong>
+            <span class="muted" id="trade-latency">--</span>
+          </div>
+          <p id="trade-decision" style="margin-top: 6px;">لم تبدأ دورة التنبؤ بعد.</p>
+        </div>
+
+        <div class="row" style="margin-top: 12px;">
+          <button id="trade-toggle">تشغيل</button>
+          <button class="secondary" id="trade-tick">نبضة واحدة</button>
+          <button class="secondary" id="trade-strategy">تحديث المستشار</button>
+        </div>
+        <p id="trade-notice" style="margin-top: 10px;">--</p>
+      </div>
+
+      <div class="card bounty">
+        <div class="row">
+          <div>
+            <h2>صيد الثغرات</h2>
+            <p>زر واحد يبدأ اختيار الهدف أو يستخدم الرابط الذي تعطيه لكتابة Draft داخلي.</p>
+          </div>
+          <span class="badge sky">Draft</span>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label for="platform">المنصة</label>
+            <select id="platform">
+              <option value="auto">تلقائي</option>
+              <option value="hackerone">HackerOne</option>
+              <option value="bugcrowd">Bugcrowd</option>
+            </select>
+          </div>
+          <div>
+            <label for="program-url">رابط البرنامج أو الهدف</label>
+            <input id="program-url" dir="ltr" placeholder="https://hackerone.com/... أو https://bugcrowd.com/..." />
+          </div>
+        </div>
+
+        <label for="repo-url">GitHub repo اختياري</label>
+        <input id="repo-url" dir="ltr" placeholder="https://github.com/org/repo" />
+
+        <label for="focus">تركيز الصيد</label>
+        <textarea id="focus" placeholder="مثال: CI supply-chain، OIDC/JWT، SSRF، auth bypass، cache poisoning"></textarea>
+
+        <div class="row" style="margin-top: 12px;">
+          <button class="sky" id="start-hunt">ابدأ صيد الثغرات</button>
+          <button class="secondary" id="fill-h1">HackerOne</button>
+          <button class="secondary" id="fill-bc">Bugcrowd</button>
+        </div>
+        <p style="margin-top: 10px;">يعرض التقرير والإثبات داخل فتحية قبل أي إرسال خارجي.</p>
+      </div>
+    </section>
+
+    <section class="stack">
+      <div class="metrics">
+        <div class="metric"><span>المهام النشطة</span><strong id="active-count">--</strong></div>
+        <div class="metric"><span>كل المهام</span><strong id="task-total">--</strong></div>
+        <div class="metric"><span>التكاملات</span><strong id="integration-count">--</strong></div>
+        <div class="metric"><span>آخر إيصال تداول</span><strong id="last-trade-receipt">--</strong></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div>
+            <h2>التقارير والمهام</h2>
+            <p>آخر مهام التداول وصيد الثغرات، مع التقدم والإيصالات.</p>
+          </div>
+          <span class="badge" id="task-count">0</span>
+        </div>
+        <div id="tasks"></div>
+      </div>
+
+      <div class="card">
+        <h2>تفاصيل التقرير المحدد</h2>
+        <pre id="detail">ابدأ مهمة أو اختر تقريرًا من القائمة.</pre>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <h2>إيصالات التداول الأخيرة</h2>
+          <span class="badge" id="receipt-count">0</span>
+        </div>
+        <div class="receipts" id="trade-receipts"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const apiBase = new URLSearchParams(location.search).get("api") || "http://127.0.0.1:8765";
+    const activeStatuses = new Set(["queued", "running", "awaiting_approval", "stalled"]);
+    const platformLabels = { auto: "تلقائي", hackerone: "HackerOne", bugcrowd: "Bugcrowd" };
+    const knowledgePath = "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
+    let selectedTaskId = null;
+    let tradingState = null;
+
+    document.getElementById("api-label").textContent = apiBase;
+
+    function normalizeUrl(value) {
+      const clean = value.trim();
+      if (!clean) return "";
+      return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
+    }
+
+    function isGithubRepoUrl(value) {
+      return /^https?:\/\/(?:www\.)?github\.com\/[^/\s]+\/[^/\s]+/i.test(value.trim());
+    }
+
+    function programLabel(platform, programUrl) {
+      if (!programUrl.trim()) return platform === "auto" ? "اختيار تلقائي من البرامج المصرحة" : `${platformLabels[platform]} authorized program`;
+      try {
+        const url = new URL(normalizeUrl(programUrl));
+        const parts = url.pathname.split("/").filter(Boolean);
+        return parts.slice(0, 2).join("/") || url.hostname;
+      } catch {
+        return programUrl.trim().slice(0, 80);
+      }
+    }
+
+    function buildHuntPrompt() {
+      const platform = document.getElementById("platform").value;
+      const programUrl = normalizeUrl(document.getElementById("program-url").value);
+      const repoInput = document.getElementById("repo-url").value;
+      const repoUrl = normalizeUrl(repoInput || (isGithubRepoUrl(programUrl) ? programUrl : ""));
+      const focus = document.getElementById("focus").value.trim() || "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب مسودة تقرير داخل فتحية.";
+      const scopeNote = [
+        `platform=${platformLabels[platform]}`,
+        programUrl ? `program_url=${programUrl}` : "selection=auto_authorized_program",
+        repoUrl ? `repo_url=${repoUrl}` : "repo_url=not_provided"
+      ].join("; ");
+      return {
+        title: `صيد ثغرات: ${programLabel(platform, programUrl)}`,
+        prompt: [
+          "bug bounty hunt flow:",
+          "bug bounty static review:",
+          `platform: ${platformLabels[platform]}`,
+          `program: ${programLabel(platform, programUrl)}`,
+          programUrl ? `program_url: ${programUrl}` : "program_url: auto",
+          repoUrl ? `repo_url: ${repoUrl}` : "repo_url:",
+          "target_path: .",
+          `scope_note: ${scopeNote}`,
+          `focus: ${focus}`,
+          `knowledge_path: ${knowledgePath}`,
+          "draft_gate: internal_only",
+          "constraints: مراجعة معرفة ومصادر مصرح بها؛ التقرير والإثبات يظهران داخل فتحية قبل أي إرسال خارجي."
+        ].join("\n")
+      };
+    }
+
+    async function api(path, init = {}) {
+      const res = await fetch(`${apiBase}${path}`, {
+        ...init,
+        headers: { "Content-Type": "application/json", ...(init.headers || {}) }
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+      return text ? JSON.parse(text) : {};
+    }
+
+    async function createTask(body) {
+      const data = await api("/api/agent/tasks", { method: "POST", body: JSON.stringify(body) });
+      selectedTaskId = data.task.id;
+      await loadTasks();
+      await loadDetail(selectedTaskId);
+    }
+
+    async function loadTrading() {
+      try {
+        const [statusData, receiptData] = await Promise.all([
+          api("/api/agent/trading/status"),
+          api("/api/agent/trading/receipts")
+        ]);
+        tradingState = statusData.trading;
+        renderTrading(statusData.trading, receiptData.receipts || []);
+      } catch (error) {
+        document.getElementById("trading-running").textContent = "غير متصل";
+        document.getElementById("trading-running").className = "badge warn";
+        document.getElementById("trade-notice").textContent = String(error);
+      }
+    }
+
+    function renderTrading(trading, receipts) {
+      const running = document.getElementById("trading-running");
+      running.textContent = trading.running ? "يعمل" : "متوقف";
+      running.className = trading.running ? "badge ok" : "badge";
+      document.getElementById("trade-toggle").textContent = trading.running ? "إيقاف" : "تشغيل";
+      document.getElementById("trade-symbol").textContent = `${trading.symbol} · ${trading.mode}`;
+      document.getElementById("trade-latest").textContent = cadenceLabel(trading.execution_cadence);
+      document.getElementById("trade-accuracy").textContent = trading.prediction_quality.directional_accuracy == null ? "--" : `${Math.round(trading.prediction_quality.directional_accuracy * 100)}%`;
+      document.getElementById("trade-pnl").textContent = numberLabel(trading.portfolio.net_pnl);
+      document.getElementById("trade-latency").textContent = trading.latest_cycle ? `${trading.latest_cycle.latency_ms.toFixed(2)} ms` : "--";
+      document.getElementById("trade-decision").textContent = trading.latest_cycle ? `${trading.latest_cycle.prediction.action} · ${trading.latest_cycle.risk.reason}` : "لم تبدأ دورة التنبؤ بعد.";
+      document.getElementById("trade-notice").textContent = marketNotice(trading.current_market_source);
+      document.getElementById("last-trade-receipt").textContent = trading.latest_receipt_id || "--";
+      document.getElementById("receipt-count").textContent = `${receipts.length}`;
+      const host = document.getElementById("trade-receipts");
+      host.innerHTML = receipts.length ? "" : '<p class="muted">لا توجد إيصالات تداول بعد.</p>';
+      for (const cycle of receipts.slice(0, 8)) {
+        const el = document.createElement("div");
+        el.className = "receipt";
+        el.innerHTML = `
+          <div class="row"><strong>${escapeHtml(cycle.prediction.action)}</strong><span>${escapeHtml(cycle.status)}</span></div>
+          <p>${escapeHtml(cycle.risk.reason)} · ${numberLabel(cycle.tick.price)} · ${escapeHtml(cycle.receipt_id)}</p>
+        `;
+        host.appendChild(el);
+      }
+    }
+
+    async function tradingAction(action) {
+      await api(`/api/agent/trading/${action}`, { method: "POST" });
+      await loadTrading();
+    }
+
+    async function loadTasks() {
+      const status = document.getElementById("api-status");
+      try {
+        const [taskData, integrationData] = await Promise.all([
+          api("/api/agent/tasks"),
+          api("/api/agent/integrations").catch(() => ({ summary: null }))
+        ]);
+        const allTasks = taskData.tasks || [];
+        const focused = focusTasks(allTasks).slice(0, 14);
+        status.textContent = "متصل";
+        status.className = "badge ok";
+        document.getElementById("active-count").textContent = `${allTasks.filter((task) => activeStatuses.has(task.status)).length}`;
+        document.getElementById("task-total").textContent = `${allTasks.length}`;
+        document.getElementById("task-count").textContent = `${focused.length}`;
+        document.getElementById("integration-count").textContent = integrationData.summary ? `${integrationData.summary.ready}/${integrationData.summary.total}` : "--";
+        const host = document.getElementById("tasks");
+        host.innerHTML = "";
+        if (!focused.length) {
+          host.innerHTML = '<p class="muted" style="margin-top: 12px;">لا توجد مهام بعد. ابدأ من التداول أو صيد الثغرات.</p>';
+          return;
+        }
+        for (const task of focused) {
+          const el = document.createElement("div");
+          el.className = `task ${task.id === selectedTaskId ? "active" : ""}`;
+          el.innerHTML = `
+            <h3>${escapeHtml(task.title || task.id)}</h3>
+            <div class="meta">
+              <span>${escapeHtml(task.status)}</span>
+              <span>${task.progress || 0}%</span>
+              <span>${escapeHtml(task.risk_class || "")}</span>
+            </div>
+            <div class="progress"><div class="bar" style="width:${Math.max(0, Math.min(100, task.progress || 0))}%"></div></div>
+            <p>${escapeHtml(task.current_step || "بانتظار تحديث")}</p>
+            <div class="row" style="margin-top:10px; justify-content:flex-start;">
+              <button class="secondary" data-open="${task.id}">عرض</button>
+              ${task.status === "awaiting_approval" ? `<button data-approve="${task.id}">موافقة</button>` : ""}
+              ${activeStatuses.has(task.status) ? `<button class="danger" data-cancel="${task.id}">إلغاء</button>` : ""}
+            </div>
+          `;
+          host.appendChild(el);
+        }
+      } catch (error) {
+        status.textContent = "غير متصل";
+        status.className = "badge warn";
+        document.getElementById("detail").textContent = String(error);
+      }
+    }
+
+    function focusTasks(tasks) {
+      const matches = tasks.filter((task) => {
+        const text = `${task.title}\n${task.prompt}`.toLowerCase();
+        return text.includes("bug bounty") || text.includes("صيد") || text.includes("ثغر") || text.includes("hackerone") || text.includes("bugcrowd") || text.includes("trading") || text.includes("تداول") || text.includes("paper");
+      });
+      return matches.length ? matches : tasks;
+    }
+
+    async function loadDetail(id) {
+      selectedTaskId = id;
+      const data = await api(`/api/agent/tasks/${id}`);
+      document.getElementById("detail").textContent = JSON.stringify(data, null, 2);
+      await loadTasks();
+    }
+
+    function cadenceLabel(cadence) {
+      if (!cadence || !cadence.latest_interval_seconds) return "--";
+      return `${cadence.latest_interval_seconds.toFixed(2)}s`;
+    }
+
+    function marketNotice(source) {
+      if (source === "coinbase_spot") return "بيانات سوق عامة مباشرة، والتنفيذ Paper/Testnet فقط في هذه الواجهة.";
+      if (source) return `مصدر السوق الحالي: ${source}`;
+      return "لم يتصل مصدر السوق بعد.";
+    }
+
+    function numberLabel(value) {
+      if (typeof value !== "number" || Number.isNaN(value)) return "--";
+      return value.toLocaleString("en-US", { maximumFractionDigits: 4 });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      })[char]);
+    }
+
+    function showError(error) {
+      document.getElementById("detail").textContent = String(error);
+    }
+
+    document.getElementById("refresh").addEventListener("click", () => refreshAll());
+    document.getElementById("start-hunt").addEventListener("click", () => createTask(buildHuntPrompt()).catch(showError));
+    document.getElementById("trade-toggle").addEventListener("click", () => tradingAction(tradingState?.running ? "stop" : "start").catch(showError));
+    document.getElementById("trade-tick").addEventListener("click", () => tradingAction("tick").catch(showError));
+    document.getElementById("trade-strategy").addEventListener("click", () => tradingAction("strategy-refresh").catch(showError));
+    document.getElementById("fill-h1").addEventListener("click", () => {
+      document.getElementById("platform").value = "hackerone";
+      document.getElementById("focus").value = "ركز على CI supply-chain وOIDC/JWT وSSRF وابحث عن أثر جديد غير مكرر.";
+    });
+    document.getElementById("fill-bc").addEventListener("click", () => {
+      document.getElementById("platform").value = "bugcrowd";
+      document.getElementById("focus").value = "راجع النطاق والسياسات ثم ابحث عن مرشح قوي واكتب Draft داخلي بإثبات واضح.";
+    });
+    document.getElementById("tasks").addEventListener("click", (event) => {
+      const target = event.target;
+      const openId = target.getAttribute("data-open");
+      const approveId = target.getAttribute("data-approve");
+      const cancelId = target.getAttribute("data-cancel");
+      if (openId) loadDetail(openId).catch(showError);
+      if (approveId) api(`/api/agent/tasks/${approveId}/approve`, { method: "POST" }).then(() => loadDetail(approveId)).catch(showError);
+      if (cancelId) api(`/api/agent/tasks/${cancelId}/cancel`, { method: "POST" }).then(() => loadTasks()).catch(showError);
+    });
+
+    async function refreshAll() {
+      await Promise.all([loadTasks(), loadTrading()]);
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 5000);
+    setInterval(loadTrading, 1000);
+  </script>
+</body>
+</html>

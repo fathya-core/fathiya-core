@@ -38,6 +38,13 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -119,6 +126,77 @@ const FATHIYA_EXECUTION_OS_PROMPT = [
   "سجل إيصالًا واضحًا: ما نُفّذ فعليًا، ما أصبح جاهزًا، ما يحتاج ربطًا، وما هي المتابعة التنفيذية التالية.",
 ].join("\n");
 
+type BugBountyPlatform = "auto" | "hackerone" | "bugcrowd";
+
+const BUG_BOUNTY_PLATFORM_LABELS: Record<BugBountyPlatform, string> = {
+  auto: "تلقائي",
+  hackerone: "HackerOne",
+  bugcrowd: "Bugcrowd",
+};
+
+const BUG_BOUNTY_KNOWLEDGE_PATH =
+  "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
+
+function normalizeOptionalUrl(value: string): string {
+  const clean = value.trim();
+  if (!clean) return "";
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `https://${clean}`;
+}
+
+function isGithubRepoUrl(value: string): boolean {
+  return /^https?:\/\/(?:www\.)?github\.com\/[^/\s]+\/[^/\s]+/i.test(value.trim());
+}
+
+function bugBountyProgramLabel(platform: BugBountyPlatform, programUrl: string): string {
+  if (!programUrl.trim()) {
+    return platform === "auto"
+      ? "اختيار تلقائي من البرامج المصرحة"
+      : `${BUG_BOUNTY_PLATFORM_LABELS[platform]} authorized program`;
+  }
+  try {
+    const url = new URL(normalizeOptionalUrl(programUrl));
+    const parts = url.pathname.split("/").filter(Boolean);
+    return parts.slice(0, 2).join("/") || url.hostname;
+  } catch {
+    return programUrl.trim().slice(0, 80);
+  }
+}
+
+function buildBugBountyHuntPrompt(options: {
+  platform: BugBountyPlatform;
+  programUrl: string;
+  repoUrl: string;
+  focus: string;
+}): string {
+  const programUrl = normalizeOptionalUrl(options.programUrl);
+  const repoUrl = normalizeOptionalUrl(options.repoUrl || (isGithubRepoUrl(programUrl) ? programUrl : ""));
+  const program = bugBountyProgramLabel(options.platform, programUrl);
+  const scopeNote = [
+    `platform=${BUG_BOUNTY_PLATFORM_LABELS[options.platform]}`,
+    programUrl ? `program_url=${programUrl}` : "selection=auto_authorized_program",
+    repoUrl ? `repo_url=${repoUrl}` : "repo_url=not_provided",
+  ].join("; ");
+  const focus =
+    options.focus.trim() ||
+    "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب مسودة تقرير داخل فتحية.";
+
+  return [
+    "bug bounty hunt flow:",
+    "bug bounty static review:",
+    `platform: ${BUG_BOUNTY_PLATFORM_LABELS[options.platform]}`,
+    `program: ${program}`,
+    programUrl ? `program_url: ${programUrl}` : "program_url: auto",
+    repoUrl ? `repo_url: ${repoUrl}` : "repo_url:",
+    "target_path: .",
+    `scope_note: ${scopeNote}`,
+    `focus: ${focus}`,
+    `knowledge_path: ${BUG_BOUNTY_KNOWLEDGE_PATH}`,
+    "draft_gate: internal_only",
+    "constraints: مراجعة ساكنة ومصرحة فقط في المرحلة الأولى؛ لا فحص حي ولا استغلال ولا إرسال خارجي. إذا احتجت فعلًا عالي الأثر فحوّله إلى بوابة موافقة.",
+  ].join("\n");
+}
+
 type AgentMeshNextAction = {
   id: string;
   title: string;
@@ -173,6 +251,11 @@ function AgentTasksPage() {
   const [acting, setActing] = useState(false);
   const [startingMeshExecute, setStartingMeshExecute] = useState(false);
   const [startingExecutionOs, setStartingExecutionOs] = useState(false);
+  const [startingBugBountyHunt, setStartingBugBountyHunt] = useState(false);
+  const [bugBountyPlatform, setBugBountyPlatform] = useState<BugBountyPlatform>("auto");
+  const [bugBountyProgramUrl, setBugBountyProgramUrl] = useState("");
+  const [bugBountyRepoUrl, setBugBountyRepoUrl] = useState("");
+  const [bugBountyFocus, setBugBountyFocus] = useState("");
   const [startingFollowUpPrompt, setStartingFollowUpPrompt] = useState<string | null>(null);
   const [tradingActing, setTradingActing] = useState(false);
   const [intakeActing, setIntakeActing] = useState(false);
@@ -431,6 +514,35 @@ function AgentTasksPage() {
     }
   }
 
+  async function startBugBountyHunt() {
+    if (!hasAccess) return;
+    setStartingBugBountyHunt(true);
+    setError("");
+    try {
+      const normalizedProgramUrl = normalizeOptionalUrl(bugBountyProgramUrl);
+      const prompt = buildBugBountyHuntPrompt({
+        platform: bugBountyPlatform,
+        programUrl: normalizedProgramUrl,
+        repoUrl: bugBountyRepoUrl,
+        focus: bugBountyFocus,
+      });
+      const body: CreateAgentTaskBody = {
+        title: `صيد ثغرات: ${bugBountyProgramLabel(bugBountyPlatform, normalizedProgramUrl)}`,
+        prompt,
+      };
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingBugBountyHunt(false);
+    }
+  }
+
   async function startFollowUpTask(action: AgentMeshNextAction) {
     if (!hasAccess || !action.prompt.trim()) return;
     setStartingFollowUpPrompt(action.prompt);
@@ -643,6 +755,22 @@ function AgentTasksPage() {
     composerMode === "knowledge"
       ? Boolean(reportSource.trim() && reportObjective.trim() && reportContent.trim())
       : Boolean(prompt.trim());
+  const focusedTasks = useMemo(() => {
+    const matches = tasks.filter((task) => {
+      const haystack = `${task.title}\n${task.prompt}`.toLowerCase();
+      return (
+        haystack.includes("bug bounty") ||
+        haystack.includes("صيد") ||
+        haystack.includes("ثغر") ||
+        haystack.includes("hackerone") ||
+        haystack.includes("bugcrowd") ||
+        haystack.includes("trading") ||
+        haystack.includes("تداول") ||
+        haystack.includes("paper")
+      );
+    });
+    return (matches.length > 0 ? matches : tasks).slice(0, 12);
+  }, [tasks]);
 
   if (!localMode && session === undefined) {
     return <CenteredState icon={Loader2} title="جارٍ التحقق من الجلسة" spin />;
@@ -658,6 +786,376 @@ function AgentTasksPage() {
       </CenteredState>
     );
   }
+
+  return (
+    <TooltipProvider delayDuration={250}>
+      <div dir="rtl" lang="ar" className="min-h-screen bg-background text-foreground">
+        <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10">
+                <ListChecks className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-sm font-bold">فتحية</h1>
+                  <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                    التداول
+                  </Badge>
+                  <Badge className="border-sky-500/30 bg-sky-500/10 text-sky-300">
+                    صيد الثغرات
+                  </Badge>
+                  {localMode && (
+                    <Badge variant="outline" className="font-mono">
+                      LOCAL
+                    </Badge>
+                  )}
+                </div>
+                <p className="break-all text-[11px] text-muted-foreground">
+                  {localMode ? `${localAgentRuntimeUrl} · ` : ""}
+                  {activeCount} نشطة من {tasks.length} مهمة
+                  {localMode && ` · ${engineReadyCount}/${integrationSummary?.total ?? 0} تكاملات جاهزة`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      void loadTasks();
+                      void loadDetail();
+                      void loadConnectors();
+                      void loadTrading();
+                      void loadIntegrations();
+                      void loadIntake();
+                      void loadLocalSettings();
+                    }}
+                  >
+                    <RefreshCw />
+                    <span className="sr-only">تحديث</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>تحديث فتحية</TooltipContent>
+              </Tooltip>
+              {!localMode && (
+                <Button variant="ghost" size="icon" onClick={() => void signOut()}>
+                  <LogOut />
+                  <span className="sr-only">تسجيل الخروج</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto min-w-0 max-w-7xl px-4 py-5 sm:px-6">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <CircleAlert />
+              <AlertTitle>تعذر إكمال الطلب</AlertTitle>
+              <AlertDescription className="break-all">{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <section className="mb-4 grid gap-3 md:grid-cols-4">
+            <InfoField label="المهام النشطة" value={String(activeCount)} />
+            <InfoField
+              label="التكاملات الجاهزة"
+              value={`${engineReadyCount}/${integrationSummary?.total ?? integrations.length}`}
+            />
+            <InfoField
+              label="التداول"
+              value={trading?.running ? "ينبض الآن" : trading ? "متوقف" : "غير محمل"}
+            />
+            <InfoField
+              label="صيد الثغرات"
+              value={startingBugBountyHunt ? "ينشئ مهمة" : "جاهز للمسودة"}
+            />
+          </section>
+
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-4">
+              <Card className="border-emerald-500/25 bg-emerald-500/[0.04]">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <TrendingUp className="h-4 w-4 text-emerald-300" />
+                        وكيل التداول
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        تنبؤ وتنفيذ Paper/Testnet بنبض سريع، مع إيصالات لكل دورة.
+                      </CardDescription>
+                    </div>
+                    <Badge
+                      className={cn(
+                        "shrink-0",
+                        trading?.running
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-border bg-muted/30 text-muted-foreground",
+                      )}
+                    >
+                      {trading?.running ? "يعمل" : "متوقف"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {localMode && trading ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 text-[10px]">
+                        <InfoField label="الرمز" value={trading.symbol} />
+                        <InfoField label="النمط" value={trading.mode === "paper" ? "Paper" : trading.mode} />
+                        <InfoField
+                          label="آخر نبضة"
+                          value={cadenceLatestLabel(trading.execution_cadence)}
+                        />
+                        <InfoField
+                          label="متوسط النبض"
+                          value={formatSeconds(trading.execution_cadence.average_interval_seconds)}
+                        />
+                        <InfoField
+                          label="دقة التنبؤ"
+                          value={
+                            trading.prediction_quality.directional_accuracy === null
+                              ? "--"
+                              : formatPercent(trading.prediction_quality.directional_accuracy)
+                          }
+                        />
+                        <InfoField label="PnL" value={formatNumber(trading.portfolio.net_pnl)} />
+                      </div>
+                      <div className="rounded-md border border-border/50 bg-background/30 p-3 text-[10px]">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <span className="font-semibold">آخر قرار</span>
+                          <span className="font-mono text-muted-foreground">
+                            {trading.latest_cycle
+                              ? `${trading.latest_cycle.latency_ms.toFixed(2)} ms`
+                              : "--"}
+                          </span>
+                        </div>
+                        <p className="break-words text-muted-foreground">
+                          {trading.latest_cycle
+                            ? `${tradingActionLabel(trading.latest_cycle.prediction.action)} · ${trading.latest_cycle.risk.reason}`
+                            : "لم تبدأ دورة التنبؤ بعد."}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          className="flex-1"
+                          size="sm"
+                          onClick={() => void tradingAction(trading.running ? "stop" : "start")}
+                          disabled={tradingActing}
+                        >
+                          {tradingActing ? (
+                            <Loader2 className="animate-spin" />
+                          ) : trading.running ? (
+                            <Square />
+                          ) : (
+                            <Play />
+                          )}
+                          {trading.running ? "إيقاف" : "تشغيل"}
+                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => void tradingAction("tick")}
+                              disabled={tradingActing || trading.running}
+                            >
+                              <RefreshCw />
+                              <span className="sr-only">نبضة تداول واحدة</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>تنفيذ نبضة Paper واحدة</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => void tradingAction("strategy-refresh")}
+                              disabled={tradingActing}
+                            >
+                              <BrainCircuit />
+                              <span className="sr-only">تحديث المستشار</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>تحديث مستشار نموذج التداول</TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <p
+                        className={cn(
+                          "text-[10px]",
+                          trading.current_market_source === "coinbase_spot"
+                            ? "text-emerald-400"
+                            : trading.current_market_source
+                              ? "text-amber-300"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {marketNotice(trading.current_market_source)}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200">
+                      شغّل المشغل المحلي حتى تظهر حالة وكيل التداول.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-sky-500/25 bg-sky-500/[0.04]">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <ShieldAlert className="h-4 w-4 text-sky-300" />
+                        صيد الثغرات
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        اختر برنامجًا أو اتركه تلقائيًا، ثم فتحية تبحث وتكتب مسودة تقرير قابلة للتصعيد.
+                      </CardDescription>
+                    </div>
+                    <Badge className="border-sky-500/30 bg-sky-500/10 text-sky-300">
+                      Draft
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)]">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bug-platform">المنصة</Label>
+                      <Select
+                        value={bugBountyPlatform}
+                        onValueChange={(value) => setBugBountyPlatform(value as BugBountyPlatform)}
+                      >
+                        <SelectTrigger id="bug-platform" className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">تلقائي</SelectItem>
+                          <SelectItem value="hackerone">HackerOne</SelectItem>
+                          <SelectItem value="bugcrowd">Bugcrowd</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bug-program-url">رابط البرنامج</Label>
+                      <Input
+                        id="bug-program-url"
+                        dir="ltr"
+                        value={bugBountyProgramUrl}
+                        onChange={(event) => setBugBountyProgramUrl(event.target.value)}
+                        placeholder="https://hackerone.com/... أو https://bugcrowd.com/..."
+                        maxLength={500}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bug-repo-url">GitHub repo اختياري</Label>
+                    <Input
+                      id="bug-repo-url"
+                      dir="ltr"
+                      value={bugBountyRepoUrl}
+                      onChange={(event) => setBugBountyRepoUrl(event.target.value)}
+                      placeholder="https://github.com/org/repo"
+                      maxLength={500}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bug-focus">تركيز الصيد</Label>
+                    <Textarea
+                      id="bug-focus"
+                      value={bugBountyFocus}
+                      onChange={(event) => setBugBountyFocus(event.target.value)}
+                      placeholder="مثال: CI supply-chain، SSRF، OIDC/JWT، auth bypass، cache poisoning"
+                      rows={3}
+                      maxLength={1000}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={() => void startBugBountyHunt()}
+                    disabled={startingBugBountyHunt}
+                  >
+                    {startingBugBountyHunt ? <Loader2 className="animate-spin" /> : <FileCheck2 />}
+                    ابدأ صيد الثغرات
+                  </Button>
+                  <p className="text-[10px] leading-5 text-muted-foreground">
+                    المسار يبدأ بمراجعة معرفة ومصادر مصرح بها، ويعرض التقرير والإثبات داخل فتحية قبل أي إرسال خارجي.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-sm">التقارير والمهام</CardTitle>
+                    <Badge variant="outline">{focusedTasks.length}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[360px]">
+                    {focusedTasks.length === 0 ? (
+                      <p className="px-5 py-8 text-center text-xs text-muted-foreground">
+                        لا توجد مهام بعد. ابدأ من التداول أو صيد الثغرات.
+                      </p>
+                    ) : (
+                      <div className="divide-y divide-border/50">
+                        {focusedTasks.map((task) => (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => setSelectedId(task.id)}
+                            className={cn(
+                              "w-full px-4 py-3 text-right transition-colors hover:bg-muted/40",
+                              selectedId === task.id && "bg-muted/50",
+                            )}
+                          >
+                            <div className="mb-1.5 flex items-start justify-between gap-2">
+                              <span className="line-clamp-2 text-xs font-semibold">
+                                {task.title}
+                              </span>
+                              <StatusBadge status={task.status} />
+                            </div>
+                            <Progress value={task.progress} className="mb-1.5 h-1" />
+                            <p className="truncate text-[10px] text-muted-foreground">
+                              {task.current_step || "لم يبدأ"}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+
+            <TaskDetail
+              detail={detail}
+              acting={acting}
+              startingFollowUpPrompt={startingFollowUpPrompt}
+              onApprove={() => void taskAction("approve")}
+              onCancel={() => void taskAction("cancel")}
+              onStartFollowUp={(action) => void handleFollowUpAction(action)}
+            />
+          </div>
+        </main>
+
+        <IntegrationSettingsSheet
+          group={activeSettingsGroup}
+          writeAllowed={Boolean(localSettings?.write_allowed)}
+          onClose={() => setSelectedSettingsGroup(null)}
+          onSaved={async () => {
+            await Promise.all([loadLocalSettings(), loadIntegrations(), loadConnectors()]);
+          }}
+        />
+      </div>
+    </TooltipProvider>
+  );
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -799,6 +1297,96 @@ function AgentTasksPage() {
 
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
             <div className="min-w-0 space-y-4">
+              <Card className="border-emerald-500/25 bg-emerald-500/[0.04]">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <ShieldAlert className="h-4 w-4 text-emerald-300" />
+                        صيد الثغرات
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        اختر منصة أو ألصق رابط برنامج، وفتحية تنشئ مراجعة وتصعيد ومسودة داخلية.
+                      </CardDescription>
+                    </div>
+                    <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                      Draft Gate
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-[120px_minmax(0,1fr)]">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bug-platform">المنصة</Label>
+                      <Select
+                        value={bugBountyPlatform}
+                        onValueChange={(value) => setBugBountyPlatform(value as BugBountyPlatform)}
+                      >
+                        <SelectTrigger id="bug-platform" className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">تلقائي</SelectItem>
+                          <SelectItem value="hackerone">HackerOne</SelectItem>
+                          <SelectItem value="bugcrowd">Bugcrowd</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="bug-program-url">رابط البرنامج أو الهدف</Label>
+                      <Input
+                        id="bug-program-url"
+                        dir="ltr"
+                        value={bugBountyProgramUrl}
+                        onChange={(event) => setBugBountyProgramUrl(event.target.value)}
+                        placeholder="https://hackerone.com/... أو https://bugcrowd.com/..."
+                        maxLength={500}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bug-repo-url">GitHub repo اختياري</Label>
+                    <Input
+                      id="bug-repo-url"
+                      dir="ltr"
+                      value={bugBountyRepoUrl}
+                      onChange={(event) => setBugBountyRepoUrl(event.target.value)}
+                      placeholder="https://github.com/org/repo"
+                      maxLength={500}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bug-focus">تركيز الصيد</Label>
+                    <Textarea
+                      id="bug-focus"
+                      value={bugBountyFocus}
+                      onChange={(event) => setBugBountyFocus(event.target.value)}
+                      placeholder="مثال: دور على CI supply-chain أو SSRF أو OIDC/JWT واكتب أقوى مسودة قابلة للتصعيد"
+                      rows={3}
+                      maxLength={1000}
+                    />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="rounded-md border border-emerald-500/20 bg-background/30 px-3 py-2 text-[10px] text-muted-foreground">
+                      يبدأ بمراجعة ساكنة ومعرفة Hacktivity، ثم يرفع Draft داخل فتحية. الفعل الحي أو الإرسال الخارجي يبقى على بوابة الموافقة.
+                    </div>
+                    <Button
+                      type="button"
+                      className="h-auto min-h-10 px-4"
+                      onClick={() => void startBugBountyHunt()}
+                      disabled={startingBugBountyHunt}
+                    >
+                      {startingBugBountyHunt ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <FileCheck2 />
+                      )}
+                      ابدأ الصيد
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border-border/60 bg-card/50">
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
