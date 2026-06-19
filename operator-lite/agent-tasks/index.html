@@ -3,34 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FATHIYA - التداول وصيد الثغرات</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <title>FATHIYA - المنشأة السيادية الذكية</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #080c0f;
-      --panel: #10161b;
-      --panel-soft: #111c20;
-      --border: #25323a;
-      --text: #f3fbf8;
-      --muted: #9fb0ad;
-      --green: #37d99e;
-      --sky: #48bdf0;
-      --amber: #f4c75e;
-      --rose: #f0738a;
+      --bg: #050505;
+      --panel: #0a0a0a;
+      --panel-soft: #141414;
+      --border: rgba(122, 93, 36, 0.34);
+      --text: #ece7d9;
+      --muted: #a8a29e;
+      --gold-100: #f0dca6;
+      --gold-200: #e4c57f;
+      --gold-300: #d4b06a;
+      --gold-400: #c9a14a;
+      --gold-500: #a88236;
+      --gold-700: #7a5d24;
+      --green: #72d6a8;
+      --sky: #7cc7e8;
+      --amber: #e4c57f;
+      --rose: #f07f91;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(201, 161, 74, 0.16), transparent 30%),
+        radial-gradient(circle at 88% 8%, rgba(240, 127, 145, 0.08), transparent 28%),
+        linear-gradient(180deg, #050505, #0a0a0a 42%, #050505);
       color: var(--text);
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+      min-height: 100vh;
     }
     header {
       position: sticky;
       top: 0;
       z-index: 2;
       border-bottom: 1px solid var(--border);
-      background: rgba(8, 12, 15, 0.92);
+      background: rgba(5, 5, 5, 0.9);
       backdrop-filter: blur(12px);
     }
     .wrap {
@@ -53,19 +66,20 @@
     }
     @media (max-width: 980px) { main.wrap { grid-template-columns: 1fr; } }
     h1, h2, h3, p { margin: 0; }
-    h1 { font-size: 18px; }
+    h1 { font-size: 19px; font-weight: 700; }
     h2 { font-size: 15px; }
     h3 { font-size: 13px; overflow-wrap: anywhere; }
     p { color: var(--muted); line-height: 1.65; }
     .stack { display: grid; gap: 12px; }
     .card {
       border: 1px solid var(--border);
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.98));
       border-radius: 8px;
       padding: 15px;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
     }
-    .trading { border-color: rgba(55, 217, 158, 0.42); background: #0d1917; }
-    .bounty { border-color: rgba(72, 189, 240, 0.42); background: #0d171d; }
+    .trading { border-color: rgba(201, 161, 74, 0.46); background: linear-gradient(180deg, rgba(22, 19, 12, 0.98), rgba(10, 10, 10, 0.98)); }
+    .bounty { border-color: rgba(124, 199, 232, 0.36); background: linear-gradient(180deg, rgba(11, 20, 25, 0.98), rgba(10, 10, 10, 0.98)); }
     .metrics {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -100,8 +114,8 @@
     label { margin: 11px 0 6px; }
     input, textarea, select {
       width: 100%;
-      border: 1px solid #33414a;
-      background: #080d10;
+      border: 1px solid rgba(122, 93, 36, 0.46);
+      background: #070707;
       color: var(--text);
       border-radius: 7px;
       padding: 10px 11px;
@@ -109,13 +123,16 @@
       outline: none;
     }
     textarea { min-height: 92px; resize: vertical; }
-    input:focus, textarea:focus, select:focus { border-color: var(--sky); }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--gold-300);
+      box-shadow: 0 0 0 3px rgba(201, 161, 74, 0.14);
+    }
     button {
       min-height: 40px;
       border: 1px solid transparent;
       border-radius: 7px;
-      background: var(--green);
-      color: #04140e;
+      background: linear-gradient(135deg, var(--gold-200), var(--gold-400));
+      color: #130f07;
       cursor: pointer;
       font-weight: 700;
       padding: 10px 13px;
@@ -126,8 +143,8 @@
       border-color: var(--border);
     }
     button.sky {
-      background: var(--sky);
-      color: #051118;
+      background: linear-gradient(135deg, var(--sky), #4f9dc2);
+      color: #041015;
     }
     button.danger {
       background: transparent;
@@ -138,22 +155,526 @@
     .grid2 { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; }
     @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
     .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-    .task {
-      border: 1px solid #233139;
+    .command-strip {
+      padding-top: 14px;
+      padding-bottom: 0;
+      display: grid;
+      gap: 12px;
+    }
+    .command-panel {
+      border-color: rgba(114, 214, 168, 0.34);
+      background: linear-gradient(180deg, rgba(11, 22, 17, 0.98), rgba(10, 10, 10, 0.98));
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .command-panel { grid-template-columns: 1fr; } }
+    .command-panel-main {
+      display: grid;
+      gap: 12px;
+    }
+    .command-panel-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 900px) { .command-panel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 720px) { .command-panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 480px) { .command-panel-grid { grid-template-columns: 1fr; } }
+    .command-panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .command-panel-actions button {
+      flex: 1 1 150px;
+    }
+    .command-summary {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(7, 7, 7, 0.58);
+      padding: 12px;
+      min-height: 100%;
+    }
+    .command-summary-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .command-summary-item {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 7px;
+      padding: 9px;
+      background: rgba(20, 20, 20, 0.62);
+    }
+    .command-summary-item strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .command-summary-item p {
+      margin-top: 4px;
+      font-size: 11px;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 1100px) { .quick-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 860px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .quick-grid { grid-template-columns: 1fr; } }
+    .quick-action {
+      min-height: 92px;
+      background: var(--panel-soft);
+      color: var(--text);
+      border-color: var(--border);
+      text-align: right;
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+      font-weight: 600;
+    }
+    .quick-action.primary {
+      background: linear-gradient(180deg, rgba(201, 161, 74, 0.18), rgba(20, 20, 20, 0.98));
+      border-color: rgba(201, 161, 74, 0.5);
+    }
+    .quick-action.sky {
+      background: linear-gradient(180deg, rgba(72, 189, 240, 0.13), rgba(20, 20, 20, 0.98));
+      border-color: rgba(72, 189, 240, 0.4);
+      color: var(--text);
+    }
+    .quick-action.github {
+      background: linear-gradient(180deg, rgba(149, 157, 165, 0.15), rgba(20, 20, 20, 0.98));
+      border-color: rgba(149, 157, 165, 0.42);
+      color: var(--text);
+    }
+    .quick-action.model {
+      background: linear-gradient(180deg, rgba(217, 112, 214, 0.14), rgba(20, 20, 20, 0.98));
+      border-color: rgba(217, 112, 214, 0.42);
+      color: var(--text);
+    }
+    .quick-action.knowledge {
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.14), rgba(20, 20, 20, 0.98));
+      border-color: rgba(139, 92, 246, 0.42);
+      color: var(--text);
+    }
+    .quick-action span { color: var(--muted); font-size: 11px; font-weight: 500; }
+    .execution-verdict {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.55fr);
+      gap: 14px;
+      align-items: stretch;
+      margin-top: 12px;
+    }
+    @media (max-width: 820px) { .execution-verdict { grid-template-columns: 1fr; } }
+    .execution-verdict.ready {
+      border-color: rgba(55, 217, 158, 0.36);
+      background: linear-gradient(180deg, rgba(55, 217, 158, 0.09), rgba(10, 10, 10, 0.98));
+    }
+    .execution-verdict.activation {
+      border-color: rgba(244, 199, 94, 0.42);
+      background: linear-gradient(180deg, rgba(244, 199, 94, 0.08), rgba(10, 10, 10, 0.98));
+    }
+    .execution-verdict.offline {
+      border-color: rgba(240, 115, 138, 0.42);
+      background: linear-gradient(180deg, rgba(240, 115, 138, 0.08), rgba(10, 10, 10, 0.98));
+    }
+    .execution-verdict h2 {
+      font-size: 18px;
+    }
+    .verdict-facts,
+    .verdict-blockers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .verdict-blockers {
+      display: grid;
+    }
+    .verdict-blocker {
+      border: 1px solid rgba(122, 93, 36, 0.28);
+      border-radius: 7px;
+      background: rgba(7, 7, 7, 0.62);
+      padding: 8px;
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+    .verdict-actions {
+      display: grid;
+      gap: 8px;
+      align-content: end;
+    }
+    .mission-launcher {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+      gap: 14px;
+      align-items: start;
+      border-color: rgba(114, 214, 168, 0.34);
+      background: linear-gradient(180deg, rgba(11, 22, 17, 0.98), rgba(10, 10, 10, 0.98));
+    }
+    @media (max-width: 900px) { .mission-launcher { grid-template-columns: 1fr; } }
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 560px) { .mode-grid { grid-template-columns: 1fr; } }
+    .mode-button {
+      min-height: 68px;
+      background: #0b0b0b;
+      color: var(--text);
+      border-color: rgba(122, 93, 36, 0.34);
+      display: grid;
+      align-content: center;
+      gap: 5px;
+      text-align: right;
+    }
+    .mode-button span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+    .mode-button.active {
+      border-color: rgba(114, 214, 168, 0.58);
+      background: linear-gradient(135deg, rgba(114, 214, 168, 0.18), rgba(10, 10, 10, 0.98));
+      box-shadow: 0 0 0 3px rgba(114, 214, 168, 0.08);
+    }
+    .autonomy-panel {
+      margin-top: 12px;
+      border: 1px solid rgba(122, 93, 36, 0.28);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.025);
+      padding: 10px;
+    }
+    .autonomy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    @media (max-width: 620px) { .autonomy-grid { grid-template-columns: 1fr; } }
+    .autonomy-button {
+      min-height: 58px;
+      background: #0b0b0b;
+      color: var(--text);
+      border-color: rgba(122, 93, 36, 0.34);
+      text-align: right;
+    }
+    .autonomy-button span {
+      color: var(--muted);
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    .autonomy-button.active {
+      border-color: rgba(114, 214, 168, 0.58);
+      background: rgba(114, 214, 168, 0.13);
+    }
+    .mission-form textarea { min-height: 86px; }
+    .agent-provider-box {
+      border: 1px solid rgba(114, 214, 168, 0.32);
+      background: rgba(7, 18, 14, 0.64);
       border-radius: 8px;
       padding: 12px;
-      background: #0b1115;
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .agent-provider-box h3 { font-size: 13px; }
+    .agent-provider-grid {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 8px;
+      align-items: end;
+    }
+    @media (max-width: 620px) { .agent-provider-grid { grid-template-columns: 1fr; } }
+    .agent-provider-box textarea { min-height: 74px; }
+    .agent-provider-status {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      background: rgba(20, 20, 20, 0.56);
+      border-radius: 7px;
+      padding: 8px 9px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .mission-status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 620px) { .mission-status { grid-template-columns: 1fr; } }
+    .mission-results {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 980px) { .mission-results { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .mission-results { grid-template-columns: 1fr; } }
+    .mission-result {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 8px;
+      background: #090909;
+      padding: 10px;
+      min-height: 142px;
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+    }
+    .mission-result p {
+      font-size: 11px;
+      line-height: 1.5;
+      max-height: 52px;
+      overflow: hidden;
+    }
+    .mission-result button {
+      min-height: 32px;
+      padding: 7px 9px;
+      font-size: 11px;
+    }
+    .mission-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .engine-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .engine-panel { grid-template-columns: 1fr; } }
+    .engine-status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 640px) { .engine-status { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .activation-panel {
+      border: 1px solid rgba(122, 93, 36, 0.32);
+      border-radius: 8px;
+      background: rgba(7, 7, 7, 0.72);
+      padding: 11px;
+    }
+    .activation-queue {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .activation-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(122, 93, 36, 0.28);
+      border-radius: 7px;
+      background: #090909;
+      padding: 10px;
+    }
+    @media (max-width: 620px) { .activation-item { grid-template-columns: 1fr; } }
+    .activation-item.ready { border-color: rgba(55, 217, 158, 0.28); }
+    .activation-item.partial { border-color: rgba(244, 199, 94, 0.42); }
+    .activation-item.blocked { border-color: rgba(240, 115, 138, 0.42); }
+    .activation-item strong {
+      display: block;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .activation-item p {
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .activation-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .activation-actions button {
+      min-height: 32px;
+      padding: 7px 9px;
+      font-size: 11px;
+    }
+    .quick-request textarea { min-height: 78px; }
+    .tool-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .tool-panel { grid-template-columns: 1fr; } }
+    .workspace-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 860px) { .workspace-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .workspace-tabs { grid-template-columns: 1fr; } }
+    .workspace-tab {
+      min-height: 42px;
+      background: #0b0b0b;
+      color: var(--text);
+      border-color: var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .workspace-tab.active {
+      background: linear-gradient(135deg, rgba(228, 197, 127, 0.24), rgba(10, 10, 10, 0.98));
+      border-color: rgba(228, 197, 127, 0.64);
+      color: var(--gold-100);
+      box-shadow: 0 0 0 3px rgba(201, 161, 74, 0.1);
+    }
+    main.wrap.single-view {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tool-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+    .tool-chip {
+      border: 1px solid rgba(122, 93, 36, 0.34);
+      background: #0b0b0b;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .tool-chip.active {
+      border-color: rgba(72, 189, 240, 0.55);
+      color: var(--sky);
+    }
+    .tool-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 640px) { .tool-row { grid-template-columns: 1fr; } }
+    .tool-panel textarea { min-height: 82px; }
+    .knowledge-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: 14px;
+      align-items: start;
+      border-color: rgba(114, 214, 168, 0.34);
+      background: linear-gradient(180deg, rgba(9, 21, 16, 0.98), rgba(10, 10, 10, 0.98));
+    }
+    @media (max-width: 900px) { .knowledge-panel { grid-template-columns: 1fr; } }
+    .knowledge-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 560px) { .knowledge-grid { grid-template-columns: 1fr; } }
+    .knowledge-source {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 8px;
+      background: #090909;
+      padding: 10px;
+      margin-top: 10px;
+      overflow-wrap: anywhere;
+    }
+    .knowledge-source strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    .bounty-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 760px) { .bounty-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .bounty-flow { grid-template-columns: 1fr; } }
+    .bounty-step {
+      border: 1px solid rgba(124, 199, 232, 0.28);
+      border-radius: 8px;
+      background: rgba(7, 17, 22, 0.72);
+      padding: 10px;
+      min-height: 88px;
+    }
+    .bounty-step strong {
+      display: block;
+      font-size: 12px;
+    }
+    .bounty-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+    .bounty-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 700px) { .bounty-fields { grid-template-columns: 1fr; } }
+    .bounty-fields textarea { min-height: 72px; }
+    .param-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .param-item {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 7px;
+      background: #090909;
+      padding: 9px 10px;
+    }
+    .param-key {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--text);
+      font-size: 12px;
+      font-family: "JetBrains Mono", Consolas, monospace;
+    }
+    .param-help {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .task {
+      border: 1px solid rgba(122, 93, 36, 0.32);
+      border-radius: 8px;
+      padding: 12px;
+      background: #0b0b0b;
       margin-top: 10px;
     }
     .task.active { border-color: rgba(72, 189, 240, 0.55); }
     .meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
     .progress {
       height: 7px;
-      background: #070b0d;
+      background: #070707;
       border-radius: 999px;
       overflow: hidden;
       margin: 10px 0;
-      border: 1px solid #1f2b31;
+      border: 1px solid rgba(122, 93, 36, 0.26);
     }
     .bar { height: 100%; background: var(--sky); width: 0; }
     .receipts {
@@ -164,11 +685,32 @@
       padding-left: 4px;
     }
     .receipt {
-      border: 1px solid #22313a;
-      background: #0b1115;
+      border: 1px solid rgba(122, 93, 36, 0.28);
+      background: #0b0b0b;
       border-radius: 8px;
       padding: 10px;
       font-size: 11px;
+    }
+    .operator-error {
+      border: 1px solid rgba(240, 115, 138, 0.45);
+      background: rgba(240, 115, 138, 0.08);
+      color: var(--rose);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .report-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    @media (max-width: 860px) { .report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .report-summary { grid-template-columns: 1fr; } }
+    .report-summary .metric {
+      min-height: 58px;
+      background: #090909;
     }
     pre {
       direction: ltr;
@@ -177,35 +719,529 @@
       overflow-wrap: anywhere;
       max-height: 520px;
       overflow: auto;
-      border: 1px solid #22313a;
-      background: #070b0d;
+      border: 1px solid rgba(122, 93, 36, 0.28);
+      background: #070707;
       border-radius: 8px;
       padding: 12px;
       color: #d7eee8;
       font-size: 11px;
     }
     .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+    .view-hidden { display: none !important; }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(122, 93, 36, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(122, 93, 36, 0.12) 1px, transparent 1px);
+      background-size: 46px 46px;
+    }
+    .gold-gradient-text {
+      color: transparent;
+      background: linear-gradient(135deg, var(--gold-100), var(--gold-400), var(--gold-700));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 24%, rgba(240, 220, 166, 0.14), transparent 36%),
+        linear-gradient(180deg, rgba(5, 5, 5, 0.58), rgba(5, 5, 5, 0.96));
+      pointer-events: none;
+    }
+    .login-shell {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
+      gap: 22px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-panel {
+      min-height: 410px;
+      display: grid;
+      align-content: center;
+      gap: 15px;
+      padding: 10px;
+    }
+    .brand-mark {
+      width: 58px;
+      height: 58px;
+      border: 1px solid rgba(240, 220, 166, 0.44);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--gold-100);
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0;
+      box-shadow: 0 0 32px rgba(201, 161, 74, 0.22);
+    }
+    .eyebrow {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--gold-200);
+      font-size: 12px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .brand-panel h1 {
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1.15;
+      max-width: 680px;
+    }
+    .brand-panel p { max-width: 620px; font-size: 15px; }
+    .login-card {
+      border: 1px solid rgba(240, 220, 166, 0.28);
+      background: rgba(10, 10, 10, 0.88);
+      backdrop-filter: blur(18px);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+    }
+    .login-card .subline {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--gold-300);
+      font-size: 11px;
+      margin-top: 5px;
+    }
+    .login-card button { width: 100%; margin-top: 15px; }
+    .login-error {
+      min-height: 22px;
+      margin-top: 10px;
+      color: var(--rose);
+      font-size: 12px;
+    }
+    .login-note {
+      border-top: 1px solid rgba(122, 93, 36, 0.28);
+      margin-top: 16px;
+      padding-top: 12px;
+      font-size: 12px;
+    }
+    @media (max-width: 820px) {
+      .login-shell { grid-template-columns: 1fr; }
+      .brand-panel { min-height: auto; }
+      .brand-panel h1 { font-size: 34px; }
+    }
   </style>
 </head>
 <body>
+  <section id="login-screen" class="login-screen grid-bg">
+    <div class="login-shell">
+      <div class="brand-panel">
+        <div class="brand-mark">F</div>
+        <div class="eyebrow">FATHIYA · OPS</div>
+        <h1 class="gold-gradient-text">المنشأة السيادية الذكية</h1>
+        <p>SOVEREIGN INTELLIGENCE LAB</p>
+        <p>فتحية واجهة خاصة للتداول وصيد الثغرات: تشغيل، متابعة، تقارير، وإيصالات واضحة قبل أي إجراء خارجي.</p>
+      </div>
+
+      <form id="login-form" class="login-card">
+        <h2>تسجيل الدخول</h2>
+        <p class="subline">SECURE ACCESS · LOCAL AGENT</p>
+
+        <label for="login-email">البريد الإلكتروني</label>
+        <input id="login-email" type="email" dir="ltr" autocomplete="username" placeholder="you@example.com" value="fathya-ad@fathya-core.com" />
+
+        <label for="login-password">كلمة المرور</label>
+        <input id="login-password" type="password" dir="ltr" autocomplete="current-password" placeholder="••••••••" />
+
+        <button id="login-submit" type="submit">دخول آمن</button>
+        <div id="login-error" class="login-error"></div>
+        <p class="login-note">فتحية تعمل كوكيل محلي: تفهم المعرفة، تنفذ الأدوات المتاحة، وتصدر إيصالًا واضحًا لكل أثر.</p>
+      </form>
+    </div>
+  </section>
+
+  <div id="operator-shell" class="hidden">
   <header>
     <div class="wrap top">
       <div>
-        <h1>فتحية</h1>
-        <p>واجهة مختصرة للتداول وصيد الثغرات فقط - متصلة بالمشغل على <span id="api-label"></span></p>
+        <h1>المنشأة السيادية الذكية</h1>
+        <p>فتحية · التداول وصيد الثغرات - متصلة بالمشغل على <span id="api-label"></span></p>
       </div>
       <div class="row">
         <span class="badge" id="api-status">يتحقق...</span>
+        <span class="badge" id="engine-status">المحرك</span>
         <span class="badge ok">التداول</span>
         <span class="badge sky">صيد الثغرات</span>
         <button class="secondary" id="refresh">تحديث</button>
+        <button class="secondary" id="logout">خروج</button>
       </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="stack">
-      <div class="card trading">
+  <section class="wrap command-strip">
+    <div class="card command-panel">
+      <div class="command-panel-main">
+        <div class="row">
+          <div>
+            <h2>محرك الوكلاء المحلي</h2>
+            <p>يفهم المعرفة، يختار النموذج، ينفذ الأدوات الداخلية، ويترك العالي الأثر كخطوة تفعيل واضحة.</p>
+          </div>
+          <span class="badge" id="command-ready">--</span>
+        </div>
+        <div class="command-panel-grid">
+          <div class="metric"><span>Worker</span><strong id="command-worker">--</strong></div>
+          <div class="metric"><span>Models</span><strong id="command-models">--</strong></div>
+          <div class="metric"><span>Tools</span><strong id="command-tools">--</strong></div>
+          <div class="metric"><span>Trading</span><strong id="command-trading">--</strong></div>
+          <div class="metric"><span>Ready now</span><strong id="command-ready-now">--</strong></div>
+        </div>
+        <div class="command-panel-actions">
+          <button id="command-run-engine">تشغيل المحرك</button>
+          <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
+          <button id="command-open-tools" class="secondary">تفعيل الناقص</button>
+          <button id="command-zapier-oauth" class="secondary">ربط Zapier</button>
+        </div>
+      </div>
+      <div class="command-summary">
+        <div class="row">
+          <h2>بوابات تحتاج انتباه</h2>
+          <span class="badge warn" id="command-attention">--</span>
+        </div>
+        <p class="muted" id="command-mesh-headline" style="margin-top:8px;">جارٍ فحص قدرة التشغيل...</p>
+        <div class="command-summary-list" id="command-summary-list">
+          <p class="muted">جارٍ فحص بوابات فتحية...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-grid">
+      <button class="quick-action primary" id="run-engine">
+        <strong>تشغيل فتحية</strong>
+        <span>HF · OpenRouter · Zapier · n8n · Kali · Codespaces</span>
+      </button>
+      <button class="quick-action" id="open-trading">
+        <strong>وكيل التداول</strong>
+        <span id="quick-trading">BTC-USD · Paper</span>
+      </button>
+      <button class="quick-action sky" id="open-bounty">
+        <strong>صيد الثغرات</strong>
+        <span>HackerOne · Bugcrowd · Draft</span>
+      </button>
+      <button class="quick-action github" id="run-codespaces">
+        <strong>وكيل Codespaces</strong>
+        <span>GitHub · Remote agent</span>
+      </button>
+      <button class="quick-action model" id="run-model-strategy">
+        <strong>استراتيجية النماذج</strong>
+        <span>Fusion · Advisor · Safety</span>
+      </button>
+      <button class="quick-action knowledge" id="run-knowledge-execution">
+        <strong>استيعاب وتشغيل</strong>
+        <span>معرفة · أدوات · تنفيذ</span>
+      </button>
+    </div>
+
+    <nav class="workspace-tabs" aria-label="مسارات فتحية">
+      <button class="workspace-tab active" type="button" data-workspace-view="request">الطلب</button>
+      <button class="workspace-tab" type="button" data-workspace-view="trading">التداول</button>
+      <button class="workspace-tab" type="button" data-workspace-view="bug-bounty">صيد الثغرات</button>
+      <button class="workspace-tab" type="button" data-workspace-view="knowledge">المعرفة</button>
+      <button class="workspace-tab" type="button" data-workspace-view="reports">التقارير</button>
+      <button class="workspace-tab" type="button" data-workspace-view="tools">الأدوات</button>
+    </nav>
+    <div id="operator-error" class="operator-error hidden"></div>
+
+    <div class="card execution-verdict activation" id="execution-verdict">
+      <div>
+        <div class="row">
+          <span class="badge warn" id="verdict-badge">يفحص...</span>
+          <span class="muted" style="font-size:11px;">حكم التشغيل الحالي</span>
+        </div>
+        <h2 id="verdict-title">جارٍ تحديد قدرة فتحية على التنفيذ</h2>
+        <p id="verdict-summary" class="muted" style="margin-top:6px;">
+          ينتظر فحص العامل المحلي والتكاملات قبل إظهار الخطوة الصحيحة.
+        </p>
+        <div class="verdict-facts" id="verdict-facts"></div>
+      </div>
+      <div class="verdict-actions">
+        <div>
+          <strong style="font-size:12px;">ما يمنع التشغيل الكامل؟</strong>
+          <div class="verdict-blockers" id="verdict-blockers">
+            <div class="verdict-blocker">جارٍ فحص البوابات...</div>
+          </div>
+        </div>
+        <button id="verdict-primary" data-verdict-action="activate">تفعيل الناقص</button>
+        <button id="verdict-secondary" class="secondary" data-verdict-action="run">شغّل الداخلي الآن</button>
+      </div>
+    </div>
+
+    <div class="card mission-launcher" id="mission-launcher">
+      <div>
+        <div class="row">
+          <div>
+            <h2>تشغيل الوكلاء</h2>
+            <p>اختر المسار، اكتب الهدف، ثم شغّل فتحية بإيصال.</p>
+          </div>
+          <span class="badge ok" id="mission-mode-label">تنفيذ · مباشر محلي</span>
+        </div>
+        <div class="mode-grid" aria-label="نوع المهمة">
+          <button class="mode-button active" type="button" data-mission-mode="execution">
+            <strong>تشغيل عام</strong>
+            <span>كل الوكلاء والأدوات</span>
+          </button>
+          <button class="mode-button" type="button" data-mission-mode="trading">
+            <strong>التداول</strong>
+            <span>Paper · Advisor · ثانية</span>
+          </button>
+          <button class="mode-button" type="button" data-mission-mode="bounty">
+            <strong>صيد الثغرات</strong>
+            <span>HackerOne · Bugcrowd · Draft</span>
+          </button>
+          <button class="mode-button" type="button" data-mission-mode="knowledge">
+            <strong>معرفة وتقارير</strong>
+            <span>HF · Fusion · تشغيل</span>
+          </button>
+          <button class="mode-button" type="button" data-mission-mode="tools">
+            <strong>الأدوات</strong>
+            <span>Zapier · n8n · Kali</span>
+          </button>
+        </div>
+        <div class="autonomy-panel">
+          <div class="row" style="justify-content:space-between;">
+            <strong style="font-size:12px;">وضع التنفيذ</strong>
+            <span class="badge" id="mission-autonomy-label">مباشر محلي</span>
+          </div>
+          <div class="autonomy-grid">
+            <button class="autonomy-button active" type="button" data-autonomy-mode="direct">
+              مباشر محلي
+              <span>ينفذ الداخلي والقراءة فورًا</span>
+            </button>
+            <button class="autonomy-button" type="button" data-autonomy-mode="guided">
+              موجّه
+              <span>يتوقف عند أثر خارجي واضح</span>
+            </button>
+            <button class="autonomy-button" type="button" data-autonomy-mode="activation">
+              تفعيل الأدوات
+              <span>يرتب OAuth والإعدادات الناقصة</span>
+            </button>
+          </div>
+          <p class="muted" style="margin:8px 0 0; font-size:11px;">
+            الداخلي والقراءة والنماذج المحلية تعمل مباشرة؛ OAuth والمال والإرسال الخارجي تظهر كمتابعات قابلة للتشغيل بدل تعطيل المهمة.
+          </p>
+        </div>
+        <div class="mission-status">
+          <div class="metric"><span>Worker</span><strong id="mission-worker">--</strong></div>
+          <div class="metric"><span>Models</span><strong id="mission-models">--</strong></div>
+          <div class="metric"><span>Tools</span><strong id="mission-tools">--</strong></div>
+        </div>
+      </div>
+      <div class="mission-form">
+        <label for="mission-objective">الهدف</label>
+        <textarea id="mission-objective" placeholder="مثال: استوعب آخر تقارير المعرفة ثم شغّل الأدوات الداخلية المناسبة وسجل الإيصال"></textarea>
+        <label for="mission-sources">مصادر اختيارية</label>
+        <textarea id="mission-sources" dir="ltr" placeholder="رابط أو مسار لكل سطر"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button id="run-mission" style="flex:1;">شغّل المهمة</button>
+          <button id="mission-open-reports" class="secondary" style="flex:1;">التقارير</button>
+        </div>
+        <div class="agent-provider-box">
+          <div class="row">
+            <div>
+              <h3>تشغيل وكيل تطبيق</h3>
+              <p>حضّر Cursor أو Manus من مخزون Zapier مع الحقول المطلوبة قبل التنفيذ.</p>
+            </div>
+            <span class="badge sky" id="agent-provider-badge">Zapier MCP</span>
+          </div>
+          <div class="agent-provider-grid">
+            <div>
+              <label for="agent-provider">المزود</label>
+              <select id="agent-provider">
+                <option value="Cursor">Cursor</option>
+                <option value="Manus">Manus</option>
+              </select>
+            </div>
+            <div>
+              <label for="agent-provider-repo">رابط المستودع أو الهدف</label>
+              <input id="agent-provider-repo" dir="ltr" placeholder="https://github.com/fathya-core/fathiya-core" />
+            </div>
+          </div>
+          <label for="agent-provider-objective">تعليمات الوكيل</label>
+          <textarea id="agent-provider-objective" placeholder="مثال: راجع مسار فتحية التشغيلي وارجع بملاحظات تنفيذية فقط"></textarea>
+          <div class="row">
+            <button id="prepare-agent-provider" style="flex:1;">حضّر تشغيل الوكيل</button>
+            <button id="probe-agent-provider" class="secondary" style="flex:1;">فحص المزود</button>
+          </div>
+          <div class="agent-provider-status" id="agent-provider-status">
+            Cursor يحتاج رابط مستودع وتعليمات. Manus يحتاج تعليمات فقط ويستخدم private visibility.
+          </div>
+        </div>
+      </div>
+      <div class="mission-results" id="mission-results"></div>
+    </div>
+
+    <div class="card engine-panel" id="engine-panel">
+      <div class="stack">
+        <div class="row">
+          <div>
+            <h2>محرك فتحية الحي</h2>
+            <p>تشغيل، أدوات، نماذج، وإيصالات من نفس الجهاز.</p>
+          </div>
+          <span class="badge" id="engine-ready">--</span>
+        </div>
+        <div class="engine-status">
+          <div class="metric"><span>Worker</span><strong id="engine-worker">--</strong></div>
+          <div class="metric"><span>Loop</span><strong id="engine-loop">--</strong></div>
+          <div class="metric"><span>HF / OpenRouter</span><strong id="engine-models">--</strong></div>
+          <div class="metric"><span>Deep Research</span><strong id="engine-research">--</strong></div>
+          <div class="metric"><span>Safety</span><strong id="engine-safety">--</strong></div>
+          <div class="metric"><span>Zapier</span><strong id="engine-zapier">--</strong></div>
+          <div class="metric"><span>n8n / Kali</span><strong id="engine-tools">--</strong></div>
+          <div class="metric"><span>Codespaces</span><strong id="engine-codespaces">--</strong></div>
+        </div>
+        <p id="engine-codespaces-detail" class="muted">--</p>
+        <div class="activation-panel">
+          <div class="row">
+            <div>
+              <h3>طابور تفعيل الوكلاء</h3>
+              <p>الجاهز يعمل الآن، والناقص يظهر مع خطوة التفعيل بدل التحميل الغامض.</p>
+            </div>
+            <span class="badge" id="activation-summary">--</span>
+          </div>
+          <div id="activation-queue" class="activation-queue"></div>
+        </div>
+        <div class="row">
+          <button id="scan-mesh" class="secondary">فحص شبكة الوكلاء</button>
+          <button id="scan-model-strategy" class="secondary">استراتيجية النماذج</button>
+          <button id="open-reports" class="secondary">فتح التقارير</button>
+        </div>
+      </div>
+      <div class="quick-request">
+        <h2>أمر مباشر للوكيل</h2>
+        <label for="direct-title">العنوان</label>
+        <input id="direct-title" placeholder="اختياري" />
+        <label for="direct-prompt">المهمة</label>
+        <textarea id="direct-prompt" placeholder="مثال: افحص Zapier وn8n وKali ثم نفذ الأدوات الداخلية المناسبة وسجل إيصالًا"></textarea>
+        <label for="direct-sources">روابط أو مسارات معرفة</label>
+        <textarea id="direct-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي، مثال: services/agent-runtime/runtime/knowledge-inbox/openrouter-fusion-email-2026-06-17.md"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button id="send-direct" style="flex:1;">إرسال للمشغّل</button>
+          <button id="send-knowledge" class="secondary" style="flex:1;">استيعاب المصادر وتشغيل</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card tool-panel view-hidden" id="tool-panel">
+      <div class="stack">
+        <div class="row">
+          <div>
+            <h2>مركز أدوات Zapier MCP</h2>
+            <p>اختيار تطبيق وإجراء متصل ثم تحويله إلى مهمة وكيل بإيصال.</p>
+          </div>
+          <span class="badge" id="zapier-tool-status">--</span>
+        </div>
+        <div class="mini-grid">
+          <div class="metric"><span>التطبيقات</span><strong id="zapier-app-total">--</strong></div>
+          <div class="metric"><span>الإجراءات</span><strong id="zapier-action-total">--</strong></div>
+        </div>
+        <div id="zapier-app-chips" class="tool-list"></div>
+        <div class="activation-panel">
+          <div class="row">
+            <div>
+              <h3>إعداد التفعيل المحلي</h3>
+              <p>احفظ مفاتيح وروابط التشغيل على جهازك فقط، بدون إظهار القيم بعد الحفظ.</p>
+            </div>
+            <span class="badge" id="local-settings-status">--</span>
+          </div>
+          <label for="local-settings-group">البوابة</label>
+          <select id="local-settings-group"></select>
+          <div id="local-settings-fields" class="param-list"></div>
+          <div class="row" style="margin-top:10px;">
+            <button id="save-local-settings" type="button">حفظ الإعداد</button>
+            <button id="refresh-local-settings" class="secondary" type="button">تحديث</button>
+          </div>
+          <p id="local-settings-result" class="muted" style="margin-top:8px;">--</p>
+        </div>
+      </div>
+      <div>
+        <div class="tool-row">
+          <div>
+            <label for="zapier-app">التطبيق</label>
+            <select id="zapier-app"></select>
+          </div>
+          <div>
+            <label for="zapier-action">الإجراء</label>
+            <select id="zapier-action"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <span class="badge" id="zapier-action-mode">--</span>
+          <button id="reconnect-zapier" class="secondary" type="button">إعادة ربط Zapier</button>
+          <button id="refresh-zapier" class="secondary">تحديث الأدوات</button>
+        </div>
+        <p id="zapier-auth-detail" class="muted" style="margin-top:8px;">--</p>
+        <div id="zapier-diagnostics" class="param-list" style="margin-top:8px;"></div>
+        <div id="zapier-param-summary" class="param-list"></div>
+        <button id="fill-zapier-template" class="secondary" style="width:100%; margin-top:10px;">تعبئة قالب الحقول</button>
+        <label for="zapier-params">JSON params</label>
+        <textarea id="zapier-params" dir="ltr" placeholder='{"owner":"fathya-core","repo":"fathiya-core"}'>{}</textarea>
+        <label for="zapier-instructions">تعليمات للوكيل</label>
+        <textarea id="zapier-instructions" placeholder="نفذ قراءة آمنة فقط وسجل الإيصال."></textarea>
+        <button id="run-zapier-action" style="width:100%; margin-top:10px;">تشغيل الإجراء عبر الوكيل</button>
+      </div>
+    </div>
+
+    <div class="card knowledge-panel view-hidden" id="knowledge-panel">
+      <div class="stack">
+        <div class="row">
+          <div>
+            <h2>مركز المعرفة والتقارير</h2>
+            <p>هنا ترى هل فتحية تراقب ملفات المعرفة فعلًا، وما آخر تقرير دخل في مسار الفهم والإيصال.</p>
+          </div>
+          <span class="badge" id="knowledge-running">--</span>
+        </div>
+        <div class="knowledge-grid">
+          <div class="metric"><span>الملفات المتتبعة</span><strong id="knowledge-tracked">--</strong></div>
+          <div class="metric"><span>مهام الاستيعاب</span><strong id="knowledge-enqueued">--</strong></div>
+          <div class="metric"><span>المهمل</span><strong id="knowledge-ignored">--</strong></div>
+          <div class="metric"><span>آخر فحص</span><strong id="knowledge-last-scan">--</strong></div>
+        </div>
+        <div class="knowledge-source">
+          <strong>مجلد الإدخال</strong>
+          <p id="knowledge-root" dir="ltr">--</p>
+        </div>
+        <div class="knowledge-source">
+          <strong>الامتدادات المدعومة</strong>
+          <p id="knowledge-supported">--</p>
+        </div>
+        <div class="row">
+          <button id="knowledge-scan">Scan الآن</button>
+          <button id="knowledge-start" class="secondary">تشغيل المراقبة</button>
+          <button id="knowledge-stop" class="secondary">إيقاف المراقبة</button>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="knowledge-source">
+          <strong>آخر تقرير مستوعب</strong>
+          <p id="knowledge-last-enqueued">لم يتم تحميل الحالة بعد.</p>
+        </div>
+        <div class="quick-request">
+          <h2>تنفيذ من مصادر معرفة</h2>
+          <label for="knowledge-sources">روابط أو مسارات</label>
+          <textarea id="knowledge-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي. اتركه فارغًا لتشغيل المعرفة الحالية."></textarea>
+          <div class="row" style="margin-top:10px;">
+            <button id="knowledge-run-current" style="flex:1;">استيعاب وتشغيل الحالي</button>
+            <button id="knowledge-open-reports" class="secondary" style="flex:1;">عرض التقارير</button>
+          </div>
+        </div>
+        <p class="muted">ضع ملفاتك في inbox ثم اضغط Scan. فتحية تدعم الآن PDF وZIP بجانب md/txt/json/csv، وتصدر مهمة وإيصالًا لكل محتوى جديد.</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap view-hidden single-view" id="workflow-main">
+    <section class="stack" id="operations-panel">
+      <div class="card trading" id="trading-card">
         <div class="row">
           <div>
             <h2>وكيل التداول</h2>
@@ -237,13 +1273,20 @@
         <p id="trade-notice" style="margin-top: 10px;">--</p>
       </div>
 
-      <div class="card bounty">
+      <div class="card bounty" id="bounty-card">
         <div class="row">
           <div>
             <h2>صيد الثغرات</h2>
-            <p>زر واحد يبدأ اختيار الهدف أو يستخدم الرابط الذي تعطيه لكتابة Draft داخلي.</p>
+            <p>مسار واضح: نطاق، dedupe، مراجعة ساكنة، إثبات، ثم Draft داخلي قابل للمراجعة.</p>
           </div>
           <span class="badge sky">Draft</span>
+        </div>
+
+        <div class="bounty-flow">
+          <div class="bounty-step"><strong>1. النطاق</strong><span>حدد منصة البرنامج والرابط والأصول المسموحة.</span></div>
+          <div class="bounty-step"><strong>2. Dedupe</strong><span>افحص الجدة قبل كتابة التقرير حتى لا نكرر الإغلاقات السابقة.</span></div>
+          <div class="bounty-step"><strong>3. الدليل</strong><span>اجمع أثرًا قابلًا للعرض: خطوات، لقطة، ملف PoC، أو مسار كود.</span></div>
+          <div class="bounty-step"><strong>4. Draft</strong><span>اكتب مسودة داخل فتحية فقط، ثم تعرضها في التقارير.</span></div>
         </div>
 
         <div class="grid2">
@@ -264,11 +1307,32 @@
         <label for="repo-url">GitHub repo اختياري</label>
         <input id="repo-url" dir="ltr" placeholder="https://github.com/org/repo" />
 
-        <label for="focus">تركيز الصيد</label>
-        <textarea id="focus" placeholder="مثال: CI supply-chain، OIDC/JWT، SSRF، auth bypass، cache poisoning"></textarea>
+        <div class="bounty-fields">
+          <div>
+            <label for="scope-allow">النطاق المسموح</label>
+            <textarea id="scope-allow" placeholder="الأصول أو المسارات أو repos المصرح بها. اتركه فارغًا لاستخدام نطاق البرنامج فقط."></textarea>
+          </div>
+          <div>
+            <label for="scope-exclude">استبعادات البرنامج</label>
+            <textarea id="scope-exclude" placeholder="مثال: لا فحص حي، لا DoS، لا social engineering، لا بيانات مستخدمين."></textarea>
+          </div>
+          <div>
+            <label for="focus">تركيز الصيد</label>
+            <textarea id="focus" placeholder="مثال: CI supply-chain، OIDC/JWT، SSRF، auth bypass، cache poisoning"></textarea>
+          </div>
+          <div>
+            <label for="evidence-plan">الإثبات المطلوب</label>
+            <textarea id="evidence-plan" placeholder="مثال: خطوات إعادة إنتاج، لقطة شاشة، PoC محلي، أثر واضح، سبب severity."></textarea>
+          </div>
+        </div>
+
+        <label for="dedupe-notes">ملاحظات dedupe أو تقارير سابقة</label>
+        <textarea id="dedupe-notes" placeholder="ضع report IDs أو أسماء دوال أو CVEs أو روابط disclosed reports التي يجب استبعادها قبل الصياغة."></textarea>
 
         <div class="row" style="margin-top: 12px;">
-          <button class="sky" id="start-hunt">ابدأ صيد الثغرات</button>
+          <button class="sky" id="start-hunt">ابدأ صيد + Draft</button>
+          <button class="secondary" id="dedupe-hunt">Dedupe فقط</button>
+          <button class="secondary" id="draft-gate">تحقق من Draft</button>
           <button class="secondary" id="fill-h1">HackerOne</button>
           <button class="secondary" id="fill-bc">Bugcrowd</button>
         </div>
@@ -276,7 +1340,7 @@
       </div>
     </section>
 
-    <section class="stack">
+    <section class="stack" id="reports-panel">
       <div class="metrics">
         <div class="metric"><span>المهام النشطة</span><strong id="active-count">--</strong></div>
         <div class="metric"><span>كل المهام</span><strong id="task-total">--</strong></div>
@@ -297,6 +1361,7 @@
 
       <div class="card">
         <h2>تفاصيل التقرير المحدد</h2>
+        <div id="detail-summary" class="report-summary"></div>
         <pre id="detail">ابدأ مهمة أو اختر تقريرًا من القائمة.</pre>
       </div>
 
@@ -309,16 +1374,127 @@
       </div>
     </section>
   </main>
+  </div>
 
   <script>
     const apiBase = new URLSearchParams(location.search).get("api") || "http://127.0.0.1:8765";
     const activeStatuses = new Set(["queued", "running", "awaiting_approval", "stalled"]);
     const platformLabels = { auto: "تلقائي", hackerone: "HackerOne", bugcrowd: "Bugcrowd" };
     const knowledgePath = "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
+    const meshPrompt = [
+      "agent mesh execute:",
+      "شغّل شبكة وكلاء فتحية الآمنة: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، GitHub Codespaces، ووكيل التداول الأساسي.",
+      "نفّذ فقط الأدوات الداخلية أو القراءة أو Paper/Testnet التي لا تحتاج موافقة، ثم سجل ما عمل وما تخطّيته بسبب بوابة المخاطر."
+    ].join("\n");
+    const codespacesPrompt = [
+      "شغّل وكيل GitHub Codespaces للهدف الهندسي:",
+      "استخدم حساب GitHub المصادق واشتراك Codespaces كبيئة وكيل بعيدة.",
+      "ابدأ بجرد Codespaces، اختر البيئة الأنسب لمستودع فتحية إن وجدت، ولا تنفذ أوامر بعيدة الآن.",
+      "أخرج إيصالًا فيه الجاهزية، Codespace المختارة، وما يحتاجه التشغيل البعيد التالي."
+    ].join("\n");
+    const modelStrategyPrompt = [
+      "openrouter model strategy:",
+      "استوعب إيميل OpenRouter منتصف يونيو 2026 عن Fusion وAdvisor وSubagent والنماذج الجديدة.",
+      "اعرض كيف تستخدم فتحية النماذج المجانية والقوية للتخطيط العادي، ومتى تستخدم openrouter/fusion للبحث العميق فقط.",
+      "أكد أن Fusion لا يدخل لوب التداول بالثانية، وأن نموذج السلامة المجاني يستخدم كطبقة فحص قبل/بعد المهام عالية الأثر.",
+      "سجل إيصالًا عمليًا فيه المسارات: تخطيط رخيص، بحث عميق، مستشار تداول، وسلامة."
+    ].join("\n");
+    const knowledgeExecutionPrompt = [
+      "knowledge execution mission:",
+      "FATHIYA_KNOWLEDGE_EXECUTION_V1",
+      "استوعب المعرفة والتقارير الحالية، ثم اختر الأدوات والنماذج المناسبة، ثم نفذ شبكة الوكلاء الداخلية الجاهزة.",
+      "استخدم Hugging Face المحلي للاسترجاع/الفهم، OpenRouter لتوجيه النماذج، Zapier MCP وn8n وKali وGitHub ووكيل التداول كقدرات تنفيذ.",
+      "نفّذ داخليًا ما لا يحتاج موافقة، واترك الإرسال الخارجي أو المال أو الفحص الحي أو الحذف كبوابات أثر لا كتعطيل.",
+      "أخرج إيصالًا يثبت: ما فهمته، الأدوات التي اختيرت، ما نُفذ فعليًا، وما بقي ينتظر ربطًا أو موافقة."
+    ].join("\n");
+    const executionOsPrompt = [
+      "agent mesh execute:",
+      "FATHIYA_EXECUTION_OS_MISSION_V1",
+      "شغّل محرك فتحية التنفيذي كشبكة وكلاء لا كتحليل فقط.",
+      "ابدأ وكيل التداول الورقي إذا كان متوقفًا، وفعّل مستشار الاستراتيجية، واجعل التنبؤ والتنفيذ الورقي بنبض الثانية هو الأولوية الأولى.",
+      "افحص جاهزية Hugging Face المحلي وOpenRouter وSupabase وn8n المحلي وZapier MCP وKali WSL وGitHub Codespaces وBroker Testnet.",
+      "استخدم جرد Zapier وموفري الوكلاء المفيدين مثل ChatGPT وAI by Zapier وApify كقدرات تنفيذ، مع ترك الأفعال عالية الأثر لبوابة المخاطر.",
+      "سجل إيصالًا واضحًا: ما نُفّذ فعليًا، ما أصبح جاهزًا، ما يحتاج ربطًا، وما هي المتابعة التنفيذية التالية."
+    ].join("\n");
+    const activationSweepPrompt = [
+      "agent mesh execute:",
+      "FATHIYA_ACTIVATION_SWEEP_V1",
+      "فعّل الناقص في فتحية كمسار تشغيل واحد لا كتنقل بين الإعدادات.",
+      "افحص بوابات Zapier MCP وGitHub Codespaces وSupabase وn8n المحلي وKali WSL وOpenRouter وHugging Face وBroker Testnet.",
+      "نفّذ كل فحص أو قراءة أو تشغيل داخلي آمن متاح الآن، ولا توقف المهمة بسبب بوابات OAuth أو مفاتيح أو موافقة أثر.",
+      "حوّل كل بوابة غير جاهزة إلى next_action واضح: ماذا أضغط، ماذا أربط، وأي إعداد محلي مطلوب بدون كشف أسرار.",
+      "ابدأ أو تحقق من وكيل التداول الورقي، وأثبت أن مسار النماذج المحلي/OpenRouter جاهز.",
+      "سجل إيصالًا فيه: الجاهز الآن، ما نُفّذ، ما بقي، وأول ثلاث خطوات تفعيل مرتبة."
+    ].join("\n");
+    const missionModes = {
+      execution: { label: "تنفيذ", title: "تشغيل محرك فتحية" },
+      trading: { label: "تداول", title: "تشغيل وكيل التداول" },
+      bounty: { label: "صيد", title: "صيد ثغرات" },
+      knowledge: { label: "معرفة", title: "استيعاب معرفة وتشغيل" },
+      tools: { label: "أدوات", title: "تشغيل أدوات فتحية" }
+    };
+    const missionAutonomyModes = {
+      direct: { label: "مباشر محلي" },
+      guided: { label: "موجّه" },
+      activation: { label: "تفعيل الأدوات" }
+    };
+    const localSessionKey = "fathiya.operator.session.v1";
+    const defaultOperatorEmail = "fathya-ad@fathya-core.com";
     let selectedTaskId = null;
     let tradingState = null;
+    let selectedMissionMode = "execution";
+    let selectedMissionAutonomyMode = "direct";
+    let zapierCatalog = null;
+    let zapierDiagnostics = null;
+    let zapierActionDetails = null;
+    let zapierApps = [];
+    let lastZapierTemplate = "";
+    let detailActivationActions = [];
+    let commandZapierIntegration = null;
+    let commandCodespacesIntegration = null;
+    let commandMeshSummary = null;
+    let intakeState = null;
+    let localSettingsData = null;
+    let selectedLocalSettingsGroup = "";
+    let refreshTimer = null;
+    let tradingTimer = null;
 
     document.getElementById("api-label").textContent = apiBase;
+
+    function readLocalSession() {
+      try {
+        return JSON.parse(localStorage.getItem(localSessionKey) || "null");
+      } catch {
+        return null;
+      }
+    }
+
+    function writeLocalSession(email) {
+      localStorage.setItem(localSessionKey, JSON.stringify({ email, signedInAt: new Date().toISOString() }));
+    }
+
+    function setLoginError(message) {
+      document.getElementById("login-error").textContent = message || "";
+    }
+
+    function unlockOperator(email, persist = true) {
+      if (persist) writeLocalSession(email);
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("operator-shell").classList.remove("hidden");
+      startOperator();
+    }
+
+    function lockOperator() {
+      localStorage.removeItem(localSessionKey);
+      document.getElementById("operator-shell").classList.add("hidden");
+      document.getElementById("login-screen").classList.remove("hidden");
+      document.getElementById("login-password").value = "";
+      document.getElementById("login-password").focus();
+      if (refreshTimer) clearInterval(refreshTimer);
+      if (tradingTimer) clearInterval(tradingTimer);
+      refreshTimer = null;
+      tradingTimer = null;
+    }
 
     function normalizeUrl(value) {
       const clean = value.trim();
@@ -326,8 +1502,276 @@
       return /^https?:\/\//i.test(clean) ? clean : `https://${clean}`;
     }
 
+    function formatKnowledgeReferences(value) {
+      const references = value
+        .split(/\r?\n|,/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 8);
+      if (!references.length) return "";
+      const lines = references.map((item) => /^https?:\/\//i.test(item) ? item : `source_path: ${item}`);
+      return ["مصادر المعرفة المطلوب استيعابها:", ...lines].join("\n");
+    }
+
     function isGithubRepoUrl(value) {
       return /^https?:\/\/(?:www\.)?github\.com\/[^/\s]+\/[^/\s]+/i.test(value.trim());
+    }
+
+    function buildKnowledgeExecutionFromPanel() {
+      const title = document.getElementById("direct-title").value.trim();
+      const objective = document.getElementById("direct-prompt").value.trim();
+      const references = formatKnowledgeReferences(document.getElementById("direct-sources").value);
+      if (!objective && !references) {
+        throw new Error("اكتب هدفًا أو ضع رابطًا/مسارًا لمصدر معرفة قبل تشغيل الاستيعاب.");
+      }
+      return {
+        title: title || "استيعاب مصادر وتشغيل فتحية",
+        prompt: [
+          "knowledge execution mission:",
+          "FATHIYA_KNOWLEDGE_EXECUTION_V1",
+          objective || "استوعب مصادر المعرفة المحددة ثم اختر الأدوات والنماذج المناسبة ونفذ الداخلي الجاهز.",
+          references,
+          "استخدم Hugging Face المحلي للاسترجاع والفهم، وOpenRouter/Fusion فقط عند الحاجة للبحث العميق، ثم شغّل الأدوات الداخلية الجاهزة وسجل إيصالًا واضحًا.",
+          "الأفعال الخارجية أو المالية أو الفحص الحي تبقى كبوابات أثر ولا تمنع التنفيذ الداخلي."
+        ].filter(Boolean).join("\n")
+      };
+    }
+
+    function setMissionMode(mode) {
+      selectedMissionMode = missionModes[mode] ? mode : "execution";
+      document.getElementById("mission-mode-label").textContent =
+        `${missionModes[selectedMissionMode].label} · ${missionAutonomyModes[selectedMissionAutonomyMode].label}`;
+      document.querySelectorAll("[data-mission-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.missionMode === selectedMissionMode);
+      });
+    }
+
+    function setMissionAutonomyMode(mode) {
+      selectedMissionAutonomyMode = missionAutonomyModes[mode] ? mode : "direct";
+      document.getElementById("mission-autonomy-label").textContent = missionAutonomyModes[selectedMissionAutonomyMode].label;
+      document.getElementById("mission-mode-label").textContent =
+        `${missionModes[selectedMissionMode].label} · ${missionAutonomyModes[selectedMissionAutonomyMode].label}`;
+      document.querySelectorAll("[data-autonomy-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.autonomyMode === selectedMissionAutonomyMode);
+      });
+    }
+
+    function missionAutonomyDirective() {
+      if (selectedMissionAutonomyMode === "activation") {
+        return [
+          "autonomy_mode: activation",
+          "لا تعامل النواقص كفشل؛ افحص كل بوابة، نفذ الفحوصات والقراءة الداخلية الجاهزة، ثم أخرج أزرار OAuth/Settings/Follow-up لكل مزود يحتاج ربطًا.",
+          "اجعل Zapier MCP وGitHub Codespaces وSupabase وBroker Testnet عناصر تفعيل مرتبة، مع منع كشف الأسرار."
+        ].join("\n");
+      }
+      if (selectedMissionAutonomyMode === "guided") {
+        return [
+          "autonomy_mode: guided",
+          "افهم الهدف، اختر الأدوات المناسبة، نفذ الداخلي والقراءة، ثم توقف عند أول فعل خارجي عالي الأثر مع صياغة متابعة قابلة للتشغيل.",
+          "اعرض السبب والأداة المقترحة قبل أي إرسال خارجي أو حذف أو مال أو فحص حي."
+        ].join("\n");
+      }
+      return [
+        "autonomy_mode: direct_local",
+        "افهم الهدف ثم تحرك كوكيل: اختر النماذج والأدوات، نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet جاهز دون سؤال إضافي، وسجل إيصالًا.",
+        "لا تجعل OAuth أو إعدادات ناقصة توقف المهمة؛ حوّلها إلى next_action واضح واستمر بما هو متاح.",
+        "الأفعال الخارجية عالية الأثر، المال الحقيقي، الحذف، والإرسال العام تبقى كبوابات أثر منفصلة، لكنها لا تمنع التنفيذ المحلي."
+      ].join("\n");
+    }
+
+    function selectedAgentProviderSpec() {
+      const provider = document.getElementById("agent-provider").value || "Cursor";
+      if (provider === "Manus") {
+        return {
+          provider,
+          action: "Create Task",
+          title: "تحضير تشغيل وكيل Manus",
+          defaultObjective: "نفذ مراجعة تشغيلية لفتحية وارجع بملاحظات عملية.",
+          needsRepo: false
+        };
+      }
+      return {
+        provider: "Cursor",
+        action: "Launch Agent",
+        title: "تحضير تشغيل وكيل Cursor",
+        defaultObjective: "راجع مسار فتحية التشغيلي وارجع بملاحظات تنفيذية فقط.",
+        needsRepo: true
+      };
+    }
+
+    function setAgentProviderStatus(message, tone = "") {
+      const box = document.getElementById("agent-provider-status");
+      box.textContent = message;
+      box.style.borderColor = tone === "bad"
+        ? "rgba(240, 115, 138, 0.45)"
+        : tone === "ok"
+          ? "rgba(114, 214, 168, 0.45)"
+          : "rgba(122, 93, 36, 0.3)";
+    }
+
+    function syncAgentProviderForm() {
+      const spec = selectedAgentProviderSpec();
+      const repo = document.getElementById("agent-provider-repo");
+      const badge = document.getElementById("agent-provider-badge");
+      repo.disabled = !spec.needsRepo;
+      repo.placeholder = spec.needsRepo
+        ? "https://github.com/fathya-core/fathiya-core"
+        : "غير مطلوب في Manus";
+      badge.textContent = `${spec.provider} · ${spec.action}`;
+      setAgentProviderStatus(
+        spec.needsRepo
+          ? "Cursor يحتاج رابط مستودع وتعليمات. سأضيف repository_ref=main وtarget_auto_create_pr=false تلقائيًا."
+          : "Manus يحتاج تعليمات فقط. سأستخدم agent_profile=manus-1.6 وshare_visibility=private تلقائيًا."
+      );
+    }
+
+    function buildAgentProviderTask() {
+      const spec = selectedAgentProviderSpec();
+      const objectiveInput = document.getElementById("agent-provider-objective").value.trim();
+      const repo = document.getElementById("agent-provider-repo").value.trim();
+      const objective = objectiveInput || spec.defaultObjective;
+      const params = spec.provider === "Cursor"
+        ? {
+          repository_url: repo,
+          prompt_text: objective,
+          repository_ref: "main",
+          target_auto_create_pr: "false"
+        }
+        : {
+          prompt: objective,
+          agent_profile: "manus-1.6",
+          share_visibility: "private"
+        };
+      Object.keys(params).forEach((key) => {
+        if (typeof params[key] === "string" && !params[key].trim()) {
+          delete params[key];
+        }
+      });
+      return {
+        title: spec.title,
+        prompt: [
+          `agent provider action prepare: ${spec.provider}`,
+          `action: ${spec.action}`,
+          `objective: ${objective}`,
+          `params: ${JSON.stringify(params)}`
+        ].join("\n"),
+        missingUiFields: spec.needsRepo && !repo ? ["رابط المستودع"] : []
+      };
+    }
+
+    async function prepareAgentProviderFromForm() {
+      const task = buildAgentProviderTask();
+      if (task.missingUiFields.length) {
+        setAgentProviderStatus(`أكمل أولًا: ${task.missingUiFields.join(", ")}.`, "bad");
+        document.getElementById("agent-provider-repo").focus();
+        return;
+      }
+      setAgentProviderStatus("جارٍ تحضير الوكيل داخل فتحية...", "ok");
+      await createTask({ title: task.title, prompt: task.prompt });
+      setAgentProviderStatus("أرسلت مهمة التحضير. افتح آخر تقرير لترى params_ready والحقول المطلوبة.", "ok");
+    }
+
+    async function probeAgentProviderFromForm() {
+      const spec = selectedAgentProviderSpec();
+      setAgentProviderStatus(`جارٍ فحص مزود ${spec.provider}...`);
+      await runAgentProviderProbe(spec.provider);
+      setAgentProviderStatus(`أرسلت فحص ${spec.provider}. ستظهر أفعال القراءة والكتابة في التقرير.`, "ok");
+    }
+
+    function buildMissionLauncherTask() {
+      const objective = document.getElementById("mission-objective").value.trim();
+      const references = formatKnowledgeReferences(document.getElementById("mission-sources").value);
+      const cleanObjective = objective || "نفذ المسار المختار بالأدوات الداخلية الجاهزة وسجل إيصالًا واضحًا.";
+      const autonomy = missionAutonomyDirective();
+      if (selectedMissionMode === "trading") {
+        return {
+          title: "تشغيل وكيل التداول",
+          prompt: [
+            "agent mesh execute:",
+            "FATHIYA_TRADING_AGENT_MISSION_V1",
+            autonomy,
+            "ابدأ أو تحقق من وكيل التداول الورقي، وحدث مستشار الاستراتيجية، واجعل نبض الثانية هو المسار الأساسي.",
+            cleanObjective,
+            references,
+            "استخدم Hugging Face المحلي للاسترجاع وOpenRouter لمستشار الاستراتيجية عند الحاجة، ولا تستخدم مالًا حقيقيًا."
+          ].filter(Boolean).join("\n")
+        };
+      }
+      if (selectedMissionMode === "bounty") {
+        const firstToken = cleanObjective.split(/\s+/)[0] || "";
+        const looksLikeUrl = /^https?:\/\//i.test(firstToken) || /^[\w.-]+\.[a-z]{2,}/i.test(firstToken);
+        const inlineProgram = looksLikeUrl ? normalizeUrl(firstToken) : "";
+        return {
+          title: inlineProgram ? `صيد ثغرات: ${programLabel("auto", inlineProgram)}` : "صيد ثغرات: اختيار تلقائي",
+          prompt: [
+            "bug bounty hunt flow:",
+            "bug bounty static review:",
+            autonomy,
+            "platform: تلقائي",
+            inlineProgram ? `program_url: ${inlineProgram}` : "program_url: auto",
+            "target_path: .",
+            `focus: ${cleanObjective}`,
+            references,
+            `knowledge_path: ${knowledgePath}`,
+            "draft_gate: internal_only",
+            "constraints: استخدم المعرفة والأدوات المحلية والمصادر المصرح بها، واعرض التقرير والإثبات داخل فتحية قبل أي إرسال خارجي."
+          ].filter(Boolean).join("\n")
+        };
+      }
+      if (selectedMissionMode === "knowledge") {
+        return {
+          title: "استيعاب معرفة وتشغيل",
+          prompt: [
+            "knowledge execution mission:",
+            "FATHIYA_KNOWLEDGE_EXECUTION_V1",
+            autonomy,
+            cleanObjective,
+            references,
+            "استوعب المصادر عبر Hugging Face المحلي، استخدم OpenRouter/Fusion للبحث العميق عند الحاجة، ثم اختر الأدوات المناسبة ونفذ الداخلي الجاهز."
+          ].filter(Boolean).join("\n")
+        };
+      }
+      if (selectedMissionMode === "tools") {
+        return {
+          title: "تشغيل أدوات فتحية",
+          prompt: [
+            "agent mesh execute:",
+            "FATHIYA_TOOL_ORCHESTRATION_MISSION_V1",
+            autonomy,
+            "استكشف أدوات Zapier MCP وn8n وKali وGitHub Codespaces وحالة الموصلات، ثم نفذ القراءة أو الداخلي الجاهز.",
+            cleanObjective,
+            references,
+            "سجل ما استُخدم فعليًا وما ينتظر OAuth أو إعدادًا أو موافقة أثر."
+          ].filter(Boolean).join("\n")
+        };
+      }
+      return {
+        title: missionModes.execution.title,
+        prompt: [
+          executionOsPrompt,
+          autonomy,
+          cleanObjective,
+          references
+        ].filter(Boolean).join("\n")
+      };
+    }
+
+    function buildMissionFollowUpTask(mode) {
+      const objectiveEl = document.getElementById("mission-objective");
+      const sourcesEl = document.getElementById("mission-sources");
+      const previousMode = selectedMissionMode;
+      const previousObjective = objectiveEl.value;
+      const previousSources = sourcesEl.value;
+      try {
+        selectedMissionMode = missionModes[mode] ? mode : "execution";
+        objectiveEl.value = `تابع مسار ${missionModes[selectedMissionMode].label} من آخر نتيجة، نفذ الخطوة الداخلية التالية المناسبة، ثم سجل إيصالًا واضحًا.`;
+        sourcesEl.value = "";
+        return buildMissionLauncherTask();
+      } finally {
+        selectedMissionMode = previousMode;
+        objectiveEl.value = previousObjective;
+        sourcesEl.value = previousSources;
+      }
     }
 
     function programLabel(platform, programUrl) {
@@ -341,32 +1785,68 @@
       }
     }
 
-    function buildHuntPrompt() {
+    function fieldText(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function buildHuntPrompt(mode = "hunt") {
       const platform = document.getElementById("platform").value;
       const programUrl = normalizeUrl(document.getElementById("program-url").value);
-      const repoInput = document.getElementById("repo-url").value;
+      const repoInput = fieldText("repo-url");
       const repoUrl = normalizeUrl(repoInput || (isGithubRepoUrl(programUrl) ? programUrl : ""));
-      const focus = document.getElementById("focus").value.trim() || "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب مسودة تقرير داخل فتحية.";
+      const focus = fieldText("focus") || "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب مسودة تقرير داخل فتحية.";
+      const allowedScope = fieldText("scope-allow") || "use_program_scope_only";
+      const exclusions = fieldText("scope-exclude") || "respect_program_policy; no live testing unless explicitly in-scope and approved";
+      const evidencePlan = fieldText("evidence-plan") || "steps_to_reproduce; impact_statement; screenshots_or_local_poc_if_available; severity_reasoning";
+      const dedupeNotes = fieldText("dedupe-notes") || "check disclosed reports, prior duplicate IDs, GitHub issues/PRs, changelog, CVEs, exact function names, and root-cause terms before drafting";
+      const phase = mode === "dedupe" ? "dedupe_only" : "hunt_static_review_then_internal_draft";
+      const titlePrefix = mode === "dedupe" ? "Dedupe صيد ثغرات" : "صيد ثغرات";
       const scopeNote = [
         `platform=${platformLabels[platform]}`,
         programUrl ? `program_url=${programUrl}` : "selection=auto_authorized_program",
-        repoUrl ? `repo_url=${repoUrl}` : "repo_url=not_provided"
+        repoUrl ? `repo_url=${repoUrl}` : "repo_url=not_provided",
+        `phase=${phase}`
       ].join("; ");
       return {
-        title: `صيد ثغرات: ${programLabel(platform, programUrl)}`,
+        title: `${titlePrefix}: ${programLabel(platform, programUrl)}`,
         prompt: [
-          "bug bounty hunt flow:",
+          mode === "dedupe" ? "" : "bug bounty hunt flow:",
           "bug bounty static review:",
+          `phase: ${phase}`,
           `platform: ${platformLabels[platform]}`,
           `program: ${programLabel(platform, programUrl)}`,
           programUrl ? `program_url: ${programUrl}` : "program_url: auto",
           repoUrl ? `repo_url: ${repoUrl}` : "repo_url:",
           "target_path: .",
+          `allowed_scope: ${allowedScope}`,
+          `exclusions: ${exclusions}`,
           `scope_note: ${scopeNote}`,
           `focus: ${focus}`,
+          `evidence_required: ${evidencePlan}`,
+          `dedupe_required: ${dedupeNotes}`,
           `knowledge_path: ${knowledgePath}`,
-          "draft_gate: internal_only",
-          "constraints: مراجعة معرفة ومصادر مصرح بها؛ التقرير والإثبات يظهران داخل فتحية قبل أي إرسال خارجي."
+          mode === "dedupe" ? "" : "draft_gate: internal_only",
+          "novelty_gate: لا تكتب Draft قابل للرفع إذا كان الجذر أو الاستغلال أو الأثر مكررًا؛ اكتب قرار not_ready مع سبب dedupe.",
+          "impact_gate: لا تصعّد severity بلا أثر عملي قابل للعرض. يجب أن يجيب التقرير: as an attacker I could ... بدليل.",
+          "constraints: مراجعة معرفة ومصادر مصرح بها؛ لا فحص حي ولا إرسال خارجي من هذا المسار؛ التقرير والإثبات يظهران داخل فتحية قبل أي رفع."
+        ].filter(Boolean).join("\n")
+      };
+    }
+
+    function buildDraftGatePrompt() {
+      const platform = document.getElementById("platform").value;
+      const programUrl = normalizeUrl(document.getElementById("program-url").value);
+      const program = programLabel(platform, programUrl);
+      return {
+        title: `تحقق Draft: ${program}`,
+        prompt: [
+          "bug bounty draft gate:",
+          `platform: ${platformLabels[platform]}`,
+          `program: ${program}`,
+          programUrl ? `program_url: ${programUrl}` : "program_url: auto",
+          "تحقق من أحدث تقرير static review داخل فتحية.",
+          "لا ترفعه خارجيًا. قيّم فقط: هل فيه أثر عملي؟ هل فيه دليل؟ هل تجاوز dedupe؟ هل يصلح Draft داخلي؟",
+          "إذا ناقص، اكتب not_ready مع قائمة الأدلة المطلوبة بدل صياغة تقرير ضعيف."
         ].join("\n")
       };
     }
@@ -381,11 +1861,1084 @@
       return text ? JSON.parse(text) : {};
     }
 
-    async function createTask(body) {
+    function settingsGroupFromPath(path) {
+      const match = String(path || "").match(/\/api\/agent\/settings\/([a-z0-9_-]+)$/i);
+      return match ? match[1] : "";
+    }
+
+    async function loadLocalSettings(preferredGroup = selectedLocalSettingsGroup) {
+      const data = await api("/api/agent/settings");
+      localSettingsData = data;
+      renderLocalSettings(preferredGroup);
+      return data;
+    }
+
+    function renderLocalSettings(preferredGroup = "") {
+      const groups = Array.isArray(localSettingsData?.groups) ? localSettingsData.groups : [];
+      const select = document.getElementById("local-settings-group");
+      const status = document.getElementById("local-settings-status");
+      select.innerHTML = "";
+      for (const group of groups) {
+        const option = document.createElement("option");
+        option.value = group.id;
+        option.textContent = `${group.name} (${group.configured_count}/${group.fields?.length || 0})`;
+        select.appendChild(option);
+      }
+      const fallback =
+        groups.find((group) => ["supabase", "broker_testnet", "local_execution_mesh"].includes(group.id) && group.configured_count < (group.fields?.length || 0))?.id ||
+        groups[0]?.id ||
+        "";
+      selectedLocalSettingsGroup = groups.some((group) => group.id === preferredGroup)
+        ? preferredGroup
+        : fallback;
+      if (selectedLocalSettingsGroup) {
+        select.value = selectedLocalSettingsGroup;
+      }
+      const total = groups.reduce((sum, group) => sum + (group.fields?.length || 0), 0);
+      const configured = groups.reduce((sum, group) => sum + (group.configured_count || 0), 0);
+      status.textContent = groups.length ? `${configured}/${total} محفوظة` : "--";
+      status.className = configured >= total && total ? "badge ok" : "badge warn";
+      renderLocalSettingsFields();
+    }
+
+    function renderLocalSettingsFields() {
+      const host = document.getElementById("local-settings-fields");
+      const group = (localSettingsData?.groups || []).find((item) => item.id === selectedLocalSettingsGroup);
+      host.innerHTML = "";
+      document.getElementById("local-settings-result").textContent = group
+        ? group.description
+        : "لا توجد إعدادات محلية ظاهرة.";
+      if (!group) return;
+      for (const field of group.fields || []) {
+        const item = document.createElement("div");
+        item.className = "param-item";
+        const inputType = field.kind === "secret" ? "password" : field.kind === "url" ? "url" : "text";
+        const configuredText = field.configured
+          ? `محفوظ (${field.source === "environment" ? "environment" : "local"})`
+          : field.required
+            ? "مطلوب"
+            : "اختياري";
+        item.innerHTML = `
+          <div class="param-key">
+            <span>${escapeHtml(field.label || field.name)}</span>
+            <span class="${field.configured ? "badge ok" : field.required ? "badge warn" : "badge"}">${escapeHtml(configuredText)}</span>
+          </div>
+          <input
+            data-setting-name="${escapeHtml(field.name)}"
+            type="${inputType}"
+            autocomplete="off"
+            dir="ltr"
+            placeholder="${escapeHtml(field.placeholder || (field.configured ? "اتركه فارغًا للإبقاء على القيمة" : field.name))}"
+            style="margin-top:8px;"
+          />
+          ${field.clearable ? `<label style="display:flex; align-items:center; gap:8px; margin-top:8px;"><input type="checkbox" data-clear-setting="${escapeHtml(field.name)}" style="width:auto;" /> مسح القيمة المحلية</label>` : ""}
+        `;
+        host.appendChild(item);
+      }
+    }
+
+    function localSettingsProbeTask(groupId) {
+      const groupName =
+        (localSettingsData?.groups || []).find((item) => item.id === groupId)?.name ||
+        groupId ||
+        "local settings";
+      const probes = {
+        local_execution_mesh: {
+          title: "فحص جسر الوكلاء بعد الحفظ",
+          prompt: [
+            "agent mesh execute:",
+            "FATHIYA_POST_SETTINGS_PROBE_V1",
+            "افحص جسر الوكلاء المحلي بعد حفظ الإعدادات بدون كشف الأسرار.",
+            "نفذ فقط جرد الأدوات والقراءة الداخلية الآمنة، وسجل إيصالًا يوضح الجاهز والناقص."
+          ].join("\n")
+        },
+        openrouter: {
+          title: "فحص OpenRouter/Fusion بعد الحفظ",
+          prompt: [
+            "integration probe: openrouter",
+            "openrouter model strategy:",
+            "افحص إعداد OpenRouter بعد الحفظ دون كشف المفتاح أو صرف رموز غير لازمة.",
+            "اعرض استراتيجية Fusion/Advisor/Subagent من بطاقة OpenRouter، وأكد أن Fusion للبحث العميق وليس لوب التداول بالثانية."
+          ].join("\n")
+        },
+        broker_testnet: {
+          title: "فحص Broker Testnet بعد الحفظ",
+          prompt: [
+            "integration probe: broker_testnet",
+            "افحص Testnet بعد حفظ الإعدادات بدون إرسال أوامر تداول حقيقية.",
+            "أثبت حالة الاتصال، وضع التداول الورقي، وما يلزم قبل أي تنفيذ مالي."
+          ].join("\n")
+        }
+      };
+      return probes[groupId] || {
+        title: `فحص ${groupName} بعد الحفظ`,
+        prompt: [
+          `integration probe: ${groupId}`,
+          "FATHIYA_POST_SETTINGS_PROBE_V1",
+          `افحص بوابة ${groupName} بعد حفظ الإعدادات دون كشف الأسرار.`,
+          "سجل إيصالًا واضحًا: جاهز، جزئي، أو يحتاج تفعيل."
+        ].join("\n")
+      };
+    }
+
+    async function saveLocalSettings() {
+      if (!selectedLocalSettingsGroup) {
+        showError("اختر بوابة إعداد أولًا.");
+        return;
+      }
+      const values = {};
+      const clear = [];
+      document.querySelectorAll("#local-settings-fields [data-setting-name]").forEach((input) => {
+        const value = input.value.trim();
+        if (value) values[input.dataset.settingName] = value;
+      });
+      document.querySelectorAll("#local-settings-fields [data-clear-setting]:checked").forEach((input) => {
+        clear.push(input.dataset.clearSetting);
+      });
+      if (!Object.keys(values).length && !clear.length) {
+        document.getElementById("local-settings-result").textContent = "لا يوجد شيء جديد للحفظ.";
+        return;
+      }
+      const result = await api(`/api/agent/settings/${selectedLocalSettingsGroup}`, {
+        method: "POST",
+        body: JSON.stringify({ values, clear })
+      });
+      const updated = Array.isArray(result.updated_fields) ? result.updated_fields.length : 0;
+      const cleared = Array.isArray(result.cleared_fields) ? result.cleared_fields.length : 0;
+      document.getElementById("local-settings-result").textContent =
+        `تم الحفظ محليًا: ${updated} تحديث · ${cleared} مسح. القيم السرية لن تُعرض.`;
+      await Promise.all([loadLocalSettings(selectedLocalSettingsGroup), loadEngine()]);
+      const probeTask = localSettingsProbeTask(selectedLocalSettingsGroup);
+      await createTask(probeTask, { showReports: false, scrollDetail: false });
+      document.getElementById("local-settings-result").textContent =
+        `تم الحفظ محليًا: ${updated} تحديث · ${cleared} مسح. بدأ فحص داخلي: ${probeTask.title}.`;
+    }
+
+    function openLocalSettingsGroup(groupId) {
+      selectedLocalSettingsGroup = groupId || selectedLocalSettingsGroup || "local_execution_mesh";
+      setWorkspaceView("tools");
+      if (localSettingsData) {
+        renderLocalSettings(selectedLocalSettingsGroup);
+      } else {
+        loadLocalSettings(selectedLocalSettingsGroup).catch(showError);
+      }
+      document.getElementById("local-settings-group").focus();
+    }
+
+    async function createTask(body, options = {}) {
+      clearError();
       const data = await api("/api/agent/tasks", { method: "POST", body: JSON.stringify(body) });
       selectedTaskId = data.task.id;
+      if (options.showReports !== false) {
+        setWorkspaceView("reports", { scroll: false });
+      }
       await loadTasks();
       await loadDetail(selectedTaskId);
+      if (options.scrollDetail !== false) {
+        document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function setZapierStatus(text, className = "badge") {
+      const el = document.getElementById("zapier-tool-status");
+      el.textContent = text;
+      el.className = className;
+    }
+
+    async function loadZapierToolCenter(refresh = false, appOverride = "") {
+      setZapierStatus("يتحقق...", "badge warn");
+      const [summary, diagnosticsResponse] = await Promise.all([
+        api(`/api/agent/zapier/catalog${refresh ? "?refresh=true" : ""}`),
+        api("/api/agent/oauth/zapier/diagnostics")
+      ]);
+      zapierDiagnostics = diagnosticsResponse.zapier_mcp || null;
+      zapierApps = Array.isArray(summary.apps) ? summary.apps : [];
+      document.getElementById("zapier-app-total").textContent = `${summary.app_count || zapierApps.length || 0}`;
+      document.getElementById("zapier-action-total").textContent = `${summary.action_count || 0}`;
+      const liveAvailable = summary.live_available ?? summary.available;
+      const inventoryAvailable = Boolean(summary.inventory_available || (summary.source === "connected_tool_inventory_fallback" && (summary.app_count || zapierApps.length)));
+      const needsReconnect = Boolean(summary.needs_reconnect);
+      const statusText = needsReconnect
+        ? "إعادة ربط OAuth"
+        : liveAvailable
+          ? "متصل حي"
+          : inventoryAvailable || summary.connected
+            ? "مخزون فقط"
+            : "غير متصل";
+      setZapierStatus(statusText, liveAvailable && !needsReconnect ? "badge ok" : "badge warn");
+      renderZapierAuthDetail(summary);
+      renderZapierDiagnostics();
+      document.getElementById("reconnect-zapier").classList.toggle("hidden", Boolean(liveAvailable && !needsReconnect));
+      renderZapierApps(appOverride);
+      const selected = document.getElementById("zapier-app").value || appOverride || zapierApps[0]?.app || "";
+      if (selected) await loadZapierActions(selected, refresh);
+    }
+
+    function renderZapierApps(preferred = "") {
+      const select = document.getElementById("zapier-app");
+      const current = preferred || select.value || "GitHub";
+      const orderedApps = [...zapierApps].sort((a, b) => agentAppRank(a.app) - agentAppRank(b.app) || String(a.app).localeCompare(String(b.app)));
+      select.innerHTML = "";
+      for (const app of orderedApps) {
+        const option = document.createElement("option");
+        option.value = app.app;
+        option.textContent = `${app.app} (${app.action_count || 0})`;
+        select.appendChild(option);
+      }
+      if (orderedApps.some((app) => app.app === current)) select.value = current;
+      else if (orderedApps.length) select.value = orderedApps[0].app;
+
+      const chips = document.getElementById("zapier-app-chips");
+      chips.innerHTML = "";
+      for (const app of orderedApps.slice(0, 10)) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `tool-chip ${app.app === select.value ? "active" : ""}`;
+        chip.textContent = `${app.app} · ${app.action_count || 0}`;
+        chip.dataset.app = app.app;
+        chips.appendChild(chip);
+      }
+    }
+
+    function agentAppRank(appName) {
+      const name = String(appName || "").toLowerCase();
+      const priority = [
+        "cursor",
+        "manus",
+        "chatgpt",
+        "ai by zapier",
+        "agents",
+        "apify",
+        "github",
+        "gmail",
+        "mcp client",
+        "zapier tables"
+      ];
+      const index = priority.findIndex((item) => name.includes(item));
+      return index === -1 ? 100 : index;
+    }
+
+    async function loadZapierActions(app, refresh = false) {
+      const cleanApp = String(app || "").trim();
+      if (!cleanApp) return;
+      const params = new URLSearchParams({ app: cleanApp });
+      if (refresh) params.set("refresh", "true");
+      zapierCatalog = await api(`/api/agent/zapier/catalog?${params.toString()}`);
+      if (zapierCatalog.needs_reconnect) {
+        setZapierStatus("إعادة ربط OAuth", "badge warn");
+      } else if (zapierCatalog.live_available === false) {
+        setZapierStatus("مخزون فقط", "badge warn");
+      } else if (zapierCatalog.connected) {
+        setZapierStatus("متصل حي", "badge ok");
+      }
+      renderZapierAuthDetail(zapierCatalog);
+      renderZapierActions();
+      await loadZapierActionDetails();
+    }
+
+    function renderZapierAuthDetail(data) {
+      const el = document.getElementById("zapier-auth-detail");
+      if (!el) return;
+      if (!data) {
+        el.textContent = "--";
+        return;
+      }
+      const apps = data.app_count || zapierApps.length || 0;
+      const actions = data.action_count || 0;
+      const authState = data.auth_state || (data.needs_reconnect ? "reconnect_required" : data.connected ? "connected" : "not_connected");
+      const refreshError = data.last_refresh_error || "";
+      const statusCode = data.last_refresh_status_code ? ` HTTP ${data.last_refresh_status_code}` : "";
+      const inventoryAvailable = Boolean(data.inventory_available || (data.source === "connected_tool_inventory_fallback" && apps));
+      if (authState === "reconnect_required") {
+        el.textContent = `Zapier يحتاج إعادة ربط: المخزون محفوظ (${apps} تطبيق / ${actions} إجراء)، والتجديد فشل${refreshError ? `: ${refreshError}${statusCode}` : "."}`;
+      } else if (authState === "refresh_recommended") {
+        el.textContent = `Zapier متصل لكن التوكن منتهي؛ سيحاول فتحية التجديد قبل التنفيذ.`;
+      } else if (data.live_available === false || inventoryAvailable) {
+        el.textContent = `Zapier يعمل من المخزون المحلي فقط الآن: ${apps} تطبيق / ${actions} إجراء. اربط OAuth المحلي للتنفيذ الحي.`;
+      } else if (data.connected) {
+        el.textContent = `Zapier متصل حيًا: ${apps} تطبيق / ${actions} إجراء.`;
+      } else {
+        el.textContent = "Zapier غير متصل بعد.";
+      }
+    }
+
+    function renderZapierDiagnostics() {
+      const box = document.getElementById("zapier-diagnostics");
+      if (!box) return;
+      if (!zapierDiagnostics) {
+        box.innerHTML = "";
+        return;
+      }
+      const state = zapierDiagnostics.activation_state || "not_connected";
+      const stateLabel = state === "live"
+        ? "متصل حي"
+        : state === "reconnect_required"
+          ? "إعادة ربط"
+          : state === "inventory_only"
+            ? "مخزون فقط"
+            : "غير متصل";
+      const providers = Array.isArray(zapierDiagnostics.agent_providers)
+        ? zapierDiagnostics.agent_providers.slice(0, 6).map((provider) => provider.app).filter(Boolean)
+        : [];
+      box.innerHTML = `
+        <div class="param-item">
+          <div class="param-key"><span>تشخيص Zapier MCP</span><span class="${state === "live" ? "badge ok" : "badge warn"}">${escapeHtml(stateLabel)}</span></div>
+          <p class="muted" style="margin:6px 0 0;">${escapeHtml(zapierDiagnostics.headline || "")}</p>
+          <p class="muted" style="margin:6px 0 0;">
+            ${Number(zapierDiagnostics.app_count || 0)} تطبيق · ${Number(zapierDiagnostics.action_count || 0)} إجراء · ${Number(zapierDiagnostics.agent_provider_count || 0)} وكلاء تطبيق
+          </p>
+          ${zapierDiagnostics.last_refresh_error ? `<p class="muted" style="margin:6px 0 0;">آخر تجديد فشل: ${escapeHtml(zapierDiagnostics.last_refresh_error)}${zapierDiagnostics.last_refresh_status_code ? ` · HTTP ${escapeHtml(String(zapierDiagnostics.last_refresh_status_code))}` : ""}</p>` : ""}
+          ${providers.length ? `<p class="muted" style="margin:6px 0 0;">يفتح الربط: ${escapeHtml(providers.join(" · "))}</p>` : ""}
+        </div>
+      `;
+    }
+
+    function renderZapierActions() {
+      const select = document.getElementById("zapier-action");
+      const actions = Array.isArray(zapierCatalog?.actions) ? zapierCatalog.actions : [];
+      select.innerHTML = "";
+      for (const action of actions) {
+        const option = document.createElement("option");
+        option.value = action.name;
+        option.textContent = `${action.name} · ${action.mode || "read"}${action.inventory_only ? " · مخزون" : ""}`;
+        option.dataset.mode = action.mode || "read";
+        select.appendChild(option);
+      }
+      document.getElementById("zapier-action-total").textContent = `${zapierCatalog?.action_count || actions.length || 0}`;
+      updateZapierActionMode();
+      if (!actions.length) renderZapierParamSummary(null, "لا توجد إجراءات متاحة لهذا التطبيق.");
+    }
+
+    function currentZapierAction() {
+      const name = document.getElementById("zapier-action").value;
+      const actions = Array.isArray(zapierCatalog?.actions) ? zapierCatalog.actions : [];
+      return actions.find((action) => action.name === name) || null;
+    }
+
+    function updateZapierActionMode() {
+      const action = currentZapierAction();
+      const details = zapierActionDetails?.action === action?.name ? zapierActionDetails : null;
+      const mode = details?.mode || action?.mode || "--";
+      const badge = document.getElementById("zapier-action-mode");
+      const toolName = details?.tool_name || action?.tool_name || action?.key || "";
+      badge.textContent = action ? `${mode === "write" || details?.requires_approval ? "يتطلب موافقة" : "قراءة"} · ${toolName}` : "--";
+      badge.className = mode === "write" ? "badge warn" : "badge ok";
+    }
+
+    function renderZapierParamSummary(details, emptyText = "لم يتم تحميل الحقول بعد.") {
+      const box = document.getElementById("zapier-param-summary");
+      box.innerHTML = "";
+      const params = Array.isArray(details?.params) ? details.params : [];
+      if (details?.error) {
+        const item = document.createElement("div");
+        item.className = "param-item";
+        item.textContent = `تعذر جلب حقول الإجراء: ${details.error}`;
+        box.appendChild(item);
+        return;
+      }
+      if (!params.length) {
+        const item = document.createElement("div");
+        item.className = "param-item";
+        item.textContent = emptyText;
+        box.appendChild(item);
+        return;
+      }
+      for (const param of params) {
+        const item = document.createElement("div");
+        item.className = "param-item";
+        const header = document.createElement("div");
+        header.className = "param-key";
+        const key = document.createElement("strong");
+        key.textContent = `${param.key}${param.required ? " *" : ""}`;
+        const meta = document.createElement("span");
+        meta.className = param.required ? "badge warn" : "badge";
+        meta.textContent = `${param.required ? "required" : "optional"} · ${param.type || "string"}`;
+        header.appendChild(key);
+        header.appendChild(meta);
+        item.appendChild(header);
+        const help = document.createElement("div");
+        help.className = "param-help";
+        help.textContent = param.help_text || param.label || "";
+        item.appendChild(help);
+        box.appendChild(item);
+      }
+    }
+
+    async function loadZapierActionDetails() {
+      const app = document.getElementById("zapier-app").value.trim();
+      const action = currentZapierAction();
+      zapierActionDetails = null;
+      updateZapierActionMode();
+      if (!app || !action) {
+        renderZapierParamSummary(null, "اختر تطبيقًا وإجراءً لعرض الحقول.");
+        return;
+      }
+      if (zapierCatalog?.live_available === false || action.inventory_only) {
+        zapierActionDetails = {
+          action: action.name,
+          mode: action.mode || "read",
+          tool_name: action.tool_name || action.key,
+          inventory_only: true,
+          params: []
+        };
+        renderZapierParamSummary(
+          zapierActionDetails,
+          "هذا إجراء ظاهر من مخزون Zapier فقط. اربط OAuth المحلي لقراءة الحقول والتنفيذ الحي."
+        );
+        updateZapierActionMode();
+        return;
+      }
+      renderZapierParamSummary(null, "يجلب حقول الإجراء...");
+      try {
+        const params = new URLSearchParams({ app, action: action.name });
+        const details = await api(`/api/agent/zapier/action-details?${params.toString()}`);
+        zapierActionDetails = details;
+        renderZapierParamSummary(details);
+        updateZapierActionMode();
+        const template = JSON.stringify(details.param_template || {}, null, 2);
+        const textarea = document.getElementById("zapier-params");
+        const current = textarea.value.trim();
+        if (!current || current === "{}" || current === lastZapierTemplate) {
+          textarea.value = template;
+          lastZapierTemplate = template;
+        }
+      } catch (error) {
+        zapierActionDetails = { error: String(error), params: [] };
+        renderZapierParamSummary(zapierActionDetails);
+      }
+    }
+
+    function fillZapierTemplate() {
+      const template = zapierActionDetails?.param_template || {};
+      const text = JSON.stringify(template, null, 2);
+      document.getElementById("zapier-params").value = text;
+      lastZapierTemplate = text;
+    }
+
+    function missingZapierParam(value) {
+      return value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
+    }
+
+    async function runZapierActionFromPanel() {
+      if (zapierCatalog?.needs_reconnect) {
+        showError("Zapier MCP يحتاج إعادة ربط OAuth قبل تشغيل الإجراءات الحية.");
+        setWorkspaceView("tools", { scroll: false });
+        return;
+      }
+      if (zapierCatalog?.live_available === false) {
+        showError("إجراءات Zapier ظاهرة من المخزون فقط الآن. اربط Zapier OAuth المحلي قبل التنفيذ الحي.");
+        setWorkspaceView("tools", { scroll: false });
+        return;
+      }
+      const app = document.getElementById("zapier-app").value.trim();
+      const action = currentZapierAction();
+      if (!app || !action) {
+        showError("اختر تطبيق Zapier وإجراء واضحين أولًا.");
+        return;
+      }
+      let parsedParams = {};
+      const rawParams = document.getElementById("zapier-params").value.trim() || "{}";
+      try {
+        parsedParams = JSON.parse(rawParams);
+      } catch {
+        showError("JSON params غير صالح.");
+        document.getElementById("zapier-params").focus();
+        return;
+      }
+      if (!parsedParams || typeof parsedParams !== "object" || Array.isArray(parsedParams)) {
+        showError("JSON params يجب أن يكون object.");
+        document.getElementById("zapier-params").focus();
+        return;
+      }
+      if (!zapierActionDetails || zapierActionDetails.action !== action.name) {
+        await loadZapierActionDetails();
+      }
+      const requiredKeys = Array.isArray(zapierActionDetails?.required_keys) ? zapierActionDetails.required_keys : [];
+      const missingKeys = requiredKeys.filter((key) => missingZapierParam(parsedParams[key]));
+      if (missingKeys.length) {
+        showError(`ناقص حقول Zapier المطلوبة: ${missingKeys.join(", ")}`);
+        document.getElementById("zapier-params").focus();
+        return;
+      }
+      const mode = action.mode || "read";
+      const instructions = document.getElementById("zapier-instructions").value.trim();
+      await createTask({
+        title: `${mode === "write" ? "تشغيل" : "قراءة"} Zapier: ${app}/${action.name}`,
+        prompt: [
+          `Zapier action: ${app} / ${action.name}`,
+          mode === "write"
+            ? "حضّر إجراء Zapier خارجي عبر مشغل فتحية وبوابة المخاطر، ولا ترسل أو تعدل شيئًا خارج الحساب قبل موافقة صريحة داخل المهمة."
+            : "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
+          instructions ? `instructions: ${instructions}` : "",
+          `params:${JSON.stringify(parsedParams)}`
+        ].filter(Boolean).join("\n")
+      });
+    }
+
+    function zapierConnectionTaskPrompt(integration = commandZapierIntegration) {
+      return integration?.task_prompt || [
+        "integration probe: zapier_mcp",
+        "افحص جاهزية Zapier MCP بعد الربط أو التحديث، ابدأ بالجرد الحي للأفعال المتاحة، ولا تنفذ أي إجراء خارجي.",
+        "سجل إيصالًا فيه: حالة OAuth، عدد التطبيقات، عدد الإجراءات، وما بقي للتفعيل."
+      ].join("\n");
+    }
+
+    function startZapierOAuth(integration = commandZapierIntegration) {
+      const url = new URL(integration?.action_path || "/api/agent/oauth/zapier/start", apiBase);
+      url.searchParams.set("return_to", location.href);
+      window.location.assign(url.toString());
+    }
+
+    function reconnectZapier() {
+      startZapierOAuth(commandZapierIntegration);
+    }
+
+    function openIntegrationAction(integration) {
+      if (!integration?.action_path) return;
+      if (integration.id === "zapier_mcp") {
+        startZapierOAuth(integration);
+        return;
+      }
+      const url = new URL(integration.action_path, apiBase);
+      url.searchParams.set("return_to", location.href);
+      window.location.assign(url.toString());
+    }
+
+    function codespacesConnectionTaskPrompt(integration = commandCodespacesIntegration) {
+      return integration?.task_prompt || [
+        "integration probe: github_codespaces",
+        "افحص GitHub Codespaces بعد التفويض، لا تنفذ أوامر بعيدة، وسجل إيصالًا بحالة scope codespace وعدد البيئات الظاهرة."
+      ].join("\n");
+    }
+
+    function renderCommandZapierButton(integration) {
+      commandZapierIntegration = integration || null;
+      const button = document.getElementById("command-zapier-oauth");
+      if (!button) return;
+      if (!integration) {
+        button.textContent = "Zapier غير ظاهر";
+        button.disabled = true;
+        return;
+      }
+      const needsOAuth = Boolean(integration.action_path && integration.status !== "ready");
+      button.disabled = !integration.action_path && !integration.task_prompt;
+      button.textContent = needsOAuth
+        ? integration.action_label || "ربط Zapier"
+        : "فحص Zapier";
+    }
+
+    function renderCommandCodespacesIntegration(integration) {
+      commandCodespacesIntegration = integration || null;
+    }
+
+    async function runCommandZapier() {
+      if (!commandZapierIntegration) {
+        setWorkspaceView("tools");
+        return;
+      }
+      if (commandZapierIntegration.action_path && commandZapierIntegration.status !== "ready") {
+        startZapierOAuth(commandZapierIntegration);
+        return;
+      }
+      await createTask({
+        title: `فحص اتصال: ${commandZapierIntegration.name || "Zapier MCP"}`,
+        prompt: zapierConnectionTaskPrompt(commandZapierIntegration)
+      });
+    }
+
+    async function runAgentProviderProbe(app) {
+      const provider = String(app || "").trim();
+      if (!provider) return;
+      await createTask({
+        title: `فحص وكيل تطبيق: ${provider}`,
+        prompt: [
+          `agent provider probe: ${provider}`,
+          "افحص هذا المزود من مخزون Zapier MCP داخل فتحية.",
+          "اعرض أفعال القراءة والكتابة المتاحة، ولا تنفذ أي إجراء خارجي."
+        ].join("\n")
+      });
+    }
+
+    async function runAgentProviderPrepare(app) {
+      const provider = String(app || "").trim();
+      if (!provider) return;
+      await createTask({
+        title: `تحضير تشغيل وكيل: ${provider}`,
+        prompt: [
+          `agent provider action: ${provider}`,
+          "حضّر أفضل فعل Zapier مناسب لتشغيل هذا المزود كوكيل تطبيق.",
+          "لا تنفذ أي إجراء خارجي الآن؛ أعد action name وtask prompt واحتياج OAuth/الموافقة."
+        ].join("\n")
+      });
+    }
+
+    function handleIntegrationReturn() {
+      const params = new URLSearchParams(location.search);
+      const integration = params.get("integration");
+      const status = params.get("status");
+      if (!integration || !status) {
+        return;
+      }
+      const guardValue = `${location.pathname}?${params.toString()}`;
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete("integration");
+      cleanUrl.searchParams.delete("status");
+      history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      if (integration === "zapier_mcp" && status === "connected") {
+        const guardKey = "fathiya.zapier.oauth.connected.task.v1";
+        if (sessionStorage.getItem(guardKey) === guardValue) {
+          return;
+        }
+        sessionStorage.setItem(guardKey, guardValue);
+        createTask({
+          title: "فحص Zapier بعد الربط",
+          prompt: zapierConnectionTaskPrompt(commandZapierIntegration)
+        }).catch(showError);
+        return;
+      }
+      if (integration === "github_codespaces") {
+        if (status !== "connected") {
+          showError("تعذر إكمال تفويض GitHub Codespaces. شغّل gh auth refresh -h github.com -s codespace ثم أعد الفحص.");
+          return;
+        }
+        const guardKey = "fathiya.codespaces.oauth.connected.task.v1";
+        if (sessionStorage.getItem(guardKey) === guardValue) {
+          return;
+        }
+        sessionStorage.setItem(guardKey, guardValue);
+        createTask({
+          title: "فحص Codespaces بعد التفويض",
+          prompt: codespacesConnectionTaskPrompt(commandCodespacesIntegration)
+        }).catch(showError);
+      }
+    }
+
+    async function loadEngine() {
+      try {
+        const [health, integrationData, meshData] = await Promise.all([
+          api("/api/agent/health"),
+          api("/api/agent/integrations"),
+          api("/api/agent/mesh/summary")
+        ]);
+        commandMeshSummary = meshData;
+        const integrations = integrationData.integrations || [];
+        const byId = Object.fromEntries(integrations.map((item) => [item.id, item]));
+        renderCommandZapierButton(byId.zapier_mcp);
+        renderCommandCodespacesIntegration(byId.github_codespaces);
+        const ready = integrationData.summary ? `${integrationData.summary.ready}/${integrationData.summary.total}` : "--";
+        document.getElementById("engine-status").textContent = health.worker_online ? "المحرك يعمل" : "المحرك ينتظر";
+        document.getElementById("engine-status").className = health.worker_online ? "badge ok" : "badge warn";
+        document.getElementById("engine-ready").textContent = `${ready} جاهزة`;
+        document.getElementById("engine-ready").className = integrationData.summary?.partial ? "badge warn" : "badge ok";
+        document.getElementById("command-ready").textContent = `${ready} جاهزة`;
+        document.getElementById("command-ready").className = health.worker_online ? "badge ok" : "badge warn";
+        document.getElementById("engine-worker").textContent = health.worker_online ? health.worker_id : "offline";
+        document.getElementById("command-worker").textContent = health.worker_online ? health.worker_id : "offline";
+        const planningRoute = health.agent_loop.local_planning_enabled ? "Hugging Face المحلي ثم OpenRouter" : "OpenRouter→حتمي";
+        document.getElementById("engine-loop").textContent = `${health.agent_loop.max_rounds} جولات · ${health.agent_loop.max_tool_steps_per_round} أدوات · ${planningRoute}`;
+        document.getElementById("engine-models").textContent = `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)} · ${health.agent_loop.local_model || "local"}`;
+        document.getElementById("command-models").textContent = `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`;
+        document.getElementById("engine-research").textContent = health.agent_loop.openrouter_research_model || "openrouter/fusion";
+        document.getElementById("engine-safety").textContent = health.agent_loop.openrouter_safety_model || "nvidia/nemotron-3.5-content-safety:free";
+        document.getElementById("command-ready-now").textContent =
+          meshData.activation_overview?.ready_headline ||
+          `${meshData.summary?.tool_count || "--"} أدوات`;
+        document.getElementById("mission-worker").textContent = health.worker_online ? "online" : "check";
+        document.getElementById("mission-models").textContent = `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`;
+        document.getElementById("mission-tools").textContent = `${shortStatus(byId.zapier_mcp)} · ${shortStatus(byId.n8n_local)} · ${shortStatus(byId.kali_wsl)}`;
+        document.getElementById("engine-zapier").textContent = zapierEngineLabel(byId.zapier_mcp);
+        document.getElementById("engine-tools").textContent = `${shortStatus(byId.n8n_local)} · ${shortStatus(byId.kali_wsl)}`;
+        const agentProviderCount = Number(meshData.summary?.agent_provider_count ?? meshData.activation_overview?.agent_provider_count ?? 0);
+        document.getElementById("command-tools").textContent = `${shortStatus(byId.zapier_mcp)} · ${agentProviderCount} وكلاء · n8n ${shortStatus(byId.n8n_local)}`;
+        document.getElementById("command-trading").textContent = health.trading?.running ? `${health.trading.symbol} · ثانية` : "Paper جاهز";
+        document.getElementById("engine-codespaces").textContent = shortStatus(byId.github_codespaces);
+        document.getElementById("engine-codespaces-detail").textContent = codespacesDetailLabel(byId.github_codespaces);
+        renderCommandSummary(integrations, integrationData.summary, meshData);
+        renderActivationQueue(integrations, integrationData.summary);
+        renderExecutionVerdict(health, integrations, integrationData.summary || {}, meshData);
+      } catch (error) {
+        commandMeshSummary = null;
+        document.getElementById("engine-status").textContent = "المحرك غير متصل";
+        document.getElementById("engine-status").className = "badge warn";
+        document.getElementById("engine-worker").textContent = "--";
+        document.getElementById("command-ready").textContent = "غير متصل";
+        document.getElementById("command-ready").className = "badge warn";
+        document.getElementById("command-worker").textContent = "--";
+        document.getElementById("command-models").textContent = "--";
+        document.getElementById("command-tools").textContent = "--";
+        document.getElementById("command-trading").textContent = "--";
+        document.getElementById("command-ready-now").textContent = "--";
+        renderCommandZapierButton(null);
+        renderCommandCodespacesIntegration(null);
+        document.getElementById("command-mesh-headline").textContent = "المحرك غير متصل.";
+        document.getElementById("command-summary-list").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
+        document.getElementById("mission-worker").textContent = "--";
+        document.getElementById("mission-models").textContent = "--";
+        document.getElementById("mission-tools").textContent = "--";
+        document.getElementById("activation-queue").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
+        renderExecutionVerdict(null, [], {}, null);
+      }
+    }
+
+    function buildExecutionVerdict(health, integrations, summary = {}, mesh = null) {
+      const ready = Number(summary.ready ?? integrations.filter((item) => item.status === "ready").length);
+      const total = Number(summary.total ?? integrations.length);
+      const activation = integrations
+        .filter((item) => item.status !== "ready")
+        .sort((a, b) => activationRank(a) - activationRank(b));
+      const toolCount = Number(mesh?.summary?.tool_count ?? 0);
+      const canRunLocal = Boolean(health?.worker_online && (mesh?.ready_to_execute || ready > 0));
+      const zapier = integrations.find((item) => item.id === "zapier_mcp");
+      const facts = [
+        health?.worker_online ? "Worker online" : "Worker offline",
+        `${ready}/${total || integrations.length} تكاملات جاهزة`,
+        toolCount ? `${toolCount} أداة` : "الأدوات قيد الفحص",
+        `Zapier ${Number(mesh?.summary?.zapier_action_count ?? zapier?.details?.action_count ?? 0)} إجراء`,
+        health?.trading?.running ? `${health.trading.symbol} paper · ثانية` : "Paper trading ينتظر",
+        mesh?.summary?.knowledge_intake_running ? "المعرفة تراقب" : "المعرفة تحتاج فحص"
+      ];
+      if (!health?.worker_online) {
+        return {
+          state: "offline",
+          badge: "متوقف",
+          title: "المشغّل المحلي غير متصل الآن",
+          summary: "لا أعتبر فتحية محركًا حيًا قبل رجوع العامل المحلي. أول حركة صحيحة هي إعادة الفحص.",
+          primary: "refresh",
+          primaryLabel: "إعادة الفحص",
+          secondary: "",
+          secondaryLabel: "",
+          facts,
+          blockers: ["العامل المحلي غير متصل أو لم يرجع health بعد."]
+        };
+      }
+      const overview = mesh?.activation_overview || {};
+      const blockingActions = Array.isArray(overview.blocking_actions) ? overview.blocking_actions : [];
+      const upgradeActions = Array.isArray(overview.upgrade_actions) ? overview.upgrade_actions : [];
+      const hasBlockingGate = blockingActions.length > 0;
+      if (canRunLocal && hasBlockingGate) {
+        return {
+          state: "activation",
+          badge: "قفل تشغيل",
+          title: "فتحية تحتاج إزالة قفل قبل التشغيل الكامل",
+          summary: "العامل المحلي موجود، لكن توجد بوابة مصنفة كمانعة للتنفيذ. عالجها أولًا ثم شغّل المحرك.",
+          primary: "activate",
+          primaryLabel: "إزالة القفل",
+          secondary: "refresh",
+          secondaryLabel: "إعادة الفحص",
+          facts,
+          blockers: blockingActions.slice(0, 4).map((item) => `${item.name}: ${item.summary || item.next_step || "يحتاج إجراء قبل التنفيذ."}`)
+        };
+      }
+      if (canRunLocal && (upgradeActions.length || activation.length)) {
+        const upgradeNotes = upgradeActions.length
+          ? upgradeActions.slice(0, 4).map((item) => `${item.name}: ${item.summary || item.next_step || "ترقية اختيارية لا تمنع التشغيل المحلي."}`)
+          : activation.slice(0, 4).map((item) => `${item.name}: ${activationSummary(item)}`);
+        return {
+          state: "ready",
+          badge: "يعمل الآن",
+          title: "فتحية تعمل الآن؛ الباقي ترقيات خارجية",
+          summary: "المحرك المحلي ينفذ المعرفة والنماذج وn8n وKali وZapier ووكيل التداول الورقي. Supabase أو Testnet ترقيات للتشغيل الإنتاجي والتجريبي، وليست سببًا لإيقاف الوكلاء.",
+          primary: "run",
+          primaryLabel: "شغّل الداخلي الآن",
+          secondary: "activate",
+          secondaryLabel: "افتح الترقيات",
+          facts,
+          blockers: upgradeNotes
+        };
+      }
+      if (canRunLocal) {
+        return {
+          state: "ready",
+          badge: "جاهز",
+          title: "فتحية جاهزة للتشغيل من هذه الصفحة",
+          summary: "المحرك المحلي متصل، والمسارات الأساسية جاهزة. اكتب هدفًا واحدًا ليختار النماذج والأدوات وينفذ الداخلي الجاهز ثم يسجل إيصالًا.",
+          primary: "run",
+          primaryLabel: "تشغيل المحرك",
+          secondary: "",
+          secondaryLabel: "",
+          facts,
+          blockers: []
+        };
+      }
+      return {
+        state: "activation",
+        badge: "فحص مطلوب",
+        title: "فتحية تحتاج فحص شبكة قبل الحكم النهائي",
+        summary: "العامل ظاهر، لكن ملخص شبكة الوكلاء غير كافٍ لإثبات الجاهزية. شغّل فحص المحرك ليحدد الجاهز والناقص.",
+        primary: "run",
+        primaryLabel: "فحص وتشغيل",
+        secondary: "",
+        secondaryLabel: "",
+        facts,
+        blockers: ["لا توجد نتيجة حديثة كافية من agent mesh summary."]
+      };
+    }
+
+    function renderExecutionVerdict(health, integrations, summary = {}, mesh = null) {
+      const verdict = buildExecutionVerdict(health, integrations, summary, mesh);
+      const shell = document.getElementById("execution-verdict");
+      const badge = document.getElementById("verdict-badge");
+      shell.className = `card execution-verdict ${verdict.state}`;
+      badge.textContent = verdict.badge;
+      badge.className = verdict.state === "ready" ? "badge ok" : verdict.state === "offline" ? "badge bad" : "badge warn";
+      document.getElementById("verdict-title").textContent = verdict.title;
+      document.getElementById("verdict-summary").textContent = verdict.summary;
+      document.getElementById("verdict-facts").innerHTML = verdict.facts
+        .map((fact) => `<span class="badge">${escapeHtml(fact)}</span>`)
+        .join("");
+      document.getElementById("verdict-blockers").innerHTML = verdict.blockers.length
+        ? verdict.blockers.map((blocker) => `<div class="verdict-blocker">${escapeHtml(blocker)}</div>`).join("")
+        : '<div class="verdict-blocker">لا يوجد قفل محلي يمنع تنفيذ المهام الداخلية الآن.</div>';
+      const primary = document.getElementById("verdict-primary");
+      const secondary = document.getElementById("verdict-secondary");
+      primary.textContent = verdict.primaryLabel;
+      primary.dataset.verdictAction = verdict.primary;
+      secondary.textContent = verdict.secondaryLabel || "";
+      secondary.dataset.verdictAction = verdict.secondary || "";
+      secondary.style.display = verdict.secondary ? "" : "none";
+    }
+
+    function runVerdictAction(action) {
+      if (action === "activate") {
+        setWorkspaceView("tools");
+        createTask(meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError);
+        return;
+      }
+      if (action === "run") {
+        createTask({ title: "تشغيل محرك فتحية", prompt: executionOsPrompt }).catch(showError);
+        return;
+      }
+      refreshAll().catch(showError);
+    }
+
+    function renderCommandSummary(integrations, summary = {}, mesh = null) {
+      const host = document.getElementById("command-summary-list");
+      const label = document.getElementById("command-attention");
+      const headline = document.getElementById("command-mesh-headline");
+      if (mesh && Array.isArray(mesh.lanes)) {
+        const overview = mesh.activation_overview || {};
+        const attentionCount = Number(mesh.summary?.integration_attention ?? 0);
+        const ready = Number(mesh.summary?.integration_ready ?? summary.ready ?? 0);
+        const total = Number(mesh.summary?.integration_total ?? summary.total ?? integrations.length ?? 0);
+        const readyLaneCount = Number(overview.ready_lane_count ?? mesh.lanes.filter((lane) => lane.status === "ready").length);
+        const laneCount = Number(overview.lane_count ?? mesh.lanes.length);
+        const blockingCount = Number(overview.blocking_action_count ?? 0);
+        const upgradeCount = Number(overview.upgrade_action_count ?? 0);
+        label.textContent = blockingCount
+          ? `${blockingCount} مانعة`
+          : upgradeCount
+            ? `${upgradeCount} ترقيات اختيارية`
+            : readyLaneCount
+              ? `${readyLaneCount}/${laneCount} تعمل`
+              : attentionCount
+                ? `${attentionCount} تحتاج خطوة`
+                : "قابل للتنفيذ";
+        label.className = blockingCount ? "badge bad" : upgradeCount ? "badge sky" : "badge ok";
+        headline.textContent = `${overview.primary_message || mesh.headline || "فتحية جاهزة للفحص."} · ${ready}/${total} تكاملات`;
+        host.innerHTML = "";
+        const readyLabels = Array.isArray(overview.ready_lane_labels) && overview.ready_lane_labels.length
+          ? overview.ready_lane_labels.join(" · ")
+          : mesh.lanes.filter((lane) => lane.status === "ready").map((lane) => lane.label).join(" · ");
+        const readyItem = document.createElement("div");
+        readyItem.className = "command-summary-item";
+        readyItem.innerHTML = `
+          <strong>
+            <span>يعمل الآن</span>
+            <span class="badge ok">${escapeHtml(overview.ready_headline || `${readyLaneCount}/${laneCount} مسارات`)}</span>
+          </strong>
+          <p>${escapeHtml(readyLabels || "اضغط تشغيل فتحية لفحص الشبكة.")}</p>
+        `;
+        host.appendChild(readyItem);
+        const toolsItem = document.createElement("div");
+        toolsItem.className = "command-summary-item";
+        toolsItem.innerHTML = `
+          <strong>
+            <span>أدوات قابلة للتشغيل</span>
+            <span class="badge ok">${escapeHtml(String(overview.safe_tool_count || mesh.summary?.tool_count || "--"))}</span>
+          </strong>
+          <p>Zapier ${escapeHtml(String(overview.zapier_action_count || mesh.summary?.zapier_action_count || 0))} إجراء · قدرات ${escapeHtml(String(overview.capability_ready || mesh.summary?.capability_ready || "--"))}/${escapeHtml(String(overview.capability_total || mesh.summary?.capability_total || "--"))}</p>
+        `;
+        host.appendChild(toolsItem);
+        const providers = Array.isArray(overview.agent_providers)
+          ? overview.agent_providers
+          : Array.isArray(mesh.agent_providers)
+            ? mesh.agent_providers
+            : [];
+        if (providers.length) {
+          const readyProviders = Number(overview.agent_provider_ready_count ?? mesh.summary?.agent_provider_ready_count ?? 0);
+          const providerNames = providers
+            .slice(0, 4)
+            .map((provider) => `${provider.app} ${provider.total_actions || provider.read_count + provider.write_count || 0}`)
+            .join(" · ");
+          const providerButtons = providers
+            .slice(0, 4)
+            .map((provider) => `
+              <button type="button" class="secondary" data-agent-provider-probe="${escapeHtml(provider.app)}">${escapeHtml(provider.app)}</button>
+              <button type="button" class="secondary" data-agent-provider-prepare="${escapeHtml(provider.app)}">حضّر ${escapeHtml(provider.app)}</button>
+            `)
+            .join("");
+          const needsOAuth = providers.some((provider) => provider.inventory_only);
+          const providerItem = document.createElement("div");
+          providerItem.className = "command-summary-item";
+          providerItem.innerHTML = `
+            <strong>
+              <span>وكلاء التطبيقات</span>
+              <span class="${readyProviders ? "badge ok" : "badge warn"}">${escapeHtml(String(readyProviders))}/${escapeHtml(String(providers.length))}</span>
+            </strong>
+            <p>${escapeHtml(providerNames)}${needsOAuth ? " · اربط Zapier OAuth لتحويلها من مخزون إلى تنفيذ" : " · جاهزة للتفويض"}</p>
+            <div class="row" style="justify-content:flex-start;margin-top:7px;">${providerButtons}</div>
+          `;
+          host.appendChild(providerItem);
+        }
+        const operatorActions = Array.isArray(overview.operator_actions) ? overview.operator_actions : [];
+        for (const action of operatorActions.slice(0, 3)) {
+          const item = document.createElement("div");
+          item.className = "command-summary-item";
+          const tierLabel = action.blocks_local_execution ? "مانعة" : "ترقية";
+          item.innerHTML = `
+            <strong>
+              <span>${escapeHtml(action.name || action.id || "خطوة ربط")}</span>
+              <span class="${action.blocks_local_execution ? "badge bad" : "badge sky"}">${escapeHtml(tierLabel)}</span>
+            </strong>
+            <p>${escapeHtml(action.next_step || action.summary || action.action_label || "--")}</p>
+          `;
+          host.appendChild(item);
+        }
+        return;
+      }
+      const attention = integrations
+        .filter((item) => item.status !== "ready")
+        .sort((a, b) => activationRank(a) - activationRank(b));
+      const visible = attention.length
+        ? attention.slice(0, 4)
+        : integrations
+          .filter((item) => ["huggingface_local", "openrouter", "n8n_local", "kali_wsl"].includes(item.id))
+          .slice(0, 4);
+      label.textContent = attention.length ? `${attention.length} تحتاج خطوة` : "مستقر";
+      label.className = attention.length ? "badge warn" : "badge ok";
+      headline.textContent = "ملخص البوابات مبني من فحص التكاملات المباشر.";
+      host.innerHTML = "";
+      for (const integration of visible) {
+        const item = document.createElement("div");
+        item.className = "command-summary-item";
+        item.innerHTML = `
+          <strong>
+            <span>${escapeHtml(integration.name)}</span>
+            <span class="${statusBadgeClass(integration.status)}">${escapeHtml(shortStatus(integration))}</span>
+          </strong>
+          <p>${escapeHtml(activationSummary(integration))}</p>
+        `;
+        host.appendChild(item);
+      }
+      if (!visible.length) {
+        host.innerHTML = '<p class="muted">لا توجد بوابات ظاهرة بعد. اضغط تحديث.</p>';
+      }
+    }
+
+    function renderActivationQueue(integrations, summary = {}) {
+      const host = document.getElementById("activation-queue");
+      const label = document.getElementById("activation-summary");
+      host.innerHTML = "";
+      const total = summary.total || integrations.length || 0;
+      const ready = summary.ready || integrations.filter((item) => item.status === "ready").length;
+      const attention = integrations
+        .filter((item) => item.status !== "ready")
+        .sort((a, b) => activationRank(a) - activationRank(b));
+      label.textContent = `${ready}/${total} جاهزة`;
+      label.className = attention.length ? "badge warn" : "badge ok";
+
+      const visible = attention.length
+        ? attention
+        : integrations
+          .filter((item) => ["local_execution_mesh", "huggingface_local", "openrouter", "n8n_local", "kali_wsl"].includes(item.id))
+          .slice(0, 5);
+      if (!visible.length) {
+        host.innerHTML = '<p class="muted">لا توجد بوابات ظاهرة بعد. اضغط تحديث أو فحص شبكة الوكلاء.</p>';
+        return;
+      }
+
+      for (const integration of visible.slice(0, 7)) {
+        const item = document.createElement("div");
+        item.className = `activation-item ${activationClass(integration.status)}`;
+        const copy = document.createElement("div");
+        copy.innerHTML = `
+          <strong>${escapeHtml(integration.name)}</strong>
+          <p>${escapeHtml(activationSummary(integration))}</p>
+        `;
+        const actions = document.createElement("div");
+        actions.className = "activation-actions";
+        const badge = document.createElement("span");
+        badge.className = statusBadgeClass(integration.status);
+        badge.textContent = shortStatus(integration);
+        actions.appendChild(badge);
+
+        if (integration.action_path) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "secondary";
+          button.textContent = integration.action_label || "تشغيل التفعيل";
+          button.addEventListener("click", () => openIntegrationAction(integration));
+          actions.appendChild(button);
+        } else if (integration.settings_path) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "secondary";
+          button.textContent = integration.settings_label || "الإعداد";
+          button.addEventListener("click", () => {
+            openLocalSettingsGroup(settingsGroupFromPath(integration.settings_path) || integration.id);
+          });
+          actions.appendChild(button);
+        }
+
+        if (integration.task_prompt) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = integration.task_label || "تشغيل فحص";
+          button.addEventListener("click", () => createTask({
+            title: `فحص اتصال: ${integration.name}`,
+            prompt: integration.task_prompt
+          }).catch(showError));
+          actions.appendChild(button);
+        }
+
+        item.appendChild(copy);
+        item.appendChild(actions);
+        host.appendChild(item);
+      }
+    }
+
+    function activationRank(integration) {
+      const priority = {
+        zapier_mcp: 1,
+        github_codespaces: 2,
+        supabase: 3,
+        broker_testnet: 4,
+        local_execution_mesh: 5
+      };
+      const statusRank = { partial: 1, needs_setup: 2, needs_operator: 3, ready: 4 };
+      return (priority[integration.id] || 50) + (statusRank[integration.status] || 9);
+    }
+
+    function activationClass(status) {
+      if (status === "ready") return "ready";
+      if (status === "partial") return "partial";
+      return "blocked";
+    }
+
+    function statusBadgeClass(status) {
+      if (status === "ready") return "badge ok";
+      if (status === "partial") return "badge warn";
+      return "badge bad";
+    }
+
+    function activationSummary(integration) {
+      const next = integration.next_step || "";
+      if (integration.status === "ready") return integration.summary || "جاهز للتنفيذ.";
+      if (integration.id === "zapier_mcp") return "Zapier عنده مخزون أدوات، لكن التشغيل الحي يحتاج OAuth جديد.";
+      if (integration.id === "github_codespaces") return next || "Codespaces يحتاج صلاحية GitHub CLI.";
+      if (integration.id === "supabase") return "قناة الموقع الإنتاجية غير مربوطة؛ المشغّل المحلي يعمل على SQLite.";
+      if (integration.id === "broker_testnet") return "التداول يعمل Paper، والتنفيذ التجريبي ينتظر مفاتيح Testnet.";
+      return next || integration.summary || "يحتاج تفعيلًا قبل التنفيذ.";
     }
 
     async function loadTrading() {
@@ -407,6 +2960,7 @@
       const running = document.getElementById("trading-running");
       running.textContent = trading.running ? "يعمل" : "متوقف";
       running.className = trading.running ? "badge ok" : "badge";
+      document.getElementById("quick-trading").textContent = `${trading.symbol} · ${trading.running ? "ينبض" : "Paper"}`;
       document.getElementById("trade-toggle").textContent = trading.running ? "إيقاف" : "تشغيل";
       document.getElementById("trade-symbol").textContent = `${trading.symbol} · ${trading.mode}`;
       document.getElementById("trade-latest").textContent = cadenceLabel(trading.execution_cadence);
@@ -435,6 +2989,67 @@
       await loadTrading();
     }
 
+    function renderKnowledgeStatus(intake) {
+      intakeState = intake || null;
+      const running = document.getElementById("knowledge-running");
+      if (!intake) {
+        running.textContent = "غير متصل";
+        running.className = "badge warn";
+        document.getElementById("knowledge-tracked").textContent = "--";
+        document.getElementById("knowledge-enqueued").textContent = "--";
+        document.getElementById("knowledge-ignored").textContent = "--";
+        document.getElementById("knowledge-last-scan").textContent = "--";
+        document.getElementById("knowledge-root").textContent = "--";
+        document.getElementById("knowledge-supported").textContent = "--";
+        document.getElementById("knowledge-last-enqueued").textContent = "المحرك غير متصل.";
+        return;
+      }
+      running.textContent = intake.running ? "يراقب" : intake.enabled ? "متوقف" : "معطل";
+      running.className = intake.running ? "badge ok" : intake.enabled ? "badge warn" : "badge bad";
+      document.getElementById("knowledge-tracked").textContent = String(intake.tracked_files ?? 0);
+      document.getElementById("knowledge-enqueued").textContent = String(intake.enqueued_count ?? 0);
+      document.getElementById("knowledge-ignored").textContent = String(intake.ignored_count ?? 0);
+      document.getElementById("knowledge-last-scan").textContent = intake.last_scan_at ? new Date(intake.last_scan_at).toLocaleTimeString("ar-SA") : "--";
+      document.getElementById("knowledge-root").textContent = intake.watch_root || "--";
+      document.getElementById("knowledge-supported").textContent = Array.isArray(intake.supported_extensions) ? intake.supported_extensions.join(" · ") : "--";
+      const last = intake.last_enqueued;
+      document.getElementById("knowledge-last-enqueued").innerHTML = last
+        ? [
+            `<span dir="ltr">${escapeHtml(last.source_name || last.path || "source")}</span>`,
+            `<br><span class="${taskBadgeClass(last.task_status)}">${escapeHtml(last.task_status || "--")}</span>`,
+            ` ${escapeHtml(String(last.task_progress ?? 0))}% · ${escapeHtml(last.task_current_step || "بانتظار التحديث")}`,
+            last.task_id ? `<br><button class="secondary" data-open="${escapeHtml(last.task_id)}" style="margin-top:8px;">فتح الإيصال</button>` : ""
+          ].join("")
+        : "لم يدخل تقرير جديد بعد.";
+    }
+
+    async function loadIntake() {
+      try {
+        const data = await api("/api/agent/intake/status");
+        renderKnowledgeStatus(data.intake);
+      } catch (error) {
+        renderKnowledgeStatus(null);
+      }
+    }
+
+    async function intakeAction(action) {
+      const data = await api(`/api/agent/intake/${action}`, { method: "POST" });
+      renderKnowledgeStatus(data.intake || data.status);
+      await loadTasks();
+    }
+
+    function buildKnowledgePanelTask() {
+      const references = formatKnowledgeReferences(document.getElementById("knowledge-sources").value);
+      return {
+        title: references ? "استيعاب مصادر معرفة وتشغيل" : "استيعاب وتشغيل المعرفة الحالية",
+        prompt: [
+          knowledgeExecutionPrompt,
+          references,
+          references ? "ابدأ بالمصادر أعلاه ثم اربطها بذاكرة فتحية والتقارير السابقة." : "استخدم آخر ما في knowledge-inbox وذاكرة فتحية الحالية."
+        ].filter(Boolean).join("\n")
+      };
+    }
+
     async function loadTasks() {
       const status = document.getElementById("api-status");
       try {
@@ -444,6 +3059,7 @@
         ]);
         const allTasks = taskData.tasks || [];
         const focused = focusTasks(allTasks).slice(0, 14);
+        renderMissionResults(allTasks);
         status.textContent = "متصل";
         status.className = "badge ok";
         document.getElementById("active-count").textContent = `${allTasks.filter((task) => activeStatuses.has(task.status)).length}`;
@@ -486,21 +3102,297 @@
     function focusTasks(tasks) {
       const matches = tasks.filter((task) => {
         const text = `${task.title}\n${task.prompt}`.toLowerCase();
-        return text.includes("bug bounty") || text.includes("صيد") || text.includes("ثغر") || text.includes("hackerone") || text.includes("bugcrowd") || text.includes("trading") || text.includes("تداول") || text.includes("paper");
+        return text.includes("bug bounty") || text.includes("صيد") || text.includes("ثغر") || text.includes("hackerone") || text.includes("bugcrowd") || text.includes("trading") || text.includes("تداول") || text.includes("paper") || text.includes("zapier") || text.includes("زابير") || text.includes("mcp") || text.includes("codespaces") || text.includes("openrouter") || text.includes("fusion") || text.includes("استراتيجية النماذج") || text.includes("knowledge execution") || text.includes("استيعاب وتشغيل");
       });
       return matches.length ? matches : tasks;
+    }
+
+    function classifyMissionTask(task) {
+      const text = `${task.title}\n${task.prompt}`.toLowerCase();
+      if (text.includes("fathiya_trading_agent_mission") || String(task.title || "").includes("وكيل التداول")) return "trading";
+      if (text.includes("bug bounty") || text.includes("hackerone") || text.includes("bugcrowd") || text.includes("صيد ثغرات") || text.includes("صيد الثغرات")) return "bounty";
+      if (text.includes("fathiya_knowledge_execution") || text.includes("knowledge execution mission") || text.includes("openrouter model strategy") || text.includes("fusion") || String(task.title || "").includes("استيعاب")) return "knowledge";
+      if (text.includes("fathiya_tool_orchestration") || String(task.title || "").includes("أدوات") || String(task.title || "").includes("Zapier")) return "tools";
+      if (text.includes("fathiya_execution_os") || text.includes("agent mesh execute") || String(task.title || "").includes("تشغيل محرك") || String(task.title || "").includes("تشغيل فتحية")) return "execution";
+      return null;
+    }
+
+    function missionTaskSummary(task) {
+      const result = task?.result && typeof task.result === "object" ? task.result : {};
+      const synthesis = typeof result.synthesis === "string" ? result.synthesis.trim() : "";
+      const text = synthesis || task?.error_message || task?.current_step || "لا يوجد ملخص بعد.";
+      return text.length > 180 ? `${text.slice(0, 177)}...` : text;
+    }
+
+    function missionTaskTime(task) {
+      if (!task) return "--";
+      const value = task.completed_at || task.updated_at || task.created_at;
+      if (!value) return "--";
+      try {
+        return new Date(value).toLocaleString("ar-SA", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+      } catch {
+        return value;
+      }
+    }
+
+    function taskBadgeClass(status) {
+      if (status === "completed") return "badge ok";
+      if (status === "failed" || status === "canceled") return "badge bad";
+      if (status === "running" || status === "queued" || status === "awaiting_approval" || status === "stalled") return "badge warn";
+      return "badge";
+    }
+
+    function renderMissionResults(tasks) {
+      const modes = [
+        ["execution", "تشغيل عام"],
+        ["trading", "التداول"],
+        ["bounty", "صيد الثغرات"],
+        ["knowledge", "معرفة وتقارير"],
+        ["tools", "الأدوات"]
+      ];
+      const latest = Object.fromEntries(modes.map(([id]) => [id, null]));
+      const ordered = [...tasks].sort((a, b) => {
+        const aTime = new Date(a.completed_at || a.updated_at || a.created_at).getTime();
+        const bTime = new Date(b.completed_at || b.updated_at || b.created_at).getTime();
+        return bTime - aTime;
+      });
+      for (const task of ordered) {
+        const mode = classifyMissionTask(task);
+        if (mode && !latest[mode]) latest[mode] = task;
+      }
+      const host = document.getElementById("mission-results");
+      host.innerHTML = modes.map(([id, label]) => {
+        const task = latest[id];
+        const fallback = id === "trading" && tradingState ? {
+          status: tradingState.running ? "يعمل" : "متوقف",
+          summary: [
+            `${tradingState.symbol} · ${tradingState.mode}`,
+            tradingState.latest_cycle ? `${tradingState.latest_cycle.prediction.action} · ${tradingState.latest_cycle.risk.reason}` : "لم تبدأ دورة التنبؤ بعد.",
+            tradingState.latest_receipt_id ? `إيصال ${tradingState.latest_receipt_id}` : ""
+          ].filter(Boolean).join(" · "),
+          time: tradingState.latest_cycle?.created_at ? missionTaskTime({ created_at: tradingState.latest_cycle.created_at }) : "--"
+        } : null;
+        const disabled = task || fallback ? "" : "disabled";
+        const status = task?.status || fallback?.status || "جديد";
+        const summary = task ? missionTaskSummary(task) : fallback?.summary || "لا توجد نتيجة لهذا المسار بعد.";
+        const time = task ? missionTaskTime(task) : fallback?.time || "--";
+        const actionAttr = task ? `data-open="${escapeHtml(task.id)}"` : fallback ? 'data-workspace="trading"' : "";
+        const actionLabel = task ? "التقرير" : fallback ? "التداول" : "فتح";
+        return `
+          <div class="mission-result">
+            <div>
+              <div class="row">
+                <strong>${escapeHtml(label)}</strong>
+                <span class="${task ? taskBadgeClass(task.status) : fallback ? "badge ok" : "badge"}">${escapeHtml(status)}</span>
+              </div>
+              <p class="muted" style="margin-top:6px;">${escapeHtml(summary)}</p>
+              <p class="muted" style="font-size:10px;">${escapeHtml(time)}</p>
+            </div>
+            <div class="mission-actions">
+              <button data-run-mode="${escapeHtml(id)}">تشغيل</button>
+              <button class="secondary" ${actionAttr} ${disabled}>${actionLabel}</button>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     async function loadDetail(id) {
       selectedTaskId = id;
       const data = await api(`/api/agent/tasks/${id}`);
+      renderDetailSummary(data);
       document.getElementById("detail").textContent = JSON.stringify(data, null, 2);
       await loadTasks();
+    }
+
+    function renderDetailSummary(data) {
+      const task = data?.task || {};
+      const receipts = Array.isArray(data?.receipts) ? data.receipts : [];
+      const latestReceipt = receipts[receipts.length - 1] || null;
+      const evidence = latestReceipt?.evidence || {};
+      const tools = Array.isArray(evidence.tools) ? evidence.tools : [];
+      const events = Array.isArray(data?.events) ? data.events : [];
+      const lastEvent = events[events.length - 1] || null;
+      const summaryText = latestReceipt?.summary || lastEvent?.message || task.current_step || "لا يوجد ملخص بعد.";
+      const activation = detailActivationPlan(data);
+      const providerActionPlan = detailAgentProviderActionPlan(data);
+      detailActivationActions = [
+        ...(activation?.actions || []),
+        ...(providerActionPlan?.actions || [])
+      ];
+      const actionButtons = detailActionButtons(detailActivationActions);
+      const host = document.getElementById("detail-summary");
+      host.innerHTML = `
+        <div class="metric"><span>الحالة</span><strong>${escapeHtml(task.status || "--")} · ${Number(task.progress || 0)}%</strong></div>
+        <div class="metric"><span>آخر خطوة</span><strong>${escapeHtml(task.current_step || "--")}</strong></div>
+        <div class="metric"><span>آخر إيصال</span><strong>${escapeHtml(latestReceipt?.receipt_id || "--")}</strong></div>
+        <div class="metric"><span>الأدوات / المصادر</span><strong>${tools.length || "--"} أدوات · ${evidence.source_count ?? "--"} مصادر</strong></div>
+        ${activation ? `<div class="metric"><span>خطة التفعيل</span><strong>${escapeHtml(activation.counts)}</strong></div>` : ""}
+        ${activation ? `<div class="metric" style="grid-column: span 3;"><span>التالي</span><strong>${escapeHtml(activation.next)}</strong></div>` : ""}
+        ${providerActionPlan ? `<div class="metric"><span>وكيل التطبيق</span><strong>${escapeHtml(providerActionPlan.counts)}</strong></div>` : ""}
+        ${providerActionPlan ? `<div class="metric" style="grid-column: span 3;"><span>متابعة الوكيل</span><strong>${escapeHtml(providerActionPlan.next)}</strong></div>` : ""}
+        ${actionButtons}
+        <div class="metric" style="grid-column: 1 / -1;"><span>الخلاصة</span><strong>${escapeHtml(summaryText)}</strong></div>
+      `;
+    }
+
+    function detailActivationPlan(data) {
+      const result = data?.task?.result || {};
+      const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+      const mesh = toolResults
+        .map((item) => item?.result)
+        .find((item) => item?.tool === "agent_mesh_execute" || item?.tool === "agent_mesh_audit");
+      const plan = mesh?.activation_plan;
+      const entries = Array.isArray(plan?.entries) ? plan.entries : [];
+      if (!entries.length) return null;
+      const ready = plan.ready_count ?? entries.filter((item) => item?.state === "ready").length;
+      const required = plan.activation_required_count ?? entries.filter((item) => item?.state !== "ready").length;
+      const next = entries
+        .filter((item) => item?.state !== "ready")
+        .map((item) => item?.next_action?.title || item?.integration_id)
+        .filter(Boolean)
+        .slice(0, 5)
+        .join(" · ");
+      const actions = entries
+        .filter((item) => item?.state !== "ready" && item?.next_action)
+        .map((item) => item.next_action)
+        .slice(0, 5);
+      const buttons = actions.length
+        ? `<div class="metric" style="grid-column: 1 / -1;"><span>أوامر الخطة</span><strong class="row" style="justify-content:flex-start;">${actions
+          .map((action, index) => `<button type="button" class="secondary" data-activation-action="${index}">${escapeHtml(activationActionLabel(action))}</button>`)
+          .join("")}</strong></div>`
+        : "";
+      return {
+        counts: `${ready} جاهزة · ${required} تحتاج تفعيل`,
+        next: next || "لا توجد خطوات تفعيل معلقة",
+        actions,
+        buttons
+      };
+    }
+
+    function detailAgentProviderActionPlan(data) {
+      const result = data?.task?.result || {};
+      const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+      const prepared = toolResults
+        .map((item) => item?.result)
+        .filter((item) => item?.tool === "agent_provider_action_prepare" || item?.tool === "zapier_action_preflight");
+      if (!prepared.length) return null;
+      const actions = [];
+      const next = [];
+      prepared.forEach((item, index) => {
+        const provider = String(item.provider || item.app || "Zapier").trim();
+        const selectedAction = item.selected_action || {};
+        const actionName = String(selectedAction.name || item.action || "إجراء مقترح").trim();
+        const missingParams = Array.isArray(item.missing_params)
+          ? item.missing_params.map((value) => String(value || "").trim()).filter(Boolean)
+          : [];
+        const paramsReady = item.params_ready === true;
+        const paramReason = missingParams.length
+          ? `أكمل الحقول المطلوبة: ${missingParams.join(", ")}`
+          : "";
+        if (paramsReady && item.requires_oauth === true && item.oauth_action_path) {
+          actions.push({
+            id: `agent-provider-oauth-${provider}-${index}`,
+            title: `ربط ${provider} عبر Zapier`,
+            prompt: `agent provider oauth: ${provider}`,
+            reason: paramReason || "OAuth مطلوب قبل تنفيذ أي إجراء خارجي.",
+            ui_action: "oauth",
+            action_path: item.oauth_action_path,
+            action_label: "ربط Zapier OAuth"
+          });
+        }
+        const suggestedTask = item.suggested_task || {};
+        if (paramsReady && suggestedTask.prompt) {
+          actions.push({
+            id: `agent-provider-task-${provider}-${index}`,
+            title: suggestedTask.title || `تشغيل ${provider}: ${actionName}`,
+            prompt: suggestedTask.prompt,
+            reason: paramReason || item.next_step || "المشغّل حضّر إجراء Zapier الصحيح؛ شغّل المهمة المقترحة بعد التحقق من OAuth.",
+            ui_action: "task"
+          });
+        }
+        next.push(
+          paramReason
+            ? `${provider}: ${actionName} · ${paramReason}`
+            : paramsReady
+              ? `${provider}: ${actionName} · جاهز الحقول`
+              : item.next_step || `${provider}: ${actionName}`
+        );
+      });
+      const readyCount = prepared.filter((item) => item?.params_ready === true).length;
+      const missingCount = prepared.filter((item) => Array.isArray(item?.missing_params) && item.missing_params.length).length;
+      return {
+        counts: `${prepared.length} تحضير · ${readyCount} جاهز · ${missingCount} ناقص`,
+        next: next.filter(Boolean).slice(0, 4).join(" · ") || "لا توجد متابعة مقترحة",
+        actions
+      };
+    }
+
+    function detailActionButtons(actions) {
+      if (!Array.isArray(actions) || !actions.length) return "";
+      return `<div class="metric" style="grid-column: 1 / -1;"><span>أوامر المتابعة</span><strong class="row" style="justify-content:flex-start;">${actions
+        .map((action, index) => `<button type="button" class="secondary" data-activation-action="${index}">${escapeHtml(activationActionLabel(action))}</button>`)
+        .join("")}</strong></div>`;
+    }
+
+    function activationActionLabel(action) {
+      if (action?.ui_action === "settings") return action.title || "فتح الإعداد";
+      if (action?.ui_action === "oauth") return action.action_label || action.title || "ربط OAuth";
+      return action?.title || "تشغيل المتابعة";
+    }
+
+    function runDetailActivationAction(index) {
+      const action = detailActivationActions[Number(index)];
+      if (!action) return;
+      if (action.ui_action === "oauth" && action.action_path) {
+        const url = new URL(action.action_path, apiBase);
+        url.searchParams.set("return_to", location.href);
+        window.location.assign(url.toString());
+        return;
+      }
+      if (action.ui_action === "settings") {
+        openLocalSettingsGroup(action.settings_group || action.integration_id || "");
+        return;
+      }
+      createTask({
+        title: action.title || "متابعة تنفيذية",
+        prompt: action.prompt || "agent mesh execute:\nنفذ المتابعة الداخلية المناسبة وسجل إيصالًا."
+      }).catch(showError);
     }
 
     function cadenceLabel(cadence) {
       if (!cadence || !cadence.latest_interval_seconds) return "--";
       return `${cadence.latest_interval_seconds.toFixed(2)}s`;
+    }
+
+    function shortStatus(integration) {
+      if (!integration) return "--";
+      if (integration.status === "ready") return "جاهز";
+      if (integration.status === "partial") return "جزئي";
+      if (integration.status === "needs_operator") return "ينتظر";
+      return "تحقق";
+    }
+
+    function codespacesDetailLabel(integration) {
+      const details = integration?.details || {};
+      if (!integration) return "--";
+      if (details.auth_state === "missing_scope" || details.missing_scope === "codespace") {
+        return `Codespaces يحتاج صلاحية GitHub: ${details.auth_command || "gh auth refresh -h github.com -s codespace"}`;
+      }
+      if (integration.status === "ready") {
+        return `${details.codespace_count || 0} Codespaces ظاهرة · ${details.active_codespace_count || 0} نشطة`;
+      }
+      if (details.error) return `Codespaces غير جاهز: ${String(details.error).split("\n")[0]}`;
+      return integration.next_step || "تحقق من Codespaces من زر وكيل Codespaces.";
+    }
+
+    function zapierEngineLabel(integration) {
+      if (!integration?.details) return shortStatus(integration);
+      const apps = integration.details.app_count || 0;
+      const actions = integration.details.action_count || 0;
+      if (integration.details.needs_reconnect) return `${apps} تطبيق · إعادة ربط`;
+      if (integration.details.direct_live_available === false) return `${apps} تطبيق · مخزون فقط`;
+      return `${apps} تطبيق · ${actions} إجراء`;
     }
 
     function marketNotice(source) {
@@ -521,21 +3413,246 @@
     }
 
     function showError(error) {
-      document.getElementById("detail").textContent = String(error);
+      const text = String(error);
+      const box = document.getElementById("operator-error");
+      box.textContent = text;
+      box.classList.remove("hidden");
+      document.getElementById("detail").textContent = text;
+    }
+
+    function clearError() {
+      const box = document.getElementById("operator-error");
+      box.textContent = "";
+      box.classList.add("hidden");
+    }
+
+    const workspaceViews = ["request", "trading", "bounty", "knowledge", "reports", "tools"];
+
+    function normalizeWorkspaceView(view) {
+      if (view === "bug-bounty") return "bounty";
+      return workspaceViews.includes(view) ? view : "request";
+    }
+
+    function workspaceViewUrlValue(view) {
+      return view === "bounty" ? "bug-bounty" : view;
+    }
+
+    function readWorkspaceViewFromLocation() {
+      try {
+        return normalizeWorkspaceView(new URL(window.location.href).searchParams.get("view"));
+      } catch {
+        return "request";
+      }
+    }
+
+    function writeWorkspaceViewToLocation(view) {
+      try {
+        const url = new URL(window.location.href);
+        if (view === "request") {
+          url.searchParams.delete("view");
+        } else {
+          url.searchParams.set("view", workspaceViewUrlValue(view));
+        }
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (next !== current) window.history.replaceState(window.history.state, "", next);
+      } catch {
+        // The workspace still switches even if the browser blocks URL updates.
+      }
+    }
+
+    function setWorkspaceView(view, options = {}) {
+      const selected = normalizeWorkspaceView(view);
+      const main = document.getElementById("workflow-main");
+      const mission = document.getElementById("mission-launcher");
+      const engine = document.getElementById("engine-panel");
+      const tools = document.getElementById("tool-panel");
+      const knowledge = document.getElementById("knowledge-panel");
+      const verdict = document.getElementById("execution-verdict");
+      const commandPanel = document.querySelector(".command-panel");
+      const quickGrid = document.querySelector(".quick-grid");
+      const operations = document.getElementById("operations-panel");
+      const trading = document.getElementById("trading-card");
+      const bounty = document.getElementById("bounty-card");
+      const reports = document.getElementById("reports-panel");
+
+      commandPanel?.classList.toggle("view-hidden", selected !== "request");
+      quickGrid?.classList.toggle("view-hidden", selected !== "request");
+      mission.classList.toggle("view-hidden", selected !== "request");
+      engine.classList.toggle("view-hidden", selected !== "tools");
+      tools.classList.toggle("view-hidden", selected !== "tools");
+      knowledge.classList.toggle("view-hidden", selected !== "knowledge");
+      verdict.classList.toggle("view-hidden", selected !== "request");
+      main.classList.toggle("view-hidden", selected === "request" || selected === "tools" || selected === "knowledge");
+      main.classList.add("single-view");
+      operations.classList.toggle("view-hidden", selected === "reports");
+      reports.classList.toggle("view-hidden", selected !== "reports");
+      trading.classList.toggle("view-hidden", selected !== "trading");
+      bounty.classList.toggle("view-hidden", selected !== "bounty");
+
+      document.querySelectorAll("[data-workspace-view]").forEach((button) => {
+        button.classList.toggle("active", normalizeWorkspaceView(button.dataset.workspaceView) === selected);
+      });
+
+      if (options.url !== false) writeWorkspaceViewToLocation(selected);
+
+      if (options.scroll !== false) {
+        const target = selected === "request" ? mission : selected === "tools" ? engine : selected === "knowledge" ? knowledge : main;
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function meshQuickTask(actionId, fallbackTitle, fallbackPrompt) {
+      const actions = Array.isArray(commandMeshSummary?.quick_actions)
+        ? commandMeshSummary.quick_actions
+        : [];
+      const action = actions.find((item) => item?.id === actionId);
+      return {
+        title: action?.title || fallbackTitle,
+        prompt: action?.prompt || fallbackPrompt
+      };
     }
 
     document.getElementById("refresh").addEventListener("click", () => refreshAll());
-    document.getElementById("start-hunt").addEventListener("click", () => createTask(buildHuntPrompt()).catch(showError));
+    document.getElementById("logout").addEventListener("click", () => lockOperator());
+    document.getElementById("command-run-engine").addEventListener("click", () => createTask(meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("command-run-knowledge").addEventListener("click", () => createTask(meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
+    document.getElementById("command-open-tools").addEventListener("click", () => createTask(meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError));
+    document.getElementById("command-zapier-oauth").addEventListener("click", () => runCommandZapier().catch(showError));
+    document.getElementById("verdict-primary").addEventListener("click", (event) => {
+      runVerdictAction(event.currentTarget.dataset.verdictAction || "refresh");
+    });
+    document.getElementById("verdict-secondary").addEventListener("click", (event) => {
+      runVerdictAction(event.currentTarget.dataset.verdictAction || "run");
+    });
+    document.getElementById("command-summary-list").addEventListener("click", (event) => {
+      const probe = event.target.closest("[data-agent-provider-probe]");
+      if (probe) {
+        runAgentProviderProbe(probe.getAttribute("data-agent-provider-probe")).catch(showError);
+        return;
+      }
+      const prepare = event.target.closest("[data-agent-provider-prepare]");
+      if (prepare) {
+        runAgentProviderPrepare(prepare.getAttribute("data-agent-provider-prepare")).catch(showError);
+      }
+    });
+    document.getElementById("run-engine").addEventListener("click", () => createTask(meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("scan-mesh").addEventListener("click", () => createTask({ title: "فحص شبكة الوكلاء", prompt: meshPrompt }).catch(showError));
+    document.getElementById("run-codespaces").addEventListener("click", () => createTask({ title: "تشغيل وكيل GitHub Codespaces", prompt: codespacesPrompt }).catch(showError));
+    document.getElementById("run-model-strategy").addEventListener("click", () => createTask({ title: "استراتيجية OpenRouter/Fusion", prompt: modelStrategyPrompt }).catch(showError));
+    document.getElementById("scan-model-strategy").addEventListener("click", () => createTask({ title: "استراتيجية OpenRouter/Fusion", prompt: modelStrategyPrompt }).catch(showError));
+    document.getElementById("run-knowledge-execution").addEventListener("click", () => createTask({ title: "استيعاب وتشغيل فتحية", prompt: knowledgeExecutionPrompt }).catch(showError));
+    document.getElementById("knowledge-scan").addEventListener("click", () => intakeAction("scan").catch(showError));
+    document.getElementById("knowledge-start").addEventListener("click", () => intakeAction("start").catch(showError));
+    document.getElementById("knowledge-stop").addEventListener("click", () => intakeAction("stop").catch(showError));
+    document.getElementById("knowledge-run-current").addEventListener("click", () => {
+      createTask(buildKnowledgePanelTask()).then(() => {
+        document.getElementById("knowledge-sources").value = "";
+        setWorkspaceView("reports");
+      }).catch(showError);
+    });
+    document.getElementById("knowledge-open-reports").addEventListener("click", () => setWorkspaceView("reports"));
+    document.getElementById("knowledge-panel").addEventListener("click", (event) => {
+      const openId = event.target.closest("[data-open]")?.getAttribute("data-open");
+      if (openId) loadDetail(openId).catch(showError);
+    });
+    document.getElementById("run-mission").addEventListener("click", () => createTask(buildMissionLauncherTask()).catch(showError));
+    document.getElementById("mission-open-reports").addEventListener("click", () => setWorkspaceView("reports"));
+    document.querySelectorAll("[data-mission-mode]").forEach((button) => {
+      button.addEventListener("click", () => setMissionMode(button.dataset.missionMode));
+    });
+    document.querySelectorAll("[data-autonomy-mode]").forEach((button) => {
+      button.addEventListener("click", () => setMissionAutonomyMode(button.dataset.autonomyMode));
+    });
+    document.getElementById("agent-provider").addEventListener("change", () => syncAgentProviderForm());
+    document.getElementById("prepare-agent-provider").addEventListener("click", () => prepareAgentProviderFromForm().catch(showError));
+    document.getElementById("probe-agent-provider").addEventListener("click", () => probeAgentProviderFromForm().catch(showError));
+    document.getElementById("open-trading").addEventListener("click", () => setWorkspaceView("trading"));
+    document.getElementById("open-bounty").addEventListener("click", () => setWorkspaceView("bounty"));
+    document.getElementById("open-reports").addEventListener("click", () => setWorkspaceView("reports"));
+    document.querySelectorAll("[data-workspace-view]").forEach((button) => {
+      button.addEventListener("click", () => setWorkspaceView(button.dataset.workspaceView));
+    });
+    window.addEventListener("popstate", () => setWorkspaceView(readWorkspaceViewFromLocation(), { scroll: false, url: false }));
+    document.getElementById("zapier-app").addEventListener("change", (event) => loadZapierActions(event.target.value).catch(showError));
+    document.getElementById("zapier-action").addEventListener("change", () => loadZapierActionDetails().catch(showError));
+    document.getElementById("refresh-zapier").addEventListener("click", () => loadZapierToolCenter(true, document.getElementById("zapier-app").value).catch(showError));
+    document.getElementById("reconnect-zapier").addEventListener("click", () => reconnectZapier());
+    document.getElementById("fill-zapier-template").addEventListener("click", () => fillZapierTemplate());
+    document.getElementById("run-zapier-action").addEventListener("click", () => runZapierActionFromPanel().catch(showError));
+    document.getElementById("local-settings-group").addEventListener("change", (event) => {
+      selectedLocalSettingsGroup = event.target.value;
+      renderLocalSettingsFields();
+    });
+    document.getElementById("refresh-local-settings").addEventListener("click", () => loadLocalSettings(selectedLocalSettingsGroup).catch(showError));
+    document.getElementById("save-local-settings").addEventListener("click", () => saveLocalSettings().catch(showError));
+    document.getElementById("zapier-app-chips").addEventListener("click", (event) => {
+      const app = event.target.getAttribute("data-app");
+      if (!app) return;
+      document.getElementById("zapier-app").value = app;
+      renderZapierApps(app);
+      loadZapierActions(app).catch(showError);
+    });
+    document.getElementById("send-direct").addEventListener("click", () => {
+      const prompt = document.getElementById("direct-prompt").value.trim();
+      const title = document.getElementById("direct-title").value.trim();
+      if (!prompt) {
+        showError("اكتب مهمة للوكيل أولًا.");
+        document.getElementById("direct-prompt").focus();
+        return;
+      }
+      createTask({ title: title || "طلب مباشر من فتحية", prompt }).then(() => {
+        document.getElementById("direct-title").value = "";
+        document.getElementById("direct-prompt").value = "";
+      }).catch(showError);
+    });
+    document.getElementById("send-knowledge").addEventListener("click", () => {
+      try {
+        createTask(buildKnowledgeExecutionFromPanel()).then(() => {
+          document.getElementById("direct-title").value = "";
+          document.getElementById("direct-prompt").value = "";
+          document.getElementById("direct-sources").value = "";
+        }).catch(showError);
+      } catch (error) {
+        showError(error);
+      }
+    });
+    document.getElementById("login-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const email = document.getElementById("login-email").value.trim().toLowerCase();
+      const password = document.getElementById("login-password").value;
+      if (email !== defaultOperatorEmail) {
+        setLoginError("استخدم بريد تشغيل فتحية الخاص بهذا المشروع.");
+        return;
+      }
+      if (password.length < 8) {
+        setLoginError("كلمة المرور يجب أن تكون 8 أحرف أو أكثر.");
+        return;
+      }
+      setLoginError("");
+      document.getElementById("login-submit").textContent = "جاري التحقق...";
+      setTimeout(() => {
+        document.getElementById("login-submit").textContent = "دخول آمن";
+        unlockOperator(email);
+      }, 220);
+    });
+    document.getElementById("start-hunt").addEventListener("click", () => createTask(buildHuntPrompt("hunt")).catch(showError));
+    document.getElementById("dedupe-hunt").addEventListener("click", () => createTask(buildHuntPrompt("dedupe")).catch(showError));
+    document.getElementById("draft-gate").addEventListener("click", () => createTask(buildDraftGatePrompt()).catch(showError));
     document.getElementById("trade-toggle").addEventListener("click", () => tradingAction(tradingState?.running ? "stop" : "start").catch(showError));
     document.getElementById("trade-tick").addEventListener("click", () => tradingAction("tick").catch(showError));
     document.getElementById("trade-strategy").addEventListener("click", () => tradingAction("strategy-refresh").catch(showError));
     document.getElementById("fill-h1").addEventListener("click", () => {
       document.getElementById("platform").value = "hackerone";
       document.getElementById("focus").value = "ركز على CI supply-chain وOIDC/JWT وSSRF وابحث عن أثر جديد غير مكرر.";
+      document.getElementById("scope-exclude").value = "احترم نطاق HackerOne والسياسات. لا فحص حي أو إرسال خارجي من فتحية قبل مراجعة التقرير.";
+      document.getElementById("evidence-plan").value = "خطوات إعادة إنتاج، أثر عملي، سبب severity، وسبب عدم التكرار مقارنة بتقارير HackerOne disclosed/duplicate.";
     });
     document.getElementById("fill-bc").addEventListener("click", () => {
       document.getElementById("platform").value = "bugcrowd";
       document.getElementById("focus").value = "راجع النطاق والسياسات ثم ابحث عن مرشح قوي واكتب Draft داخلي بإثبات واضح.";
+      document.getElementById("scope-exclude").value = "احترم VRT والنطاق. لا إرسال خارجي من هذا الزر، ولا تصعيد severity بلا أثر قابل للعرض.";
+      document.getElementById("evidence-plan").value = "PoC داخلي أو لقطة/فيديو، خطوات واضحة، أثر على عميل/تطبيق/مستخدم، وتبرير VRT.";
     });
     document.getElementById("tasks").addEventListener("click", (event) => {
       const target = event.target;
@@ -546,14 +3663,42 @@
       if (approveId) api(`/api/agent/tasks/${approveId}/approve`, { method: "POST" }).then(() => loadDetail(approveId)).catch(showError);
       if (cancelId) api(`/api/agent/tasks/${cancelId}/cancel`, { method: "POST" }).then(() => loadTasks()).catch(showError);
     });
+    document.getElementById("mission-results").addEventListener("click", (event) => {
+      const target = event.target.closest("button");
+      if (!target) return;
+      const runMode = target.getAttribute("data-run-mode");
+      const openId = target.getAttribute("data-open");
+      const workspace = target.getAttribute("data-workspace");
+      if (runMode) createTask(buildMissionFollowUpTask(runMode)).catch(showError);
+      if (openId) loadDetail(openId).catch(showError);
+      if (workspace) setWorkspaceView(workspace);
+    });
+    document.getElementById("detail-summary").addEventListener("click", (event) => {
+      const target = event.target.closest("[data-activation-action]");
+      if (!target) return;
+      runDetailActivationAction(target.getAttribute("data-activation-action"));
+    });
 
     async function refreshAll() {
-      await Promise.all([loadTasks(), loadTrading()]);
+      await Promise.all([loadEngine(), loadTasks(), loadTrading(), loadIntake(), loadLocalSettings()]);
     }
 
-    refreshAll();
-    setInterval(refreshAll, 5000);
-    setInterval(loadTrading, 1000);
+    function startOperator() {
+      if (refreshTimer || tradingTimer) return;
+      setWorkspaceView(readWorkspaceViewFromLocation(), { scroll: false });
+      syncAgentProviderForm();
+      refreshAll().then(() => handleIntegrationReturn()).catch(showError);
+      loadZapierToolCenter(false, "GitHub").catch(showError);
+      refreshTimer = setInterval(() => refreshAll().catch(showError), 5000);
+      tradingTimer = setInterval(() => loadTrading().catch(showError), 1000);
+    }
+
+    const existingSession = readLocalSession();
+    if (existingSession?.email === defaultOperatorEmail) {
+      unlockOperator(existingSession.email, false);
+    } else {
+      lockOperator();
+    }
   </script>
 </body>
 </html>

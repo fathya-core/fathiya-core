@@ -7,6 +7,18 @@ directory = "netlify/functions"
 included_files = ["artifacts/**", "knowledge/**"]
 
 [[redirects]]
+from = "/"
+to = "/operator-lite/agent-tasks/"
+status = 302
+force = true
+
+[[redirects]]
+from = "/operator-lite/agent-tasks"
+to = "/operator-lite/agent-tasks/"
+status = 301
+force = true
+
+[[redirects]]
 from = "/api/artifacts"
 to = "/.netlify/functions/artifacts-index"
 status = 200
