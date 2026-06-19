@@ -1,0 +1,27 @@
+[project]
+name = "fathiya-agent-runtime"
+version = "0.1.0"
+description = "Local task runner for the FATHIYA agent operating system."
+requires-python = ">=3.13"
+dependencies = [
+  "openpyxl>=3.1.0",
+  "pydantic>=2.11.0",
+  "pypdf>=6.0.0",
+  "python-dotenv>=1.1.0",
+  "requests>=2.32.0",
+]
+
+[project.optional-dependencies]
+huggingface = [
+  "sentence-transformers>=5.0.0",
+]
+
+[project.scripts]
+fathiya-runtime = "fathiya_runtime.cli:main"
+
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["fathiya_runtime*"]

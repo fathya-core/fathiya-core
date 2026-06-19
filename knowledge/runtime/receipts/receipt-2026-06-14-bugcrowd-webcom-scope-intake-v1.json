@@ -1,0 +1,32 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bugcrowd-webcom-scope-intake-v1",
+  "timestamp": "2026-06-14T19:38:44Z",
+  "source_request": "operator-authenticated-bugcrowd-webdotcom-page",
+  "queue": "Security Lab Queue",
+  "adapter": "codex_browser_plus_repo_artifact",
+  "mode": "bugcrowd_scope_intake_passive_only",
+  "input_artifact": "Authenticated Bugcrowd Web.com engagement page read by the operator browser.",
+  "output_artifact": "knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json + knowledge/security/targets/TARGET_BUGCROWD_WEBCOM_v1.json + knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_SCOPE_INTAKE_REPORT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_logged_into_bugcrowd_for_scope_reading_only",
+  "scope_capture": {
+    "program_url": "https://bugcrowd.com/engagements/webdotcom",
+    "in_scope_count": 3,
+    "out_of_scope_count": 8,
+    "required_header": "X-Request-Purpose: Research",
+    "operator_reports_identity_verification_completed": true,
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "report_submission_executed": false
+  },
+  "understanding_gate": {
+    "next_task": "Teach the agent the Web.com scope and produce a passive-only plan.",
+    "must_name_in_scope_targets": true,
+    "must_block_oos_wildcards": true,
+    "must_block_hexstrike_production_scan": true,
+    "must_require_known_issue_review": true
+  },
+  "next_step": "Queue a knowledge-only agent task to confirm FATHIYA understands the Web.com scope before any live testing."
+}

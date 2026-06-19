@@ -1,0 +1,412 @@
+{
+  "schema_version": "FATHIYA_BUG_BOUNTY_DISCOVERY_PLAYBOOK_v1",
+  "status": "active",
+  "created_at": "2026-06-14T20:35:00+03:00",
+  "purpose": "Teach FATHIYA how to find simple and complex vulnerabilities through a scope-gated discovery process that uses all relevant available tools without turning tool output into unverified reports.",
+  "mode": "authorized_bug_bounty_and_local_lab_only",
+  "source_basis": [
+    "knowledge/learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json",
+    "knowledge/evaluations/FATHIYA_BUG_BOUNTY_COMPREHENSION_EVALS_v1.json",
+    "knowledge/policies/FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1.json",
+    "knowledge/runtime/receipts/receipt-2026-06-14-bug-bounty-learning-v1.json",
+    "OWASP WSTG stable",
+    "OWASP API Security Top 10 2023",
+    "PortSwigger Web Security Academy",
+    "Bugcrowd VRT",
+    "HackerOne Report Templates"
+  ],
+  "operating_rule": "FATHIYA should actively ask for missing requirements or collect them from allowed public/program sources before testing. It should not guess permission, credentials, rate limits, or scope.",
+  "discovery_phases": [
+    {
+      "id": "phase-0-requirements-and-scope",
+      "name": "Requirements and Scope Gate",
+      "goal": "Turn an operator target request into a target scope record or a clear missing-requirements request.",
+      "allowed_without_scope": true,
+      "tools": [
+        "tool_catalog",
+        "local_capability_inventory",
+        "integration_probe",
+        "web_fetch",
+        "knowledge_ingest_url",
+        "connected_tool_inventory",
+        "zapier_action_catalog",
+        "n8n_workflows",
+        "repo_search",
+        "github_repo_info",
+        "security_core_plan"
+      ],
+      "must_collect_or_request": [
+        "program policy URL or uploaded scope text",
+        "target asset and asset type",
+        "in-scope and out-of-scope rules",
+        "allowed test categories",
+        "rate/noise limits",
+        "test account availability",
+        "API documentation or OpenAPI location when applicable",
+        "mobile build/testflight/apk when applicable",
+        "reporting channel",
+        "safe test data and redaction rules"
+      ],
+      "output": [
+        "target scope record",
+        "missing requirements list",
+        "passive-only plan if scope is incomplete"
+      ],
+      "fail_closed_when": [
+        "scope is unclear",
+        "target ownership is not proven",
+        "allowed test types are missing",
+        "the requested action is destructive or disruptive"
+      ]
+    },
+    {
+      "id": "phase-1-passive-surface-map",
+      "name": "Passive Surface Map",
+      "goal": "Build a precise map of assets, endpoints, technologies, docs, roles, and workflows before any active tool.",
+      "allowed_without_scope": "only for public policy reading, operator-provided evidence, and owned/local assets",
+      "tools": [
+        "web_fetch",
+        "knowledge_ingest_url",
+        "repo_search",
+        "github_repo_info",
+        "security_core_plan",
+        "connected_tool_inventory"
+      ],
+      "simple_vulnerability_leads": [
+        "missing or weak security headers",
+        "public debug pages",
+        "exposed documentation or OpenAPI descriptors",
+        "version and framework disclosure",
+        "client-side endpoint leakage",
+        "insecure CORS or cross-domain policy candidates",
+        "static file exposure",
+        "subdomain takeover candidate evidence"
+      ],
+      "complex_vulnerability_leads": [
+        "role and object ownership boundaries",
+        "multi-step business workflows",
+        "API versions and deprecated endpoints",
+        "OAuth/OIDC or SSO flows",
+        "WebSocket/realtime channels",
+        "file upload and media processing paths",
+        "third-party integration callbacks",
+        "cache and CDN behavior"
+      ],
+      "output": [
+        "asset table",
+        "endpoint/workflow table",
+        "role and account model",
+        "candidate finding queue",
+        "manual validation questions"
+      ]
+    },
+    {
+      "id": "phase-2-low-noise-active-discovery",
+      "name": "Low-Noise Active Discovery",
+      "goal": "Use active tools only inside an approved scope profile to gather leads with minimal noise.",
+      "allowed_without_scope": false,
+      "tools": [
+        "kali_tool_inventory",
+        "hexstrike_lab_scan",
+        "connector_profile",
+        "n8n_webhook",
+        "zapier_action",
+        "agent_delegate",
+        "command_profile"
+      ],
+      "approval_and_scope_requirements": [
+        "target must match the scope record",
+        "test category must be allowed",
+        "rate/noise limit must be present",
+        "destructive tests remain separately approval-gated",
+        "HexStrike against non-loopback targets requires a future approved runtime profile"
+      ],
+      "tool_behavior": [
+        "Kali inventory confirms tools; it does not authorize scans.",
+        "HexStrike is currently loopback-lab only unless future approved profiles are added.",
+        "n8n/Zapier can orchestrate approved workflows but cannot bypass scope.",
+        "Delegated agents must inherit the same scope record and receipt requirements."
+      ],
+      "output": [
+        "lead list with source tool",
+        "confidence level",
+        "manual validation task",
+        "false-positive notes"
+      ]
+    },
+    {
+      "id": "phase-3-manual-validation",
+      "name": "Manual Validation",
+      "goal": "Convert leads into confirmed findings or close them as false positives.",
+      "allowed_without_scope": "local lab or user-provided evidence only",
+      "tools": [
+        "security_core_plan",
+        "repo_search",
+        "web_fetch",
+        "agent_delegate",
+        "internal_echo"
+      ],
+      "validation_principles": [
+        "prove expected versus actual behavior",
+        "use the smallest non-destructive proof",
+        "redact private data",
+        "separate vulnerability class from impact",
+        "document what was not tested",
+        "never use scanner output alone as proof"
+      ],
+      "output": [
+        "confirmed finding",
+        "needs evidence",
+        "false positive",
+        "needs scope expansion",
+        "needs test account or fixture"
+      ]
+    },
+    {
+      "id": "phase-4-chain-and-impact-analysis",
+      "name": "Chain and Impact Analysis",
+      "goal": "Identify when simple leads combine into a complex, high-impact bug while staying within allowed test limits.",
+      "allowed_without_scope": "reasoning only",
+      "tools": [
+        "security_core_plan",
+        "knowledge_search",
+        "repo_search",
+        "agent_delegate"
+      ],
+      "safe_chain_examples": [
+        "exposed API docs plus object ownership gap",
+        "stored XSS in privileged workflow plus realistic admin exposure without credential theft",
+        "open redirect plus OAuth flow only when program scope allows OAuth testing",
+        "file upload weakness plus content rendering issue in a local lab",
+        "debug endpoint plus access control failure"
+      ],
+      "output": [
+        "chain hypothesis",
+        "scope check for each link",
+        "proof needed for each link",
+        "impact rationale",
+        "stop condition"
+      ]
+    },
+    {
+      "id": "phase-5-report-and-retest",
+      "name": "Report and Retest",
+      "goal": "Write a complete HackerOne/Bugcrowd-style report and later validate the fix without exceeding scope.",
+      "allowed_without_scope": "report drafting from provided evidence only",
+      "tools": [
+        "knowledge_search",
+        "security_core_plan",
+        "internal_echo",
+        "zapier_action",
+        "n8n_webhook"
+      ],
+      "report_must_include": [
+        "scope proof",
+        "affected asset",
+        "vulnerability class",
+        "steps to reproduce",
+        "expected result",
+        "actual result",
+        "evidence",
+        "impact",
+        "severity rationale",
+        "remediation",
+        "limitations and safety notes"
+      ],
+      "output": [
+        "report draft",
+        "submission checklist",
+        "receipt",
+        "retest plan"
+      ]
+    }
+  ],
+  "vulnerability_hunting_map": [
+    {
+      "class": "information_disclosure_and_misconfiguration",
+      "complexity": "simple_to_medium",
+      "look_for": [
+        "headers",
+        "debug pages",
+        "open API docs",
+        "backup/static files",
+        "cloud storage exposure",
+        "framework/version leakage"
+      ],
+      "primary_tools": [
+        "web_fetch",
+        "repo_search",
+        "security_core_plan",
+        "nuclei_when_scoped"
+      ],
+      "proof_requirement": "show exposed asset, sensitivity, scope match, and remediation; do not report harmless banners as high severity"
+    },
+    {
+      "class": "access_control_idor_bola_bfla",
+      "complexity": "medium_to_complex",
+      "look_for": [
+        "object IDs",
+        "role-gated endpoints",
+        "organization/workspace boundaries",
+        "admin versus regular-user functions",
+        "API object properties"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "repo_search",
+        "Burp_manual_when_available",
+        "authorized_test_accounts"
+      ],
+      "proof_requirement": "two authorized identities or fixtures, expected/actual authorization, minimal redacted response"
+    },
+    {
+      "class": "xss_and_client_side",
+      "complexity": "simple_to_complex",
+      "look_for": [
+        "reflected input",
+        "stored user content",
+        "DOM sinks",
+        "HTML injection",
+        "client-side redirects",
+        "CSP gaps"
+      ],
+      "primary_tools": [
+        "web_fetch",
+        "security_core_plan",
+        "Burp_manual_when_available",
+        "dalfox_when_scoped"
+      ],
+      "proof_requirement": "source, sink, context, harmless proof, affected role, and remediation"
+    },
+    {
+      "class": "ssrf_and_server_side_fetch",
+      "complexity": "complex",
+      "look_for": [
+        "URL importers",
+        "webhooks",
+        "preview generators",
+        "image/document fetchers",
+        "third-party callback integrations"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "web_fetch",
+        "controlled_callback_when_scoped",
+        "local_lab"
+      ],
+      "proof_requirement": "controlled callback evidence only unless policy explicitly permits broader validation"
+    },
+    {
+      "class": "business_logic_and_state",
+      "complexity": "complex",
+      "look_for": [
+        "checkout/payment/test flows",
+        "workflow bypass",
+        "race/state transitions",
+        "quota or coupon misuse",
+        "multi-step approvals",
+        "sensitive business flows"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "manual_workflow_model",
+        "authorized_test_accounts",
+        "agent_delegate_for_reasoning"
+      ],
+      "proof_requirement": "business rule, expected state, actual state, small controlled proof, no real money or disruptive action"
+    },
+    {
+      "class": "websocket_realtime_and_event_streams",
+      "complexity": "medium_to_complex",
+      "look_for": [
+        "channel subscribe",
+        "publish actions",
+        "object updates",
+        "cross-tenant event delivery",
+        "message-level authorization"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "authorized_test_accounts",
+        "manual_proxy_when_available"
+      ],
+      "proof_requirement": "per-message authorization evidence, redacted content, expected versus actual delivery"
+    },
+    {
+      "class": "injection_and_parser_bugs",
+      "complexity": "medium_to_complex",
+      "look_for": [
+        "SQL/NoSQL/LDAP/XML/command/SSTI indicators",
+        "template rendering",
+        "search/filter inputs",
+        "file or path inputs",
+        "GraphQL queries"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "repo_search",
+        "PortSwigger_lab_transfer",
+        "approved_targeted_testing"
+      ],
+      "proof_requirement": "non-destructive signal, exact input context, expected parser behavior, actual behavior, remediation"
+    },
+    {
+      "class": "auth_session_oauth_jwt",
+      "complexity": "complex",
+      "look_for": [
+        "password reset",
+        "session lifecycle",
+        "JWT validation",
+        "OAuth redirect and state",
+        "MFA enrollment",
+        "alternative auth channels"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "web_fetch",
+        "authorized_test_accounts",
+        "manual_review"
+      ],
+      "proof_requirement": "authorized accounts, no credential theft, no account takeover of third parties, clear expected/actual identity boundary"
+    },
+    {
+      "class": "file_upload_and_content_processing",
+      "complexity": "medium_to_complex",
+      "look_for": [
+        "extension validation",
+        "content type mismatch",
+        "stored rendering",
+        "metadata handling",
+        "malware scanning gaps",
+        "signed URL exposure"
+      ],
+      "primary_tools": [
+        "security_core_plan",
+        "local_lab",
+        "manual_review",
+        "approved_low_noise_checks"
+      ],
+      "proof_requirement": "safe test file, no malware, no persistence beyond test data, affected rendering/storage path"
+    }
+  ],
+  "agent_stop_conditions": [
+    "scope record missing for non-loopback active work",
+    "test would access third-party user data",
+    "test would cause denial of service or high-rate traffic",
+    "test would change real money, trades, payments, or production business state",
+    "the next action needs credentials or accounts not provided",
+    "scanner result lacks manual validation"
+  ],
+  "receipt_fields": [
+    "scope_record_id",
+    "requirements_status",
+    "phase",
+    "tools_considered",
+    "tools_used",
+    "vulnerability_classes_considered",
+    "lead_queue",
+    "manual_validation_status",
+    "report_status",
+    "missing_requirements"
+  ]
+}

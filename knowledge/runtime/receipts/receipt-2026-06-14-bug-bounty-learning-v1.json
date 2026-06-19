@@ -1,0 +1,73 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bug-bounty-learning-v1",
+  "timestamp": "2026-06-14T17:05:23Z",
+  "source_request": "agent-runtime-task-9ea67b24-d4ef-4649-a6e1-322c5c94f24f",
+  "queue": "Knowledge Queue",
+  "adapter": "fathiya_agent_runtime",
+  "mode": "bug_bounty_knowledge_only_learning",
+  "input_artifact": "Operator request to teach FATHIYA bug bounty from web sources and local awareness/security files.",
+  "output_artifact": "knowledge/reports/study/FATHIYA_BUG_BOUNTY_UNDERSTANDING_RESULT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_approved_knowledge_only_bug_bounty_learning",
+  "runtime_receipt": {
+    "receipt_id": "AR-20260614170522869433-9ea67b24",
+    "task_id": "9ea67b24-d4ef-4649-a6e1-322c5c94f24f",
+    "status": "completed",
+    "retrieval_mode": "huggingface",
+    "planner_provider": "local_knowledge_only",
+    "synthesis_provider": "openrouter",
+    "evaluation_provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free",
+    "tools": []
+  },
+  "learning_artifacts": [
+    "knowledge/learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json",
+    "knowledge/evaluations/FATHIYA_BUG_BOUNTY_COMPREHENSION_EVALS_v1.json",
+    "knowledge/policies/FATHIYA_BUG_BOUNTY_AUTHORIZED_SCOPE_PROFILE_v1.json",
+    "knowledge/templates/FATHIYA_BUG_BOUNTY_REPORT_TEMPLATE_v1.md",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_WEB_AND_LOCAL_TRAINING_REPORT_v1.md",
+    "knowledge/reports/study/FATHIYA_BUG_BOUNTY_UNDERSTANDING_RESULT_v1.md"
+  ],
+  "runtime_retrieved_sources": [
+    "learning/FATHIYA_BUG_BOUNTY_AGENT_LEARNING_CARDS_v1.json",
+    "learning/FATHIYA_AWARENESS_SECURITY_AGENT_LEARNING_CARDS_v1.json",
+    "cards/daily/2026-05-17/kc-2026-05-17-security-ai-knowledge-v0.json",
+    "cards/daily/2026-05-17/kc-2026-05-17-data-gathering-kit-v0.json",
+    "intake/runtime/awareness_knowledge_roadmap_security_2026_05_15_manifest.json"
+  ],
+  "official_web_sources": [
+    "https://owasp.org/www-project-web-security-testing-guide/stable/",
+    "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+    "https://portswigger.net/web-security",
+    "https://portswigger.net/web-security/learning-paths",
+    "https://bugcrowd.com/vulnerability-rating-taxonomy",
+    "https://docs.hackerone.com/en/articles/8496338-report-templates",
+    "https://mas.owasp.org/MASTG/"
+  ],
+  "understanding_checks": {
+    "scope_first": "pass",
+    "passive_before_active": "pass",
+    "idor_bola_two_account_proof": "pass",
+    "xss_safe_proof": "pass",
+    "ssrf_controlled_validation": "pass",
+    "websocket_per_message_authorization": "pass",
+    "tool_output_is_lead_not_report": "pass",
+    "prompt_injection_in_source_ignored": "pass",
+    "report_quality": "pass",
+    "local_lab_to_live_target_transfer": "pass"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "third_party_target_activity_executed": false,
+    "destructive_action_executed": false,
+    "bruteforce_or_exploitation_executed": false,
+    "local_loopback_lab_scan_executed": false,
+    "knowledge_only": true
+  },
+  "next_step": "Use the bug bounty scope profile to create or load an authorized program target before any non-loopback active testing; otherwise continue with planning, local labs, and report drafting from provided evidence."
+}

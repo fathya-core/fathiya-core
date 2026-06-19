@@ -5,5 +5,29 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { cpSync, existsSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 
-export default defineConfig();
+function copyOperatorLiteToClientDist() {
+  const source = resolve("operator-lite");
+  const clientDist = resolve("dist/client");
+  if (!existsSync(source) || !existsSync(clientDist)) return;
+
+  const destination = resolve(clientDist, "operator-lite");
+  rmSync(destination, { force: true, recursive: true });
+  cpSync(source, destination, { recursive: true });
+}
+
+export default defineConfig({
+  vite: {
+    plugins: [
+      {
+        name: "fathiya-copy-operator-lite",
+        apply: "build",
+        closeBundle() {
+          copyOperatorLiteToClientDist();
+        },
+      },
+    ],
+  },
+});

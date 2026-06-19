@@ -1,0 +1,178 @@
+{
+  "scope_map_id": "scope-map-bugcrowd-webdotcom-v1",
+  "target_id": "target-bugcrowd-webdotcom-v1",
+  "name": "Bugcrowd Web.com Bug Bounty",
+  "program": "Web.com Bug Bounty",
+  "platform": "Bugcrowd",
+  "program_url": "https://bugcrowd.com/engagements/webdotcom",
+  "captured_at": "2026-06-14T19:38:44Z",
+  "program_last_updated": "2026-05-08T06:39:09Z",
+  "capture_method": "Authenticated Bugcrowd researcher page read through the operator browser; no report submission and no target testing were performed.",
+  "authorization_status": "authorized_bug_bounty_program_scope_loaded",
+  "submission_status": "operator_reports_identity_verification_completed",
+  "safe_harbor": {
+    "present": true,
+    "source": "Bugcrowd Web.com program policy",
+    "condition": "Only activities conducted according to the engagement policy and listed in-scope targets are authorized."
+  },
+  "in_scope": [
+    {
+      "asset": "https://www.networksolutions.com/",
+      "display_name": "www.networksolutions.com",
+      "asset_type": "website",
+      "tags": [
+        "Cloudflare CDN",
+        "jQuery",
+        "Website Testing"
+      ],
+      "known_issue_count_at_capture": 133,
+      "allowed_activity_now": "policy-aware planning and target-specific passive preparation only",
+      "active_testing_gate": "review known issues, include required testing header, select exact test objective, and avoid noisy production scanning"
+    },
+    {
+      "asset": "https://www.bluehost.com/",
+      "display_name": "https://www.bluehost.com/",
+      "asset_type": "website",
+      "tags": [
+        "Website Testing"
+      ],
+      "known_issue_count_at_capture": 15,
+      "allowed_activity_now": "policy-aware planning and target-specific passive preparation only",
+      "active_testing_gate": "review known issues, include required testing header, select exact test objective, and avoid noisy production scanning"
+    },
+    {
+      "asset": "https://www.hostgator.com/",
+      "display_name": "https://www.hostgator.com/",
+      "asset_type": "website",
+      "tags": [
+        "Website Testing"
+      ],
+      "known_issue_count_at_capture": 7,
+      "allowed_activity_now": "policy-aware planning and target-specific passive preparation only",
+      "active_testing_gate": "review known issues, include required testing header, select exact test objective, and avoid noisy production scanning"
+    }
+  ],
+  "out_of_scope": [
+    {
+      "asset": "*.web.com",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "*.register.com",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "*.networksolutions.com",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "https://app.gator.com/",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "*.bluehost.com",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "*.hostgator.com",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "https://app.web.com/",
+      "reason": "Explicitly listed out of scope"
+    },
+    {
+      "asset": "any asset not explicitly listed in the in_scope section",
+      "reason": "Program states that testing is only authorized on listed in-scope targets"
+    }
+  ],
+  "vdp_routes_for_out_of_scope_findings": [
+    "https://www.networksolutions.com/disclosure",
+    "https://www.hostgator.com/disclosure",
+    "https://www.bluehost.com/disclosure",
+    "https://bugcrowd.com/webdotcom-vdp"
+  ],
+  "required_testing_headers": [
+    {
+      "name": "X-Request-Purpose",
+      "value": "Research",
+      "required": true
+    },
+    {
+      "name": "X-Bugcrowd-Ninja",
+      "value": "[username]",
+      "required": false
+    }
+  ],
+  "production_constraints": [
+    "The targets are public-facing production websites.",
+    "Keep scanning during regular business hours (PDT) to a minimum.",
+    "Do not interact with real customers or real customer accounts.",
+    "Use an @bugcrowdninja.com email address where signup is allowed.",
+    "The operator is not reimbursed for signup or testing charges."
+  ],
+  "program_rules": [
+    "Provide a fully working, non-malicious proof of concept for valid security impact before reporting.",
+    "Group the same endpoint issue across different parameters into one report.",
+    "Multiple vulnerabilities caused by one underlying issue receive one bounty.",
+    "Cross-site scripting is capped at medium severity.",
+    "XSS on user-controlled pages from Web.com website builders is not payout eligible."
+  ],
+  "focus_areas": [
+    "Storefront websites",
+    "Account managers",
+    "Related servers and APIs"
+  ],
+  "excluded_submission_types": [
+    "DDoS and application DoS",
+    "DMARC or SPF issues",
+    "OAuth session token not invalidated on logout or password change/reset",
+    "Open redirect",
+    "Verbose errors, stack traces, server errors, or version disclosure",
+    "Clickjacking",
+    "Email spoofing",
+    "Missing or misconfigured HTTP security headers",
+    "HTTP or DNS cache poisoning",
+    "Cloudflare-related issues",
+    "Self-XSS",
+    "Broken links",
+    "Secrets obtained from external aggregation or indexed sources",
+    "CSRF on unauthenticated forms or forms with non-sensitive actions",
+    "Recently disclosed zero-days under 30 days",
+    "Chatbox testing",
+    "Third-party vulnerable components",
+    "Anti-automation, missing captcha, missing rate limiting, HTTP headers, SSL/TLS configuration, and missing Secure flag on cookies",
+    "Any source code disclosure",
+    "Info.php without an exploitable scenario",
+    "Subdomain takeover reports under this Bugcrowd bounty program"
+  ],
+  "report_format": {
+    "description_requirement": "Format reproduction steps as an ordered list.",
+    "template": "knowledge/templates/FATHIYA_BUG_BOUNTY_REPORT_TEMPLATE_v1.md"
+  },
+  "fathiya_execution_boundary": {
+    "allowed_now": [
+      "Store this scope map.",
+      "Teach the bug bounty agent the exact in-scope and out-of-scope lists.",
+      "Build a passive, target-specific test plan.",
+      "Review program policy and known-issue counts.",
+      "Prepare headers and report template."
+    ],
+    "blocked_now": [
+      "Automated external scanning of the in-scope production targets.",
+      "Testing any wildcard or subdomain asset listed as out of scope.",
+      "Testing customer accounts or real customer data.",
+      "Submitting reports until Bugcrowd submission state is visible as enabled.",
+      "Testing excluded vulnerability classes or availability-impacting behavior."
+    ],
+    "next_gate": "Select one exact in-scope target, review its known issues, confirm required testing headers and account identity state, then create a narrow non-destructive test plan before any live requests beyond normal browsing."
+  },
+  "source_evidence": [
+    "Bugcrowd authenticated program page: https://bugcrowd.com/engagements/webdotcom",
+    "Captured in-scope target table on 2026-06-14",
+    "Captured out-of-scope target table on 2026-06-14",
+    "Captured testing headers, exclusions, and safe-harbor notice on 2026-06-14",
+    "Operator stated on 2026-06-14 that Bugcrowd identity verification is complete"
+  ],
+  "status": "ready_for_passive_planning_only"
+}

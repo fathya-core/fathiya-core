@@ -2017,11 +2017,11 @@ function buildRecentDeploymentReceipts(
 
 function getOpenRouterModelEnvName(slot: string) {
   const normalizedSlot = slot === "default" ? "DEFAULT" : slot.toUpperCase();
-  return `VITE_OPENROUTER_${normalizedSlot}_MODEL`;
+  return `OPENROUTER_${normalizedSlot}_MODEL`;
 }
 
 function getRuntimeEnvValue(name: string) {
-  const value = import.meta.env[name];
+  const value = process.env[name] ?? import.meta.env[name];
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 

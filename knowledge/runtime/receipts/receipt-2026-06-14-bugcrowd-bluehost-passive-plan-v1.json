@@ -1,0 +1,38 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bugcrowd-bluehost-passive-plan-v1",
+  "timestamp": "2026-06-14T20:00:46Z",
+  "source_request": "operator-reports-bugcrowd-identity-verification-complete",
+  "queue": "Security Lab Queue",
+  "adapter": "codex_repo_artifact",
+  "mode": "bugcrowd_target_passive_planning",
+  "input_artifact": "knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json + knowledge/security/targets/TARGET_BUGCROWD_WEBCOM_v1.json + knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_UNDERSTANDING_RESULT_v1.md",
+  "output_artifact": "knowledge/reports/study/FATHIYA_BUGCROWD_BLUEHOST_PASSIVE_PLAN_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_reports_bugcrowd_identity_completed_passive_only",
+  "selected_target": {
+    "asset": "https://www.bluehost.com/",
+    "program": "Bugcrowd Web.com Bug Bounty",
+    "known_issue_count_at_capture": 15,
+    "scope_state": "explicitly_in_scope_root_website_only",
+    "out_of_scope_guard": "*.bluehost.com"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "automated_crawling_executed": false,
+    "report_submission_executed": false,
+    "hexstrike_external_use_allowed": false,
+    "loopback_lab_tools_allowed": true
+  },
+  "required_next_gate": [
+    "Review Bluehost known issues in Bugcrowd before testing.",
+    "Confirm the exact path remains on https://www.bluehost.com/.",
+    "Choose one narrow manual objective.",
+    "Attach X-Request-Purpose: Research to any future tooling plan.",
+    "Use only researcher-owned test accounts.",
+    "Confirm Submit report page is visible and enabled before final submission."
+  ],
+  "next_step": "Open the Bugcrowd known issues for Bluehost, choose one narrow manual objective, and create a live-test gate record before any production target testing."
+}

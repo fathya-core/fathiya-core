@@ -12,16 +12,22 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as CommandCenterRouteImport } from './routes/command-center'
 import { Route as AiRunsRouteImport } from './routes/ai-runs'
 import { Route as AiConsoleRouteImport } from './routes/ai-console'
+import { Route as AgentTasksRouteImport } from './routes/agent-tasks'
+import { Route as AgentLoginRouteImport } from './routes/agent-login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiArtifactsIndexRouteImport } from './routes/api/artifacts.index'
 import { Route as ApiN8nWorkflowsRouteImport } from './routes/api/n8n.workflows'
 import { Route as ApiArtifactsReadRouteImport } from './routes/api/artifacts.read'
 import { Route as ApiAiGenerateRouteImport } from './routes/api/ai.generate'
+import { Route as ApiAgentTasksRouteImport } from './routes/api/agent/tasks'
 import { Route as ApiPublicSecStoreRouteImport } from './routes/api/public/sec/store'
 import { Route as ApiPublicSecScanRouteImport } from './routes/api/public/sec/scan'
 import { Route as ApiPublicSecReportRouteImport } from './routes/api/public/sec/report'
 import { Route as ApiPublicSecNotifyRouteImport } from './routes/api/public/sec/notify'
+import { Route as ApiAgentTasksTaskIdRouteImport } from './routes/api/agent/tasks.$taskId'
+import { Route as ApiAgentTasksTaskIdCancelRouteImport } from './routes/api/agent/tasks.$taskId.cancel'
+import { Route as ApiAgentTasksTaskIdApproveRouteImport } from './routes/api/agent/tasks.$taskId.approve'
 
 const CommandCenterRoute = CommandCenterRouteImport.update({
   id: '/command-center',
@@ -36,6 +42,16 @@ const AiRunsRoute = AiRunsRouteImport.update({
 const AiConsoleRoute = AiConsoleRouteImport.update({
   id: '/ai-console',
   path: '/ai-console',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentTasksRoute = AgentTasksRouteImport.update({
+  id: '/agent-tasks',
+  path: '/agent-tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentLoginRoute = AgentLoginRouteImport.update({
+  id: '/agent-login',
+  path: '/agent-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -68,6 +84,11 @@ const ApiAiGenerateRoute = ApiAiGenerateRouteImport.update({
   path: '/api/ai/generate',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgentTasksRoute = ApiAgentTasksRouteImport.update({
+  id: '/api/agent/tasks',
+  path: '/api/agent/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSecStoreRoute = ApiPublicSecStoreRouteImport.update({
   id: '/api/public/sec/store',
   path: '/api/public/sec/store',
@@ -88,107 +109,163 @@ const ApiPublicSecNotifyRoute = ApiPublicSecNotifyRouteImport.update({
   path: '/api/public/sec/notify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgentTasksTaskIdRoute = ApiAgentTasksTaskIdRouteImport.update({
+  id: '/$taskId',
+  path: '/$taskId',
+  getParentRoute: () => ApiAgentTasksRoute,
+} as any)
+const ApiAgentTasksTaskIdCancelRoute =
+  ApiAgentTasksTaskIdCancelRouteImport.update({
+    id: '/cancel',
+    path: '/cancel',
+    getParentRoute: () => ApiAgentTasksTaskIdRoute,
+  } as any)
+const ApiAgentTasksTaskIdApproveRoute =
+  ApiAgentTasksTaskIdApproveRouteImport.update({
+    id: '/approve',
+    path: '/approve',
+    getParentRoute: () => ApiAgentTasksTaskIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent-login': typeof AgentLoginRoute
+  '/agent-tasks': typeof AgentTasksRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/agent/tasks': typeof ApiAgentTasksRouteWithChildren
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts/': typeof ApiArtifactsIndexRoute
+  '/api/agent/tasks/$taskId': typeof ApiAgentTasksTaskIdRouteWithChildren
   '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
   '/api/public/sec/report': typeof ApiPublicSecReportRoute
   '/api/public/sec/scan': typeof ApiPublicSecScanRoute
   '/api/public/sec/store': typeof ApiPublicSecStoreRoute
+  '/api/agent/tasks/$taskId/approve': typeof ApiAgentTasksTaskIdApproveRoute
+  '/api/agent/tasks/$taskId/cancel': typeof ApiAgentTasksTaskIdCancelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agent-login': typeof AgentLoginRoute
+  '/agent-tasks': typeof AgentTasksRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/agent/tasks': typeof ApiAgentTasksRouteWithChildren
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts': typeof ApiArtifactsIndexRoute
+  '/api/agent/tasks/$taskId': typeof ApiAgentTasksTaskIdRouteWithChildren
   '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
   '/api/public/sec/report': typeof ApiPublicSecReportRoute
   '/api/public/sec/scan': typeof ApiPublicSecScanRoute
   '/api/public/sec/store': typeof ApiPublicSecStoreRoute
+  '/api/agent/tasks/$taskId/approve': typeof ApiAgentTasksTaskIdApproveRoute
+  '/api/agent/tasks/$taskId/cancel': typeof ApiAgentTasksTaskIdCancelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agent-login': typeof AgentLoginRoute
+  '/agent-tasks': typeof AgentTasksRoute
   '/ai-console': typeof AiConsoleRoute
   '/ai-runs': typeof AiRunsRoute
   '/command-center': typeof CommandCenterRoute
   '/api/mcp': typeof ApiMcpRoute
+  '/api/agent/tasks': typeof ApiAgentTasksRouteWithChildren
   '/api/ai/generate': typeof ApiAiGenerateRoute
   '/api/artifacts/read': typeof ApiArtifactsReadRoute
   '/api/n8n/workflows': typeof ApiN8nWorkflowsRoute
   '/api/artifacts/': typeof ApiArtifactsIndexRoute
+  '/api/agent/tasks/$taskId': typeof ApiAgentTasksTaskIdRouteWithChildren
   '/api/public/sec/notify': typeof ApiPublicSecNotifyRoute
   '/api/public/sec/report': typeof ApiPublicSecReportRoute
   '/api/public/sec/scan': typeof ApiPublicSecScanRoute
   '/api/public/sec/store': typeof ApiPublicSecStoreRoute
+  '/api/agent/tasks/$taskId/approve': typeof ApiAgentTasksTaskIdApproveRoute
+  '/api/agent/tasks/$taskId/cancel': typeof ApiAgentTasksTaskIdCancelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent-login'
+    | '/agent-tasks'
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
     | '/api/mcp'
+    | '/api/agent/tasks'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts/'
+    | '/api/agent/tasks/$taskId'
     | '/api/public/sec/notify'
     | '/api/public/sec/report'
     | '/api/public/sec/scan'
     | '/api/public/sec/store'
+    | '/api/agent/tasks/$taskId/approve'
+    | '/api/agent/tasks/$taskId/cancel'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agent-login'
+    | '/agent-tasks'
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
     | '/api/mcp'
+    | '/api/agent/tasks'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts'
+    | '/api/agent/tasks/$taskId'
     | '/api/public/sec/notify'
     | '/api/public/sec/report'
     | '/api/public/sec/scan'
     | '/api/public/sec/store'
+    | '/api/agent/tasks/$taskId/approve'
+    | '/api/agent/tasks/$taskId/cancel'
   id:
     | '__root__'
     | '/'
+    | '/agent-login'
+    | '/agent-tasks'
     | '/ai-console'
     | '/ai-runs'
     | '/command-center'
     | '/api/mcp'
+    | '/api/agent/tasks'
     | '/api/ai/generate'
     | '/api/artifacts/read'
     | '/api/n8n/workflows'
     | '/api/artifacts/'
+    | '/api/agent/tasks/$taskId'
     | '/api/public/sec/notify'
     | '/api/public/sec/report'
     | '/api/public/sec/scan'
     | '/api/public/sec/store'
+    | '/api/agent/tasks/$taskId/approve'
+    | '/api/agent/tasks/$taskId/cancel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentLoginRoute: typeof AgentLoginRoute
+  AgentTasksRoute: typeof AgentTasksRoute
   AiConsoleRoute: typeof AiConsoleRoute
   AiRunsRoute: typeof AiRunsRoute
   CommandCenterRoute: typeof CommandCenterRoute
   ApiMcpRoute: typeof ApiMcpRoute
+  ApiAgentTasksRoute: typeof ApiAgentTasksRouteWithChildren
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
   ApiArtifactsReadRoute: typeof ApiArtifactsReadRoute
   ApiN8nWorkflowsRoute: typeof ApiN8nWorkflowsRoute
@@ -220,6 +297,20 @@ declare module '@tanstack/react-router' {
       path: '/ai-console'
       fullPath: '/ai-console'
       preLoaderRoute: typeof AiConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-tasks': {
+      id: '/agent-tasks'
+      path: '/agent-tasks'
+      fullPath: '/agent-tasks'
+      preLoaderRoute: typeof AgentTasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-login': {
+      id: '/agent-login'
+      path: '/agent-login'
+      fullPath: '/agent-login'
+      preLoaderRoute: typeof AgentLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -264,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiGenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agent/tasks': {
+      id: '/api/agent/tasks'
+      path: '/api/agent/tasks'
+      fullPath: '/api/agent/tasks'
+      preLoaderRoute: typeof ApiAgentTasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sec/store': {
       id: '/api/public/sec/store'
       path: '/api/public/sec/store'
@@ -292,15 +390,64 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSecNotifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agent/tasks/$taskId': {
+      id: '/api/agent/tasks/$taskId'
+      path: '/$taskId'
+      fullPath: '/api/agent/tasks/$taskId'
+      preLoaderRoute: typeof ApiAgentTasksTaskIdRouteImport
+      parentRoute: typeof ApiAgentTasksRoute
+    }
+    '/api/agent/tasks/$taskId/cancel': {
+      id: '/api/agent/tasks/$taskId/cancel'
+      path: '/cancel'
+      fullPath: '/api/agent/tasks/$taskId/cancel'
+      preLoaderRoute: typeof ApiAgentTasksTaskIdCancelRouteImport
+      parentRoute: typeof ApiAgentTasksTaskIdRoute
+    }
+    '/api/agent/tasks/$taskId/approve': {
+      id: '/api/agent/tasks/$taskId/approve'
+      path: '/approve'
+      fullPath: '/api/agent/tasks/$taskId/approve'
+      preLoaderRoute: typeof ApiAgentTasksTaskIdApproveRouteImport
+      parentRoute: typeof ApiAgentTasksTaskIdRoute
+    }
   }
 }
 
+interface ApiAgentTasksTaskIdRouteChildren {
+  ApiAgentTasksTaskIdApproveRoute: typeof ApiAgentTasksTaskIdApproveRoute
+  ApiAgentTasksTaskIdCancelRoute: typeof ApiAgentTasksTaskIdCancelRoute
+}
+
+const ApiAgentTasksTaskIdRouteChildren: ApiAgentTasksTaskIdRouteChildren = {
+  ApiAgentTasksTaskIdApproveRoute: ApiAgentTasksTaskIdApproveRoute,
+  ApiAgentTasksTaskIdCancelRoute: ApiAgentTasksTaskIdCancelRoute,
+}
+
+const ApiAgentTasksTaskIdRouteWithChildren =
+  ApiAgentTasksTaskIdRoute._addFileChildren(ApiAgentTasksTaskIdRouteChildren)
+
+interface ApiAgentTasksRouteChildren {
+  ApiAgentTasksTaskIdRoute: typeof ApiAgentTasksTaskIdRouteWithChildren
+}
+
+const ApiAgentTasksRouteChildren: ApiAgentTasksRouteChildren = {
+  ApiAgentTasksTaskIdRoute: ApiAgentTasksTaskIdRouteWithChildren,
+}
+
+const ApiAgentTasksRouteWithChildren = ApiAgentTasksRoute._addFileChildren(
+  ApiAgentTasksRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentLoginRoute: AgentLoginRoute,
+  AgentTasksRoute: AgentTasksRoute,
   AiConsoleRoute: AiConsoleRoute,
   AiRunsRoute: AiRunsRoute,
   CommandCenterRoute: CommandCenterRoute,
   ApiMcpRoute: ApiMcpRoute,
+  ApiAgentTasksRoute: ApiAgentTasksRouteWithChildren,
   ApiAiGenerateRoute: ApiAiGenerateRoute,
   ApiArtifactsReadRoute: ApiArtifactsReadRoute,
   ApiN8nWorkflowsRoute: ApiN8nWorkflowsRoute,

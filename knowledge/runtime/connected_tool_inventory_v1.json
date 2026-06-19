@@ -1,0 +1,203 @@
+{
+  "schema_version": "connected_tool_inventory_v1",
+  "captured_at": "2026-06-05T00:32:00+03:00",
+  "source": "live Zapier MCP enabled-action inventory and local runtime checks",
+  "policy": {
+    "read_actions": "automatic",
+    "owned_local_actions": "automatic",
+    "external_writes": "awaiting_approval",
+    "financial_actions": "awaiting_approval",
+    "live_security_actions": "awaiting_approval",
+    "destructive_actions": "awaiting_approval"
+  },
+  "zapier_mcp_status": {
+    "inventory": "active",
+    "action_execution": "requires_local_oauth",
+    "note": "Enabled-action inventory is live. The Codex-exposed executor omits selected_api, so the local runtime now uses a direct OAuth MCP gateway that resolves and forwards selected_api itself."
+  },
+  "additional_zapier_mcp_sources": [
+    {
+      "name": "codex_personal_zapier_mcp",
+      "captured_at": "2026-06-13T00:00:00+03:00",
+      "source": "live Codex Zapier MCP enabled-action inventory",
+      "apps": [
+        { "app": "GitHub", "action_count": 39, "modes": ["read", "approval_gated_write"] },
+        { "app": "Manus", "action_count": 8, "modes": ["read", "approval_gated_write"] },
+        { "app": "ChatGPT (OpenAI)", "action_count": 27, "modes": ["read", "approval_gated_write"] },
+        { "app": "Gmail", "action_count": 20, "modes": ["read", "approval_gated_write"] },
+        { "app": "Microsoft Outlook", "action_count": 44, "modes": ["read", "approval_gated_write"] },
+        { "app": "Apify", "action_count": 10, "modes": ["read", "approval_gated_write"] },
+        { "app": "Zapier Tables", "action_count": 11, "modes": ["read", "approval_gated_write"] },
+        { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
+        { "app": "AI by Zapier", "action_count": 3, "modes": ["approval_gated_write"] },
+        { "app": "Cursor", "action_count": 10, "modes": ["read", "approval_gated_write"] },
+        { "app": "MCP Client by Zapier", "action_count": 4, "modes": ["read", "approval_gated_write"] }
+      ]
+    }
+  ],
+  "local_tools": [
+    {
+      "app": "FATHIYA Agent Runtime",
+      "status": "active",
+      "capabilities": [
+        "multi-tool planning",
+        "sequential tool execution",
+        "prior-step context",
+        "dynamic approval gate",
+        "success and failure receipts",
+        "extensible command profiles",
+        "version-controlled connector profiles",
+        "secret-safe connector readiness",
+        "direct Zapier MCP OAuth and exact-action gateway",
+        "multi-round plan, execute, review, and resume loop",
+        "live local execution mesh probe",
+        "approval-gated auto, Claude Code, Cursor, and Manus delegation",
+        "Binance Spot Testnet readiness and approved order gateway",
+        "web report intake",
+        "continuous local knowledge-inbox watcher",
+        "loopback-only local account setup without secret echo",
+        "automatic one-second primary paper-trading startup"
+      ]
+    },
+    {
+      "app": "Cursor Agent CLI",
+      "status": "installed_not_authenticated",
+      "version": "2026.06.04-5fd875e",
+      "location": "Kali Linux WSL",
+      "capabilities": ["headless plan", "headless execution", "MCP", "isolated worktrees"],
+      "note": "Installed from the official Cursor installer. Browser login remains an operator action."
+    },
+    {
+      "app": "n8n",
+      "status": "active",
+      "version": "2.23.2",
+      "capabilities": ["health", "local workflows", "task broker", "agents", "MCP registry"]
+    },
+    {
+      "app": "Kali Linux WSL",
+      "status": "active",
+      "capabilities": ["nmap", "nuclei", "httpx", "subfinder", "git", "python3"],
+      "boundary": "inventory and defensive planning are automatic; live testing requires approval"
+    },
+    {
+      "app": "Hugging Face",
+      "status": "active",
+      "capabilities": [
+        "multilingual semantic retrieval",
+        "opt-in local planning",
+        "bounded local synthesis",
+        "deterministic local evaluation",
+        "CPU inference"
+      ],
+      "models": [
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "Qwen/Qwen2.5-0.5B-Instruct"
+      ]
+    },
+    {
+      "app": "OpenRouter",
+      "status": "not_configured",
+      "capabilities": ["planning", "synthesis", "evaluation"],
+      "note": "No local OPENROUTER_API_KEY is configured; local Hugging Face and deterministic fallbacks remain active"
+    },
+    {
+      "app": "Binance Spot Testnet",
+      "status": "not_configured",
+      "capabilities": ["public reachability probe", "signed account probe", "order validation", "approval-gated Testnet order submission"],
+      "boundary": "Testnet host only, real funds impossible, credentials remain local, execution flag defaults off"
+    }
+  ],
+  "zapier_apps": [
+    { "app": "GitHub", "action_count": 19, "modes": ["read", "approval_gated_write"] },
+    { "app": "Cursor", "action_count": 6, "modes": ["read", "approval_gated_write"] },
+    { "app": "Manus", "action_count": 6, "modes": ["read", "approval_gated_write"] },
+    { "app": "Gmail", "action_count": 12, "modes": ["read", "approval_gated_write"] },
+    { "app": "Code by Zapier", "action_count": 2, "modes": ["approval_gated_write"] },
+    { "app": "Webhooks by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "MCP Client by Zapier", "action_count": 2, "modes": ["read", "approval_gated_write"] },
+    { "app": "AI by Zapier", "action_count": 3, "modes": ["approval_gated_write"] },
+    { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
+    { "app": "Zapier Lead Router", "action_count": 6, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Manager", "action_count": 5, "modes": ["read", "approval_gated_write"] },
+    { "app": "Files By Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Forms", "action_count": 3, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Chatbots", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Web Parser by Zapier", "action_count": 1, "modes": ["read"] },
+    { "app": "Zapier Chrome extension", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Microsoft Outlook", "action_count": 32, "modes": ["read", "approval_gated_write"] },
+    { "app": "Zapier Functions", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Zapier Tables", "action_count": 11, "modes": ["read", "approval_gated_write"] },
+    { "app": "Formatter by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+    { "app": "Agents", "action_count": 1, "modes": ["approval_gated_write"] },
+    { "app": "Netlify", "action_count": 1, "modes": ["approval_gated_write"] }
+  ],
+  "agent_provider_actions": {
+    "Manus": {
+      "read": ["Get Tasks"],
+      "approval_gated_write": [
+        "Continue Task",
+        "Create Task",
+        "Delete Task",
+        "Get Task",
+        "Update Task"
+      ]
+    },
+    "Cursor": {
+      "read": ["Find Agent Status", "Make API GET Request"],
+      "approval_gated_write": [
+        "Delete Agent",
+        "Add Followup Instruction to Agent",
+        "Launch Agent",
+        "Make API Mutating Request"
+      ]
+    },
+    "Agents": {
+      "approval_gated_write": ["Run Agent"]
+    },
+    "AI by Zapier": {
+      "approval_gated_write": [
+        "Analyze and Return Data",
+        "Extract Content From URL",
+        "Search Content Across URLs"
+      ]
+    },
+    "ChatGPT (OpenAI)": {
+      "read": [
+        "Find Conversation",
+        "Find File",
+        "Find Response",
+        "Make API GET Request",
+        "Get Video",
+        "Search Embeddings"
+      ],
+      "approval_gated_write": [
+        "Analyze Text",
+        "Conversation",
+        "Extract Structured Data",
+        "Generate An Image",
+        "Send Prompt",
+        "Create Translation",
+        "Create Transcription"
+      ]
+    },
+    "Apify": {
+      "read": [
+        "Find Last Actor Run",
+        "Get Key-Value Store Record",
+        "Finished Task Run",
+        "Finished Actor Run",
+        "Fetch Dataset Items",
+        "Find Last Task Run"
+      ],
+      "approval_gated_write": [
+        "Run Actor",
+        "Set Key-Value Store Record",
+        "Scrape Single URL",
+        "Run Task"
+      ]
+    },
+    "Netlify": {
+      "approval_gated_write": ["Start Deploy"]
+    }
+  }
+}

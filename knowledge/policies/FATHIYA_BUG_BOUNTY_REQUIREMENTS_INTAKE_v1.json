@@ -1,0 +1,139 @@
+{
+  "schema_version": "FATHIYA_BUG_BOUNTY_REQUIREMENTS_INTAKE_v1",
+  "status": "active",
+  "created_at": "2026-06-14T20:35:00+03:00",
+  "purpose": "Tell FATHIYA exactly what to ask for or collect before attempting to find simple or complex vulnerabilities.",
+  "principle": "Ask for what cannot be safely discovered. Collect only what is public, operator-provided, owned, or explicitly allowed by the program policy.",
+  "minimum_required_for_live_bug_bounty": [
+    {
+      "field": "program_policy",
+      "ask_operator": "أرسلي رابط برنامج HackerOne/Bugcrowd أو نص النطاق الرسمي.",
+      "may_collect": "Fetch public program policy URL if provided.",
+      "tools": [
+        "web_fetch",
+        "knowledge_ingest_url"
+      ],
+      "blocks_active_testing_if_missing": true
+    },
+    {
+      "field": "target_asset",
+      "ask_operator": "حددي الهدف داخل النطاق: domain, subdomain, API base URL, mobile app, repository, or local lab.",
+      "may_collect": "Extract targets from provided program policy only.",
+      "tools": [
+        "web_fetch",
+        "security_core_plan"
+      ],
+      "blocks_active_testing_if_missing": true
+    },
+    {
+      "field": "allowed_test_types",
+      "ask_operator": "ما الاختبارات المسموحة؟ passive فقط، active low-noise، authenticated، API، mobile، WebSocket، SSRF callback، أو غيرها؟",
+      "may_collect": "Parse from program policy if present.",
+      "tools": [
+        "web_fetch",
+        "security_core_plan"
+      ],
+      "blocks_active_testing_if_missing": true
+    },
+    {
+      "field": "rate_and_noise_limits",
+      "ask_operator": "ما الحد الأعلى للطلبات والقيود على الفحص الآلي؟",
+      "may_collect": "Parse from policy if present.",
+      "tools": [
+        "web_fetch"
+      ],
+      "blocks_active_testing_if_missing": true
+    },
+    {
+      "field": "test_accounts",
+      "ask_operator": "لـ IDOR/BOLA/business logic/WebSocket أحتاج حسابين مصرحين أو fixtures: مستخدم A ومستخدم B وأدوارهما.",
+      "may_collect": "Do not collect credentials from the web. Only operator-provided or program-provided test accounts.",
+      "tools": [
+        "internal_echo"
+      ],
+      "blocks_active_testing_if_missing": "blocks authenticated and identity-separated tests"
+    },
+    {
+      "field": "api_docs_or_schema",
+      "ask_operator": "إذا الهدف API، أرسلي OpenAPI/Swagger/Postman collection أو رابط docs المسموح.",
+      "may_collect": "Fetch public docs only when in scope or linked by policy.",
+      "tools": [
+        "web_fetch",
+        "knowledge_ingest_url"
+      ],
+      "blocks_active_testing_if_missing": false
+    },
+    {
+      "field": "safe_test_data",
+      "ask_operator": "ما البيانات التجريبية المسموحة؟ وما الذي يجب إخفاؤه من التقرير؟",
+      "may_collect": "Use only operator-provided safe fixtures.",
+      "tools": [
+        "internal_echo"
+      ],
+      "blocks_active_testing_if_missing": "blocks tests that would touch private data"
+    },
+    {
+      "field": "callback_endpoint",
+      "ask_operator": "لـ SSRF/blind callbacks، هل يوجد endpoint تحكم مصرح وآمن؟",
+      "may_collect": "Do not create or use third-party callback services unless approved by scope and operator.",
+      "tools": [
+        "security_core_plan"
+      ],
+      "blocks_active_testing_if_missing": "blocks SSRF callback validation"
+    },
+    {
+      "field": "mobile_artifacts",
+      "ask_operator": "إذا الهدف mobile، أحتاج APK/IPA/TestFlight or app store link plus allowed test boundaries.",
+      "may_collect": "Fetch public app metadata only; app binary handling needs local workflow.",
+      "tools": [
+        "web_fetch",
+        "security_core_plan"
+      ],
+      "blocks_active_testing_if_missing": "blocks mobile-specific testing"
+    },
+    {
+      "field": "report_destination",
+      "ask_operator": "أين نرسل التقرير لاحقًا؟ HackerOne/Bugcrowd form, email, internal ticket, or draft only.",
+      "may_collect": "Parse reporting channel from program policy.",
+      "tools": [
+        "web_fetch",
+        "zapier_action_catalog",
+        "n8n_workflows"
+      ],
+      "blocks_active_testing_if_missing": false
+    }
+  ],
+  "can_collect_automatically_when_allowed": [
+    "public program policy",
+    "official documentation linked by policy",
+    "public OpenAPI docs linked by target",
+    "owned repository code references",
+    "local tool readiness",
+    "n8n/Zapier connector inventory",
+    "Kali tool inventory",
+    "HexStrike local health"
+  ],
+  "must_ask_operator": [
+    "credentials or test accounts",
+    "private program scope text not publicly accessible",
+    "permission for authenticated flows",
+    "permission for SSRF callbacks",
+    "permission for high-noise tools",
+    "permission for state-changing tests",
+    "safe test data",
+    "business impact context"
+  ],
+  "missing_requirement_response_template": {
+    "arabic": "أقدر أكمل التخطيط الآن، لكن لا أبدأ فحص حي حتى يتوفر: {missing_items}. المسموح الآن: {allowed_now}. بعد توفيرها سأنتقل إلى: {next_phase}.",
+    "english": "I can continue planning now, but I will not start live testing until these are available: {missing_items}. Allowed now: {allowed_now}. Once provided, I will move to: {next_phase}."
+  },
+  "receipt_fields": [
+    "requirements_collected",
+    "requirements_missing",
+    "collected_by_tool",
+    "asked_operator_for",
+    "blocked_phases",
+    "allowed_now",
+    "next_phase_after_requirements"
+  ]
+}

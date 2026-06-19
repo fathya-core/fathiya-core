@@ -1,0 +1,40 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-bugcrowd-webcom-understanding-v1",
+  "timestamp": "2026-06-14T19:54:10Z",
+  "source_request": "agent-runtime-task-a3d24a6a-836e-46e8-bf2e-e8930fe91ad0",
+  "queue": "Security Lab Queue",
+  "adapter": "fathiya_agent_runtime",
+  "mode": "bugcrowd_exact_scope_understanding",
+  "input_artifact": "knowledge/security/scope_maps/SCOPE_MAP_BUGCROWD_WEBCOM_v1.json + knowledge/security/targets/TARGET_BUGCROWD_WEBCOM_v1.json + knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_SCOPE_INTAKE_REPORT_v1.md",
+  "output_artifact": "knowledge/reports/study/FATHIYA_BUGCROWD_WEBCOM_UNDERSTANDING_RESULT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_approved_knowledge_only_live_security_classification",
+  "runtime_receipt": {
+    "receipt_id": "AR-20260614195400588041-a3d24a6a",
+    "task_id": "a3d24a6a-836e-46e8-bf2e-e8930fe91ad0",
+    "status": "completed",
+    "retrieval_mode": "explicit_paths+huggingface",
+    "synthesis_provider": "local_deterministic_explicit_sources",
+    "evaluation_provider": "local_deterministic_explicit_source_check",
+    "tools": []
+  },
+  "understanding_checks": {
+    "names_three_in_scope_targets": "pass",
+    "blocks_oos_wildcards": "pass",
+    "uses_required_header": "pass",
+    "records_identity_state": "pass",
+    "keeps_hexstrike_lab_only": "pass",
+    "prevents_external_scanning_by_default": "pass",
+    "uses_passive_plan_before_live_request": "pass"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "third_party_target_activity_executed": false,
+    "report_submission_executed": false,
+    "knowledge_only": true
+  },
+  "next_step": "Select one exact in-scope target and build a narrow passive-first hypothesis plan before any live request beyond normal browsing."
+}

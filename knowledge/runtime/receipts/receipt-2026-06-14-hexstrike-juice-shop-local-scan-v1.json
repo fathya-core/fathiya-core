@@ -1,0 +1,79 @@
+{
+  "schema_version": "FATHIYA_RECEIPT_v0",
+  "receipt_id": "receipt-2026-06-14-hexstrike-juice-shop-local-scan-v1",
+  "timestamp": "2026-06-14T13:26:43Z",
+  "source_request": "agent-runtime-task-90c182c6-0d0a-42d5-b792-08539a714190",
+  "queue": "Security Lab Queue",
+  "adapter": "fathiya_agent_runtime",
+  "mode": "hexstrike_ai_local_lab_scan",
+  "input_artifact": "Operator request to use HexStrike-AI with the available tools and scan a penetration-testing lab site.",
+  "output_artifact": "knowledge/audit/FATHIYA_HEXSTRIKE_JUICE_SHOP_LOCAL_SCAN_REPORT_v1.md",
+  "status": "completed",
+  "error": null,
+  "approval_reference": "operator_requested_local_loopback_lab_scan_only",
+  "runtime_receipt": {
+    "receipt_id": "AR-20260614132643119037-90c182c6",
+    "task_id": "90c182c6-0d0a-42d5-b792-08539a714190",
+    "status": "completed",
+    "tools": [
+      "hexstrike_lab_scan",
+      "internal_echo"
+    ],
+    "retrieval_mode": "huggingface",
+    "planner_provider": "openrouter",
+    "evaluation_provider": "openrouter",
+    "model": "nvidia/nemotron-3-super-120b-a12b:free"
+  },
+  "hexstrike_result": {
+    "server_status": "healthy",
+    "version": "6.0.0",
+    "available_tools": 80,
+    "total_tools": 127,
+    "all_essential_tools_available": true,
+    "target_url": "http://127.0.0.1:3000",
+    "target_type": "web_application",
+    "risk_level": "high",
+    "selected_tools": [
+      "nuclei",
+      "wpscan",
+      "dalfox"
+    ],
+    "nmap": {
+      "target": "127.0.0.1",
+      "port": "3000",
+      "state": "open",
+      "return_code": 0,
+      "timed_out": false
+    },
+    "nuclei_partial_finding": {
+      "template": "swagger-api",
+      "severity": "info",
+      "url": "http://127.0.0.1:3000/api-docs/swagger.json",
+      "timed_out": true,
+      "timeout_seconds": 300
+    }
+  },
+  "runtime_changes": {
+    "tool_added": "hexstrike_lab_scan",
+    "planner_trigger_added": true,
+    "loopback_target_guard_added": true,
+    "external_target_rejection_test_added": true
+  },
+  "validation": {
+    "target_started": "pass",
+    "hexstrike_health": "pass",
+    "runtime_catalog_contains_hexstrike_lab_scan": "pass",
+    "runtime_task_completed": "pass",
+    "targeted_unit_tests": "pass",
+    "agent_runtime_tests": "103 passed"
+  },
+  "boundaries_recorded": {
+    "external_live_testing_executed": false,
+    "external_scanning_executed": false,
+    "third_party_target_activity_executed": false,
+    "destructive_action_executed": false,
+    "bruteforce_or_exploitation_executed": false,
+    "local_loopback_lab_scan_executed": true
+  },
+  "next_step": "Use the registered hexstrike_lab_scan tool for local labs by default; add explicit scope and approval-gated profiles before any non-loopback testing."
+}

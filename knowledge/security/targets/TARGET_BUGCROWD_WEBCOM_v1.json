@@ -1,0 +1,92 @@
+{
+  "target_id": "target-bugcrowd-webdotcom-v1",
+  "scope_map_id": "scope-map-bugcrowd-webdotcom-v1",
+  "name": "Bugcrowd Web.com Bug Bounty",
+  "program": "Web.com Bug Bounty",
+  "policy_url": "https://bugcrowd.com/engagements/webdotcom",
+  "platform": "Bugcrowd",
+  "captured_at": "2026-06-14T19:38:44Z",
+  "authorization": "bugcrowd_authenticated_researcher_program_policy",
+  "submission_gate": {
+    "identity_verification_required": true,
+    "operator_reports_completed": true,
+    "current_rule": "Bugcrowd previously displayed a verification requirement before submissions could be enabled for this engagement.",
+    "operator_action": "Confirm the Submit report page is enabled before any final submission."
+  },
+  "authorized_scope": [
+    {
+      "asset": "https://www.networksolutions.com/",
+      "asset_type": "website",
+      "testing_status": "planning_only_until_narrow_test_plan",
+      "known_issue_count_at_capture": 133,
+      "notes": "Only the listed root website is in scope. The wildcard *.networksolutions.com is out of scope."
+    },
+    {
+      "asset": "https://www.bluehost.com/",
+      "asset_type": "website",
+      "testing_status": "planning_only_until_narrow_test_plan",
+      "known_issue_count_at_capture": 15,
+      "notes": "Only the listed root website is in scope. The wildcard *.bluehost.com is out of scope."
+    },
+    {
+      "asset": "https://www.hostgator.com/",
+      "asset_type": "website",
+      "testing_status": "planning_only_until_narrow_test_plan",
+      "known_issue_count_at_capture": 7,
+      "notes": "Only the listed root website is in scope. The wildcard *.hostgator.com is out of scope."
+    }
+  ],
+  "forbidden_scope": [
+    "*.web.com",
+    "*.register.com",
+    "*.networksolutions.com",
+    "https://app.gator.com/",
+    "*.bluehost.com",
+    "*.hostgator.com",
+    "https://app.web.com/",
+    "Any asset not explicitly listed in authorized_scope"
+  ],
+  "required_headers": {
+    "X-Request-Purpose": "Research",
+    "X-Bugcrowd-Ninja": "optional:[username]"
+  },
+  "rate_and_noise_limits": [
+    "Targets are production websites.",
+    "Keep scanning during regular business hours (PDT) to a minimum.",
+    "Do not perform DoS, DDoS, or availability-impacting behavior.",
+    "Do not test chatboxes.",
+    "Do not interact with real customers or real customer accounts."
+  ],
+  "allowed_agent_modes": [
+    "scope_intake",
+    "policy_review",
+    "known_issue_review",
+    "passive_test_planning",
+    "manual_non_destructive_validation_plan",
+    "report_draft_from_operator_provided_evidence"
+  ],
+  "blocked_agent_modes": [
+    "external_scanner_default",
+    "wildcard_subdomain_enumeration_against_oos_assets",
+    "availability_testing",
+    "credential_attack",
+    "customer_account_interaction",
+    "report_submission_before_submit_page_enabled",
+    "source_code_disclosure_testing",
+    "secret_harvesting_from_indexed_sources"
+  ],
+  "tool_policy": {
+    "security_core_plan": "allowed for reasoning and non-live planning",
+    "kali_tool_inventory": "allowed for local readiness only",
+    "hexstrike_lab_scan": "allowed only for loopback lab targets, not this production program",
+    "web_fetch": "allowed for official policy pages and documentation only, not as an active scanner",
+    "agent_delegate": "may plan or review under this target card, but inherits all scope and active-testing blocks"
+  },
+  "first_safe_task": {
+    "title": "Web.com bug bounty scope understanding",
+    "objective": "Teach FATHIYA the exact current Web.com Bugcrowd scope and produce a target-specific passive plan without live scanning.",
+    "expected_result": "Agent states the three in-scope assets, the out-of-scope wildcards, required header, identity gate status, and stop conditions."
+  },
+  "reporting_channel": "Bugcrowd Web.com engagement submissions after the Submit report page is visible and enabled",
+  "status": "ready_for_agent_scope_understanding"
+}
