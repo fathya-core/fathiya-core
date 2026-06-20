@@ -8,8 +8,44 @@ included_files = ["artifacts/**", "knowledge/**"]
 
 [[redirects]]
 from = "/"
-to = "/operator-lite/agent-tasks/"
+to = "/agent-tasks/"
 status = 302
+force = true
+
+[[redirects]]
+from = "/agent-tasks"
+to = "/agent-tasks/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/agent-tasks/*"
+to = "/agent-tasks/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/command-center"
+to = "/agent-tasks/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/command-center/*"
+to = "/agent-tasks/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/ai-console"
+to = "/agent-tasks/index.html"
+status = 200
+force = true
+
+[[redirects]]
+from = "/ai-console/*"
+to = "/agent-tasks/index.html"
+status = 200
 force = true
 
 [[redirects]]
