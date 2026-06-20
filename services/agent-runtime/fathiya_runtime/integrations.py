@@ -45,6 +45,10 @@ def build_integration_readiness(
         )
     )
     zapier_direct_ready = bool(zapier_direct_connected and not zapier_needs_reconnect)
+    zapier_ready = bool(zapier_inventory_ready and zapier_direct_ready)
+    zapier_partial = bool(
+        (zapier_inventory_ready or zapier_direct_connected) and not zapier_ready
+    )
     zapier_action_path = (
         None
         if zapier_direct_ready
@@ -52,6 +56,38 @@ def build_integration_readiness(
         if zapier_needs_reconnect
         else "/api/agent/oauth/zapier/start"
     )
+    if zapier_ready:
+        zapier_summary = (
+            f"{len(zapier_apps)} تطبيقًا متصلًا عبر OAuth و"
+            f"{int(inventory.get('zapier_action_count', 0))} إجراءً متاحًا."
+        )
+        zapier_next_step = "لا إجراء مطلوب."
+    elif zapier_direct_ready and not zapier_inventory_ready:
+        zapier_summary = (
+            "Zapier OAuth المحلي متصل، لكن مخزون التطبيقات والإجراءات فارغ أو غير متزامن."
+        )
+        zapier_next_step = (
+            "فعّل أو أعد مزامنة التطبيقات والإجراءات داخل Zapier MCP؛ OAuth المحلي نفسه متصل."
+        )
+    elif zapier_inventory_ready and zapier_needs_reconnect:
+        zapier_summary = (
+            f"مخزون Zapier محمّل وفيه {len(zapier_apps)} تطبيقًا، "
+            "لكن التنفيذ الحي يحتاج إعادة ربط OAuth."
+        )
+        zapier_next_step = (
+            "أعد ربط Zapier MCP بالكامل؛ رمز OAuth المحلي منتهي أو فشل تجديده."
+        )
+    elif zapier_inventory_ready:
+        zapier_summary = (
+            f"مخزون Zapier محمّل وفيه {len(zapier_apps)} تطبيقًا، "
+            "لكن OAuth المحلي غير مكتمل."
+        )
+        zapier_next_step = (
+            "اربط Zapier MCP بالمحرك المحلي عبر OAuth؛ لا ترسل كلمة مرور أو رمزًا."
+        )
+    else:
+        zapier_summary = "لم يُحمّل مخزون حسابات Zapier المتصلة."
+        zapier_next_step = "اربط التطبيقات المطلوبة داخل Zapier MCP عبر OAuth."
     n8n_health_ready = bool(
         connector_by_name.get("n8n_health", {}).get("configured")
     )
@@ -460,27 +496,16 @@ def build_integration_readiness(
             "category": "automation",
             "status": (
                 "ready"
-                if zapier_inventory_ready and zapier_direct_ready
+                if zapier_ready
                 else "partial"
-                if zapier_inventory_ready
+                if zapier_partial
                 else "needs_setup"
             ),
             "connection_mode": "local_oauth_mcp",
             "account_required": True,
             "credential_policy": "oauth_managed",
-            "summary": (
-                f"{len(zapier_apps)} تطبيقًا متصلًا عبر OAuth و"
-                f"{int(inventory.get('zapier_action_count', 0))} إجراءً متاحًا."
-            )
-            if zapier_inventory_ready
-            else "لم يُحمّل مخزون حسابات Zapier المتصلة.",
-            "next_step": "أعد ربط Zapier MCP بالكامل؛ رمز OAuth المحلي منتهي أو فشل تجديده."
-            if zapier_inventory_ready and zapier_needs_reconnect
-            else "اربط Zapier MCP بالمحرك المحلي عبر OAuth؛ لا ترسل كلمة مرور أو رمزًا."
-            if zapier_inventory_ready and not zapier_direct_ready
-            else "لا إجراء مطلوب."
-            if zapier_inventory_ready and zapier_direct_ready
-            else "اربط التطبيقات المطلوبة داخل Zapier MCP عبر OAuth.",
+            "summary": zapier_summary,
+            "next_step": zapier_next_step,
             "missing_env": [],
             "connected_apps": zapier_apps,
             "action_path": zapier_action_path,

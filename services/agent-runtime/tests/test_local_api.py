@@ -229,6 +229,41 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertTrue(zapier["details"]["needs_reconnect"])
         self.assertFalse(zapier["details"]["direct_live_available"])
 
+    def test_live_zapier_oauth_without_inventory_is_partial_not_unconnected(self) -> None:
+        self.config.zapier_mcp_token_path.write_text(
+            json.dumps(
+                {
+                    "access_token": "live-access-token",
+                    "refresh_token": "live-refresh-token",
+                    "expires_at": time.time() + 3600,
+                }
+            ),
+            encoding="utf-8",
+        )
+        readiness = build_integration_readiness(
+            self.config,
+            connectors=[],
+            inventory={
+                "available": False,
+                "zapier_mcp_status": {"inventory": "missing"},
+                "zapier_apps": [],
+                "zapier_action_count": 0,
+            },
+            local_capabilities={"capabilities": []},
+        )
+        zapier = next(
+            item for item in readiness["integrations"] if item["id"] == "zapier_mcp"
+        )
+
+        self.assertEqual(zapier["status"], "partial")
+        self.assertIn("OAuth المحلي متصل", zapier["summary"])
+        self.assertIn("مزامنة", zapier["next_step"])
+        self.assertIsNone(zapier["action_path"])
+        self.assertIsNone(zapier["action_label"])
+        self.assertTrue(zapier["details"]["direct_oauth_connected"])
+        self.assertTrue(zapier["details"]["direct_live_available"])
+        self.assertEqual(zapier["details"]["app_count"], 0)
+
     def test_local_api_vertical_slice_and_approval_controls(self) -> None:
         health = requests.get(f"{self.base_url}/healthz", headers=self.headers, timeout=5)
         self.assertEqual(health.status_code, 200)

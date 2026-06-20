@@ -781,17 +781,29 @@ class ToolExecutor:
                 direct_catalog.get("live_available", direct_catalog.get("available"))
             )
             needs_reconnect = bool(direct_catalog.get("needs_reconnect"))
-            ok = connected and app_count > 0 and live_available
+            direct_ready = bool(connected and live_available and not needs_reconnect)
+            inventory_ready = bool(app_count > 0)
+            ok = bool(direct_ready and inventory_ready)
             return _integration_probe_payload(
                 integration_id,
                 ok=ok,
-                status="ready" if ok else "partial" if app_count else "needs_setup",
+                status=(
+                    "ready"
+                    if ok
+                    else "partial"
+                    if connected or inventory_ready
+                    else "needs_setup"
+                ),
                 summary=(
                     f"Zapier OAuth المباشر جاهز، والمخزون يعرض {app_count} تطبيقًا و{action_count} إجراء."
                     if ok
                     else f"مخزون Zapier يعرض {app_count} تطبيقًا و{action_count} إجراء، لكن OAuth المباشر يحتاج إعادة ربط."
                     if connected and needs_reconnect
+                    else "Zapier OAuth المحلي متصل وجاهز للتنفيذ، لكن مخزون التطبيقات والإجراءات فارغ أو غير متزامن."
+                    if direct_ready
                     else f"مخزون Zapier يعرض {app_count} تطبيقًا و{action_count} إجراء، لكن OAuth المحلي المباشر لم يكتمل."
+                    if inventory_ready
+                    else "Zapier MCP غير جاهز بعد؛ اربط OAuth المحلي أو فعّل التطبيقات داخل Zapier MCP."
                 ),
                 checked_at=checked_at,
                 action="oauth_status_and_inventory",
@@ -799,6 +811,7 @@ class ToolExecutor:
                     "direct_oauth_connected": connected,
                     "direct_live_available": live_available,
                     "needs_reconnect": needs_reconnect,
+                    "inventory_available": inventory_ready,
                     "auth_state": direct_catalog.get("auth_state"),
                     "refresh_recommended": bool(
                         direct_catalog.get("refresh_recommended")

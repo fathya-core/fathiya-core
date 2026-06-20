@@ -1075,13 +1075,22 @@ def _integration_probe(
         connected = bool(status.get("connected"))
         app_count = int(inventory.get("zapier_app_count") or 0)
         action_count = int(inventory.get("zapier_action_count") or 0)
-        ok = connected and app_count > 0
+        inventory_ready = bool(app_count > 0)
+        ok = bool(connected and inventory_ready)
         return _probe_payload(
             integration_id,
             ok=ok,
-            status="ready" if ok else "partial" if app_count else "needs_setup",
+            status=(
+                "ready"
+                if ok
+                else "partial"
+                if connected or inventory_ready
+                else "needs_setup"
+            ),
             summary=(
                 f"Zapier OAuth المباشر جاهز، والمخزون يعرض {app_count} تطبيقًا و{action_count} إجراء."
+                if ok
+                else "Zapier OAuth المحلي متصل، لكن مخزون التطبيقات والإجراءات فارغ أو غير متزامن."
                 if connected
                 else f"مخزون Zapier يعرض {app_count} تطبيقًا و{action_count} إجراء، لكن OAuth المحلي المباشر لم يكتمل."
             ),
@@ -1089,6 +1098,7 @@ def _integration_probe(
             action="oauth_status_and_inventory",
             details={
                 "direct_oauth_connected": connected,
+                "inventory_available": inventory_ready,
                 "app_count": app_count,
                 "action_count": action_count,
                 "endpoint": status.get("endpoint"),
