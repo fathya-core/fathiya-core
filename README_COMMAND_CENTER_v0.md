@@ -11,11 +11,42 @@ This is the first Command Center v0 implementation for the validated FATHIYA Ope
 It adds a new app route:
 
 - `/command-center`
+- `/agent-tasks/`
 
 The page is built on the existing TanStack Start + React + Vite app and is intended to surface the operating state defined in:
 
 - `knowledge/reports/architecture/FATHIYA_OPERATING_BACKBONE_v0.md`
 - `knowledge/playbooks/PLAYBOOK_008_COMMAND_CENTER_UI_REQUIREMENTS.md`
+
+## Local Agent OS
+
+Run the local FATHIYA operator with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -Detached -RestartRuntime -RestartWeb -RuntimePythonPath "C:\Users\pc\Documents\Codex\2026-06-04\fathiya-agent-runtime-v1\services\agent-runtime\.venv\Scripts\python.exe" -StateRoot "C:\Users\pc\Documents\Codex\2026-06-04\fathiya-agent-runtime-v1\services\agent-runtime\runtime" -KnowledgeRoot "C:\Users\pc\Documents\Codex\2026-06-04\fathiya-agent-runtime-v1\knowledge" -ToolInventoryPath "C:\Users\pc\Documents\Codex\2026-06-04\fathiya-operator-lanes-ui\knowledge\runtime\connected_tool_inventory_v1.json"
+```
+
+Then open:
+
+- `http://127.0.0.1:5180/agent-tasks/`
+- `http://127.0.0.1:8765/api/agent/command-center`
+
+Check the public domain wiring with:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\link-fathiya-domain.ps1 -Json
+```
+
+To attach `fathya-core.com` to the current Netlify site, set `NETLIFY_AUTH_TOKEN` and rerun:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\link-fathiya-domain.ps1 -Apply -ProvisionSsl
+```
+
+Expected DNS target:
+
+- Apex `fathya-core.com`: Netlify-compatible A record.
+- `www.fathya-core.com`: CNAME to `thriving-fenglisu-ef18b1.netlify.app`.
 
 ## Backbone mapping
 
