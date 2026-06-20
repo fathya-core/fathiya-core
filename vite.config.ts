@@ -5,7 +5,7 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { cpSync, existsSync, rmSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 function copyOperatorLiteToClientDist() {
@@ -16,6 +16,16 @@ function copyOperatorLiteToClientDist() {
   const destination = resolve(clientDist, "operator-lite");
   rmSync(destination, { force: true, recursive: true });
   cpSync(source, destination, { recursive: true });
+
+  const operatorIndex = resolve(source, "agent-tasks", "index.html");
+  if (!existsSync(operatorIndex)) return;
+
+  for (const route of ["agent-tasks", "command-center", "ai-console"]) {
+    const routeDir = resolve(clientDist, route);
+    mkdirSync(routeDir, { recursive: true });
+    copyFileSync(operatorIndex, resolve(routeDir, "index.html"));
+  }
+  copyFileSync(operatorIndex, resolve(clientDist, "404.html"));
 }
 
 export default defineConfig({
