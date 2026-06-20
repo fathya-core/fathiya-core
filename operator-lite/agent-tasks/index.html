@@ -822,6 +822,53 @@
       flex-wrap: wrap;
       gap: 6px;
     }
+    .agent-explorer {
+      border: 1px solid rgba(124, 199, 232, 0.26);
+      border-radius: 8px;
+      background: rgba(7, 14, 18, 0.56);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .agent-explorer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 1100px) { .agent-explorer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .agent-explorer-grid { grid-template-columns: 1fr; } }
+    .agent-explorer-item {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 8px;
+      background: rgba(10, 10, 10, 0.74);
+      padding: 10px;
+      min-height: 132px;
+      display: grid;
+      gap: 8px;
+      align-content: space-between;
+    }
+    .agent-explorer-item strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .agent-explorer-item p {
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .agent-explorer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .agent-explorer-actions button {
+      min-height: 31px;
+      padding: 7px 9px;
+      flex: 1 1 82px;
+      font-size: 11px;
+    }
     main.wrap.single-view {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -1332,6 +1379,22 @@
         </div>
         <div class="agent-os-strip" id="agent-os-agents">
           <span class="badge">بانتظار الجرد</span>
+        </div>
+      </div>
+      <div class="agent-explorer" id="agent-explorer">
+        <div class="row">
+          <div>
+            <span class="badge sky">مخزون الوكلاء</span>
+            <h3 style="margin-top:6px;">الأدوات المتصلة القابلة للحركة</h3>
+            <p class="muted" id="agent-explorer-summary" style="margin-top:4px;">جارٍ تحميل وكلاء التطبيقات وإجراءات Zapier.</p>
+          </div>
+          <button class="secondary" id="agent-explorer-open-tools" type="button">كل الأدوات</button>
+        </div>
+        <div class="agent-explorer-grid" id="agent-explorer-grid">
+          <div class="agent-explorer-item">
+            <strong><span>جارٍ التحميل</span><span class="badge warn">يفحص</span></strong>
+            <p>أفحص كتالوج Zapier ووكلاء التطبيقات من المحرك المحلي.</p>
+          </div>
         </div>
       </div>
       <div class="workspace-lanes" aria-label="اختيار مسار العمل">
@@ -3134,6 +3197,7 @@
         document.getElementById("engine-codespaces-detail").textContent = codespacesDetailLabel(byId.github_codespaces);
         renderOpsOverview(health, integrations, integrationData.summary || {}, meshData, byId);
         renderAgentOperatingSystem(health, integrations, integrationData.summary || {}, meshData, commandCenterData, byId);
+        renderAgentExplorer(commandCenterData, meshData);
         renderCommandRooms(commandCenterData);
         renderCommandSummary(integrations, integrationData.summary, meshData);
         renderActivationQueue(integrations, integrationData.summary);
@@ -3164,6 +3228,7 @@
         document.getElementById("mission-tools").textContent = "--";
         renderOpsOverview(null, [], {}, null, {});
         renderAgentOperatingSystem(null, [], {}, null, null, {});
+        renderAgentExplorer(null, null);
         document.getElementById("activation-queue").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
         renderExecutionVerdict(null, [], {}, null);
       }
@@ -3259,6 +3324,98 @@
       document.getElementById("agent-os-agents").innerHTML = chips.length
         ? chips.map((item) => `<span class="badge sky">${escapeHtml(item)}</span>`).join("")
         : '<span class="badge warn">بانتظار جرد الوكلاء</span>';
+    }
+
+    function renderAgentExplorer(commandCenter = null, mesh = null) {
+      const host = document.getElementById("agent-explorer-grid");
+      const summary = document.getElementById("agent-explorer-summary");
+      const commands = Array.isArray(commandCenter?.commands) ? commandCenter.commands : [];
+      const commandById = Object.fromEntries(commands.map((command) => [command.id, command]));
+      const providers = Array.isArray(commandCenter?.agent_providers)
+        ? commandCenter.agent_providers
+        : Array.isArray(mesh?.agent_providers)
+          ? mesh.agent_providers
+          : [];
+      const apps = Array.isArray(commandCenter?.zapier_apps)
+        ? commandCenter.zapier_apps
+        : Array.isArray(mesh?.zapier_apps)
+          ? mesh.zapier_apps
+          : [];
+      const providerNames = new Set(providers.map((item) => String(item.app || "").toLowerCase()));
+      const preferredApps = ["GitHub", "Gmail", "Microsoft Outlook", "Zapier Tables", "MCP Client by Zapier", "RSS by Zapier", "Web Parser by Zapier", "Zapier Manager"];
+      const providerCards = providers.slice(0, 6).map((provider) => {
+        const commandId = `agent_provider_${slugId(provider.app)}`;
+        return {
+          kind: "provider",
+          title: provider.app,
+          badge: provider.status === "ready" ? "جاهز" : "مخزون",
+          badgeClass: provider.status === "ready" ? "badge ok" : "badge warn",
+          text: `${Number(provider.read_count || 0)} قراءة · ${Number(provider.write_count || 0)} كتابة gated · ${provider.execution_mode || "Zapier"}`,
+          commandId: commandById[commandId] ? commandId : "",
+          probe: provider.app,
+          prepare: provider.app
+        };
+      });
+      const appCards = apps
+        .filter((app) => !providerNames.has(String(app.app || "").toLowerCase()))
+        .sort((a, b) => {
+          const ai = preferredApps.indexOf(a.app);
+          const bi = preferredApps.indexOf(b.app);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        })
+        .slice(0, 6)
+        .map((app) => {
+          const commandId = `connected_app_${slugId(app.app)}`;
+          const modes = Array.isArray(app.modes) ? app.modes.join(" · ") : "catalog";
+          return {
+            kind: "app",
+            title: app.app,
+            badge: String(app.action_count || 0),
+            badgeClass: app.status === "ready" ? "badge ok" : "badge warn",
+            text: `${modes} · ${app.execution_mode || "Zapier MCP"}`,
+            commandId: commandById[commandId] ? commandId : "",
+            probe: "",
+            prepare: ""
+          };
+        });
+      const cards = [...providerCards, ...appCards].slice(0, 8);
+      summary.textContent = cards.length
+        ? `${providers.length} وكلاء تطبيق · ${apps.length} تطبيقات Zapier · ${commandCenter?.summary?.zapier_action_count || mesh?.summary?.zapier_action_count || 0} إجراء قابل للفحص.`
+        : "لا يوجد مخزون وكلاء ظاهر بعد. شغّل المحرك أو اربط Zapier.";
+      host.innerHTML = "";
+      if (!cards.length) {
+        host.innerHTML = `
+          <div class="agent-explorer-item">
+            <strong><span>غير متصل</span><span class="badge warn">ينتظر</span></strong>
+            <p>شغّل API المحلي أو اربط Zapier حتى يظهر مخزون الوكلاء هنا.</p>
+          </div>
+        `;
+        return;
+      }
+      for (const card of cards) {
+        const item = document.createElement("div");
+        item.className = "agent-explorer-item";
+        const runButton = card.commandId
+          ? `<button type="button" class="secondary" data-agent-explorer-command="${escapeHtml(card.commandId)}">تشغيل</button>`
+          : "";
+        const probeButton = card.probe
+          ? `<button type="button" class="secondary" data-agent-provider-probe="${escapeHtml(card.probe)}">فحص</button>`
+          : "";
+        const prepareButton = card.prepare
+          ? `<button type="button" class="secondary" data-agent-provider-prepare="${escapeHtml(card.prepare)}">تحضير</button>`
+          : "";
+        item.innerHTML = `
+          <strong>
+            <span>${escapeHtml(card.title || "Agent")}</span>
+            <span class="${card.badgeClass}">${escapeHtml(card.badge)}</span>
+          </strong>
+          <p>${escapeHtml(card.text || "--")}</p>
+          <div class="agent-explorer-actions">
+            ${runButton}${probeButton}${prepareButton || '<button type="button" class="secondary" data-workspace-view="tools">تفاصيل</button>'}
+          </div>
+        `;
+        host.appendChild(item);
+      }
     }
 
     function buildExecutionVerdict(health, integrations, summary = {}, mesh = null) {
@@ -4276,6 +4433,14 @@
       })[char]);
     }
 
+    function slugId(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 80) || "item";
+    }
+
     function showError(error) {
       const text = String(error);
       const box = document.getElementById("operator-error");
@@ -4403,6 +4568,26 @@
       if (!command) return;
       const commandId = command.getAttribute("data-agent-os-command");
       runCommandCenterCommand(commandId, meshQuickTask(commandId, command.textContent.trim(), executionOsPrompt)).catch(showError);
+    });
+    document.getElementById("agent-explorer-open-tools").addEventListener("click", () => setWorkspaceView("tools"));
+    document.getElementById("agent-explorer-grid").addEventListener("click", (event) => {
+      const command = event.target.closest("[data-agent-explorer-command]");
+      if (command) {
+        runCommandCenterCommand(command.getAttribute("data-agent-explorer-command")).catch(showError);
+        return;
+      }
+      const probe = event.target.closest("[data-agent-provider-probe]");
+      if (probe) {
+        runAgentProviderProbe(probe.getAttribute("data-agent-provider-probe")).catch(showError);
+        return;
+      }
+      const prepare = event.target.closest("[data-agent-provider-prepare]");
+      if (prepare) {
+        runAgentProviderPrepare(prepare.getAttribute("data-agent-provider-prepare")).catch(showError);
+        return;
+      }
+      const view = event.target.closest("[data-workspace-view]");
+      if (view) setWorkspaceView(view.dataset.workspaceView);
     });
     document.getElementById("command-run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
