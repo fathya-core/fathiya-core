@@ -61,6 +61,14 @@ runtime keeps working in the background:
 powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -Detached -OpenBrowser
 ```
 
+If the checked-out code lives in one worktree but the live OAuth tokens,
+SQLite task store, trading receipts, and watcher state live in another runtime
+folder, keep the code current while reusing that state:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -SkipInstall -Detached -RestartRuntime -RestartWeb -RuntimePythonPath "<existing-runtime>\.venv\Scripts\python.exe" -StateRoot "<existing-runtime>\runtime" -KnowledgeRoot "<existing-repo>\knowledge" -ToolInventoryPath "<current-repo>\knowledge\runtime\connected_tool_inventory_v1.json"
+```
+
 To also start the local n8n instance used by the integration probe, run:
 
 ```powershell

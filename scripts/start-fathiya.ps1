@@ -9,7 +9,11 @@ param(
   [switch]$StartN8n,
   [switch]$RestartRuntime,
   [switch]$RestartWeb,
-  [int]$N8nPort = 5678
+  [int]$N8nPort = 5678,
+  [string]$StateRoot = "",
+  [string]$KnowledgeRoot = "",
+  [string]$ToolInventoryPath = "",
+  [string]$RuntimePythonPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,13 +21,20 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RuntimeRoot = Join-Path $RepoRoot "services\agent-runtime"
 $VenvPath = Join-Path $RuntimeRoot ".venv"
-$RuntimePython = Join-Path $VenvPath "Scripts\python.exe"
+$RuntimePython = if ($RuntimePythonPath) {
+  (Resolve-Path $RuntimePythonPath).Path
+} else {
+  Join-Path $VenvPath "Scripts\python.exe"
+}
 
 if (-not (Test-Path $RuntimeRoot)) {
   throw "Runtime service was not found at $RuntimeRoot"
 }
 
 if (-not (Test-Path $RuntimePython)) {
+  if ($RuntimePythonPath) {
+    throw "Runtime Python was not found at $RuntimePythonPath"
+  }
   Write-Host "Creating Python 3.13 virtual environment..."
   $py = Get-Command py -ErrorAction SilentlyContinue
   if ($py) {
@@ -32,6 +43,37 @@ if (-not (Test-Path $RuntimePython)) {
     & python -m venv $VenvPath
   }
 }
+
+$ResolvedStateRoot = if ($StateRoot) {
+  (Resolve-Path $StateRoot).Path
+} else {
+  Join-Path $RuntimeRoot "runtime"
+}
+New-Item -ItemType Directory -Force $ResolvedStateRoot | Out-Null
+
+$ResolvedKnowledgeRoot = if ($KnowledgeRoot) {
+  (Resolve-Path $KnowledgeRoot).Path
+} else {
+  Join-Path $RepoRoot "knowledge"
+}
+$ResolvedToolInventoryPath = if ($ToolInventoryPath) {
+  (Resolve-Path $ToolInventoryPath).Path
+} else {
+  Join-Path $ResolvedKnowledgeRoot "runtime\connected_tool_inventory_v1.json"
+}
+
+$env:PYTHONPATH = $RuntimeRoot
+$env:FATHIYA_REPO_ROOT = $RepoRoot
+$env:FATHIYA_KNOWLEDGE_ROOT = $ResolvedKnowledgeRoot
+$env:FATHIYA_TOOL_INVENTORY_PATH = $ResolvedToolInventoryPath
+$env:FATHIYA_LOCAL_SETTINGS_PATH = Join-Path $ResolvedStateRoot "operator-settings.json"
+$env:FATHIYA_SQLITE_PATH = Join-Path $ResolvedStateRoot "fathiya_runtime.db"
+$env:FATHIYA_ZAPIER_MCP_TOKEN_PATH = Join-Path $ResolvedStateRoot "zapier_mcp_oauth.json"
+$env:FATHIYA_CONNECTOR_DISPATCH_TOKEN_FILE = Join-Path $ResolvedStateRoot "connector_dispatch.token"
+$env:FATHIYA_KNOWLEDGE_WATCH_ROOT = Join-Path $ResolvedStateRoot "knowledge-inbox"
+$env:FATHIYA_KNOWLEDGE_WATCH_STATE_PATH = Join-Path $ResolvedStateRoot "knowledge-watcher-state.json"
+$env:FATHIYA_TRADING_SQLITE_PATH = Join-Path $ResolvedStateRoot "fathiya_trading.db"
+New-Item -ItemType Directory -Force $env:FATHIYA_KNOWLEDGE_WATCH_ROOT | Out-Null
 
 function Test-RuntimeImport {
   try {
@@ -234,6 +276,8 @@ Write-Host ""
 Write-Host "FATHIYA is starting."
 Write-Host "Runtime API: $apiUrl"
 Write-Host "Operator UI: $webUrl"
+Write-Host "Runtime state: $ResolvedStateRoot"
+Write-Host "Knowledge root: $ResolvedKnowledgeRoot"
 Write-Host "Trading: $tradingUrl"
 Write-Host "Bug bounty: $bugBountyUrl"
 Write-Host "Knowledge: $knowledgeUrl"
