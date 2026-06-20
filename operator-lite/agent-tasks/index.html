@@ -525,6 +525,16 @@
       display: grid;
       gap: 8px;
     }
+    .agent-provider-box summary {
+      cursor: pointer;
+      color: var(--gold-200);
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+    }
+    .agent-provider-box[open] summary {
+      margin-bottom: 8px;
+    }
     .agent-provider-box h3 { font-size: 13px; }
     .agent-provider-grid {
       display: grid;
@@ -752,10 +762,11 @@
     }
     .agent-os-actions {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
     }
-    @media (max-width: 980px) { .agent-os-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 1080px) { .agent-os-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 760px) { .agent-os-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 560px) { .agent-os-actions { grid-template-columns: 1fr; } }
     .agent-os-actions button {
       min-height: 58px;
@@ -1282,12 +1293,12 @@
     </div>
 
     <nav class="workspace-tabs" aria-label="مسارات فتحية">
-      <button class="workspace-tab active" type="button" data-workspace-view="request">الطلب</button>
+      <button class="workspace-tab active" type="button" data-workspace-view="request">الطلب المباشر</button>
       <button class="workspace-tab" type="button" data-workspace-view="trading">التداول</button>
       <button class="workspace-tab" type="button" data-workspace-view="bug-bounty">صيد الثغرات</button>
       <button class="workspace-tab" type="button" data-workspace-view="knowledge">المعرفة</button>
       <button class="workspace-tab" type="button" data-workspace-view="reports">التقارير</button>
-      <button class="workspace-tab" type="button" data-workspace-view="tools">الأدوات</button>
+      <button class="workspace-tab" type="button" data-workspace-view="tools">الأدوات والتفعيل</button>
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
 
@@ -1295,12 +1306,12 @@
       <div class="workspace-home-head">
         <div>
           <span class="badge ok">لوحة تشغيل</span>
-          <h2>فتحية تعمل كمسارات واضحة، مو صفحة مزدحمة</h2>
+          <h2>فتحية Agent OS: تشغيل محلي واضح</h2>
           <p class="muted" style="margin-top:6px;">
-            اختر المسار المطلوب: تداول، صيد ثغرات، تقارير، أو طلب مباشر. الأدوات الثقيلة والتفعيل موجودة في تبويب الأدوات فقط.
+            زر واحد يشغّل المحرك، ثم تختار مسارًا مستقلًا: التداول، صيد الثغرات، المعرفة، التقارير، أو الأدوات.
           </p>
         </div>
-          <button id="workspace-run-core" type="button">شغّل Agent OS الآن</button>
+          <button id="workspace-run-core" type="button">شغّل المحرك وأظهر الإيصال</button>
       </div>
       <div class="agent-os" id="agent-os">
         <div class="agent-os-head">
@@ -1308,10 +1319,10 @@
             <span class="badge warn" id="agent-os-state">يفحص</span>
             <h3 id="agent-os-title">نظام تشغيل الوكلاء</h3>
             <p class="muted" id="agent-os-summary" style="margin-top:5px;">
-              يتصل بالمحرك المحلي ويعرض أوامر التشغيل المتاحة.
+              يتصل بالمحرك المحلي، يسترجع المعرفة، يختار النماذج، وينفذ الأدوات الداخلية الجاهزة.
             </p>
           </div>
-          <button id="agent-os-run" type="button">تشغيل كامل</button>
+          <button id="agent-os-run" type="button">تشغيل كامل الآن</button>
         </div>
         <div class="agent-os-metrics">
           <div class="metric"><span>Worker</span><strong id="agent-os-worker">--</strong></div>
@@ -1341,16 +1352,8 @@
         </div>
         <div class="agent-os-actions" id="agent-os-actions">
           <button class="primary" type="button" data-agent-os-command="agent_os_full_execute">
-            <strong>تشغيل Agent OS كامل</strong>
-            <span>معرفة · نماذج · أدوات</span>
-          </button>
-          <button type="button" data-agent-os-command="execute_mesh">
-            <strong>تشغيل الشبكة</strong>
-            <span>جرد وتنفيذ داخلي</span>
-          </button>
-          <button type="button" data-agent-os-command="learn_and_execute">
-            <strong>استيعاب وتشغيل</strong>
-            <span>معرفة ثم أدوات</span>
+            <strong>تشغيل كامل</strong>
+            <span>معرفة · نماذج · أدوات · إيصال</span>
           </button>
           <button type="button" data-agent-os-command="lane_trading">
             <strong>وكيل التداول</strong>
@@ -1360,28 +1363,20 @@
             <strong>صيد الثغرات</strong>
             <span>Dedupe ثم Draft</span>
           </button>
-          <button type="button" data-agent-os-command="agent_provider_manus">
-            <strong>Manus</strong>
-            <span>وكيل تطبيق</span>
+          <button type="button" data-agent-os-command="learn_and_execute">
+            <strong>المعرفة</strong>
+            <span>استيعاب ثم تنفيذ</span>
           </button>
-          <button type="button" data-agent-os-command="agent_provider_cursor">
-            <strong>Cursor</strong>
-            <span>وكيل كود</span>
-          </button>
-          <button type="button" data-agent-os-command="verify_gmail_zapier_read">
-            <strong>Gmail</strong>
-            <span>قراءة عبر Zapier</span>
-          </button>
-          <button type="button" data-agent-os-command="activate_tools">
-            <strong>تفعيل الناقص</strong>
-            <span>Supabase/Testnet</span>
+          <button type="button" data-workspace-view="tools">
+            <strong>الأدوات</strong>
+            <span>Zapier · n8n · Kali · OAuth</span>
           </button>
         </div>
         <div class="agent-os-strip" id="agent-os-agents">
           <span class="badge">بانتظار الجرد</span>
         </div>
       </div>
-      <div class="agent-explorer" id="agent-explorer">
+      <div class="agent-explorer view-hidden" id="agent-explorer">
         <div class="row">
           <div>
             <span class="badge sky">مخزون الوكلاء</span>
@@ -1587,7 +1582,8 @@
           <button id="run-mission" style="flex:1;">شغّل المهمة</button>
           <button id="mission-open-reports" class="secondary" style="flex:1;">التقارير</button>
         </div>
-        <div class="agent-provider-box">
+        <details class="agent-provider-box">
+          <summary>وكلاء التطبيقات الاختيارية: Cursor / Manus</summary>
           <div class="row">
             <div>
               <h3>تشغيل وكيل تطبيق</h3>
@@ -1617,7 +1613,7 @@
           <div class="agent-provider-status" id="agent-provider-status">
             Cursor يحتاج رابط مستودع وتعليمات. Manus يحتاج تعليمات فقط ويستخدم private visibility.
           </div>
-        </div>
+        </details>
       </div>
       <div class="mission-results" id="mission-results"></div>
     </div>
@@ -4512,7 +4508,7 @@
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
       home?.classList.toggle("view-hidden", selected !== "request");
-      bridge?.classList.toggle("view-hidden", selected !== "request" && selected !== "tools");
+      bridge?.classList.toggle("view-hidden", selected !== "tools");
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
       tools.classList.toggle("view-hidden", selected !== "tools");
