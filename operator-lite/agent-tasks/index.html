@@ -676,6 +676,61 @@
       color: var(--gold-100);
       box-shadow: 0 0 0 3px rgba(201, 161, 74, 0.1);
     }
+    .workspace-home {
+      border-color: rgba(228, 197, 127, 0.5);
+      background:
+        linear-gradient(180deg, rgba(28, 23, 12, 0.98), rgba(10, 10, 10, 0.98));
+      display: grid;
+      gap: 14px;
+    }
+    .workspace-home-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(160px, auto);
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 680px) { .workspace-home-head { grid-template-columns: 1fr; } }
+    .workspace-home h2 {
+      font-size: 22px;
+      margin-top: 8px;
+    }
+    .workspace-lanes {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 980px) { .workspace-lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .workspace-lanes { grid-template-columns: 1fr; } }
+    .workspace-lane {
+      min-height: 132px;
+      background: #0b0b0b;
+      color: var(--text);
+      border-color: rgba(122, 93, 36, 0.38);
+      display: grid;
+      align-content: space-between;
+      gap: 8px;
+      text-align: right;
+      white-space: normal;
+    }
+    .workspace-lane strong {
+      display: block;
+      font-size: 15px;
+    }
+    .workspace-lane span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+    .workspace-lane.trade { border-color: rgba(228, 197, 127, 0.48); }
+    .workspace-lane.bounty-lane { border-color: rgba(124, 199, 232, 0.46); }
+    .workspace-lane.report-lane { border-color: rgba(114, 214, 168, 0.44); }
+    .workspace-lane.request-lane { border-color: rgba(217, 112, 214, 0.38); }
+    .workspace-lane.active {
+      box-shadow: 0 0 0 3px rgba(228, 197, 127, 0.08);
+      border-color: rgba(228, 197, 127, 0.7);
+    }
     main.wrap.single-view {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -1097,6 +1152,37 @@
       <button class="workspace-tab" type="button" data-workspace-view="tools">الأدوات</button>
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
+
+    <div class="card workspace-home" id="workspace-home">
+      <div class="workspace-home-head">
+        <div>
+          <span class="badge ok">لوحة تشغيل</span>
+          <h2>فتحية تعمل كمسارات واضحة، مو صفحة مزدحمة</h2>
+          <p class="muted" style="margin-top:6px;">
+            اختر المسار المطلوب: تداول، صيد ثغرات، تقارير، أو طلب مباشر. الأدوات الثقيلة والتفعيل موجودة في تبويب الأدوات فقط.
+          </p>
+        </div>
+        <button id="workspace-run-core" type="button">شغّل المحرك الآن</button>
+      </div>
+      <div class="workspace-lanes" aria-label="اختيار مسار العمل">
+        <button class="workspace-lane trade" type="button" data-workspace-view="trading">
+          <strong>التداول</strong>
+          <span>وكيل Paper/Testnet، نبضة ثانية، تحديث مستشار، وإيصالات قرارات.</span>
+        </button>
+        <button class="workspace-lane bounty-lane" type="button" data-workspace-view="bug-bounty">
+          <strong>صيد الثغرات</strong>
+          <span>اختيار برنامج HackerOne/Bugcrowd، dedupe، خطة إثبات، ومسودة تقرير داخلية.</span>
+        </button>
+        <button class="workspace-lane report-lane" type="button" data-workspace-view="reports">
+          <strong>التقارير</strong>
+          <span>كل المهام، التقدم، الإيصالات، وتفاصيل التقرير المحدد في شاشة مستقلة.</span>
+        </button>
+        <button class="workspace-lane request-lane" type="button" data-workspace-view="request">
+          <strong>طلب مباشر</strong>
+          <span>اكتب هدفًا واحدًا، ودع فتحية تختار المعرفة والنموذج والأداة المناسبة.</span>
+        </button>
+      </div>
+    </div>
 
     <div class="card local-bridge" id="local-bridge-card">
       <div>
@@ -3984,6 +4070,8 @@
       const knowledge = document.getElementById("knowledge-panel");
       const verdict = document.getElementById("execution-verdict");
       const opsOverview = document.getElementById("ops-overview-card");
+      const home = document.getElementById("workspace-home");
+      const bridge = document.getElementById("local-bridge-card");
       const commandPanel = document.querySelector(".command-panel");
       const quickGrid = document.querySelector(".quick-grid");
       const operations = document.getElementById("operations-panel");
@@ -3991,15 +4079,17 @@
       const bounty = document.getElementById("bounty-card");
       const reports = document.getElementById("reports-panel");
 
-      const commandVisible = selected === "request" || selected === "tools";
+      const commandVisible = selected === "tools";
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
+      home?.classList.toggle("view-hidden", selected !== "request");
+      bridge?.classList.toggle("view-hidden", selected !== "request" && selected !== "tools");
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
       tools.classList.toggle("view-hidden", selected !== "tools");
       knowledge.classList.toggle("view-hidden", selected !== "knowledge");
       verdict.classList.toggle("view-hidden", selected !== "tools");
-      opsOverview.classList.toggle("view-hidden", selected !== "request");
+      opsOverview.classList.toggle("view-hidden", selected !== "tools");
       main.classList.toggle("view-hidden", selected === "request" || selected === "tools" || selected === "knowledge");
       main.classList.add("single-view");
       operations.classList.toggle("view-hidden", selected === "reports");
@@ -4014,7 +4104,7 @@
       if (options.url !== false) writeWorkspaceViewToLocation(selected);
 
       if (options.scroll !== false) {
-        const target = selected === "request" ? (commandPanel || mission) : selected === "tools" ? commandPanel : selected === "knowledge" ? knowledge : main;
+        const target = selected === "request" ? (home || mission) : selected === "tools" ? (commandPanel || tools) : selected === "knowledge" ? knowledge : main;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
@@ -4042,6 +4132,7 @@
 
     document.getElementById("refresh").addEventListener("click", () => refreshAll());
     document.getElementById("logout").addEventListener("click", () => lockOperator());
+    document.getElementById("workspace-run-core").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("command-run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
     document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
