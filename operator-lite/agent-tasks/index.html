@@ -731,6 +731,70 @@
       box-shadow: 0 0 0 3px rgba(228, 197, 127, 0.08);
       border-color: rgba(228, 197, 127, 0.7);
     }
+    .agent-os {
+      border: 1px solid rgba(114, 214, 168, 0.34);
+      border-radius: 8px;
+      background: rgba(7, 18, 14, 0.62);
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+    .agent-os-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 760px) { .agent-os-head { grid-template-columns: 1fr; } }
+    .agent-os h3 {
+      font-size: 16px;
+      margin-top: 6px;
+    }
+    .agent-os-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 980px) { .agent-os-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .agent-os-actions { grid-template-columns: 1fr; } }
+    .agent-os-actions button {
+      min-height: 58px;
+      background: #0b0b0b;
+      color: var(--text);
+      border-color: rgba(122, 93, 36, 0.38);
+      display: grid;
+      gap: 4px;
+      align-content: center;
+      text-align: right;
+      white-space: normal;
+    }
+    .agent-os-actions button.primary {
+      background: linear-gradient(135deg, rgba(228, 197, 127, 0.28), rgba(10, 10, 10, 0.98));
+      border-color: rgba(228, 197, 127, 0.62);
+      color: var(--gold-100);
+    }
+    .agent-os-actions button.sky {
+      background: linear-gradient(135deg, rgba(124, 199, 232, 0.18), rgba(10, 10, 10, 0.98));
+      border-color: rgba(124, 199, 232, 0.48);
+      color: var(--text);
+    }
+    .agent-os-actions span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .agent-os-metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 980px) { .agent-os-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .agent-os-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .agent-os-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
     main.wrap.single-view {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -1163,6 +1227,63 @@
           </p>
         </div>
         <button id="workspace-run-core" type="button">شغّل المحرك الآن</button>
+      </div>
+      <div class="agent-os" id="agent-os">
+        <div class="agent-os-head">
+          <div>
+            <span class="badge warn" id="agent-os-state">يفحص</span>
+            <h3 id="agent-os-title">نظام تشغيل الوكلاء</h3>
+            <p class="muted" id="agent-os-summary" style="margin-top:5px;">
+              يتصل بالمحرك المحلي ويعرض أوامر التشغيل المتاحة.
+            </p>
+          </div>
+          <button id="agent-os-run" type="button">تشغيل فتحية</button>
+        </div>
+        <div class="agent-os-metrics">
+          <div class="metric"><span>Worker</span><strong id="agent-os-worker">--</strong></div>
+          <div class="metric"><span>Models</span><strong id="agent-os-models">--</strong></div>
+          <div class="metric"><span>Zapier</span><strong id="agent-os-zapier">--</strong></div>
+          <div class="metric"><span>Tools</span><strong id="agent-os-tools">--</strong></div>
+          <div class="metric"><span>Trading</span><strong id="agent-os-trading">--</strong></div>
+          <div class="metric"><span>Queue</span><strong id="agent-os-queue">--</strong></div>
+        </div>
+        <div class="agent-os-actions" id="agent-os-actions">
+          <button class="primary" type="button" data-agent-os-command="execute_mesh">
+            <strong>تشغيل الشبكة</strong>
+            <span>كل الوكلاء المحليين</span>
+          </button>
+          <button type="button" data-agent-os-command="learn_and_execute">
+            <strong>استيعاب وتشغيل</strong>
+            <span>معرفة ثم أدوات</span>
+          </button>
+          <button type="button" data-agent-os-command="lane_trading">
+            <strong>وكيل التداول</strong>
+            <span>نبض Paper بالثانية</span>
+          </button>
+          <button class="sky" type="button" data-agent-os-command="lane_bug_bounty">
+            <strong>صيد الثغرات</strong>
+            <span>Dedupe ثم Draft</span>
+          </button>
+          <button type="button" data-agent-os-command="agent_provider_manus">
+            <strong>Manus</strong>
+            <span>وكيل تطبيق</span>
+          </button>
+          <button type="button" data-agent-os-command="agent_provider_cursor">
+            <strong>Cursor</strong>
+            <span>وكيل كود</span>
+          </button>
+          <button type="button" data-agent-os-command="verify_gmail_zapier_read">
+            <strong>Gmail</strong>
+            <span>قراءة عبر Zapier</span>
+          </button>
+          <button type="button" data-agent-os-command="activate_tools">
+            <strong>تفعيل الناقص</strong>
+            <span>Supabase/Testnet</span>
+          </button>
+        </div>
+        <div class="agent-os-strip" id="agent-os-agents">
+          <span class="badge">بانتظار الجرد</span>
+        </div>
       </div>
       <div class="workspace-lanes" aria-label="اختيار مسار العمل">
         <button class="workspace-lane trade" type="button" data-workspace-view="trading">
@@ -2963,6 +3084,7 @@
         document.getElementById("engine-codespaces").textContent = shortStatus(byId.github_codespaces);
         document.getElementById("engine-codespaces-detail").textContent = codespacesDetailLabel(byId.github_codespaces);
         renderOpsOverview(health, integrations, integrationData.summary || {}, meshData, byId);
+        renderAgentOperatingSystem(health, integrations, integrationData.summary || {}, meshData, commandCenterData, byId);
         renderCommandRooms(commandCenterData);
         renderCommandSummary(integrations, integrationData.summary, meshData);
         renderActivationQueue(integrations, integrationData.summary);
@@ -2992,9 +3114,75 @@
         document.getElementById("mission-models").textContent = "--";
         document.getElementById("mission-tools").textContent = "--";
         renderOpsOverview(null, [], {}, null, {});
+        renderAgentOperatingSystem(null, [], {}, null, null, {});
         document.getElementById("activation-queue").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
         renderExecutionVerdict(null, [], {}, null);
       }
+    }
+
+    function renderAgentOperatingSystem(health, integrations, summary = {}, mesh = null, commandCenter = null, byId = {}) {
+      const state = document.getElementById("agent-os-state");
+      const title = document.getElementById("agent-os-title");
+      const description = document.getElementById("agent-os-summary");
+      const workerOnline = Boolean(health?.worker_online);
+      const commandSummary = commandCenter?.summary || {};
+      const readyCommands = Number(commandSummary.ready_command_count || 0);
+      const commandCount = Number(commandSummary.command_count || 0);
+      const readyIntegrations = Number(summary.ready ?? integrations.filter((item) => item.status === "ready").length);
+      const totalIntegrations = Number(summary.total ?? integrations.length);
+      const toolCount = Number(commandSummary.tool_count || mesh?.summary?.tool_count || 0);
+      const providerCount = Number(commandSummary.agent_provider_count || mesh?.summary?.agent_provider_count || 0);
+      const zapierActions = Number(commandSummary.zapier_action_count || byId.zapier_mcp?.details?.action_count || 0);
+      const canExecute = workerOnline && Boolean(commandCenter?.ready_to_execute || readyCommands || mesh?.ready_to_execute);
+
+      state.textContent = canExecute ? "جاهز للتنفيذ" : workerOnline ? "يتحقق" : "غير متصل";
+      state.className = canExecute ? "badge ok" : workerOnline ? "badge warn" : "badge bad";
+      title.textContent = canExecute
+        ? "فتحية محرك وكلاء حي"
+        : workerOnline
+          ? "فتحية تفحص شبكة الوكلاء"
+          : "فتحية تنتظر المحرك المحلي";
+      description.textContent = canExecute
+        ? `${readyCommands || commandCount} أوامر جاهزة، ${toolCount || "--"} أداة، ${providerCount || 0} وكلاء تطبيق، و${zapierActions} إجراء Zapier.`
+        : workerOnline
+          ? "العامل المحلي متصل، وينتظر اكتمال جرد الأوامر."
+          : "شغّل API المحلي حتى تتحول الصفحة إلى مركز تنفيذ.";
+
+      document.getElementById("agent-os-worker").textContent = workerOnline ? health.worker_id || "online" : "offline";
+      document.getElementById("agent-os-models").textContent = workerOnline
+        ? `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`
+        : "--";
+      document.getElementById("agent-os-zapier").textContent = zapierEngineLabel(byId.zapier_mcp);
+      document.getElementById("agent-os-tools").textContent = toolCount
+        ? `${toolCount} أداة · ${readyIntegrations}/${totalIntegrations}`
+        : `${readyIntegrations}/${totalIntegrations || "--"}`;
+      document.getElementById("agent-os-trading").textContent = health?.trading?.running
+        ? `${health.trading.symbol || "Paper"} · ${health.trading.cycle_target_seconds || 1}s`
+        : health?.trading ? "Paper جاهز" : "--";
+      document.getElementById("agent-os-queue").textContent = commandSummary.operator_queue_count == null
+        ? "--"
+        : `${commandSummary.operator_queue_count} متابعة`;
+
+      const agents = Array.isArray(commandCenter?.agent_providers)
+        ? commandCenter.agent_providers
+        : Array.isArray(mesh?.agent_providers)
+          ? mesh.agent_providers
+          : [];
+      const apps = Array.isArray(commandCenter?.zapier_apps)
+        ? commandCenter.zapier_apps
+        : Array.isArray(mesh?.zapier_apps)
+          ? mesh.zapier_apps
+          : [];
+      const chips = [
+        ...agents.slice(0, 5).map((item) => `${item.app || item.label || "Agent"} ${item.total_actions || item.action_count || ""}`.trim()),
+        ...apps
+          .filter((item) => !agents.some((agent) => String(agent.app || "").toLowerCase() === String(item.app || "").toLowerCase()))
+          .slice(0, 4)
+          .map((item) => `${item.app} ${item.action_count || ""}`.trim())
+      ];
+      document.getElementById("agent-os-agents").innerHTML = chips.length
+        ? chips.map((item) => `<span class="badge sky">${escapeHtml(item)}</span>`).join("")
+        : '<span class="badge warn">بانتظار جرد الوكلاء</span>';
     }
 
     function buildExecutionVerdict(health, integrations, summary = {}, mesh = null) {
@@ -4133,6 +4321,13 @@
     document.getElementById("refresh").addEventListener("click", () => refreshAll());
     document.getElementById("logout").addEventListener("click", () => lockOperator());
     document.getElementById("workspace-run-core").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("agent-os-run").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("agent-os-actions").addEventListener("click", (event) => {
+      const command = event.target.closest("[data-agent-os-command]");
+      if (!command) return;
+      const commandId = command.getAttribute("data-agent-os-command");
+      runCommandCenterCommand(commandId, meshQuickTask(commandId, command.textContent.trim(), executionOsPrompt)).catch(showError);
+    });
     document.getElementById("command-run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
     document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
