@@ -2,18 +2,39 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import threading
 import time
+from io import BytesIO
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from zipfile import BadZipFile, ZipFile
+
+from pypdf import PdfReader
 
 from .config import RuntimeConfig
 from .knowledge_mission import build_knowledge_mission_prompt
 from .store import TaskStore
 
 
-SUPPORTED_SUFFIXES = {".md", ".txt", ".json", ".csv"}
+TEXT_SUFFIXES = {".md", ".txt", ".json", ".csv"}
+ARCHIVE_MEMBER_SUFFIXES = TEXT_SUFFIXES | {".pdf"}
+SUPPORTED_SUFFIXES = TEXT_SUFFIXES | {".pdf", ".zip"}
+MAX_BINARY_SOURCE_BYTES = 25 * 1024 * 1024
+MAX_PDF_PAGES = 80
+MAX_ZIP_MEMBERS = 40
+MAX_ZIP_MEMBER_BYTES = 2 * 1024 * 1024
+MAX_ZIP_TOTAL_BYTES = 8 * 1024 * 1024
+REDACTION_MARKER = "[REDACTED_SECRET_LIKE_VALUE]"
+SENSITIVE_TEXT_PATTERNS = [
+    re.compile(r"sk-or-v1-[A-Za-z0-9_-]{20,}"),
+    re.compile(r"eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}"),
+]
+
+
+class KnowledgeSourceError(ValueError):
+    """Raised when a local knowledge source cannot be safely converted."""
 
 
 class KnowledgeIntakeWatcher:
@@ -127,7 +148,13 @@ class KnowledgeIntakeWatcher:
         key = relative.as_posix()
         files = self._state.setdefault("files", {})
         stat = resolved.stat()
-        if stat.st_size > self.config.knowledge_watch_max_characters * 4:
+        suffix = path.suffix.lower()
+        max_source_bytes = (
+            self.config.knowledge_watch_max_characters * 4
+            if suffix in TEXT_SUFFIXES
+            else MAX_BINARY_SOURCE_BYTES
+        )
+        if stat.st_size > max_source_bytes:
             marker = hashlib.sha256(
                 f"{stat.st_size}:{stat.st_mtime_ns}".encode("ascii")
             ).hexdigest()
@@ -140,20 +167,21 @@ class KnowledgeIntakeWatcher:
         previous = files.get(key) if isinstance(files, dict) else None
         if isinstance(previous, dict) and previous.get("sha256") == digest:
             return None
-        text = raw.decode("utf-8", errors="replace").strip()
-        if len(text) < 3:
-            self._remember_ignored(files, key, digest, "empty_or_too_short")
-            return None
-        if len(text) > self.config.knowledge_watch_max_characters:
-            self._remember_ignored(files, key, digest, "report_too_large")
-            return None
 
         source_name = key
         objective = self.config.knowledge_watch_objective
-        content = text
+        try:
+            content = self._content_from_source(path, raw, key)
+        except KnowledgeSourceError as exc:
+            self._remember_ignored(files, key, digest, str(exc))
+            return None
+        if len(content) < 3:
+            self._remember_ignored(files, key, digest, "empty_or_too_short")
+            return None
+
         if path.name.lower().endswith(".mission.json"):
             try:
-                payload = json.loads(text)
+                payload = json.loads(content)
             except json.JSONDecodeError as exc:
                 self._remember_ignored(files, key, digest, f"invalid_mission_json:{exc.msg}")
                 return None
@@ -168,6 +196,10 @@ class KnowledgeIntakeWatcher:
                 if isinstance(report_content, str)
                 else json.dumps(report_content, ensure_ascii=False)
             )
+            content = self._redact_sensitive_text(content)
+            if len(content) > self.config.knowledge_watch_max_characters:
+                self._remember_ignored(files, key, digest, "report_too_large")
+                return None
 
         try:
             prompt = build_knowledge_mission_prompt(source_name, objective, content)
@@ -190,6 +222,162 @@ class KnowledgeIntakeWatcher:
         self._state["enqueued_count"] = self._enqueued_count
         self._last_enqueued = record
         return record
+
+    def _content_from_source(self, path: Path, raw: bytes, key: str) -> str:
+        suffix = path.suffix.lower()
+        if suffix == ".pdf":
+            return self._extract_pdf_content(raw, key)
+        if suffix == ".zip":
+            return self._extract_zip_content(raw, key)
+
+        text = raw.decode("utf-8", errors="replace").strip()
+        if len(text) > self.config.knowledge_watch_max_characters:
+            raise KnowledgeSourceError("report_too_large")
+        return self._redact_sensitive_text(text)
+
+    def _extract_pdf_content(self, raw: bytes, source_name: str) -> str:
+        try:
+            reader = PdfReader(BytesIO(raw))
+        except Exception as exc:
+            raise KnowledgeSourceError(f"invalid_pdf:{type(exc).__name__}") from exc
+
+        try:
+            page_count = len(reader.pages)
+        except Exception as exc:
+            raise KnowledgeSourceError(f"invalid_pdf_pages:{type(exc).__name__}") from exc
+
+        sections = [
+            f"# PDF: {source_name}",
+            "",
+            f"Pages parsed: {min(page_count, MAX_PDF_PAGES)} of {page_count}.",
+        ]
+        extracted_pages = 0
+        for page_index in range(min(page_count, MAX_PDF_PAGES)):
+            try:
+                page_text = reader.pages[page_index].extract_text() or ""
+            except Exception as exc:
+                page_text = f"[page extraction failed: {type(exc).__name__}]"
+            page_text = page_text.strip()
+            if not page_text:
+                continue
+            extracted_pages += 1
+            sections.extend(("", f"## Page {page_index + 1}", "", page_text))
+            if len("\n".join(sections)) >= self.config.knowledge_watch_max_characters:
+                break
+
+        if extracted_pages == 0:
+            raise KnowledgeSourceError("pdf_text_empty")
+        if page_count > MAX_PDF_PAGES:
+            sections.extend(
+                (
+                    "",
+                    (
+                        f"[TRUNCATED: parsed first {MAX_PDF_PAGES} pages "
+                        f"of {page_count}.]"
+                    ),
+                )
+            )
+        return self._limit_content("\n".join(sections))
+
+    def _extract_zip_content(self, raw: bytes, source_name: str) -> str:
+        try:
+            archive = ZipFile(BytesIO(raw))
+        except BadZipFile as exc:
+            raise KnowledgeSourceError("invalid_zip") from exc
+
+        with archive:
+            sections = [
+                f"# ZIP: {source_name}",
+                "",
+                "Extracted supported knowledge files from the archive.",
+            ]
+            skipped: list[str] = []
+            included = 0
+            total_bytes = 0
+            for info in sorted(archive.infolist(), key=lambda item: item.filename.lower()):
+                if info.is_dir():
+                    continue
+                member_name = self._safe_zip_member_name(info.filename)
+                if not member_name:
+                    skipped.append(f"{info.filename}: unsafe_name")
+                    continue
+                suffix = Path(member_name).suffix.lower()
+                if suffix not in ARCHIVE_MEMBER_SUFFIXES:
+                    skipped.append(f"{member_name}: unsupported_extension")
+                    continue
+                if included >= MAX_ZIP_MEMBERS:
+                    skipped.append("remaining_entries: member_limit")
+                    break
+                if info.flag_bits & 0x1:
+                    skipped.append(f"{member_name}: encrypted")
+                    continue
+                if info.file_size > MAX_ZIP_MEMBER_BYTES:
+                    skipped.append(f"{member_name}: member_too_large")
+                    continue
+                if total_bytes + info.file_size > MAX_ZIP_TOTAL_BYTES:
+                    skipped.append("remaining_entries: archive_byte_limit")
+                    break
+
+                try:
+                    member_raw = archive.read(info)
+                except RuntimeError as exc:
+                    skipped.append(f"{member_name}: read_failed_{type(exc).__name__}")
+                    continue
+
+                total_bytes += len(member_raw)
+                if suffix == ".pdf":
+                    try:
+                        member_text = self._extract_pdf_content(member_raw, member_name)
+                    except KnowledgeSourceError as exc:
+                        skipped.append(f"{member_name}: {exc}")
+                        continue
+                else:
+                    member_text = member_raw.decode("utf-8", errors="replace").strip()
+
+                if len(member_text) < 3:
+                    skipped.append(f"{member_name}: empty_or_too_short")
+                    continue
+                included += 1
+                sections.extend(("", f"## {member_name}", "", member_text))
+                if len("\n".join(sections)) >= self.config.knowledge_watch_max_characters:
+                    skipped.append("remaining_entries: content_limit")
+                    break
+
+        if included == 0:
+            raise KnowledgeSourceError("zip_has_no_supported_knowledge_files")
+        if skipped:
+            sections.extend(("", "## Skipped archive entries", "", "\n".join(skipped[:12])))
+            if len(skipped) > 12:
+                sections.append(f"... {len(skipped) - 12} more skipped entries")
+        return self._limit_content("\n".join(sections))
+
+    def _limit_content(self, content: str) -> str:
+        clean = self._redact_sensitive_text(content).strip()
+        limit = self.config.knowledge_watch_max_characters
+        if len(clean) <= limit:
+            return clean
+        marker = (
+            "\n\n[TRUNCATED: source exceeded "
+            "FATHIYA_KNOWLEDGE_WATCH_MAX_CHARACTERS.]"
+        )
+        return f"{clean[: max(0, limit - len(marker))].rstrip()}{marker}"
+
+    @staticmethod
+    def _redact_sensitive_text(content: str) -> str:
+        redacted = content
+        for pattern in SENSITIVE_TEXT_PATTERNS:
+            redacted = pattern.sub(REDACTION_MARKER, redacted)
+        return redacted
+
+    @staticmethod
+    def _safe_zip_member_name(name: str) -> str | None:
+        normalized = name.replace("\\", "/").strip()
+        if not normalized or normalized.startswith("/"):
+            return None
+        parts = [part for part in normalized.split("/") if part not in {"", "."}]
+        if not parts or any(part == ".." for part in parts):
+            return None
+        return "/".join(parts)
 
     @staticmethod
     def _remember_ignored(

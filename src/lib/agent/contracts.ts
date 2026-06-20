@@ -37,6 +37,11 @@ export type AgentTask = {
   worker_id: string | null;
   plan: Json;
   result: Json | null;
+  latest_receipt_id?: string | null;
+  latest_receipt_status?: string | null;
+  latest_receipt_at?: string | null;
+  latest_receipt_summary?: string | null;
+  receipt_count?: number;
   error_message: string | null;
   last_heartbeat_at: string | null;
   started_at: string | null;
@@ -136,6 +141,73 @@ export type AgentProviderActionSet = {
   approval_gated_write?: string[];
 };
 
+export type AgentZapierCatalogAction = {
+  key?: string | null;
+  name: string;
+  tool_name?: string | null;
+  mode: "read" | "write" | string;
+  inventory_only?: boolean;
+};
+
+export type AgentZapierActionCatalog = {
+  available: boolean;
+  connected?: boolean;
+  provider: string;
+  source?: string;
+  inventory_available?: boolean;
+  live_available?: boolean;
+  needs_reconnect?: boolean;
+  refresh_recommended?: boolean;
+  auth_state?: string | null;
+  last_refresh_error?: string | null;
+  last_refresh_status_code?: number | null;
+  error?: string | null;
+  app?: string | null;
+  app_count?: number;
+  action_count: number;
+  apps?: AgentZapierInventoryApp[];
+  actions?: AgentZapierCatalogAction[];
+};
+
+export type AgentZapierDiagnostics = {
+  mode: "zapier_mcp_activation_diagnostics_v1";
+  activation_state: "live" | "inventory_only" | "reconnect_required" | "not_connected" | string;
+  headline: string;
+  connected: boolean;
+  direct_execution: boolean;
+  expired: boolean;
+  refresh_recommended: boolean;
+  needs_reconnect: boolean;
+  token_source?: string | null;
+  refresh_credential_saved: boolean;
+  last_refresh_error?: string | null;
+  last_refresh_status_code?: number | null;
+  last_refresh_at?: number | null;
+  endpoint?: string | null;
+  inventory_available: boolean;
+  app_count: number;
+  action_count: number;
+  agent_provider_count: number;
+  agent_provider_write_action_count: number;
+  agent_providers: AgentMeshProviderSummary[];
+  start_path: string;
+  start_url: string;
+  fresh_start_path?: string | null;
+  fresh_start_url?: string | null;
+  callback_url: string;
+  return_to: string;
+  next_actions: {
+    id: string;
+    title: string;
+    action_type: "oauth" | "task" | "settings" | string;
+    action_label: string;
+    action_path?: string | null;
+    prompt?: string | null;
+    summary?: string | null;
+  }[];
+  secret_safe: true;
+};
+
 export type AgentConnectedToolInventory = {
   available: boolean;
   captured_at?: string | null;
@@ -157,7 +229,7 @@ export type AgentIntegrationStatus = "ready" | "partial" | "needs_setup" | "need
 export type AgentIntegrationReadiness = {
   id: string;
   name: string;
-  category: "model" | "control_plane" | "automation" | "financial";
+  category: "model" | "control_plane" | "automation" | "financial" | "security" | "engineering";
   status: AgentIntegrationStatus;
   connection_mode: string;
   account_required: boolean;
@@ -196,6 +268,188 @@ export type AgentIntegrationSummary = {
   needs_operator: number;
 };
 
+export type AgentMeshLane = {
+  id: "execution" | "trading" | "bug_bounty" | "knowledge" | "tool_bridge" | string;
+  label: string;
+  status: AgentIntegrationStatus | "failed" | string;
+  signal: string;
+  action_label: string;
+  prompt: string;
+};
+
+export type AgentMeshAttentionItem = {
+  id: string;
+  name: string;
+  status: AgentIntegrationStatus | string;
+  summary: string;
+  next_step: string;
+  action_path?: string | null;
+  action_label?: string | null;
+};
+
+export type AgentMeshQuickAction = {
+  id: string;
+  label: string;
+  title: string;
+  prompt: string;
+  mode: string;
+};
+
+export type AgentMeshProviderSummary = {
+  app: string;
+  status: "ready" | "inventory_only" | string;
+  execution_mode: "live_zapier_mcp" | "inventory_only_until_oauth" | string;
+  inventory_only: boolean;
+  read_count: number;
+  write_count: number;
+  total_actions: number;
+  read_actions: string[];
+  write_actions: string[];
+  action_path?: string | null;
+  action_label: string;
+  next_step: string;
+  task_prompt: string;
+};
+
+export type AgentMeshActivationAction = {
+  id: string;
+  name: string;
+  status: AgentIntegrationStatus | string;
+  action_type: "oauth" | "settings" | "probe" | string;
+  action_tier?: "blocking" | "upgrade" | string;
+  blocks_local_execution?: boolean;
+  action_label: string;
+  action_path?: string | null;
+  summary?: string | null;
+  next_step?: string | null;
+};
+
+export type AgentMeshActivationOverview = {
+  mode: "agent_activation_overview_v1";
+  executable_now?: boolean;
+  ready_headline: string;
+  primary_message: string;
+  ready_lane_count: number;
+  lane_count: number;
+  ready_lane_labels: string[];
+  safe_tool_count: number;
+  capability_ready: number | null;
+  capability_total: number | null;
+  zapier_app_count: number | null;
+  zapier_action_count: number | null;
+  agent_provider_count: number;
+  agent_provider_ready_count: number;
+  agent_provider_write_action_count: number;
+  agent_providers: AgentMeshProviderSummary[];
+  operator_action_count: number;
+  blocking_action_count?: number;
+  upgrade_action_count?: number;
+  operator_actions: AgentMeshActivationAction[];
+  blocking_actions?: AgentMeshActivationAction[];
+  upgrade_actions?: AgentMeshActivationAction[];
+  default_action: {
+    id: string;
+    label: string;
+    mode: string;
+  };
+};
+
+export type AgentMeshSummary = {
+  mode: "agent_mesh_status_v1";
+  captured_at: string;
+  ready_to_execute: boolean;
+  worker_online: boolean;
+  headline: string;
+  summary: {
+    integration_total: number;
+    integration_ready: number;
+    integration_attention: number;
+    tool_count: number;
+    capability_total: number | null;
+    capability_ready: number | null;
+    zapier_app_count: number | null;
+    zapier_action_count: number | null;
+    agent_provider_count: number;
+    agent_provider_ready_count: number;
+    connected_app_count?: number;
+    connected_app_ready_count?: number;
+    trading_running: boolean;
+    knowledge_intake_running: boolean;
+  };
+  lanes: AgentMeshLane[];
+  agent_providers: AgentMeshProviderSummary[];
+  zapier_apps?: AgentZapierInventoryApp[];
+  attention: AgentMeshAttentionItem[];
+  quick_actions: AgentMeshQuickAction[];
+  activation_overview?: AgentMeshActivationOverview;
+  policy: {
+    automatic_internal_execution: boolean;
+    local_direct_execution_default?: boolean;
+    approval_gated_external_writes: boolean;
+    oauth_and_settings_are_followups?: boolean;
+    external_impact_gate_does_not_block_internal_progress?: boolean;
+    real_money_disabled_until_testnet_configured: boolean;
+    live_security_testing_requires_scope_confirmation: boolean;
+  };
+};
+
+export type AgentCommandCenterCommand = {
+  id: string;
+  label?: string | null;
+  title?: string | null;
+  group?: string | null;
+  lane?: string | null;
+  mode?: string | null;
+  status: AgentIntegrationStatus | "ready" | "failed" | string;
+  prompt: string;
+  source: "quick_action" | "lane" | string;
+  ui_action: "task" | string;
+};
+
+export type AgentCommandCenterCommandGroup = {
+  id: string;
+  label: string;
+  ready_count: number;
+  command_count: number;
+  commands: AgentCommandCenterCommand[];
+};
+
+export type AgentCommandCenter = {
+  mode: "fathiya_command_center_v1";
+  captured_at: string;
+  secret_safe: true;
+  ready_to_execute: boolean;
+  headline?: string | null;
+  summary: {
+    command_count: number;
+    ready_command_count: number;
+    command_group_count?: number | null;
+    operator_queue_count: number;
+    integration_ready: number | null;
+    integration_total: number | null;
+    tool_count: number | null;
+    zapier_action_count: number | null;
+    agent_provider_count: number | null;
+    connected_app_count?: number | null;
+    connected_app_ready_count?: number | null;
+    trading_running: boolean | null;
+    knowledge_intake_running: boolean | null;
+  };
+  commands: AgentCommandCenterCommand[];
+  command_groups?: AgentCommandCenterCommandGroup[];
+  operator_queue: AgentMeshActivationAction[];
+  lanes: AgentMeshLane[];
+  agent_providers: AgentMeshProviderSummary[];
+  zapier_apps?: AgentZapierInventoryApp[];
+  policy: AgentMeshSummary["policy"];
+  powershell: {
+    inspect: string;
+    run_execute_mesh: string;
+    run_trading: string;
+    run_bug_bounty_draft: string;
+  };
+};
+
 export type AgentLocalSettingField = {
   name: string;
   label: string;
@@ -223,6 +477,37 @@ export type AgentLocalSettingsResponse = {
     values_returned: boolean;
     allowlisted_fields_only: boolean;
     storage_path: string;
+  };
+};
+
+export type AgentRuntimeHealth = {
+  status: "ok" | string;
+  mode: string;
+  worker_id: string;
+  worker_online: boolean;
+  api: string;
+  agent_loop: {
+    max_rounds: number;
+    max_tool_steps_per_round: number;
+    local_planning_enabled: boolean;
+    local_generation_enabled: boolean;
+    local_model: string;
+    local_max_new_tokens: number;
+    local_max_generation_seconds: number;
+    openrouter_configured: boolean;
+    openrouter_model: string;
+    openrouter_research_model: string;
+    openrouter_safety_model: string;
+    planning_route: string;
+  };
+  knowledge_intake: AgentKnowledgeIntakeStatus;
+  trading: {
+    running: boolean;
+    autostart: boolean;
+    mode: string;
+    symbol: string;
+    cycle_target_seconds: number;
+    latest_receipt_id: string | null;
   };
 };
 

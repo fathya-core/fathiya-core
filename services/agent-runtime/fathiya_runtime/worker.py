@@ -96,6 +96,13 @@ class AgentWorker:
             time.sleep(poll_seconds)
 
     def _process(self, task: dict[str, Any]) -> None:
+        heartbeat_stop = threading.Event()
+        heartbeat_thread = threading.Thread(
+            target=self._task_heartbeat_loop,
+            args=(task["id"], heartbeat_stop),
+            daemon=True,
+        )
+        heartbeat_thread.start()
         try:
             self.store.heartbeat_worker(self.config.worker_id, "busy")
             checkpoint = _execution_checkpoint(task)
@@ -194,10 +201,11 @@ class AgentWorker:
                         mission_evidence,
                     )
 
+                prompt_for_control = str(execution_task["prompt"])
                 direct_control = (
                     []
-                    if knowledge_only_requested(execution_task["prompt"])
-                    else fast_control_steps(execution_task["prompt"], tool_catalog)
+                    if knowledge_only_requested(prompt_for_control)
+                    else fast_control_steps(prompt_for_control, tool_catalog)
                 )
                 if direct_control:
                     sources = []
@@ -239,12 +247,20 @@ class AgentWorker:
                         },
                     )
 
-                initial_plan = build_plan(
-                    execution_task,
-                    sources,
-                    self.model,
-                    tool_catalog,
-                    max_tool_steps=self.config.max_tool_steps,
+                initial_plan = (
+                    _direct_control_initial_plan(
+                        execution_task,
+                        direct_control,
+                        tool_catalog,
+                    )
+                    if direct_control
+                    else build_plan(
+                        execution_task,
+                        sources,
+                        self.model,
+                        tool_catalog,
+                        max_tool_steps=self.config.max_tool_steps,
+                    )
                 )
                 tool_results: list[dict[str, Any]] = []
                 agent_rounds: list[dict[str, Any]] = []
@@ -357,6 +373,8 @@ class AgentWorker:
                         progress=round_progress_start,
                     ):
                         return
+                    execution_steps = deferred_steps
+                    deferred_steps = []
 
                 round_tools = [*round_completed_tools]
                 for index, execution_step in enumerate(execution_steps, start=1):
@@ -450,6 +468,15 @@ class AgentWorker:
                         progress=round_progress_end,
                     ):
                         return
+                    current_steps = deferred_steps
+                    round_completed_tools = round_tools
+                    round_reason = (
+                        "استأنف الوكيل خطوات مؤجلة بعد أن أثبتت بوابة المخاطر "
+                        "أنها لا تحتاج موافقة."
+                    )
+                    round_planner_mode = f"{round_planner_mode}+deferred_released"
+                    round_planner_error = None
+                    continue
 
                 completed_round = {
                     **pending_round,
@@ -554,6 +581,7 @@ class AgentWorker:
                 "تم تلخيص النتيجة وبدأ التقييم.",
                 {"synthesis": synthesis},
             )
+            company_web_intake_evaluation = _company_web_intake_evaluation(tool_results)
             if self.synthesis_mode == "local_deterministic_explicit_sources":
                 evaluation = {
                     "passed": True,
@@ -561,6 +589,10 @@ class AgentWorker:
                     "summary": "تم استخراج القيم الدقيقة من ملفات معرفة مصرح بها صراحة في الطلب.",
                     "concerns": [],
                 }
+            elif company_web_intake_evaluation:
+                evaluation = company_web_intake_evaluation
+            elif self.synthesis_mode.startswith("local_deterministic_"):
+                evaluation = _deterministic_tool_evaluation(tool_results)
             else:
                 evaluation = self.model.evaluate(
                     execution_task["prompt"],
@@ -673,7 +705,23 @@ class AgentWorker:
                 payload={"receipt_id": receipt_id, "failure": failure_result},
             )
         finally:
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=1)
             self.store.heartbeat_worker(self.config.worker_id, "online")
+
+    def _task_heartbeat_loop(
+        self,
+        task_id: str,
+        stop_event: threading.Event,
+        *,
+        interval_seconds: float = 20.0,
+    ) -> None:
+        while not stop_event.wait(interval_seconds):
+            try:
+                self.store.update_task(task_id, last_heartbeat_at=now_iso())
+                self.store.heartbeat_worker(self.config.worker_id, "busy")
+            except Exception:
+                continue
 
     def _execution_args(
         self,
@@ -900,12 +948,113 @@ def _materialize_round_steps(
                 "tool": tool,
                 "description": str(raw.get("description") or spec.get("description") or tool),
                 "args": raw.get("args") if isinstance(raw.get("args"), dict) else {},
+                "risk_class": str(raw.get("risk_class") or spec.get("risk_class", "internal_owned")),
+                "requires_approval": (
+                    bool(raw.get("requires_approval"))
+                    if "requires_approval" in raw
+                    else bool(spec.get("requires_approval", False))
+                ),
+                "read_only": (
+                    bool(raw.get("read_only"))
+                    if "read_only" in raw
+                    else bool(spec.get("read_only", True))
+                ),
+            }
+        )
+    return steps
+
+
+def _direct_control_initial_plan(
+    task: dict[str, Any],
+    direct_steps: list[dict[str, Any]],
+    tool_catalog: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    catalog_by_name = {
+        str(item.get("name")): item
+        for item in tool_catalog
+        if item.get("name")
+    }
+    planner_mode = _direct_control_planner_mode(direct_steps)
+    plan: list[dict[str, Any]] = [
+        {
+            "id": "retrieve",
+            "kind": "retrieval",
+            "tool": "knowledge_search",
+            "description": "استرجاع المعرفة المرتبطة بالطلب",
+            "planner_mode": planner_mode,
+            "planner_error": None,
+            "retrieved_sources": 0,
+            "source_paths": [],
+            "knowledge_mission": bool(task.get("knowledge_mission")),
+        }
+    ]
+    for index, step in enumerate(direct_steps, start=1):
+        tool = str(step.get("tool") or "")
+        spec = catalog_by_name.get(tool)
+        if not spec:
+            continue
+        plan.append(
+            {
+                "id": f"execute-{index}",
+                "kind": "tool",
+                "tool": tool,
+                "description": str(step.get("description") or spec.get("description") or tool),
+                "args": step.get("args") if isinstance(step.get("args"), dict) else {},
                 "risk_class": spec.get("risk_class", "internal_owned"),
                 "requires_approval": bool(spec.get("requires_approval", False)),
                 "read_only": bool(spec.get("read_only", True)),
             }
         )
-    return steps
+    plan.append(
+        {
+            "id": "synthesize",
+            "kind": "model",
+            "tool": "synthesize",
+            "description": "دمج الأدلة ونتائج الأدوات في نتيجة واحدة",
+            "model": "deterministic:direct_control",
+        }
+    )
+    plan.append(
+        {
+            "id": "evaluate",
+            "kind": "evaluation",
+            "tool": "evaluate",
+            "description": "تقييم النتيجة وإصدار إيصال",
+        }
+    )
+    return plan
+
+
+def _direct_control_planner_mode(direct_steps: list[dict[str, Any]]) -> str:
+    if direct_steps and str(direct_steps[0].get("tool") or "") == "learning_bootstrap":
+        return "local_knowledge_execution"
+    if len(direct_steps) != 1:
+        return "local_fast_control"
+    tool = str(direct_steps[0].get("tool") or "")
+    return {
+        "agent_mesh_execute": "local_agent_mesh_execute",
+        "agent_mesh_audit": "local_agent_mesh_audit",
+        "production_site_audit": "local_production_site_audit",
+        "integration_probe": "local_integration_probe",
+        "openrouter_model_strategy": "local_openrouter_model_strategy",
+        "agent_provider_action_prepare": "local_agent_provider_action_prepare",
+        "agent_provider_probe": "local_agent_provider_probe",
+    }.get(tool, "local_fast_control")
+
+
+def _knowledge_execution_should_plan(prompt: str) -> bool:
+    return bool(
+        re.search(
+            r"(?:knowledge\s+execution\s+mission|fathiya_knowledge_execution_v1|"
+            r"fathiya_operator_agent_request_v1|learn\s+and\s+execute|"
+            r"report\s+to\s+execution|تقرير\s+إلى\s+تنفيذ|تقرير\s+الى\s+تنفيذ|"
+            r"استيعاب\s+وتشغيل|استوعب\s+وشغّل|استوعب\s+وشغل|"
+            r"استوعب\s+ونفّذ|استوعب\s+ونفذ|معرفة\s+ثم\s+تنفيذ|"
+            r"المعرفة\s+ثم\s+التنفيذ)\s*:?",
+            prompt,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _round_step_summary(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1130,6 +1279,12 @@ def _required_synthesis_anchors(
             )
             if selected:
                 required.append(selected)
+        elif tool == "bug_bounty_static_review":
+            required.append(("bug bounty", "bugcrowd", "تقرير", "static", "intake"))
+        elif tool == "bug_bounty_draft_gate":
+            required.append(("bugcrowd", "draft", "مسودة", "verdict"))
+        elif tool == "learning_bootstrap":
+            required.append(("learning", "تعلم", "mastery", "quiz"))
         elif tool == "repo_status":
             required.append(("repo", "repository", "مستودع"))
         elif tool == "github_repo_info":
@@ -1209,6 +1364,107 @@ def _deterministic_synthesis(
             next_actions = result.get("next_actions", [])
             if isinstance(next_actions, list):
                 for action in next_actions[:6]:
+                    if isinstance(action, dict) and action.get("title"):
+                        follow_up.append(str(action["title"]))
+        elif tool == "agent_mesh_execute":
+            summary = result.get("summary", {})
+            if isinstance(summary, dict):
+                zapier_inventory_available = bool(summary.get("zapier_inventory_available"))
+                zapier_hosted_available = bool(summary.get("zapier_hosted_available"))
+                zapier_app_count = (
+                    summary.get("zapier_direct_app_count")
+                    or summary.get("zapier_app_count")
+                    or 0
+                )
+                zapier_action_count = (
+                    summary.get("zapier_direct_action_count")
+                    or summary.get("zapier_action_count")
+                    or 0
+                )
+                zapier_state = "غير متصل"
+                if summary.get("zapier_direct_needs_reconnect"):
+                    zapier_state = "يحتاج إعادة ربط OAuth"
+                elif summary.get("zapier_direct_live_available"):
+                    zapier_state = "متصل حيًا محليًا"
+                elif summary.get("zapier_direct_oauth_connected"):
+                    zapier_state = "متصل بالمخزون المحلي فقط"
+                elif zapier_hosted_available:
+                    zapier_state = "مخزونه المستضاف متاح وOAuth المحلي غير مكتمل"
+                elif zapier_inventory_available:
+                    zapier_state = "مخزونه محفوظ وOAuth المحلي غير مكتمل"
+                evidence.append(
+                    "تشغيل شبكة الوكلاء الآمنة نفذ "
+                    f"{summary.get('safe_execution_count', 0)} خطوة داخلية، "
+                    f"مع {summary.get('failed_step_count', 0)} فشل، "
+                    f"وتخطى {summary.get('skipped_high_risk_count', 0)} خطوات عالية الأثر."
+                )
+                evidence.append(
+                    f"الجاهزية الحالية: {summary.get('ready_capability_count', 0)} بوابات محلية جاهزة، "
+                    f"Zapier {zapier_state} "
+                    f"مع {zapier_app_count} تطبيقًا و"
+                    f"{zapier_action_count} إجراء، "
+                    f"وCodespaces حالته {summary.get('codespaces_agent_status', 'غير معروفة')}."
+                )
+                evidence.append(
+                    f"فحوص التكاملات: {summary.get('ready_integration_count', 0)} جاهزة، "
+                    f"{summary.get('partial_integration_count', 0)} جزئية، "
+                    f"ووكيل التداول Paper {'يعمل' if summary.get('paper_trading_running') else 'متوقف'}."
+                )
+            command_center = result.get("execution_command_center")
+            if isinstance(command_center, dict):
+                command_summary = command_center.get("summary")
+                if isinstance(command_summary, dict):
+                    evidence.append(
+                        "مركز أوامر التنفيذ جهز "
+                        f"{command_summary.get('ready_command_count', 0)} أوامر تشغيل، "
+                        f"{command_summary.get('routable_tool_count', 0)} أداة قابلة للتوجيه، "
+                        f"و{command_summary.get('operator_queue_count', 0)} عناصر في طابور المشغّل."
+                    )
+                ready_commands = command_center.get("ready_commands")
+                if isinstance(ready_commands, list):
+                    titles = [
+                        str(item.get("title"))
+                        for item in ready_commands
+                        if isinstance(item, dict) and item.get("title")
+                    ][:5]
+                    if titles:
+                        follow_up.append("أوامر جاهزة: " + " · ".join(titles))
+            activation_plan = result.get("activation_plan")
+            if isinstance(activation_plan, dict):
+                entries = [
+                    item
+                    for item in activation_plan.get("entries", [])
+                    if isinstance(item, dict)
+                ]
+                activation_required = [
+                    item
+                    for item in entries
+                    if item.get("state") == "activation_required"
+                ]
+                ready_entries = [
+                    item for item in entries if item.get("state") == "ready"
+                ]
+                if entries:
+                    evidence.append(
+                        "خطة التفعيل المنظمة: "
+                        f"{len(ready_entries)} جاهزة الآن و"
+                        f"{len(activation_required)} تحتاج تفعيلًا."
+                    )
+                for item in activation_required[:4]:
+                    action = item.get("next_action")
+                    title = (
+                        action.get("title")
+                        if isinstance(action, dict) and action.get("title")
+                        else item.get("integration_id")
+                    )
+                    status = item.get("status", "غير معروف")
+                    follow_up.append(f"{title}: {status}")
+            policy = result.get("execution_policy")
+            if isinstance(policy, dict) and policy.get("approval_gated_steps_skipped"):
+                follow_up.append("راجع الخطوات عالية الأثر من بوابة الموافقة قبل أي تنفيذ خارجي.")
+            next_actions = result.get("next_actions", [])
+            if isinstance(next_actions, list):
+                for action in next_actions[:5]:
                     if isinstance(action, dict) and action.get("title"):
                         follow_up.append(str(action["title"]))
         elif tool == "agent_delegate":
@@ -1326,6 +1582,115 @@ def _deterministic_synthesis(
             else:
                 evidence.append("HexStrike-AI المحلي غير متاح الآن.")
                 follow_up.append("شغل hexstrike_server داخل Kali ثم أعد فحص المختبر المحلي.")
+        elif tool == "bug_bounty_static_review":
+            candidate_count = int(result.get("candidate_count") or 0)
+            report_path = str(result.get("report_path") or "")
+            title = str(result.get("report_title") or "مسودة Bugcrowd")
+            mode = str(result.get("mode") or "")
+            if mode == "web_url_passive_intake":
+                evidence_count = int(result.get("evidence_count") or 0)
+                company_ready = bool(result.get("company_report_ready"))
+                evidence.append(
+                    f"استطلاع الويب الآمن جمع {evidence_count} ملاحظات عامة "
+                    f"بعنوان: {title}."
+                )
+                if company_ready:
+                    evidence.append(
+                        "صُنّف الناتج كتقرير شركة أولي جاهز داخليًا، وليس كبلاغ ثغرة خارجي."
+                    )
+            else:
+                evidence.append(
+                    f"مراجعة Bugcrowd الساكنة أنشأت {candidate_count} مرشحات "
+                    f"بعنوان أولي: {title}."
+                )
+            if report_path:
+                evidence.append(f"حُفظت المسودة محليًا في {report_path}.")
+            if mode == "web_url_passive_intake":
+                follow_up.append(
+                    "استخدم التقرير كمسودة شركة أولية، وأضف لقطات شاشة أو تحقق هوية إذا أردت نسخة إرسال نهائية."
+                )
+            elif candidate_count:
+                follow_up.append("راجع المسودة وثبت الاستغلال والنطاق قبل أي رفع خارجي.")
+            else:
+                follow_up.append("اختر مستودعًا أو هدفًا آخر أو وسع نطاق المراجعة الساكنة.")
+        elif tool == "bug_bounty_draft_gate":
+            verdict = str(result.get("verdict") or "unknown")
+            draft_path = str(result.get("draft_path") or "")
+            external_ready = bool(result.get("external_upload_recommended"))
+            validated = [
+                item
+                for item in result.get("validated_findings", [])
+                if isinstance(item, dict)
+            ]
+            evidence.append(
+                f"بوابة مسودة Bugcrowd أعطت القرار: {verdict}. "
+                f"الرفع الخارجي الموصى به: {'نعم' if external_ready else 'لا'}."
+            )
+            if verdict == "company_report_ready":
+                evidence.append(
+                    "بوابة المسودة قبلت الناتج كتقرير شركة داخلي، لا كبلاغ ثغرة لمنصة."
+                )
+            if draft_path:
+                evidence.append(f"رُفعت المسودة داخل فتحية في {draft_path}.")
+            if validated:
+                rejected = [
+                    str(item.get("id"))
+                    for item in validated
+                    if item.get("status") not in {"submission_ready", "company_report_ready"}
+                ]
+                if rejected:
+                    evidence.append(
+                        "المرشحات غير الجاهزة للرفع: " + ", ".join(rejected[:6]) + "."
+                    )
+            if external_ready:
+                follow_up.append("افتح Bugcrowd وأنشئ draft خارجي بعد مراجعة النطاق يدويًا.")
+            elif verdict == "company_report_ready":
+                follow_up.append("لا يلزم رفع خارجي؛ حسّن نسخة التقرير فقط إذا كانت ستُرسل للشركة.")
+            else:
+                follow_up.append("لا ترفع خارجيًا الآن؛ ابحث عن مسار استغلال مثبت أو هدف آخر.")
+        elif tool == "learning_bootstrap":
+            evidence.append(
+                "جلسة التعلم أنشأت "
+                f"{result.get('card_count', 0)} بطاقات قرار و"
+                f"{result.get('quiz_count', 0)} أسئلة اختبار، "
+                f"ودرجة mastery {result.get('mastery_score', 0)}/100 "
+                f"بحالة {result.get('status', 'unknown')}."
+            )
+            report_path = str(result.get("report_path") or "")
+            if report_path:
+                evidence.append(f"حُفظ تقرير التعلم في {report_path}.")
+            gaps = result.get("gaps")
+            if isinstance(gaps, list) and gaps:
+                follow_up.append("أكمل فجوات التعلم: " + ", ".join(str(gap) for gap in gaps[:6]) + ".")
+        elif tool == "production_site_audit":
+            status = str(result.get("status") or "unknown")
+            route_count = int(result.get("route_count") or 0)
+            reachable_count = int(result.get("reachable_route_count") or 0)
+            matched = bool(result.get("public_matches_local"))
+            evidence.append(
+                f"فحص الإنتاج على {result.get('base_url', 'الدومين')} أعطى حالة {status}: "
+                f"{reachable_count}/{route_count} مسارات عامة ترد. "
+                f"مطابقة المحلي: {'نعم' if matched else 'لا'}."
+            )
+            signals = result.get("signals") if isinstance(result.get("signals"), dict) else {}
+            missing = [
+                label
+                for label, ok in (
+                    ("مسار /agent-tasks", signals.get("agent_tasks_ok")),
+                    ("هوية فتحية", signals.get("fathiya_identity")),
+                    ("واجهة التشغيل المركزة", signals.get("focused_operator_console") or signals.get("command_center")),
+                    ("Supabase للإنتاج", signals.get("supabase_active_store")),
+                )
+                if not ok
+            ]
+            if missing:
+                evidence.append("النواقص المثبتة: " + ", ".join(missing[:6]) + ".")
+            next_actions = result.get("next_actions")
+            if isinstance(next_actions, list) and next_actions:
+                first_action = next_actions[0] if isinstance(next_actions[0], dict) else {}
+                follow_up.append(
+                    str(first_action.get("reason") or first_action.get("title") or "راجع إجراءات الإنتاج التالية.")
+                )
         elif tool.startswith("trading_"):
             trading = result.get("trading")
             cycle = result.get("cycle")
@@ -1357,6 +1722,65 @@ def _deterministic_synthesis(
                     f"على {testnet.get('symbol', 'رمز غير معروف')}، والتنفيذ التجريبي "
                     f"{'مفعل' if testnet.get('execution_enabled') else 'مقفل'}."
                 )
+        elif tool == "github_codespaces_inventory":
+            if result.get("auth_state") == "missing_scope":
+                auth_command = (
+                    result.get("auth_command")
+                    or "gh auth refresh -h github.com -s codespace"
+                )
+                evidence.append(
+                    "GitHub Codespaces يحتاج صلاحية codespace على GitHub CLI؛ "
+                    f"الأمر المطلوب: {auth_command}."
+                )
+                follow_up.append("أكمل تفويض GitHub Codespaces ثم أعد فحص الوكيل.")
+            else:
+                evidence.append(
+                    f"GitHub Codespaces: {result.get('codespace_count', 0)} بيئات ظاهرة، "
+                    f"{result.get('active_codespace_count', 0)} نشطة."
+                )
+        elif tool == "agent_provider_action_prepare":
+            selected = (
+                result.get("selected_action")
+                if isinstance(result.get("selected_action"), dict)
+                else {}
+            )
+            provider = str(result.get("provider") or "مزود غير معروف")
+            action = str(selected.get("name") or "إجراء غير محدد")
+            mode = str(selected.get("mode") or "unknown")
+            if result.get("can_execute_now"):
+                evidence.append(
+                    f"وكيل {provider} جاهز للتنفيذ الحي عبر Zapier: "
+                    f"{action} بوضع {mode}."
+                )
+            else:
+                missing = [
+                    str(item)
+                    for item in result.get("missing_params", [])
+                    if item
+                ]
+                evidence.append(
+                    f"وكيل {provider} حضّر إجراء {action} بوضع {mode}، "
+                    "لكنه لا ينفذ الآن"
+                    + (f" حتى تكتمل الحقول: {', '.join(missing[:6])}." if missing else ".")
+                )
+                next_step = str(result.get("next_step") or "").strip()
+                if next_step:
+                    follow_up.append(next_step)
+        elif tool == "zapier_action_preflight":
+            app = str(result.get("app") or "Zapier")
+            action = str(result.get("action") or "إجراء غير محدد")
+            if result.get("params_ready") and result.get("live_available"):
+                evidence.append(f"تحقق Zapier جهّز {app}/{action} للتنفيذ الحي.")
+            else:
+                missing = [
+                    str(item)
+                    for item in result.get("missing_params", [])
+                    if item
+                ]
+                evidence.append(
+                    f"تحقق Zapier حضّر {app}/{action} "
+                    + (f"وينتظر الحقول: {', '.join(missing[:6])}." if missing else "وينتظر تفعيلًا أو ربطًا.")
+                )
         elif "available" in result:
             evidence.append(f"{tool}: {'متاح' if result.get('available') else 'غير متاح'}.")
         elif result.get("return_code") is not None:
@@ -1376,6 +1800,66 @@ def _deterministic_synthesis(
     if follow_up:
         lines.append("المتابعة المطلوبة: " + " ".join(dict.fromkeys(follow_up)))
     return "\n".join(lines)
+
+
+def _deterministic_tool_evaluation(tool_results: list[dict[str, Any]]) -> dict[str, Any]:
+    compact = _compact_tool_results(tool_results)
+    failed: list[str] = []
+    executed: list[str] = []
+    for item in compact:
+        tool = str(item.get("tool") or item.get("step_id") or "unknown")
+        executed.append(tool)
+        if item.get("execution_failed") or item.get("error"):
+            failed.append(f"{tool}: {str(item.get('error') or 'execution_failed')[:180]}")
+    return {
+        "passed": bool(compact) and not failed,
+        "mode": "local_deterministic_tool_evaluation",
+        "summary": (
+            f"تم تقييم {len(compact)} نتائج أدوات محليًا دون استدعاء نموذج خارجي. "
+            + ("كل النتائج قابلة للتسجيل." if not failed else "توجد نتائج تحتاج مراجعة.")
+        ),
+        "concerns": failed,
+        "executed_tools": executed,
+    }
+
+
+def _company_web_intake_evaluation(tool_results: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for item in tool_results:
+        result = item.get("result") if isinstance(item, dict) else None
+        if not isinstance(result, dict):
+            continue
+        if (
+            result.get("mode") == "web_url_passive_intake"
+            and result.get("deliverable_type") == "company_web_intake_report"
+        ):
+            title = str(result.get("report_title") or "تقرير حضور ويب أولي")
+            evidence_count = int(result.get("evidence_count") or 0)
+            return {
+                "passed": True,
+                "mode": "local_deterministic_company_web_intake",
+                "summary": (
+                    f"أنتجت فتحية {title} وجمعت {evidence_count} ملاحظات عامة "
+                    "ضمن حدود استطلاع ويب آمن. النتيجة ناجحة كتقرير شركة أولي داخلي، "
+                    "وليست بلاغ ثغرة خارجيًا."
+                ),
+                "concerns": [
+                    "لا توجد ثغرة مثبتة أو أثر أمني يصلح للرفع الخارجي في هذا المرور.",
+                    "أي نسخة مرسلة للشركة تستفيد من إضافة لقطات شاشة وتحقق هوية تجاري يدوي.",
+                ],
+            }
+        if result.get("verdict") == "company_report_ready":
+            return {
+                "passed": True,
+                "mode": "local_deterministic_company_report_gate",
+                "summary": (
+                    "بوابة المسودة صنفت الناتج كتقرير شركة داخلي جاهز، مع منع الرفع "
+                    "الخارجي لأنه لا يحتوي إثبات ثغرة."
+                ),
+                "concerns": [
+                    "الحكم الإيجابي خاص بتقرير الشركة الداخلي فقط، وليس بجاهزية بلاغ Bugcrowd/HackerOne.",
+                ],
+            }
+    return None
 
 
 def _source_grounded_synthesis(prompt: str, sources: list[Any]) -> str | None:

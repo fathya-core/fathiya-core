@@ -20,6 +20,7 @@ class LocalSettingsStoreTests(unittest.TestCase):
     def tearDown(self) -> None:
         os.environ.pop("OPENROUTER_API_KEY", None)
         os.environ.pop("N8N_BASE_URL", None)
+        os.environ.pop("FATHIYA_ENABLE_LOCAL_PLANNING", None)
         self.temp.cleanup()
 
     def test_secret_is_persisted_but_never_returned(self) -> None:
@@ -61,3 +62,23 @@ class LocalSettingsStoreTests(unittest.TestCase):
                 {"N8N_BASE_URL": "https://example.com"},
                 [],
             )
+
+    def test_local_model_settings_can_enable_local_planning(self) -> None:
+        result = self.store.update_group(
+            "huggingface_local",
+            {"FATHIYA_ENABLE_LOCAL_PLANNING": "true"},
+            [],
+        )
+
+        self.assertEqual(os.environ["FATHIYA_ENABLE_LOCAL_PLANNING"], "true")
+        self.assertTrue(result["restart_required"])
+        settings = self.store.status()
+        group = next(
+            item for item in settings["groups"] if item["id"] == "huggingface_local"
+        )
+        field = next(
+            item
+            for item in group["fields"]
+            if item["name"] == "FATHIYA_ENABLE_LOCAL_PLANNING"
+        )
+        self.assertTrue(field["configured"])

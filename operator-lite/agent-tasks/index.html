@@ -190,6 +190,40 @@
     .command-panel-actions button {
       flex: 1 1 150px;
     }
+    .command-room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 900px) { .command-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { .command-room-grid { grid-template-columns: 1fr; } }
+    .command-room {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 7px;
+      padding: 9px;
+      background: rgba(20, 20, 20, 0.58);
+      display: grid;
+      gap: 8px;
+      min-height: 116px;
+    }
+    .command-room strong {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .command-room-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .command-room-actions button {
+      min-height: 32px;
+      padding: 7px 9px;
+      flex: 1 1 96px;
+      font-size: 11px;
+    }
     .command-summary {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -263,6 +297,42 @@
       color: var(--text);
     }
     .quick-action span { color: var(--muted); font-size: 11px; font-weight: 500; }
+    .ops-overview {
+      border-color: rgba(228, 197, 127, 0.42);
+      background: linear-gradient(180deg, rgba(32, 25, 12, 0.98), rgba(10, 10, 10, 0.98));
+      display: grid;
+      gap: 12px;
+    }
+    .ops-overview-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 760px) { .ops-overview-main { grid-template-columns: 1fr; } }
+    .ops-overview-main h2 {
+      font-size: 18px;
+      margin-top: 7px;
+    }
+    .ops-overview-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(110px, 1fr));
+      gap: 8px;
+      min-width: min(100%, 420px);
+    }
+    @media (max-width: 760px) { .ops-overview-actions { grid-template-columns: 1fr; } }
+    .ops-overview-actions button {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .ops-readiness-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 1040px) { .ops-readiness-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 620px) { .ops-readiness-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .execution-verdict {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(260px, 0.55fr);
@@ -278,6 +348,72 @@
     .execution-verdict.activation {
       border-color: rgba(244, 199, 94, 0.42);
       background: linear-gradient(180deg, rgba(244, 199, 94, 0.08), rgba(10, 10, 10, 0.98));
+    }
+    .live-proof {
+      border-color: rgba(55, 217, 158, 0.36);
+      background: linear-gradient(180deg, rgba(55, 217, 158, 0.08), rgba(10, 10, 10, 0.98));
+      display: grid;
+      gap: 12px;
+    }
+    .live-proof-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+    @media (max-width: 680px) { .live-proof-main { grid-template-columns: 1fr; } }
+    .live-proof-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .live-proof-actions button {
+      min-height: 34px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .local-bridge {
+      border-color: rgba(114, 214, 168, 0.42);
+      background:
+        linear-gradient(180deg, rgba(7, 24, 18, 0.96), rgba(10, 10, 10, 0.98));
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    @media (max-width: 880px) { .local-bridge { grid-template-columns: 1fr; } }
+    .local-bridge h2 {
+      font-size: 18px;
+      margin-top: 8px;
+    }
+    .local-bridge-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      align-content: start;
+    }
+    @media (max-width: 560px) { .local-bridge-actions { grid-template-columns: 1fr; } }
+    .local-bridge-actions button {
+      min-height: 38px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
+    .bridge-proof-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    @media (max-width: 760px) { .bridge-proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .bridge-note {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      background: rgba(7, 7, 7, 0.58);
+      border-radius: 7px;
+      padding: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
     }
     .execution-verdict.offline {
       border-color: rgba(240, 115, 138, 0.42);
@@ -880,11 +1016,11 @@
   </header>
 
   <section class="wrap command-strip">
-    <div class="card command-panel">
+    <div class="card command-panel view-hidden">
       <div class="command-panel-main">
         <div class="row">
           <div>
-            <h2>محرك الوكلاء المحلي</h2>
+            <h2>مركز أوامر فتحية</h2>
             <p>يفهم المعرفة، يختار النموذج، ينفذ الأدوات الداخلية، ويترك العالي الأثر كخطوة تفعيل واضحة.</p>
           </div>
           <span class="badge" id="command-ready">--</span>
@@ -899,8 +1035,18 @@
         <div class="command-panel-actions">
           <button id="command-run-engine">تشغيل المحرك</button>
           <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
+          <button id="command-run-github-proof" class="secondary">إثبات GitHub</button>
+          <button id="command-run-manus-proof" class="secondary">إثبات Manus</button>
+          <button id="command-run-gmail-proof" class="secondary">إثبات Gmail</button>
+          <button id="command-prepare-cursor-proof" class="secondary">تحضير Cursor</button>
           <button id="command-open-tools" class="secondary">تفعيل الناقص</button>
           <button id="command-zapier-oauth" class="secondary">ربط Zapier</button>
+        </div>
+        <div class="command-room-grid" id="command-room-grid">
+          <div class="command-room">
+            <strong><span>غرف التشغيل</span><span class="badge warn">يفحص</span></strong>
+            <p class="muted" style="font-size:11px;">جارٍ تحميل أوامر فتحية المصنفة.</p>
+          </div>
         </div>
       </div>
       <div class="command-summary">
@@ -915,7 +1061,7 @@
       </div>
     </div>
 
-    <div class="quick-grid">
+    <div class="quick-grid view-hidden">
       <button class="quick-action primary" id="run-engine">
         <strong>تشغيل فتحية</strong>
         <span>HF · OpenRouter · Zapier · n8n · Kali · Codespaces</span>
@@ -952,7 +1098,84 @@
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
 
-    <div class="card execution-verdict activation" id="execution-verdict">
+    <div class="card local-bridge" id="local-bridge-card">
+      <div>
+        <div class="row" style="justify-content:flex-start;">
+          <span class="badge warn" id="bridge-state">يفحص الجسر</span>
+          <span class="badge" id="bridge-origin">--</span>
+          <span class="badge" id="bridge-mode">واجهة</span>
+        </div>
+        <h2 id="bridge-title">هل فتحية متصلة فعلًا بالمحرك المحلي؟</h2>
+        <p id="bridge-summary" class="muted" style="margin-top:6px;">
+          أفحص قدرة هذه الصفحة على الوصول إلى الوكلاء المحليين قبل عرض أي نتيجة كأنها تنفيذ.
+        </p>
+        <div class="bridge-proof-grid">
+          <div class="metric"><span>API المحلي</span><strong id="bridge-api">--</strong></div>
+          <div class="metric"><span>Worker</span><strong id="bridge-worker">--</strong></div>
+          <div class="metric"><span>نماذج</span><strong id="bridge-models">--</strong></div>
+          <div class="metric"><span>آخر إثبات</span><strong id="bridge-proof">--</strong></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="local-bridge-actions">
+          <button id="bridge-run-proof" type="button">شغّل إثبات حي الآن</button>
+          <button id="bridge-open-local" class="secondary" type="button">افتح النسخة المحلية</button>
+          <button id="bridge-copy-start" class="secondary" type="button">انسخ أمر التشغيل</button>
+          <button id="bridge-show-tools" class="secondary" type="button">اعرض الأدوات</button>
+        </div>
+        <div class="bridge-note" id="bridge-note">
+          إذا ظهرت هذه البطاقة كواجهة إنتاج فقط، افتح النسخة المحلية أو شغّل السكربت المحلي حتى تستطيع فتحية تنفيذ الأدوات من جهازك.
+        </div>
+      </div>
+    </div>
+
+    <div class="card ops-overview" id="ops-overview-card">
+      <div class="ops-overview-main">
+        <div>
+          <span class="badge warn" id="ops-state-badge">يفحص...</span>
+          <h2 id="ops-state-title">جارٍ تحديد حالة فتحية</h2>
+          <p class="muted" id="ops-state-summary" style="margin-top:6px;">أفحص العامل المحلي والتكاملات قبل تشغيل الوكلاء.</p>
+        </div>
+        <div class="ops-overview-actions">
+          <button id="ops-run-now" type="button">تشغيل داخلي الآن</button>
+          <button id="ops-learn-run" class="secondary" type="button">استيعاب وتشغيل</button>
+          <button id="ops-open-activation" class="secondary" type="button">تفعيل الناقص</button>
+        </div>
+      </div>
+      <div class="ops-readiness-grid">
+        <div class="metric"><span>Worker</span><strong id="ops-worker">--</strong></div>
+        <div class="metric"><span>Hugging Face</span><strong id="ops-hf">--</strong></div>
+        <div class="metric"><span>OpenRouter</span><strong id="ops-openrouter">--</strong></div>
+        <div class="metric"><span>Zapier MCP</span><strong id="ops-zapier">--</strong></div>
+        <div class="metric"><span>Trading</span><strong id="ops-trading">--</strong></div>
+        <div class="metric"><span>Knowledge</span><strong id="ops-knowledge">--</strong></div>
+      </div>
+    </div>
+
+    <div class="card live-proof view-hidden" id="live-proof-card">
+      <div class="live-proof-main">
+        <div>
+          <div class="row" style="justify-content:flex-start;">
+            <span class="badge ok">تنفيذ حي مؤكد</span>
+            <span class="badge" id="live-proof-receipt">--</span>
+          </div>
+          <h2 id="live-proof-title" style="margin-top:8px;">آخر تنفيذ حي</h2>
+          <p class="muted" id="live-proof-summary" style="margin-top:6px;">بانتظار أول تنفيذ حي.</p>
+        </div>
+        <div class="live-proof-actions">
+          <button class="secondary" id="live-proof-open">فتح الإيصال</button>
+          <button id="live-proof-run">تشغيل جديد</button>
+        </div>
+      </div>
+      <div class="metrics" style="margin:0;">
+        <div class="metric"><span>الأدوات</span><strong id="live-proof-tools">--</strong></div>
+        <div class="metric"><span>الجولات</span><strong id="live-proof-rounds">--</strong></div>
+        <div class="metric"><span>آخر تحديث</span><strong id="live-proof-time">--</strong></div>
+        <div class="metric"><span>المسار</span><strong id="live-proof-lane">وكلاء</strong></div>
+      </div>
+    </div>
+
+    <div class="card execution-verdict activation view-hidden" id="execution-verdict">
       <div>
         <div class="row">
           <span class="badge warn" id="verdict-badge">يفحص...</span>
@@ -1080,7 +1303,7 @@
       <div class="mission-results" id="mission-results"></div>
     </div>
 
-    <div class="card engine-panel" id="engine-panel">
+    <div class="card engine-panel view-hidden" id="engine-panel">
       <div class="stack">
         <div class="row">
           <div>
@@ -1121,7 +1344,8 @@
         <label for="direct-title">العنوان</label>
         <input id="direct-title" placeholder="اختياري" />
         <label for="direct-prompt">المهمة</label>
-        <textarea id="direct-prompt" placeholder="مثال: افحص Zapier وn8n وKali ثم نفذ الأدوات الداخلية المناسبة وسجل إيصالًا"></textarea>
+        <textarea id="direct-prompt" placeholder="مثال: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اعرض مهام Manus الحالية."></textarea>
+        <p class="muted" style="font-size:11px;">فتحية تختار تلقائيًا قراءة Zapier المناسبة لهذه الطلبات وتنفذها بإيصال إذا كانت آمنة.</p>
         <label for="direct-sources">روابط أو مسارات معرفة</label>
         <textarea id="direct-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي، مثال: services/agent-runtime/runtime/knowledge-inbox/openrouter-fusion-email-2026-06-17.md"></textarea>
         <div class="row" style="margin-top:10px;">
@@ -1378,6 +1602,9 @@
 
   <script>
     const apiBase = new URLSearchParams(location.search).get("api") || "http://127.0.0.1:8765";
+    const localOperatorUrl = "http://127.0.0.1:5180/agent-tasks/";
+    const localStartCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-fathiya.ps1 -Detached -OpenBrowser -StartN8n";
+    const pageOrigin = location.origin === "null" ? "local-file" : location.origin;
     const activeStatuses = new Set(["queued", "running", "awaiting_approval", "stalled"]);
     const platformLabels = { auto: "تلقائي", hackerone: "HackerOne", bugcrowd: "Bugcrowd" };
     const knowledgePath = "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
@@ -1441,6 +1668,7 @@
     const localSessionKey = "fathiya.operator.session.v1";
     const defaultOperatorEmail = "fathya-ad@fathya-core.com";
     let selectedTaskId = null;
+    let latestLiveProofTaskId = null;
     let tradingState = null;
     let selectedMissionMode = "execution";
     let selectedMissionAutonomyMode = "direct";
@@ -1453,13 +1681,63 @@
     let commandZapierIntegration = null;
     let commandCodespacesIntegration = null;
     let commandMeshSummary = null;
+    let commandCenterState = null;
     let intakeState = null;
     let localSettingsData = null;
     let selectedLocalSettingsGroup = "";
+    let bridgeConnected = false;
+    let bridgeLastError = "";
     let refreshTimer = null;
     let tradingTimer = null;
 
     document.getElementById("api-label").textContent = apiBase;
+    document.getElementById("bridge-api").textContent = apiBase;
+    document.getElementById("bridge-origin").textContent = pageOrigin.replace(/^https?:\/\//, "");
+
+    function bridgeErrorText(error) {
+      const raw = String(error?.message || error || "").trim();
+      if (!raw) return "لم يصل رد من المحرك المحلي.";
+      if (/Failed to fetch|NetworkError|Load failed|fetch/i.test(raw)) {
+        return "المتصفح لم يستطع الوصول إلى 127.0.0.1:8765 من هذه الصفحة. افتح النسخة المحلية أو شغّل السكربت.";
+      }
+      if (/Origin is not allowed|FORBIDDEN|403/i.test(raw)) {
+        return "المحرك رفض Origin هذه الصفحة. أضف الدومين إلى FATHIYA_OPERATOR_ORIGINS أو افتح النسخة المحلية.";
+      }
+      return raw.slice(0, 220);
+    }
+
+    function updateBridgeState(state, data = {}) {
+      const connected = state === "connected";
+      bridgeConnected = connected;
+      bridgeLastError = data.error || "";
+      const badge = document.getElementById("bridge-state");
+      badge.textContent = connected ? "متصل بالمحرك" : state === "checking" ? "يفحص الجسر" : "واجهة فقط";
+      badge.className = connected ? "badge ok" : state === "checking" ? "badge warn" : "badge bad";
+      document.getElementById("bridge-mode").textContent = connected
+        ? "تنفيذ محلي مباشر"
+        : pageOrigin.startsWith("https://") ? "إنتاج يحتاج جسر محلي" : "محلي ينتظر API";
+      document.getElementById("bridge-title").textContent = connected
+        ? "فتحية متصلة وتستطيع تنفيذ أدوات هذا الجهاز"
+        : "هذه الصفحة ليست متصلة بالمحرك المحلي الآن";
+      document.getElementById("bridge-summary").textContent = connected
+        ? "الطلبات من هذه الواجهة ستصل إلى العامل المحلي، وتستخدم Hugging Face وOpenRouter والأدوات المتاحة ثم تسجل إيصالًا."
+        : bridgeLastError || "افتح النسخة المحلية أو شغّل السكربت حتى تتحول الواجهة من عرض إلى تنفيذ.";
+      document.getElementById("bridge-worker").textContent = data.worker || "--";
+      document.getElementById("bridge-models").textContent = data.models || "--";
+      document.getElementById("bridge-proof").textContent = data.proof || (connected ? "جاهز" : "لا يوجد");
+      document.getElementById("bridge-note").textContent = connected
+        ? "هذا هو وضع التشغيل المطلوب: الموقع يتصل بمحرك محلي على جهازك، والمفاتيح تبقى محلية، والمهام الداخلية لا تنتظر الواجهة."
+        : `أمر التشغيل المحلي: ${localStartCommand}`;
+    }
+
+    async function copyLocalStartCommand() {
+      try {
+        await navigator.clipboard.writeText(localStartCommand);
+        document.getElementById("bridge-note").textContent = "تم نسخ أمر التشغيل. شغّله من PowerShell داخل مجلد المشروع.";
+      } catch {
+        document.getElementById("bridge-note").textContent = localStartCommand;
+      }
+    }
 
     function readLocalSession() {
       try {
@@ -2029,6 +2307,11 @@
       clearError();
       const data = await api("/api/agent/tasks", { method: "POST", body: JSON.stringify(body) });
       selectedTaskId = data.task.id;
+      updateBridgeState("connected", {
+        worker: document.getElementById("bridge-worker").textContent || "online",
+        models: document.getElementById("bridge-models").textContent || "HF · OpenRouter",
+        proof: data.task.id.slice(0, 8)
+      });
       if (options.showReports !== false) {
         setWorkspaceView("reports", { scroll: false });
       }
@@ -2036,6 +2319,29 @@
       await loadDetail(selectedTaskId);
       if (options.scrollDetail !== false) {
         document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    async function runCommandCenterCommand(commandId, fallbackBody) {
+      clearError();
+      try {
+        const data = await api("/api/agent/command-center/run", {
+          method: "POST",
+          body: JSON.stringify({ command_id: commandId })
+        });
+        selectedTaskId = data.task.id;
+        updateBridgeState("connected", {
+          worker: document.getElementById("bridge-worker").textContent || "online",
+          models: document.getElementById("bridge-models").textContent || "HF · OpenRouter",
+          proof: data.task.id.slice(0, 8)
+        });
+        setWorkspaceView("reports", { scroll: false });
+        await loadTasks();
+        await loadDetail(selectedTaskId);
+        document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (error) {
+        if (!fallbackBody) throw error;
+        await createTask(fallbackBody);
       }
     }
 
@@ -2514,13 +2820,20 @@
     }
 
     async function loadEngine() {
+      updateBridgeState("checking", {
+        worker: document.getElementById("bridge-worker").textContent,
+        models: document.getElementById("bridge-models").textContent,
+        proof: bridgeConnected ? document.getElementById("bridge-proof").textContent : "--"
+      });
       try {
-        const [health, integrationData, meshData] = await Promise.all([
+        const [health, integrationData, meshData, commandCenterData] = await Promise.all([
           api("/api/agent/health"),
           api("/api/agent/integrations"),
-          api("/api/agent/mesh/summary")
+          api("/api/agent/mesh/summary"),
+          api("/api/agent/command-center").catch(() => null)
         ]);
         commandMeshSummary = meshData;
+        commandCenterState = commandCenterData;
         const integrations = integrationData.integrations || [];
         const byId = Object.fromEntries(integrations.map((item) => [item.id, item]));
         renderCommandZapierButton(byId.zapier_mcp);
@@ -2528,9 +2841,16 @@
         const ready = integrationData.summary ? `${integrationData.summary.ready}/${integrationData.summary.total}` : "--";
         document.getElementById("engine-status").textContent = health.worker_online ? "المحرك يعمل" : "المحرك ينتظر";
         document.getElementById("engine-status").className = health.worker_online ? "badge ok" : "badge warn";
+        updateBridgeState("connected", {
+          worker: health.worker_online ? health.worker_id : "ينتظر",
+          models: `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`,
+          proof: health.trading?.latest_receipt_id || "جاهز"
+        });
         document.getElementById("engine-ready").textContent = `${ready} جاهزة`;
         document.getElementById("engine-ready").className = integrationData.summary?.partial ? "badge warn" : "badge ok";
-        document.getElementById("command-ready").textContent = `${ready} جاهزة`;
+        document.getElementById("command-ready").textContent = commandCenterData?.summary
+          ? `${commandCenterData.summary.ready_command_count}/${commandCenterData.summary.command_count} أوامر`
+          : `${ready} جاهزة`;
         document.getElementById("command-ready").className = health.worker_online ? "badge ok" : "badge warn";
         document.getElementById("engine-worker").textContent = health.worker_online ? health.worker_id : "offline";
         document.getElementById("command-worker").textContent = health.worker_online ? health.worker_id : "offline";
@@ -2540,24 +2860,33 @@
         document.getElementById("command-models").textContent = `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`;
         document.getElementById("engine-research").textContent = health.agent_loop.openrouter_research_model || "openrouter/fusion";
         document.getElementById("engine-safety").textContent = health.agent_loop.openrouter_safety_model || "nvidia/nemotron-3.5-content-safety:free";
-        document.getElementById("command-ready-now").textContent =
-          meshData.activation_overview?.ready_headline ||
-          `${meshData.summary?.tool_count || "--"} أدوات`;
+        document.getElementById("command-ready-now").textContent = commandCenterData?.summary
+          ? `${commandCenterData.summary.ready_command_count} أوامر · ${commandCenterData.summary.operator_queue_count} طابور`
+          : meshData.activation_overview?.ready_headline ||
+            `${meshData.summary?.tool_count || "--"} أدوات`;
         document.getElementById("mission-worker").textContent = health.worker_online ? "online" : "check";
         document.getElementById("mission-models").textContent = `${shortStatus(byId.huggingface_local)} · ${shortStatus(byId.openrouter)}`;
         document.getElementById("mission-tools").textContent = `${shortStatus(byId.zapier_mcp)} · ${shortStatus(byId.n8n_local)} · ${shortStatus(byId.kali_wsl)}`;
         document.getElementById("engine-zapier").textContent = zapierEngineLabel(byId.zapier_mcp);
         document.getElementById("engine-tools").textContent = `${shortStatus(byId.n8n_local)} · ${shortStatus(byId.kali_wsl)}`;
         const agentProviderCount = Number(meshData.summary?.agent_provider_count ?? meshData.activation_overview?.agent_provider_count ?? 0);
-        document.getElementById("command-tools").textContent = `${shortStatus(byId.zapier_mcp)} · ${agentProviderCount} وكلاء · n8n ${shortStatus(byId.n8n_local)}`;
+        document.getElementById("command-tools").textContent = commandCenterData?.summary
+          ? `${commandCenterData.summary.tool_count || "--"} أداة · Zapier ${commandCenterData.summary.zapier_action_count || 0}`
+          : `${shortStatus(byId.zapier_mcp)} · ${agentProviderCount} وكلاء · n8n ${shortStatus(byId.n8n_local)}`;
         document.getElementById("command-trading").textContent = health.trading?.running ? `${health.trading.symbol} · ثانية` : "Paper جاهز";
         document.getElementById("engine-codespaces").textContent = shortStatus(byId.github_codespaces);
         document.getElementById("engine-codespaces-detail").textContent = codespacesDetailLabel(byId.github_codespaces);
+        renderOpsOverview(health, integrations, integrationData.summary || {}, meshData, byId);
+        renderCommandRooms(commandCenterData);
         renderCommandSummary(integrations, integrationData.summary, meshData);
         renderActivationQueue(integrations, integrationData.summary);
         renderExecutionVerdict(health, integrations, integrationData.summary || {}, meshData);
       } catch (error) {
+        updateBridgeState("disconnected", {
+          error: bridgeErrorText(error)
+        });
         commandMeshSummary = null;
+        commandCenterState = null;
         document.getElementById("engine-status").textContent = "المحرك غير متصل";
         document.getElementById("engine-status").className = "badge warn";
         document.getElementById("engine-worker").textContent = "--";
@@ -2572,9 +2901,11 @@
         renderCommandCodespacesIntegration(null);
         document.getElementById("command-mesh-headline").textContent = "المحرك غير متصل.";
         document.getElementById("command-summary-list").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
+        renderCommandRooms(null);
         document.getElementById("mission-worker").textContent = "--";
         document.getElementById("mission-models").textContent = "--";
         document.getElementById("mission-tools").textContent = "--";
+        renderOpsOverview(null, [], {}, null, {});
         document.getElementById("activation-queue").innerHTML = '<p class="muted">المحرك غير متصل. شغّل API المحلي ثم حدّث الصفحة.</p>';
         renderExecutionVerdict(null, [], {}, null);
       }
@@ -2674,6 +3005,30 @@
       };
     }
 
+    function renderOpsOverview(health, integrations, summary = {}, mesh = null, byId = {}) {
+      const verdict = buildExecutionVerdict(health, integrations, summary, mesh);
+      const badge = document.getElementById("ops-state-badge");
+      badge.textContent = verdict.badge;
+      badge.className = verdict.state === "ready" ? "badge ok" : verdict.state === "offline" ? "badge bad" : "badge warn";
+      document.getElementById("ops-state-title").textContent = verdict.title;
+      document.getElementById("ops-state-summary").textContent = verdict.summary;
+      document.getElementById("ops-worker").textContent = health?.worker_online ? health.worker_id || "online" : "offline";
+      document.getElementById("ops-hf").textContent = health?.agent_loop?.local_planning_enabled
+        ? `${shortStatus(byId.huggingface_local)} · local`
+        : shortStatus(byId.huggingface_local);
+      document.getElementById("ops-openrouter").textContent = health?.agent_loop?.openrouter_configured
+        ? shortStatus(byId.openrouter)
+        : "غير مضبوط";
+      document.getElementById("ops-zapier").textContent = zapierEngineLabel(byId.zapier_mcp);
+      document.getElementById("ops-trading").textContent = health?.trading?.running
+        ? `${health.trading.symbol || "Paper"} · ${health.trading.cycle_target_seconds || 1}s`
+        : health?.trading ? "Paper جاهز" : "--";
+      const intake = health?.knowledge_intake || {};
+      document.getElementById("ops-knowledge").textContent = intake.running
+        ? `${Number(intake.tracked_files || 0)} ملفات · مراقبة`
+        : intake.enabled ? "جاهزة للفحص" : "--";
+    }
+
     function renderExecutionVerdict(health, integrations, summary = {}, mesh = null) {
       const verdict = buildExecutionVerdict(health, integrations, summary, mesh);
       const shell = document.getElementById("execution-verdict");
@@ -2709,6 +3064,54 @@
         return;
       }
       refreshAll().catch(showError);
+    }
+
+    function renderCommandRooms(commandCenter) {
+      const host = document.getElementById("command-room-grid");
+      const groups = Array.isArray(commandCenter?.command_groups)
+        ? commandCenter.command_groups
+        : [];
+      host.innerHTML = "";
+      if (!groups.length) {
+        host.innerHTML = `
+          <div class="command-room">
+            <strong><span>غرف التشغيل</span><span class="badge warn">غير متصل</span></strong>
+            <p class="muted" style="font-size:11px;">لم تصل أوامر مصنفة من المحرك بعد.</p>
+          </div>
+        `;
+        return;
+      }
+      for (const group of groups) {
+        const commands = Array.isArray(group.commands) ? group.commands.slice(0, 3) : [];
+        const buttons = commands.map((command) => `
+          <button type="button" class="secondary" data-command-center-run="${escapeHtml(command.id)}">
+            ${escapeHtml(command.label || command.title || command.id)}
+          </button>
+        `).join("");
+        const shell = document.createElement("div");
+        shell.className = "command-room";
+        shell.innerHTML = `
+          <strong>
+            <span>${escapeHtml(group.label || group.id || "مسار")}</span>
+            <span class="${Number(group.ready_count || 0) ? "badge ok" : "badge warn"}">${escapeHtml(String(group.ready_count || 0))}/${escapeHtml(String(group.command_count || commands.length || 0))}</span>
+          </strong>
+          <p class="muted" style="font-size:11px;">${escapeHtml(commandRoomHint(group.id))}</p>
+          <div class="command-room-actions">${buttons || '<span class="muted">لا توجد أوامر جاهزة.</span>'}</div>
+        `;
+        host.appendChild(shell);
+      }
+    }
+
+    function commandRoomHint(id) {
+      const hints = {
+        execution: "تشغيل شبكة الوكلاء المحلية وجمع الإيصال.",
+        trading: "نبض التداول الورقي ومستشار OpenRouter.",
+        bug_bounty: "مسار صيد مصرح ينتج Draft داخلي.",
+        knowledge: "استيعاب التقارير ثم تشغيل الأدوات المناسبة.",
+        tools: "فحص Zapier وn8n وKali والجسور الناقصة.",
+        connected_apps: "تحضير Manus وCursor وGmail وGitHub عبر Zapier."
+      };
+      return hints[id] || "أوامر مساعدة مرتبطة بالمحرك.";
     }
 
     function renderCommandSummary(integrations, summary = {}, mesh = null) {
@@ -2759,6 +3162,28 @@
           <p>Zapier ${escapeHtml(String(overview.zapier_action_count || mesh.summary?.zapier_action_count || 0))} إجراء · قدرات ${escapeHtml(String(overview.capability_ready || mesh.summary?.capability_ready || "--"))}/${escapeHtml(String(overview.capability_total || mesh.summary?.capability_total || "--"))}</p>
         `;
         host.appendChild(toolsItem);
+        const providerCommands = Array.isArray(commandCenterState?.commands)
+          ? commandCenterState.commands.filter((command) => command?.source === "agent_provider" || command?.source === "connected_app")
+          : [];
+        if (providerCommands.length) {
+          const commandButtons = providerCommands
+            .slice(0, 6)
+            .map((command) => `
+              <button type="button" class="secondary" data-command-center-run="${escapeHtml(command.id)}">${escapeHtml(command.title || command.label || command.id)}</button>
+            `)
+            .join("");
+          const commandItem = document.createElement("div");
+          commandItem.className = "command-summary-item";
+          commandItem.innerHTML = `
+            <strong>
+              <span>أوامر وكلاء التطبيقات</span>
+              <span class="badge sky">${escapeHtml(String(providerCommands.length))}</span>
+            </strong>
+            <p>تشغيل Manus/Cursor/Gmail/GitHub وغيرها كمهام داخل فتحية عبر كتالوج Zapier، مع تحضير الأثر الخارجي بدل تنفيذه عشوائيًا.</p>
+            <div class="row" style="justify-content:flex-start;margin-top:7px;">${commandButtons}</div>
+          `;
+          host.appendChild(commandItem);
+        }
         const providers = Array.isArray(overview.agent_providers)
           ? overview.agent_providers
           : Array.isArray(mesh.agent_providers)
@@ -3060,6 +3485,7 @@
         const allTasks = taskData.tasks || [];
         const focused = focusTasks(allTasks).slice(0, 14);
         renderMissionResults(allTasks);
+        renderLiveProof(allTasks);
         status.textContent = "متصل";
         status.className = "badge ok";
         document.getElementById("active-count").textContent = `${allTasks.filter((task) => activeStatuses.has(task.status)).length}`;
@@ -3197,6 +3623,62 @@
       }).join("");
     }
 
+    function extractLiveProof(task) {
+      const result = task?.result && typeof task.result === "object" ? task.result : null;
+      if (!result || task.status !== "completed") return null;
+      const rows = Array.isArray(result.tool_results) ? result.tool_results : [];
+      const tools = [];
+      let hasLiveAction = false;
+      for (const row of rows) {
+        const toolResult = row?.result && typeof row.result === "object" ? row.result : null;
+        const tool = typeof toolResult?.tool === "string" ? toolResult.tool : "";
+        if (!tool) continue;
+        if (!tools.includes(tool)) tools.push(tool);
+        if ((tool === "zapier_action" && toolResult.executed === true) || tool === "agent_mesh_execute") {
+          hasLiveAction = true;
+        }
+      }
+      if (!hasLiveAction) return null;
+      const summary = missionTaskSummary(task);
+      const roundCount = Array.isArray(result.agent_rounds)
+        ? result.agent_rounds.length
+        : Math.max(1, tools.length);
+      return {
+        task,
+        receiptId: task.latest_receipt_id || task.id.slice(0, 8),
+        summary,
+        tools: tools.length ? tools : ["agent_runtime"],
+        roundCount,
+        time: missionTaskTime(task),
+        lane: classifyMissionTask(task) || "execution"
+      };
+    }
+
+    function renderLiveProof(tasks) {
+      const card = document.getElementById("live-proof-card");
+      if (!card) return;
+      const ordered = [...tasks].sort((a, b) => {
+        const aTime = new Date(a.completed_at || a.updated_at || a.created_at).getTime();
+        const bTime = new Date(b.completed_at || b.updated_at || b.created_at).getTime();
+        return bTime - aTime;
+      });
+      const proof = ordered.map(extractLiveProof).find(Boolean);
+      if (!proof) {
+        latestLiveProofTaskId = null;
+        card.classList.add("view-hidden");
+        return;
+      }
+      latestLiveProofTaskId = proof.task.id;
+      card.classList.remove("view-hidden");
+      document.getElementById("live-proof-receipt").textContent = proof.receiptId;
+      document.getElementById("live-proof-title").textContent = proof.task.title || "آخر تنفيذ حي";
+      document.getElementById("live-proof-summary").textContent = proof.summary;
+      document.getElementById("live-proof-tools").textContent = proof.tools.join(" · ");
+      document.getElementById("live-proof-rounds").textContent = String(proof.roundCount);
+      document.getElementById("live-proof-time").textContent = proof.time;
+      document.getElementById("live-proof-lane").textContent = missionModeLabels[proof.lane]?.label || "وكلاء";
+    }
+
     async function loadDetail(id) {
       selectedTaskId = id;
       const data = await api(`/api/agent/tasks/${id}`);
@@ -3215,8 +3697,10 @@
       const lastEvent = events[events.length - 1] || null;
       const summaryText = latestReceipt?.summary || lastEvent?.message || task.current_step || "لا يوجد ملخص بعد.";
       const activation = detailActivationPlan(data);
+      const commandCenter = detailExecutionCommandCenter(data);
       const providerActionPlan = detailAgentProviderActionPlan(data);
       detailActivationActions = [
+        ...(commandCenter?.actions || []),
         ...(activation?.actions || []),
         ...(providerActionPlan?.actions || [])
       ];
@@ -3227,6 +3711,8 @@
         <div class="metric"><span>آخر خطوة</span><strong>${escapeHtml(task.current_step || "--")}</strong></div>
         <div class="metric"><span>آخر إيصال</span><strong>${escapeHtml(latestReceipt?.receipt_id || "--")}</strong></div>
         <div class="metric"><span>الأدوات / المصادر</span><strong>${tools.length || "--"} أدوات · ${evidence.source_count ?? "--"} مصادر</strong></div>
+        ${commandCenter ? `<div class="metric"><span>مركز التنفيذ</span><strong>${escapeHtml(commandCenter.counts)}</strong></div>` : ""}
+        ${commandCenter ? `<div class="metric" style="grid-column: span 3;"><span>أوامر جاهزة</span><strong>${escapeHtml(commandCenter.next)}</strong></div>` : ""}
         ${activation ? `<div class="metric"><span>خطة التفعيل</span><strong>${escapeHtml(activation.counts)}</strong></div>` : ""}
         ${activation ? `<div class="metric" style="grid-column: span 3;"><span>التالي</span><strong>${escapeHtml(activation.next)}</strong></div>` : ""}
         ${providerActionPlan ? `<div class="metric"><span>وكيل التطبيق</span><strong>${escapeHtml(providerActionPlan.counts)}</strong></div>` : ""}
@@ -3234,6 +3720,34 @@
         ${actionButtons}
         <div class="metric" style="grid-column: 1 / -1;"><span>الخلاصة</span><strong>${escapeHtml(summaryText)}</strong></div>
       `;
+    }
+
+    function detailExecutionCommandCenter(data) {
+      const result = data?.task?.result || {};
+      const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+      const mesh = toolResults
+        .map((item) => item?.result)
+        .find((item) => item?.tool === "agent_mesh_execute");
+      const center = mesh?.execution_command_center;
+      if (!center) return null;
+      const summary = center.summary || {};
+      const commands = Array.isArray(center.ready_commands) ? center.ready_commands : [];
+      const queue = Array.isArray(center.operator_queue) ? center.operator_queue : [];
+      const actions = commands
+        .filter((item) => item?.id && item?.title && item?.prompt)
+        .slice(0, 6)
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          prompt: item.prompt,
+          reason: item.reason || "أمر جاهز من مركز تنفيذ فتحية.",
+          ui_action: item.ui_action || "task"
+        }));
+      return {
+        counts: `${summary.ready_command_count ?? commands.length} أوامر · ${summary.operator_queue_count ?? queue.length} طابور`,
+        next: commands.map((item) => item?.title).filter(Boolean).slice(0, 5).join(" · ") || "لا توجد أوامر جاهزة",
+        actions
+      };
     }
 
     function detailActivationPlan(data) {
@@ -3469,6 +3983,7 @@
       const tools = document.getElementById("tool-panel");
       const knowledge = document.getElementById("knowledge-panel");
       const verdict = document.getElementById("execution-verdict");
+      const opsOverview = document.getElementById("ops-overview-card");
       const commandPanel = document.querySelector(".command-panel");
       const quickGrid = document.querySelector(".quick-grid");
       const operations = document.getElementById("operations-panel");
@@ -3476,13 +3991,15 @@
       const bounty = document.getElementById("bounty-card");
       const reports = document.getElementById("reports-panel");
 
-      commandPanel?.classList.toggle("view-hidden", selected !== "request");
-      quickGrid?.classList.toggle("view-hidden", selected !== "request");
+      const commandVisible = selected === "request" || selected === "tools";
+      commandPanel?.classList.toggle("view-hidden", !commandVisible);
+      quickGrid?.classList.toggle("view-hidden", !commandVisible);
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
       tools.classList.toggle("view-hidden", selected !== "tools");
       knowledge.classList.toggle("view-hidden", selected !== "knowledge");
-      verdict.classList.toggle("view-hidden", selected !== "request");
+      verdict.classList.toggle("view-hidden", selected !== "tools");
+      opsOverview.classList.toggle("view-hidden", selected !== "request");
       main.classList.toggle("view-hidden", selected === "request" || selected === "tools" || selected === "knowledge");
       main.classList.add("single-view");
       operations.classList.toggle("view-hidden", selected === "reports");
@@ -3497,12 +4014,22 @@
       if (options.url !== false) writeWorkspaceViewToLocation(selected);
 
       if (options.scroll !== false) {
-        const target = selected === "request" ? mission : selected === "tools" ? engine : selected === "knowledge" ? knowledge : main;
+        const target = selected === "request" ? (commandPanel || mission) : selected === "tools" ? commandPanel : selected === "knowledge" ? knowledge : main;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
     function meshQuickTask(actionId, fallbackTitle, fallbackPrompt) {
+      const centerCommands = Array.isArray(commandCenterState?.commands)
+        ? commandCenterState.commands
+        : [];
+      const command = centerCommands.find((item) => item?.id === actionId);
+      if (command?.prompt) {
+        return {
+          title: command.title || command.label || fallbackTitle,
+          prompt: command.prompt
+        };
+      }
       const actions = Array.isArray(commandMeshSummary?.quick_actions)
         ? commandMeshSummary.quick_actions
         : [];
@@ -3515,10 +4042,20 @@
 
     document.getElementById("refresh").addEventListener("click", () => refreshAll());
     document.getElementById("logout").addEventListener("click", () => lockOperator());
-    document.getElementById("command-run-engine").addEventListener("click", () => createTask(meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
-    document.getElementById("command-run-knowledge").addEventListener("click", () => createTask(meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
-    document.getElementById("command-open-tools").addEventListener("click", () => createTask(meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError));
+    document.getElementById("command-run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
+    document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
+    document.getElementById("command-run-manus-proof").addEventListener("click", () => runCommandCenterCommand("verify_manus_zapier_read").catch(showError));
+    document.getElementById("command-run-gmail-proof").addEventListener("click", () => runCommandCenterCommand("verify_gmail_zapier_read").catch(showError));
+    document.getElementById("command-prepare-cursor-proof").addEventListener("click", () => runCommandCenterCommand("prepare_cursor_zapier_read").catch(showError));
+    document.getElementById("command-open-tools").addEventListener("click", () => runCommandCenterCommand("activate_tools", meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError));
     document.getElementById("command-zapier-oauth").addEventListener("click", () => runCommandZapier().catch(showError));
+    document.getElementById("ops-run-now").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("ops-learn-run").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
+    document.getElementById("ops-open-activation").addEventListener("click", () => {
+      setWorkspaceView("tools");
+      runCommandCenterCommand("activate_tools", meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError);
+    });
     document.getElementById("verdict-primary").addEventListener("click", (event) => {
       runVerdictAction(event.currentTarget.dataset.verdictAction || "refresh");
     });
@@ -3526,6 +4063,11 @@
       runVerdictAction(event.currentTarget.dataset.verdictAction || "run");
     });
     document.getElementById("command-summary-list").addEventListener("click", (event) => {
+      const command = event.target.closest("[data-command-center-run]");
+      if (command) {
+        runCommandCenterCommand(command.getAttribute("data-command-center-run")).catch(showError);
+        return;
+      }
       const probe = event.target.closest("[data-agent-provider-probe]");
       if (probe) {
         runAgentProviderProbe(probe.getAttribute("data-agent-provider-probe")).catch(showError);
@@ -3536,7 +4078,32 @@
         runAgentProviderPrepare(prepare.getAttribute("data-agent-provider-prepare")).catch(showError);
       }
     });
-    document.getElementById("run-engine").addEventListener("click", () => createTask(meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("command-room-grid").addEventListener("click", (event) => {
+      const command = event.target.closest("[data-command-center-run]");
+      if (!command) return;
+      runCommandCenterCommand(command.getAttribute("data-command-center-run")).catch(showError);
+    });
+    document.getElementById("live-proof-open").addEventListener("click", () => {
+      if (!latestLiveProofTaskId) return;
+      setWorkspaceView("reports", { scroll: false });
+      loadDetail(latestLiveProofTaskId).catch(showError);
+    });
+    document.getElementById("live-proof-run").addEventListener("click", () => {
+      runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError);
+    });
+    document.getElementById("bridge-run-proof").addEventListener("click", () => {
+      runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError);
+    });
+    document.getElementById("bridge-open-local").addEventListener("click", () => {
+      const localUrl = new URL(localOperatorUrl);
+      localUrl.searchParams.set("view", "tools");
+      window.open(localUrl.toString(), "_blank", "noopener,noreferrer");
+    });
+    document.getElementById("bridge-copy-start").addEventListener("click", () => {
+      copyLocalStartCommand().catch(showError);
+    });
+    document.getElementById("bridge-show-tools").addEventListener("click", () => setWorkspaceView("tools"));
+    document.getElementById("run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("scan-mesh").addEventListener("click", () => createTask({ title: "فحص شبكة الوكلاء", prompt: meshPrompt }).catch(showError));
     document.getElementById("run-codespaces").addEventListener("click", () => createTask({ title: "تشغيل وكيل GitHub Codespaces", prompt: codespacesPrompt }).catch(showError));
     document.getElementById("run-model-strategy").addEventListener("click", () => createTask({ title: "استراتيجية OpenRouter/Fusion", prompt: modelStrategyPrompt }).catch(showError));

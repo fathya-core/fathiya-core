@@ -68,36 +68,6 @@
       "requires_approval": true,
       "read_only": false,
       "bridge_dispatch_allowed": true
-    },
-    {
-      "name": "cursor_agent_bridge",
-      "provider": "Cursor",
-      "description": "Send an approved engineering task to the configured Cursor agent bridge.",
-      "method": "POST",
-      "url_env": "FATHIYA_CURSOR_AGENT_URL",
-      "required_env": [
-        "FATHIYA_CURSOR_AGENT_URL"
-      ],
-      "timeout_seconds": 90,
-      "risk_class": "external",
-      "requires_approval": true,
-      "read_only": false,
-      "bridge_dispatch_allowed": true
-    },
-    {
-      "name": "manus_agent_bridge",
-      "provider": "Manus",
-      "description": "Send an approved delegated task to the configured Manus agent bridge.",
-      "method": "POST",
-      "url_env": "FATHIYA_MANUS_AGENT_URL",
-      "required_env": [
-        "FATHIYA_MANUS_AGENT_URL"
-      ],
-      "timeout_seconds": 90,
-      "risk_class": "external",
-      "requires_approval": true,
-      "read_only": false,
-      "bridge_dispatch_allowed": true
     }
   ]
 }

@@ -69,6 +69,12 @@ def main() -> None:
     trading_proof.add_argument("--cycles", type=int, default=5)
     sub.add_parser("intake-status")
     sub.add_parser("intake-scan")
+    learning = sub.add_parser("learning-bootstrap")
+    learning.add_argument("--url", action="append", dest="source_urls", default=[])
+    learning.add_argument("--path", action="append", dest="source_paths", default=[])
+    learning.add_argument("--text", default="")
+    learning.add_argument("--title", default="")
+    learning.add_argument("--objective", default="")
 
     args = parser.parse_args()
     config = RuntimeConfig.load()
@@ -231,6 +237,20 @@ def main() -> None:
                 indent=2,
             )
         )
+    elif args.command == "learning-bootstrap":
+        prompt = args.objective or args.title or "Fathiya learning bootstrap"
+        result = ToolExecutor(config).execute(
+            "learning_bootstrap",
+            prompt,
+            {
+                "source_urls": args.source_urls,
+                "source_paths": args.source_paths,
+                "source_text": args.text,
+                "title": args.title,
+                "objective": args.objective,
+            },
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def _require_task(store: TaskStore, task_id: str) -> dict[str, Any]:

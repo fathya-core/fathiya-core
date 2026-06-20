@@ -1,0 +1,113 @@
+{
+  "schema": "fathiya_security_pattern_cards_v1",
+  "captured_at": "2026-06-15",
+  "source_filter": "https://hackerone.com/hacktivity/overview?queryString=severity_rating%3A%28%22High%22+OR+%22Critical%22%29+AND+disclosed%3Atrue&sortField=latest_disclosable_activity_at&sortDirection=DESC&pageIndex=0",
+  "trust_boundary": "public_disclosed_reports",
+  "patterns": [
+    {
+      "id": "ci_supply_chain_privileged_pr",
+      "title": "Privileged CI workflow executes untrusted PR code",
+      "hunt_signals": [
+        "pull_request_target or other privileged trigger",
+        "checkout of fork or pull-request head",
+        "package install or lifecycle script execution",
+        "secrets, write token, publish token, signing key, or release path in same trust zone"
+      ],
+      "escalation_evidence": [
+        "untrusted code execution in privileged workflow",
+        "safe proof signal without real secret exfiltration",
+        "downstream build, release, package, app, or product impact"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3619288",
+        "https://hackerone.com/reports/3619287"
+      ]
+    },
+    {
+      "id": "shell_command_construction_from_options",
+      "title": "Shell command injection through build or deploy options",
+      "hunt_signals": [
+        "command arguments joined into a string",
+        "bash -c, sh -c, cmd /c, exec, execSync, or shell-enabled spawn",
+        "bundler, compiler, deploy, IaC, codegen, or package options controlled by project input"
+      ],
+      "escalation_evidence": [
+        "normal developer or CI workflow executes the command",
+        "attacker can provide the project/package/config input",
+        "observable benign command result and direct remediation path"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3558713"
+      ]
+    },
+    {
+      "id": "ssrf_after_dns_resolution",
+      "title": "Server-side fetch validates URL but not resolved IP",
+      "hunt_signals": [
+        "link preview, webhook, import-from-url, screenshot, avatar, or metadata fetcher",
+        "validation before DNS resolution only",
+        "redirects or attacker-controlled DNS accepted",
+        "internal, loopback, metadata, or private network target reachable"
+      ],
+      "escalation_evidence": [
+        "server-side request observed",
+        "internal/private resource class demonstrated safely",
+        "response reflection or blind callback proof"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3393664"
+      ]
+    },
+    {
+      "id": "local_tool_untrusted_page_to_file_write",
+      "title": "Crawler or browser automation trusts attacker-controlled page metadata",
+      "hunt_signals": [
+        "browser-powered crawler or importer handles file inputs",
+        "page-controlled filename, accept value, path, URL, or MIME metadata",
+        "local temp, workspace, startup, plugin, config, or project path write"
+      ],
+      "escalation_evidence": [
+        "local file write in user-writable path",
+        "normal product usage triggers the write",
+        "later trust or execution path explained with proof"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3712279"
+      ]
+    },
+    {
+      "id": "jwt_oidc_signature_verification_gap",
+      "title": "OIDC or identity flow accepts unverified identity token",
+      "hunt_signals": [
+        "JWT parsed before signature verification",
+        "missing issuer, audience, nonce, expiry, algorithm, or key binding check",
+        "account linking trusts user-controlled identity claims"
+      ],
+      "escalation_evidence": [
+        "real account boundary crossed",
+        "auth bypass or impersonation shown safely",
+        "affected flow and claim trust path identified"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3489490"
+      ]
+    },
+    {
+      "id": "blind_sqli_low_privileged_path",
+      "title": "Low-privileged endpoint exposes blind SQL injection",
+      "hunt_signals": [
+        "parameter reaches database query without safe binding",
+        "timing, boolean, error, or content side channel",
+        "low-privileged account can access endpoint"
+      ],
+      "escalation_evidence": [
+        "exact parameter and file path",
+        "reliable side-channel proof",
+        "database read/write or sensitive data impact"
+      ],
+      "source_reports": [
+        "https://hackerone.com/reports/3653196"
+      ]
+    }
+  ]
+}

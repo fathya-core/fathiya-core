@@ -30,6 +30,8 @@ DEFAULT_TRADING_ADVISORY_MODEL_CANDIDATES = (
     "qwen/qwen3-next-80b-a3b-instruct:free",
     "nvidia/nemotron-nano-9b-v2:free",
 )
+DEFAULT_OPENROUTER_RESEARCH_MODEL = "openrouter/fusion"
+DEFAULT_OPENROUTER_SAFETY_MODEL = "nvidia/nemotron-3.5-content-safety:free"
 
 
 @dataclass(frozen=True)
@@ -61,6 +63,8 @@ class RuntimeConfig:
     openrouter_api_key: str
     openrouter_model: str
     openrouter_model_candidates: tuple[str, ...]
+    openrouter_research_model: str
+    openrouter_safety_model: str
     max_tool_steps: int
     max_agent_rounds: int
     knowledge_watch_enabled: bool
@@ -184,7 +188,7 @@ class RuntimeConfig:
                 "FATHIYA_ZAPIER_MCP_ACCESS_TOKEN",
                 "",
             ).strip(),
-            enable_hf_retrieval=os.getenv("FATHIYA_ENABLE_HF_RETRIEVAL", "false").lower()
+            enable_hf_retrieval=os.getenv("FATHIYA_ENABLE_HF_RETRIEVAL", "true").lower()
             in {"1", "true", "yes"},
             hf_model=os.getenv(
                 "FATHIYA_HF_MODEL",
@@ -192,12 +196,12 @@ class RuntimeConfig:
             ),
             enable_local_generation=os.getenv(
                 "FATHIYA_ENABLE_LOCAL_GENERATION",
-                "false",
+                "true",
             ).lower()
             in {"1", "true", "yes"},
             enable_local_planning=os.getenv(
                 "FATHIYA_ENABLE_LOCAL_PLANNING",
-                "false",
+                "true",
             ).lower()
             in {"1", "true", "yes"},
             local_model=os.getenv(
@@ -224,6 +228,14 @@ class RuntimeConfig:
                 os.getenv("OPENROUTER_MODEL_CANDIDATES"),
                 DEFAULT_OPENROUTER_MODEL_CANDIDATES,
             ),
+            openrouter_research_model=os.getenv(
+                "FATHIYA_OPENROUTER_RESEARCH_MODEL",
+                DEFAULT_OPENROUTER_RESEARCH_MODEL,
+            ).strip(),
+            openrouter_safety_model=os.getenv(
+                "FATHIYA_OPENROUTER_SAFETY_MODEL",
+                DEFAULT_OPENROUTER_SAFETY_MODEL,
+            ).strip(),
             max_tool_steps=max(1, min(12, int(os.getenv("FATHIYA_MAX_TOOL_STEPS", "6")))),
             max_agent_rounds=max(
                 1,

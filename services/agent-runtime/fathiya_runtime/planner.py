@@ -11,6 +11,7 @@ from .retrieval import RetrievedSource
 
 FAST_CONTROL_TOOLS = frozenset(
     {
+        "integration_probe",
         "trading_status",
         "trading_start",
         "trading_stop",
@@ -21,7 +22,35 @@ FAST_CONTROL_TOOLS = frozenset(
 DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
     "agent_mesh_audit",
     "agent_mesh_execute",
+    "agent_provider_action_prepare",
+    "agent_provider_probe",
+    "bug_bounty_draft_gate",
+    "bug_bounty_static_review",
+    "connected_tool_inventory",
+    "connector_catalog",
+    "connector_profile",
+    "github_repo_info",
+    "github_codespaces_agent",
+    "github_codespaces_inventory",
+    "hexstrike_lab_scan",
+    "integration_probe",
+    "internal_echo",
+    "kali_tool_inventory",
+    "learning_bootstrap",
+    "local_capability_inventory",
+    "n8n_status",
+    "n8n_workflows",
+    "openrouter_model_strategy",
+    "production_site_audit",
+    "repo_search",
+    "repo_status",
+    "security_core_plan",
+    "tool_catalog",
     "trading_strategy_refresh",
+    "zapier_action",
+    "zapier_action_catalog",
+    "zapier_action_details",
+    "zapier_action_preflight",
 }
 KNOWLEDGE_ONLY_TERMS = (
     "knowledge-only",
@@ -32,6 +61,68 @@ KNOWLEDGE_ONLY_TERMS = (
     "استرجاع فقط",
     "تحليل معرفي فقط",
 )
+CONNECTED_APP_CATALOG_APPS = (
+    "GitHub",
+    "Gmail",
+    "Microsoft Outlook",
+    "Zapier Tables",
+    "MCP Client by Zapier",
+    "RSS by Zapier",
+    "Web Parser by Zapier",
+    "Zapier Manager",
+    "Files By Zapier",
+)
+CONNECTED_APP_ALIASES = {
+    "GitHub": ("github", "git hub", "جيت هب", "قيتهب"),
+    "Gmail": ("gmail", "جيميل", "جي ميل"),
+    "Microsoft Outlook": ("microsoft outlook", "outlook", "أوتلوك", "اوتلوك"),
+    "Zapier Tables": ("zapier tables", "zapier table", "جداول زابير", "جدول زابير"),
+    "MCP Client by Zapier": ("mcp client by zapier", "mcp client", "عميل mcp"),
+    "RSS by Zapier": ("rss by zapier", "rss", "خلاصات", "ار اس اس"),
+    "Web Parser by Zapier": (
+        "web parser by zapier",
+        "web parser",
+        "parser by zapier",
+        "محلل الويب",
+    ),
+    "Zapier Manager": ("zapier manager", "مدير زابير"),
+    "Files By Zapier": ("files by zapier", "zapier files", "ملفات زابير"),
+}
+AGENT_PROVIDER_APPS = (
+    "Manus",
+    "Cursor",
+    "Agents",
+    "AI by Zapier",
+    "ChatGPT (OpenAI)",
+    "ChatGPT",
+    "Apify",
+    "Netlify",
+    "GitHub",
+)
+AGENT_PROVIDER_ALIASES = {
+    "Manus": ("manus", "مانوس", "مانس"),
+    "Cursor": ("cursor", "كورسور", "كرسر", "كيرسر"),
+    "Agents": ("agents", "zapier agents", "وكلاء زابير", "وكيل زابير"),
+    "AI by Zapier": (
+        "ai by zapier",
+        "ai zapier",
+        "ذكاء زابير",
+        "اي آي زابير",
+        "اي اي زابير",
+    ),
+    "ChatGPT (OpenAI)": (
+        "chatgpt",
+        "chat gpt",
+        "openai",
+        "شات جي بي تي",
+        "اوبن اي اي",
+        "اوبن اي آي",
+        "أوبن اي آي",
+    ),
+    "Apify": ("apify", "ابيفاي", "أبيفاي"),
+    "Netlify": ("netlify", "نتلفاي", "نتلايفاي"),
+    "GitHub": ("github", "git hub", "قيتهب", "جتهب", "جيت هب"),
+}
 
 
 def step_signature(tool: str, args: dict[str, Any] | None = None) -> str:
@@ -49,6 +140,84 @@ def knowledge_only_requested(prompt: str) -> bool:
     return any(term in text for term in KNOWLEDGE_ONLY_TERMS)
 
 
+def _prompt_line_value(prompt: str, *names: str) -> str:
+    if not names:
+        return ""
+    label_pattern = "|".join(re.escape(name) for name in names if name)
+    if not label_pattern:
+        return ""
+    match = re.search(
+        rf"(?im)^[^\S\r\n]*(?:{label_pattern})[^\S\r\n]*:[^\S\r\n]*(.+?)[^\S\r\n]*$",
+        prompt,
+    )
+    return match.group(1).strip() if match else ""
+
+
+def _prompt_inline_value(prompt: str, *names: str) -> str:
+    if not names:
+        return ""
+    label_pattern = "|".join(re.escape(name) for name in names if name)
+    if not label_pattern:
+        return ""
+    match = re.search(
+        rf"(?:{label_pattern})\s*[:=]\s*([^\n\r،؛;]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    return match.group(1).strip().strip("`'\"") if match else ""
+
+
+def _prompt_json_object_value(prompt: str, *names: str) -> dict[str, Any]:
+    raw = _prompt_line_value(prompt, *names)
+    if not raw.startswith("{"):
+        raw = _prompt_json_block_value(prompt, *names)
+    if not raw or not raw.startswith("{"):
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _prompt_json_block_value(prompt: str, *names: str) -> str:
+    if not names:
+        return ""
+    label_pattern = "|".join(re.escape(name) for name in names if name)
+    if not label_pattern:
+        return ""
+    match = re.search(rf"(?im)^\s*(?:{label_pattern})\s*:\s*", prompt)
+    if not match:
+        return ""
+    start = match.end()
+    while start < len(prompt) and prompt[start].isspace():
+        start += 1
+    if start >= len(prompt) or prompt[start] != "{":
+        return ""
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(prompt)):
+        char = prompt[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return prompt[start : index + 1].strip()
+    return ""
+
+
 def build_plan(
     task: dict[str, Any],
     sources: list[RetrievedSource],
@@ -64,38 +233,120 @@ def build_plan(
         planner_mode = "local_knowledge_only"
         planner_error = None
     else:
-        direct_mesh_step = _agent_mesh_execute_step(
-            operator_prompt
-        ) or _agent_mesh_audit_step(operator_prompt)
-        if direct_mesh_step and _tool_is_available(direct_mesh_step["tool"], tool_catalog):
-            tool_steps = [direct_mesh_step]
-            planner_mode = (
-                "local_agent_mesh_execute"
-                if direct_mesh_step["tool"] == "agent_mesh_execute"
-                else "local_agent_mesh_audit"
-            )
+        direct_steps = _bug_bounty_execution_steps(operator_prompt, max_tool_steps)
+        direct_steps = [
+            step for step in direct_steps if _tool_is_available(step["tool"], tool_catalog)
+        ]
+        if direct_steps:
+            tool_steps = direct_steps
+            planner_mode = "local_bug_bounty_execution"
             planner_error = None
         else:
-            tool_steps = fast_control_steps(operator_prompt, tool_catalog)
-            if tool_steps:
-                planner_mode = "local_fast_control"
+            direct_steps = _tool_bridge_execution_steps(
+                operator_prompt,
+                tool_catalog,
+                max_tool_steps=max_tool_steps,
+            )
+            if direct_steps:
+                tool_steps = direct_steps
+                planner_mode = "local_tool_bridge_execution"
                 planner_error = None
             else:
-                tool_steps, planner_mode, planner_error = _model_steps(
-                    planner_task,
-                    sources,
-                    model,
-                    tool_catalog,
-                    max_tool_steps,
+                direct_steps = _knowledge_execution_steps(
+                operator_prompt,
+                max_tool_steps,
+                source_guidance=sources,
                 )
-                if not tool_steps:
-                    tool_steps = _fallback_steps(
+                direct_steps = [
+                    step for step in direct_steps if _tool_is_available(step["tool"], tool_catalog)
+                ]
+                if direct_steps:
+                    tool_steps = direct_steps
+                    planner_mode = "local_knowledge_execution"
+                    planner_error = None
+                else:
+                    tool_steps = _safe_zapier_read_steps(
                         operator_prompt,
                         tool_catalog,
-                        max_tool_steps,
-                        source_guidance=sources if task.get("knowledge_mission") else [],
+                        max_tool_steps=max_tool_steps,
                     )
-                    planner_mode = "local_fallback"
+                    if tool_steps:
+                        planner_mode = "local_safe_zapier_read_intent"
+                        planner_error = None
+                    else:
+                        explicit_zapier_action = _zapier_action_step(operator_prompt)
+                        if explicit_zapier_action:
+                            tool_steps = _fallback_steps(
+                                operator_prompt,
+                                tool_catalog,
+                                max_tool_steps,
+                                source_guidance=sources if task.get("knowledge_mission") else [],
+                            )
+                            planner_mode = "local_explicit_zapier_action"
+                            planner_error = None
+                        else:
+                            direct_step = (
+                                _agent_mesh_execute_step(operator_prompt)
+                                or _agent_mesh_audit_step(operator_prompt)
+                                or _production_site_audit_step(operator_prompt)
+                                or _integration_probe_step(operator_prompt)
+                                or _trading_strategy_refresh_step(operator_prompt)
+                                or _trading_control_step(operator_prompt)
+                                or _zapier_action_preflight_step(operator_prompt)
+                                or _openrouter_model_strategy_step(operator_prompt)
+                                or _agent_provider_action_prepare_step(operator_prompt)
+                                or _agent_provider_probe_step(operator_prompt)
+                                or _connected_app_catalog_step(operator_prompt)
+                            )
+                            if direct_step and _tool_is_available(direct_step["tool"], tool_catalog):
+                                tool_steps = [direct_step]
+                                planner_mode = {
+                                    "agent_mesh_execute": "local_agent_mesh_execute",
+                                    "agent_mesh_audit": "local_agent_mesh_audit",
+                                    "production_site_audit": "local_production_site_audit",
+                                    "integration_probe": "local_integration_probe",
+                                    "trading_start": "local_trading_control",
+                                    "trading_stop": "local_trading_control",
+                                    "trading_tick": "local_trading_control",
+                                    "trading_status": "local_trading_control",
+                                    "trading_strategy_refresh": "local_trading_strategy_refresh",
+                                    "zapier_action_preflight": "local_zapier_action_preflight",
+                                    "openrouter_model_strategy": "local_openrouter_model_strategy",
+                                    "agent_provider_action_prepare": "local_agent_provider_action_prepare",
+                                    "agent_provider_probe": "local_agent_provider_probe",
+                                    "zapier_action_catalog": "local_connected_app_catalog",
+                                }.get(direct_step["tool"], "local_direct_tool")
+                                planner_error = None
+                            else:
+                                tool_steps = fast_control_steps(operator_prompt, tool_catalog)
+                                if tool_steps:
+                                    planner_mode = "local_fast_control"
+                                    planner_error = None
+                                else:
+                                    tool_steps, planner_mode, planner_error = _model_steps(
+                                        planner_task,
+                                        sources,
+                                        model,
+                                        tool_catalog,
+                                        max_tool_steps,
+                                    )
+                                    if not tool_steps:
+                                        tool_steps = _fallback_steps(
+                                            operator_prompt,
+                                            tool_catalog,
+                                            max_tool_steps,
+                                            source_guidance=sources if task.get("knowledge_mission") else [],
+                                        )
+                                        planner_mode = "local_fallback"
+                            guarded_steps = _direct_web_intake_guard_steps(
+                                operator_prompt,
+                                tool_steps,
+                                tool_catalog,
+                                max_tool_steps,
+                            )
+                            if guarded_steps != tool_steps:
+                                tool_steps = guarded_steps
+                                planner_mode = f"{planner_mode}+direct_web_intake_guard"
 
     plan: list[dict[str, Any]] = [
         {
@@ -132,7 +383,7 @@ def build_plan(
             "kind": "model",
             "tool": "synthesize",
             "description": "دمج الأدلة ونتائج الأدوات في نتيجة واحدة",
-            "model": model.model if model.available else "local_fallback",
+            "model": _synthesis_model_label(model),
         }
     )
     plan.append(
@@ -146,11 +397,40 @@ def build_plan(
     return plan
 
 
+def _synthesis_model_label(model: ModelClient) -> str:
+    if not model.available:
+        return "local_fallback"
+    local = getattr(model, "local", None)
+    if local is not None and bool(getattr(local, "available", False)):
+        return f"local:{getattr(local, 'model', 'huggingface_local')}"
+    return str(getattr(model, "model", "local_fallback"))
+
+
 def _tool_is_available(tool: str, tool_catalog: list[dict[str, Any]]) -> bool:
     return any(
         str(item.get("name") or "") == tool and bool(item.get("configured", True))
         for item in tool_catalog
     )
+
+
+def _direct_web_intake_guard_steps(
+    prompt: str,
+    proposed_steps: list[dict[str, Any]],
+    tool_catalog: list[dict[str, Any]],
+    max_tool_steps: int,
+) -> list[dict[str, Any]]:
+    static_step = _bug_bounty_static_review_step(prompt)
+    if not static_step or not _bug_bounty_static_is_direct_web_intake(
+        static_step.get("args", {})
+    ):
+        return proposed_steps
+    guarded: list[dict[str, Any]] = []
+    if _tool_is_available(static_step["tool"], tool_catalog):
+        guarded.append(static_step)
+    explicit_gate = _bug_bounty_draft_gate_step(prompt)
+    if explicit_gate and _tool_is_available(explicit_gate["tool"], tool_catalog):
+        guarded.append(explicit_gate)
+    return guarded[:max_tool_steps] or proposed_steps
 
 
 def build_follow_up_decision(
@@ -166,6 +446,85 @@ def build_follow_up_decision(
 ) -> dict[str, Any]:
     planner_error: str | None = None
     operator_prompt = operator_request(str(task["prompt"]))
+    if _company_web_intake_result_complete(operator_prompt, tool_results):
+        return {
+            "complete": True,
+            "reason": (
+                "اكتمل تقرير حضور الويب للشركة، ولا توجد جولة متابعة مفيدة دون "
+                "تحويل الطلب إلى اختبار حي أو بلاغ ثغرة خارجي."
+            ),
+            "steps": [],
+            "planner_mode": "local_direct_web_intake_complete",
+            "planner_error": None,
+        }
+    explicit_zapier_action = _zapier_action_step(operator_prompt)
+    safe_zapier_read = _safe_zapier_read_step(operator_prompt)
+    if (explicit_zapier_action or safe_zapier_read) and any(
+        isinstance(item.get("result"), dict)
+        and item["result"].get("tool") == "zapier_action"
+        and bool(item["result"].get("executed"))
+        for item in tool_results
+        if isinstance(item, dict)
+    ):
+        return {
+            "complete": True,
+            "reason": "اكتمل إجراء Zapier المطلوب وسُجلت نتيجته القابلة للإيصال.",
+            "steps": [],
+            "planner_mode": (
+                "local_explicit_zapier_action_complete"
+                if explicit_zapier_action
+                else "local_safe_zapier_read_action_complete"
+            ),
+            "planner_error": None,
+        }
+    if _agent_mesh_execute_step(operator_prompt) and any(
+        isinstance(item.get("result"), dict)
+        and item["result"].get("tool") == "agent_mesh_execute"
+        and bool(item["result"].get("executed"))
+        for item in tool_results
+        if isinstance(item, dict)
+    ):
+        return {
+            "complete": True,
+            "reason": (
+                "اكتمل تنفيذ شبكة الوكلاء الآمنة وسُجلت حالة Codespaces "
+                "وباقي التكاملات في إيصال قابل للمراجعة."
+            ),
+            "steps": [],
+            "planner_mode": "local_agent_mesh_execute_complete",
+            "planner_error": None,
+        }
+    completed_tools = [
+        str(item.get("result", {}).get("tool") or "")
+        for item in tool_results
+        if isinstance(item.get("result"), dict)
+    ]
+    if completed_tools and all(tool in DETERMINISTIC_SYNTHESIS_TOOLS for tool in completed_tools):
+        steps = _deterministic_follow_up_steps(
+            operator_prompt,
+            tool_results,
+            seen_signatures,
+            max_tool_steps,
+        )
+        steps = _validate_steps(
+            steps,
+            tool_catalog,
+            max_tool_steps,
+            operator_prompt=operator_prompt,
+            knowledge_mission=bool(task.get("knowledge_mission")),
+        )
+        steps = _without_seen_steps(steps, seen_signatures)
+        return {
+            "complete": not steps,
+            "reason": (
+                "اكتملت أدوات القراءة/الفحص الحتمية ولا توجد جولة متابعة مفيدة."
+                if not steps
+                else "كشفت المراجعة المحلية خطوة حتمية إضافية تنفذ جزءًا من الطلب."
+            ),
+            "steps": steps,
+            "planner_mode": "local_deterministic_tool_review",
+            "planner_error": None,
+        }
     if model.available:
         try:
             plan_complete = getattr(model, "plan_complete", model.complete)
@@ -268,17 +627,166 @@ def build_follow_up_decision(
     }
 
 
+def _company_web_intake_result_complete(
+    prompt: str,
+    tool_results: list[dict[str, Any]],
+) -> bool:
+    static_step = _bug_bounty_static_review_step(prompt)
+    if not static_step or not _bug_bounty_static_is_direct_web_intake(
+        static_step.get("args", {})
+    ):
+        return False
+    for item in tool_results:
+        result = item.get("result") if isinstance(item, dict) else None
+        if not isinstance(result, dict):
+            continue
+        if (
+            result.get("mode") == "web_url_passive_intake"
+            and result.get("deliverable_type") == "company_web_intake_report"
+            and result.get("company_report_ready")
+        ):
+            return True
+    return False
+
+
 def fast_control_steps(
     prompt: str,
     tool_catalog: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    safe_zapier_steps = _safe_zapier_read_steps(prompt, tool_catalog)
+    if safe_zapier_steps:
+        return safe_zapier_steps
+
+    if _zapier_action_step(prompt) or _zapier_action_preflight_step(prompt):
+        return _fallback_steps(prompt, tool_catalog, max_tool_steps=6)
+
     available = {
         str(item["name"])
         for item in tool_catalog
         if bool(item.get("configured", True))
     }
-    step = _trading_strategy_refresh_step(prompt) or _trading_control_step(prompt)
+
+    explicit_agent_mesh_step = _explicit_agent_mesh_control_step(prompt)
+    if explicit_agent_mesh_step and explicit_agent_mesh_step["tool"] in available:
+        return [explicit_agent_mesh_step]
+
+    tool_bridge_steps = _tool_bridge_execution_steps(
+        prompt,
+        tool_catalog,
+        max_tool_steps=6,
+    )
+    if tool_bridge_steps:
+        return tool_bridge_steps
+
+    codespaces_steps = _github_codespaces_execution_steps(
+        prompt,
+        tool_catalog,
+        max_tool_steps=6,
+    )
+    if codespaces_steps:
+        return codespaces_steps
+
+    knowledge_steps = [
+        step
+        for step in _knowledge_execution_steps(prompt, 6)
+        if step["tool"] in available
+    ]
+    if knowledge_steps:
+        return knowledge_steps
+
+    trading_steps = [
+        step
+        for step in (
+            _trading_control_step(prompt),
+            _trading_strategy_refresh_step(prompt),
+        )
+        if step and step["tool"] in available
+    ]
+    if trading_steps:
+        return trading_steps
+
+    step = (
+        _agent_mesh_execute_step(prompt)
+        or _agent_mesh_audit_step(prompt)
+        or _production_site_audit_step(prompt)
+        or _integration_probe_step(prompt)
+        or _zapier_action_preflight_step(prompt)
+        or _trading_strategy_refresh_step(prompt)
+        or _trading_control_step(prompt)
+        or _openrouter_model_strategy_step(prompt)
+        or _agent_provider_action_prepare_step(prompt)
+        or _agent_provider_probe_step(prompt)
+        or _connected_app_catalog_step(prompt)
+    )
     return [step] if step and step["tool"] in available else []
+
+
+def _explicit_agent_mesh_control_step(prompt: str) -> dict[str, Any] | None:
+    marker = re.search(
+        (
+            r"(?:agent\s+mesh\s+execute|safe\s+mesh\s+execute|"
+            r"agent\s+mesh\s+audit|"
+            r"fathiya_execution_os_mission_v1|fathiya_activation_sweep_v1|"
+            r"تشغيل\s+شبكة\s+الوكلاء|مسح\s+شبكة\s+الوكلاء)\s*:?"
+        ),
+        prompt,
+        re.IGNORECASE,
+    )
+    if not marker:
+        return None
+    return _agent_mesh_execute_step(prompt) or _agent_mesh_audit_step(prompt)
+
+
+def _safe_zapier_read_steps(
+    prompt: str,
+    tool_catalog: list[dict[str, Any]],
+    *,
+    max_tool_steps: int = 6,
+) -> list[dict[str, Any]]:
+    actions = _safe_zapier_read_actions(prompt)
+    if not actions:
+        return []
+    available = {
+        str(item["name"])
+        for item in tool_catalog
+        if bool(item.get("configured", True))
+    }
+    if "zapier_action_catalog" not in available:
+        return []
+    steps: list[dict[str, Any]] = []
+    cataloged_apps: set[str] = set()
+    for action in actions:
+        app = str(action["args"]["app"])
+        if (
+            app not in cataloged_apps
+            and len(steps) < max_tool_steps
+            and max_tool_steps - len(steps) > 1
+        ):
+            steps.append(
+                {
+                    "tool": "zapier_action_catalog",
+                    "description": f"قراءة كتالوج {app} قبل تنفيذ قراءة Zapier",
+                    "args": {"app": app, "refresh": False},
+                }
+            )
+            cataloged_apps.add(app)
+        requested_tool = str(action.get("tool") or "zapier_action")
+        if requested_tool == "zapier_action_preflight" and len(steps) < max_tool_steps:
+            if "zapier_action_preflight" in available:
+                steps.append(action)
+        elif "zapier_action" in available and len(steps) < max_tool_steps:
+            steps.append(action)
+        elif "zapier_action_preflight" in available and len(steps) < max_tool_steps:
+            steps.append(
+                {
+                    "tool": "zapier_action_preflight",
+                    "description": "تحقق من إجراء Zapier المقترح وتجهيز متابعة التنفيذ",
+                    "args": action["args"],
+                }
+            )
+        if len(steps) >= max_tool_steps:
+            break
+    return steps
 
 
 def _model_steps(
@@ -386,13 +894,18 @@ def _validate_steps(
         clean_args = args if isinstance(args, dict) else {}
         if not _profile_args_are_configured(tool, clean_args, available[tool]):
             continue
-        validated.append(
-            {
-                "tool": tool,
-                "description": str(item.get("description") or ""),
-                "args": clean_args,
-            }
-        )
+        step = {
+            "tool": tool,
+            "description": str(item.get("description") or ""),
+            "args": clean_args,
+        }
+        if "requires_approval" in item:
+            step["requires_approval"] = bool(item.get("requires_approval"))
+        if "read_only" in item:
+            step["read_only"] = bool(item.get("read_only"))
+        if isinstance(item.get("risk_class"), str):
+            step["risk_class"] = str(item.get("risk_class"))
+        validated.append(step)
         if len(validated) >= max_tool_steps:
             break
     return validated
@@ -442,6 +955,44 @@ def _deterministic_follow_up_steps(
         return []
 
     steps: list[dict[str, Any]] = []
+    for item in tool_results:
+        result = item.get("result")
+        if (
+            not isinstance(result, dict)
+            or result.get("tool") != "agent_provider_action_prepare"
+            or not bool(result.get("can_execute_now"))
+        ):
+            continue
+        action_args = result.get("zapier_action_args")
+        if not isinstance(action_args, dict):
+            continue
+        app = str(action_args.get("app") or "").strip()
+        action = str(action_args.get("action") or "").strip()
+        if not app or not action:
+            continue
+        params = action_args.get("params")
+        args = {
+            "app": app,
+            "action": action,
+            "params": params if isinstance(params, dict) else {},
+            "instructions": str(action_args.get("instructions") or prompt)[:2000],
+            "output": "Return receipt-safe evidence for the completed read action.",
+        }
+        if step_signature("zapier_action", args) in seen_signatures:
+            continue
+        steps.append(
+            {
+                "tool": "zapier_action",
+                "description": f"تنفيذ قراءة Zapier الجاهزة {app}/{action}",
+                "args": args,
+                "risk_class": "internal_owned",
+                "requires_approval": False,
+                "read_only": True,
+            }
+        )
+        if len(steps) >= max_tool_steps:
+            return steps
+
     for item in tool_results:
         result = item.get("result")
         if not isinstance(result, dict) or result.get("tool") != "connector_catalog":
@@ -586,12 +1137,101 @@ def _fallback_steps(
         )
         return steps[:max_tool_steps]
 
+    production_site_audit = _production_site_audit_step(prompt)
+    if production_site_audit:
+        add(
+            production_site_audit["tool"],
+            production_site_audit["description"],
+            production_site_audit["args"],
+        )
+        return steps[:max_tool_steps]
+
     integration_probe = _integration_probe_step(prompt)
     if integration_probe:
         add(
             integration_probe["tool"],
             integration_probe["description"],
             integration_probe["args"],
+        )
+        return steps[:max_tool_steps]
+
+    trading_control = _trading_control_step(prompt)
+    strategy_refresh = _trading_strategy_refresh_step(prompt)
+    if trading_control or strategy_refresh:
+        if trading_control:
+            add(
+                trading_control["tool"],
+                trading_control["description"],
+                trading_control["args"],
+            )
+        if strategy_refresh:
+            add(
+                strategy_refresh["tool"],
+                strategy_refresh["description"],
+                strategy_refresh["args"],
+            )
+        return steps[:max_tool_steps]
+
+    zapier_action = _zapier_action_step(prompt)
+    if zapier_action:
+        add("zapier_action_catalog", "قراءة كتالوج إجراءات Zapier MCP المباشر")
+        if "zapier_action" in available:
+            add(
+                zapier_action["tool"],
+                zapier_action["description"],
+                zapier_action["args"],
+            )
+        else:
+            add(
+                "zapier_action_preflight",
+                "تحقق من إجراء Zapier المطلوب وتجهيز متابعة التنفيذ دون إرسال خارجي",
+                zapier_action["args"],
+            )
+        return steps[:max_tool_steps]
+
+    zapier_action_preflight = _zapier_action_preflight_step(prompt)
+    if zapier_action_preflight:
+        add("zapier_action_catalog", "قراءة كتالوج إجراءات Zapier MCP المباشر")
+        add(
+            zapier_action_preflight["tool"],
+            zapier_action_preflight["description"],
+            zapier_action_preflight["args"],
+        )
+        return steps[:max_tool_steps]
+
+    openrouter_model_strategy = _openrouter_model_strategy_step(prompt)
+    if openrouter_model_strategy:
+        add(
+            openrouter_model_strategy["tool"],
+            openrouter_model_strategy["description"],
+            openrouter_model_strategy["args"],
+        )
+        return steps[:max_tool_steps]
+
+    agent_provider_prepare = _agent_provider_action_prepare_step(prompt)
+    if agent_provider_prepare:
+        add(
+            agent_provider_prepare["tool"],
+            agent_provider_prepare["description"],
+            agent_provider_prepare["args"],
+        )
+        return steps[:max_tool_steps]
+
+    agent_provider_probe = _agent_provider_probe_step(prompt)
+    if agent_provider_probe:
+        add(
+            agent_provider_probe["tool"],
+            agent_provider_probe["description"],
+            agent_provider_probe["args"],
+        )
+        return steps[:max_tool_steps]
+
+    connected_app_catalog = _connected_app_catalog_step(prompt)
+    if connected_app_catalog:
+        add(
+            connected_app_catalog["tool"],
+            connected_app_catalog["description"],
+            connected_app_catalog["args"],
         )
         return steps[:max_tool_steps]
 
@@ -604,14 +1244,25 @@ def _fallback_steps(
         )
         return steps[:max_tool_steps]
 
-    zapier_action = _zapier_action_step(prompt)
-    if zapier_action:
-        add("zapier_action_catalog", "قراءة كتالوج إجراءات Zapier MCP المباشر")
+    bug_bounty_hunt_flow = _bug_bounty_hunt_flow_requested(prompt)
+    bug_bounty_static = _bug_bounty_static_review_step(prompt)
+    direct_web_intake = bool(
+        bug_bounty_static
+        and _bug_bounty_static_is_direct_web_intake(bug_bounty_static.get("args", {}))
+    )
+    if direct_web_intake:
         add(
-            zapier_action["tool"],
-            zapier_action["description"],
-            zapier_action["args"],
+            bug_bounty_static["tool"],
+            bug_bounty_static["description"],
+            bug_bounty_static["args"],
         )
+        bug_bounty_gate = _bug_bounty_draft_gate_step(prompt)
+        if bug_bounty_gate:
+            add(
+                bug_bounty_gate["tool"],
+                bug_bounty_gate["description"],
+                bug_bounty_gate["args"],
+            )
         return steps[:max_tool_steps]
 
     urls = re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
@@ -623,6 +1274,26 @@ def _fallback_steps(
         )
     elif urls:
         add("web_fetch", "جلب المصدر الخارجي كدليل", {"url": urls[0].rstrip(").,]")})
+
+    if any(
+        term in safe_text
+        for term in (
+            "openrouter",
+            "fusion",
+            "advisor",
+            "subagent",
+            "multi-model",
+            "multimodel",
+            "model routing",
+            "نماذج",
+            "نموذج",
+            "اوبن راوتر",
+            "أوبن راوتر",
+            "بحث عميق",
+            "دمج النماذج",
+        )
+    ):
+        add("openrouter_model_strategy", "قراءة استراتيجية OpenRouter وFusion والنماذج المجانية")
 
     if any(
         term in safe_text
@@ -641,8 +1312,6 @@ def _fallback_steps(
             "connector",
             "zapier",
             "زابير",
-            "manus",
-            "cursor",
             "gmail",
             "netlify",
             "موصل",
@@ -662,6 +1331,13 @@ def _fallback_steps(
         for term in ("github", "pull request", " pr ", "issue", "جيت هب")
     ):
         add("github_repo_info", "قراءة بيانات مستودع GitHub المصادق")
+    if any(term in safe_text for term in ("codespace", "codespaces", "كودسبيس")):
+        add(
+            "github_codespaces_agent",
+            "تجهيز وكيل GitHub Codespaces كبيئة هندسية بعيدة دون تنفيذ أوامر بعيدة",
+            {"objective": prompt[:500], "mode": "read_only_audit", "limit": 10},
+        )
+        add("github_codespaces_inventory", "قراءة مساحات GitHub Codespaces المتاحة")
     if any(term in text for term in ("search code", "find in repo", "ابحث في الكود", "ابحث بالمستودع")):
         add("repo_search", "البحث داخل المستودع", {"query": prompt[:300]})
     if "n8n" in safe_text:
@@ -670,6 +1346,32 @@ def _fallback_steps(
         add("n8n_workflows", "قراءة مسارات n8n المتاحة")
     if any(term in safe_text for term in ("kali", "كالي", "nmap", "nuclei")):
         add("kali_tool_inventory", "قراءة الأدوات المتاحة داخل Kali WSL")
+    if bug_bounty_static:
+        add(
+            bug_bounty_static["tool"],
+            bug_bounty_static["description"],
+            bug_bounty_static["args"],
+        )
+    bug_bounty_gate = _bug_bounty_draft_gate_step(prompt)
+    if bug_bounty_gate:
+        add(
+            bug_bounty_gate["tool"],
+            bug_bounty_gate["description"],
+            bug_bounty_gate["args"],
+        )
+    elif (
+        bug_bounty_hunt_flow
+        and bug_bounty_static
+        and not _bug_bounty_static_is_direct_web_intake(bug_bounty_static.get("args", {}))
+    ):
+        add(
+            "bug_bounty_draft_gate",
+            "التحقق من مسودة الصيد ورفع قرار draft داخل فتحية دون إرسال خارجي",
+            {
+                "program": bug_bounty_static["args"].get("program", ""),
+                "destination": "internal_fathiya_draft",
+            },
+        )
     if any(
         term in safe_text
         for term in (
@@ -697,21 +1399,27 @@ def _fallback_steps(
         for term in ("security", "أمن", "اختراق", "ثغرات", "فحص أمني")
     ):
         add("security_core_plan", "تشغيل نواة الأمن الدفاعية المحلية", {"target_or_question": prompt})
-    strategy_refresh = _trading_strategy_refresh_step(prompt)
-    if strategy_refresh:
-        add(
-            strategy_refresh["tool"],
-            strategy_refresh["description"],
-            strategy_refresh["args"],
+    if any(
+        term in safe_text
+        for term in (
+            "datacamp",
+            "medium",
+            "training post",
+            "training posts",
+            "hacktivity",
+            "تعلم الاله",
+            "تعلم الآلة",
+            "تتعلم وشلون تتعلم",
+            "كيف تتعلم",
+            "منهج تدريب",
+            "مقالات الثغرات",
         )
-    else:
-        trading_control = _trading_control_step(prompt)
-        if trading_control:
-            add(
-                trading_control["tool"],
-                trading_control["description"],
-                trading_control["args"],
-            )
+    ):
+        add(
+            "learning_bootstrap",
+            "بناء جلسة تعلم ذاتي تحول المصادر إلى بطاقات قرار واختبار فهم وتقرير mastery",
+            {},
+        )
     if any(
         term in safe_text
         for term in (
@@ -769,6 +1477,381 @@ def _fallback_steps(
     return steps[:max_tool_steps]
 
 
+def _tool_bridge_execution_steps(
+    prompt: str,
+    tool_catalog: list[dict[str, Any]],
+    *,
+    max_tool_steps: int,
+) -> list[dict[str, Any]]:
+    text = prompt.casefold()
+    explicit = re.search(
+        r"(?:tool\s+bridge\s+sweep|fathiya_tool_bridge_sweep_v1|جسور\s+الأدوات|جسور\s+الادوات|فحص\s+الجسور)",
+        prompt,
+        re.IGNORECASE,
+    )
+    compound_bridge = (
+        ("zapier" in text or "زابير" in text)
+        and "n8n" in text
+        and ("codespaces" in text or "كودسبيس" in text)
+        and ("manus" in text or "cursor" in text or "وكلاء التطبيقات" in text)
+    )
+    if not explicit and not compound_bridge:
+        return []
+
+    available = {
+        str(item["name"])
+        for item in tool_catalog
+        if bool(item.get("configured", True))
+    }
+    candidates = [
+        {
+            "tool": "local_capability_inventory",
+            "description": "فحص شبكة التنفيذ المحلية والجسور الجاهزة",
+            "args": {"refresh": True},
+        },
+        {
+            "tool": "connected_tool_inventory",
+            "description": "قراءة مخزون Zapier ووكلاء التطبيقات المتاحين",
+            "args": {},
+        },
+        {
+            "tool": "zapier_action_catalog",
+            "description": "قراءة كتالوج Zapier MCP الحي وإجراءاته",
+            "args": {},
+        },
+        {
+            "tool": "agent_provider_probe",
+            "description": "فحص مزودي الوكلاء مثل Cursor وManus من مخزون Zapier",
+            "args": {},
+        },
+        {
+            "tool": "n8n_status",
+            "description": "قراءة حالة n8n المحلي",
+            "args": {},
+        },
+        {
+            "tool": "kali_tool_inventory",
+            "description": "قراءة أدوات Kali WSL المتاحة",
+            "args": {},
+        },
+        {
+            "tool": "github_codespaces_inventory",
+            "description": "قراءة مساحات GitHub Codespaces المتاحة",
+            "args": {"limit": 10},
+        },
+    ]
+    return [step for step in candidates if step["tool"] in available][:max_tool_steps]
+
+
+def _github_codespaces_execution_steps(
+    prompt: str,
+    tool_catalog: list[dict[str, Any]],
+    *,
+    max_tool_steps: int,
+) -> list[dict[str, Any]]:
+    if not _github_codespaces_requested(prompt):
+        return []
+    available = {
+        str(item["name"])
+        for item in tool_catalog
+        if bool(item.get("configured", True))
+    }
+    candidates = [
+        {
+            "tool": "github_codespaces_agent",
+            "description": "تجهيز وكيل GitHub Codespaces كبيئة هندسية بعيدة دون تنفيذ أوامر بعيدة",
+            "args": {"objective": prompt[:500], "mode": "read_only_audit", "limit": 10},
+        },
+        {
+            "tool": "github_codespaces_inventory",
+            "description": "قراءة مساحات GitHub Codespaces المتاحة",
+            "args": {"limit": 10},
+        },
+    ]
+    return [step for step in candidates if step["tool"] in available][:max_tool_steps]
+
+
+def _github_codespaces_requested(prompt: str) -> bool:
+    text = prompt.casefold()
+    return any(term in text for term in ("codespace", "codespaces", "كودسبيس"))
+
+
+def _bug_bounty_execution_steps(
+    prompt: str,
+    max_tool_steps: int,
+) -> list[dict[str, Any]]:
+    static_step = _bug_bounty_static_review_step(prompt)
+    if not static_step:
+        return []
+
+    steps = [static_step]
+    direct_web_intake = _bug_bounty_static_is_direct_web_intake(
+        static_step.get("args", {})
+    )
+    explicit_gate = _bug_bounty_draft_gate_step(prompt)
+    if explicit_gate:
+        steps.append(explicit_gate)
+    elif _bug_bounty_hunt_flow_requested(prompt) and not direct_web_intake:
+        steps.append(
+            {
+                "tool": "bug_bounty_draft_gate",
+                "description": "التحقق من مسودة صيد الثغرات داخليًا بعد المراجعة الساكنة",
+                "args": {
+                    "program": static_step["args"].get("program", ""),
+                    "destination": "internal_only",
+                },
+            }
+        )
+    return steps[:max_tool_steps]
+
+
+def _knowledge_execution_steps(
+    prompt: str,
+    max_tool_steps: int,
+    *,
+    source_guidance: list[RetrievedSource] | None = None,
+) -> list[dict[str, Any]]:
+    if _production_site_audit_step(prompt):
+        return []
+    text = prompt.casefold()
+    explicit = re.search(
+        r"(?:knowledge\s+execution\s+mission|fathiya_knowledge_execution_v1|learn\s+and\s+execute|report\s+to\s+execution|تقرير\s+إلى\s+تنفيذ|تقرير\s+الى\s+تنفيذ|استيعاب\s+وتشغيل|استوعب\s+وشغّل|استوعب\s+وشغل|استوعب\s+ونفّذ|استوعب\s+ونفذ|معرفة\s+ثم\s+تنفيذ|المعرفة\s+ثم\s+التنفيذ)\s*:?",
+        prompt,
+        re.IGNORECASE,
+    )
+    knowledge_terms = (
+        "knowledge",
+        "learning",
+        "report",
+        "course",
+        "writeup",
+        "معرفة",
+        "تعلم",
+        "تعلّم",
+        "تقرير",
+        "تقارير",
+        "ملفات",
+    )
+    execute_terms = (
+        "execute",
+        "run",
+        "act",
+        "tools",
+        "agents",
+        "نفذ",
+        "نفّذ",
+        "شغل",
+        "شغّل",
+        "تحرك",
+        "يتحرك",
+        "أدوات",
+        "ادوات",
+        "وكلاء",
+    )
+    if not explicit and not (
+        any(term in text for term in knowledge_terms)
+        and any(term in text for term in execute_terms)
+    ):
+        return []
+
+    urls = [
+        url.rstrip(").,]")
+        for url in re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
+    ]
+    source_paths = [
+        match.strip().strip("`'\"")
+        for match in re.findall(
+            r"(?:source_path|knowledge_path|file_path|مسار\s+المعرفة)\s*:\s*([^\n]+)",
+            prompt,
+            re.IGNORECASE,
+        )
+        if match.strip()
+    ]
+    learning_args: dict[str, Any] = {
+        "title": "FATHIYA knowledge execution mission",
+        "objective": prompt[:1200],
+    }
+    if urls:
+        learning_args["source_urls"] = urls[:3]
+    if source_paths:
+        learning_args["source_paths"] = source_paths[:5]
+    elif source_guidance:
+        learning_args["source_paths"] = [
+            source.path for source in source_guidance if source.path
+        ][:5]
+
+    steps: list[dict[str, Any]] = [
+        {
+            "tool": "learning_bootstrap",
+            "description": "استيعاب المعرفة وتحويلها إلى بطاقات فهم واختبار mastery",
+            "args": learning_args,
+        },
+        {
+            "tool": "tool_catalog",
+            "description": "قراءة كتالوج الأدوات القابلة للتنفيذ قبل اختيار المسار",
+            "args": {},
+        },
+        {
+            "tool": "connected_tool_inventory",
+            "description": "قراءة موصلات Zapier ووكلاء الحساب المتاحين",
+            "args": {},
+        },
+        {
+            "tool": "openrouter_model_strategy",
+            "description": "اختيار مسار النماذج: مجاني سريع، Fusion للبحث، وسلامة",
+            "args": {},
+        },
+        {
+            "tool": "local_capability_inventory",
+            "description": "فحص التنفيذ المحلي: Hugging Face وn8n وKali وGitHub والتداول",
+            "args": {"refresh": True},
+        },
+        {
+            "tool": "agent_mesh_execute",
+            "description": "تشغيل شبكة التنفيذ الداخلية الجاهزة بعد الاستيعاب",
+            "args": {"refresh": True, "max_steps": 20},
+        },
+    ]
+    return steps[:max_tool_steps]
+
+
+def _bug_bounty_draft_gate_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    terms = (
+        "bug bounty draft gate",
+        "validate bugcrowd draft",
+        "verified draft",
+        "يرفع draft",
+        "ارفع draft",
+        "رفع draft",
+        "يتاكد منه",
+        "يتأكد منه",
+        "تأكد منه",
+        "تاكد منه",
+    )
+    if "bugcrowd" not in text and "bug bounty" not in text and "bug" not in text:
+        return None
+    if not any(term in text for term in terms):
+        return None
+
+    args: dict[str, Any] = {}
+    for field in ("program", "report_path", "repo_path", "destination"):
+        match = re.search(
+            rf"^[^\S\r\n]*{re.escape(field)}[^\S\r\n]*:[^\S\r\n]*([^\r\n]*)$",
+            prompt,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        if match:
+            value = match.group(1).strip()
+            if value:
+                args[field] = value
+    return {
+        "tool": "bug_bounty_draft_gate",
+        "description": "التحقق من مسودة Bugcrowd ورفع قرار draft داخل فتحية دون إرسال خارجي",
+        "args": args,
+    }
+
+
+def _bug_bounty_hunt_flow_requested(prompt: str) -> bool:
+    text = prompt.casefold()
+    return any(
+        term in text
+        for term in (
+            "bug bounty hunt flow",
+            "fathiya bug bounty hunter",
+            "صيد الثغرات",
+            "ابدأ الصيد",
+            "hackerone",
+            "bugcrowd",
+        )
+    )
+
+
+def _bug_bounty_static_is_direct_web_intake(args: dict[str, Any]) -> bool:
+    """True when the operator gave a plain website URL, not a bounty platform page or repo."""
+    repo_url = str(args.get("repo_url") or "").strip()
+    program_url = str(args.get("program_url") or "").strip()
+    target_path = str(args.get("target_path") or "").strip().replace("\\", "/").rstrip("/")
+    if repo_url or target_path not in {"", "."}:
+        return False
+    if not _planner_looks_like_http_url(program_url):
+        return False
+    if _planner_looks_like_github_repo_url(program_url):
+        return False
+    return not _planner_looks_like_bounty_platform_url(program_url)
+
+
+def _planner_looks_like_http_url(value: str) -> bool:
+    return bool(re.match(r"^https?://[^\s/]+", value, re.IGNORECASE))
+
+
+def _planner_looks_like_github_repo_url(value: str) -> bool:
+    return bool(
+        re.match(
+            r"^https?://github\.com/[^/\s]+/[^/\s#?]+/?(?:[?#].*)?$",
+            value,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _planner_looks_like_bounty_platform_url(value: str) -> bool:
+    return bool(
+        re.match(
+            r"^https?://(?:[^/\s]+\.)?(?:hackerone|bugcrowd)\.com(?:/|$)",
+            value,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _bug_bounty_static_review_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    terms = (
+        "bug bounty hunt flow",
+        "bug bounty static review",
+        "static-only bug bounty",
+        "static review",
+        "bugcrowd static",
+        "hackerone static",
+        "صيد bugcrowd",
+        "صيد الثغرات",
+        "الرابع من داخل فتحية",
+        "الرابع من داخل فتحيه",
+        "تقرير bugcrowd",
+        "مسودة bugcrowd",
+    )
+    if not any(term in text for term in terms):
+        return None
+
+    args: dict[str, Any] = {}
+    for field in (
+        "platform",
+        "program",
+        "program_url",
+        "repo_url",
+        "target_path",
+        "scope_note",
+        "focus",
+        "knowledge_path",
+        "draft_gate",
+    ):
+        match = re.search(
+            rf"^[^\S\r\n]*{re.escape(field)}[^\S\r\n]*:[^\S\r\n]*([^\r\n]*)$",
+            prompt,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        if match:
+            value = match.group(1).strip()
+            if value:
+                args[field] = value
+    return {
+        "tool": "bug_bounty_static_review",
+        "description": "تشغيل مراجعة Bugcrowd ساكنة وإنتاج مسودة تقرير دون فحص حي أو رفع خارجي",
+        "args": args,
+    }
+
+
 def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
     text = prompt.casefold()
     delegation_terms = (
@@ -784,12 +1867,10 @@ def _agent_delegate_step(prompt: str) -> dict[str, Any] | None:
     )
     if not any(_contains_whole_term(text, term) for term in delegation_terms):
         return None
+    if any(term in text for term in ("cursor", "كيرسر", "manus", "مانوس")):
+        return None
     if any(term in text for term in ("claude code", "claude", "كلود")):
         provider = "claude_code"
-    elif "cursor" in text or "كيرسر" in text:
-        provider = "cursor"
-    elif "manus" in text or "مانوس" in text:
-        provider = "manus"
     else:
         provider = "auto"
     execute = any(
@@ -827,6 +1908,29 @@ def _contains_whole_term(text: str, term: str) -> bool:
     )
 
 
+_TRADING_STOP_TERMS = (
+    "stop",
+    "halt",
+    "أوقف",
+    "ايقاف",
+    "إيقاف",
+    "وقف",
+    "توقف",
+)
+
+_NEGATED_TRADING_STOP_RE = re.compile(
+    r"(?:\b(?:do\s+not|don't|dont|never|without)\s+(?:stop|halt)\b(?:\s+\w+){0,4})"
+    r"|(?:(?:لا|ولا|بدون|عدم)\s+(?:توقف|توقّف|توقيف|ايقاف|إيقاف|وقف|أوقف)"
+    r"(?:\s+[\w\u0600-\u06FF]+){0,4})",
+    re.IGNORECASE,
+)
+
+
+def _has_positive_trading_stop_intent(text: str) -> bool:
+    candidate = _NEGATED_TRADING_STOP_RE.sub(" ", text)
+    return any(_contains_whole_term(candidate, term) for term in _TRADING_STOP_TERMS)
+
+
 def _trading_control_step(prompt: str) -> dict[str, Any] | None:
     text = prompt.lower()
     agent_terms = (
@@ -840,7 +1944,7 @@ def _trading_control_step(prompt: str) -> dict[str, Any] | None:
     )
     if not any(term in text for term in agent_terms):
         return None
-    if any(term in text for term in ("stop", "halt", "أوقف", "ايقاف", "إيقاف", "وقف")):
+    if _has_positive_trading_stop_intent(text):
         tool = "trading_stop"
         description = "إيقاف وكيل التداول Paper المحلي"
     elif any(
@@ -991,6 +2095,8 @@ def _agent_mesh_execute_step(prompt: str) -> dict[str, Any] | None:
         "شغل المحرك",
         "شغل محرك",
         "شغّل محرك",
+        "fathiya_execution_os_mission_v1",
+        "fathiya_activation_sweep_v1",
     )
     if not explicit and not any(term in text for term in execute_terms):
         return None
@@ -1000,6 +2106,29 @@ def _agent_mesh_execute_step(prompt: str) -> dict[str, Any] | None:
         "tool": "agent_mesh_execute",
         "description": "تشغيل شبكة الوكلاء الآمنة وتنفيذ الأدوات الداخلية الجاهزة",
         "args": {"refresh": True, "max_steps": 20},
+    }
+
+
+def _production_site_audit_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    explicit = re.search(
+        r"(?:production\s+site\s+audit|fathiya\s+production\s+audit|"
+        r"فحص\s+الدومين|اثبات\s+الدومين|إثبات\s+الدومين|"
+        r"فحص\s+الإنتاج|فحص\s+الانتاج)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not explicit and "fathya-core.com" not in text:
+        return None
+    match = re.search(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
+    base_url = match.group(0).rstrip(").,]") if match else "https://fathya-core.com"
+    return {
+        "tool": "production_site_audit",
+        "description": "فحص إنتاج فتحية قراءة فقط وإثبات الدومين والمسارات",
+        "args": {
+            "base_url": base_url,
+            "routes": ["/", "/agent-tasks", "/command-center", "/ai-console"],
+        },
     }
 
 
@@ -1016,6 +2145,7 @@ def _integration_probe_step(prompt: str) -> dict[str, Any] | None:
         "local_execution_mesh",
         "huggingface_local",
         "openrouter",
+        "github_codespaces",
         "supabase",
         "n8n_local",
         "zapier_mcp",
@@ -1030,6 +2160,629 @@ def _integration_probe_step(prompt: str) -> dict[str, Any] | None:
     }
 
 
+def _agent_provider_probe_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    if re.search(r"zapier\s+action\s*:", prompt, re.IGNORECASE):
+        return None
+    if _github_codespaces_requested(prompt):
+        return None
+    explicit = re.search(
+        r"(?:agent\s+provider\s+probe|zapier\s+agent\s+provider|مزود\s+وكيل|وكيل\s+تطبيق)\s*:?\s*([^\n\r]*)",
+        prompt,
+        re.IGNORECASE,
+    )
+    provider = ""
+    if explicit:
+        candidate = explicit.group(1).strip()
+        provider = _agent_provider_from_text(candidate)
+        if not provider:
+            provider = candidate.split("،")[0].split(",")[0].strip()
+    else:
+        intent_terms = (
+            "agent provider",
+            "app agent",
+            "zapier provider",
+            "وكلاء التطبيقات",
+            "مزودي الوكلاء",
+            "مزود الوكلاء",
+            "افحص وكيل",
+            "افحص مزود",
+            "فحص وكيل",
+            "فحص مزود",
+        )
+        provider = _agent_provider_from_text(prompt)
+        if not provider or not any(term in text for term in intent_terms):
+            return None
+    if provider.casefold() == "chatgpt":
+        provider = "ChatGPT (OpenAI)"
+    return {
+        "tool": "agent_provider_probe",
+        "description": (
+            f"فحص مزود تطبيق {provider} من مخزون Zapier MCP"
+            if provider
+            else "فحص مزودي التطبيقات من مخزون Zapier MCP"
+        ),
+        "args": {"provider": provider} if provider else {},
+    }
+
+
+def _agent_provider_action_prepare_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    if re.search(r"zapier\s+action\s*:", prompt, re.IGNORECASE):
+        return None
+    if _github_codespaces_requested(prompt):
+        return None
+    explicit = re.search(
+        r"(?:agent\s+provider\s+action|prepare\s+provider\s+action|تحضير\s+فعل\s+وكيل|تشغيل\s+وكيل\s+تطبيق)\s*:?\s*([^/\n\r،,]*)(?:[/،,]\s*([^\n\r]*))?",
+        prompt,
+        re.IGNORECASE,
+    )
+    provider = ""
+    action = ""
+    params: dict[str, Any] = {}
+    if explicit:
+        candidate = explicit.group(1).strip()
+        action = (explicit.group(2) or "").strip()
+        provider = _agent_provider_from_text(candidate)
+        provider = provider or candidate
+    else:
+        provider = _agent_provider_from_text(prompt)
+        action_terms = (
+            "launch",
+            "run",
+            "start",
+            "execute",
+            "create",
+            "continue",
+            "send",
+            "شغل",
+            "شغّل",
+            "تشغيل",
+            "نفذ",
+            "نفّذ",
+            "ابدأ",
+            "انشئ",
+            "أنشئ",
+            "كمل",
+            "تابع",
+            "استكمل",
+            "خل",
+            "خلي",
+            "سوي",
+            "سوّي",
+            "اعمل",
+            "أعمل",
+        )
+        probe_only_terms = ("افحص", "فحص", "حالة", "status", "probe")
+        if not provider or not any(term in text for term in action_terms):
+            return None
+        if any(term in text for term in probe_only_terms) and not any(
+            term in text for term in ("شغل", "شغّل", "launch", "run", "create")
+        ):
+            return None
+    if provider.casefold() == "chatgpt":
+        provider = "ChatGPT (OpenAI)"
+    line_action = _prompt_line_value(
+        prompt,
+        "action",
+        "action_hint",
+        "zapier_action",
+        "الإجراء",
+        "اجراء",
+    )
+    if line_action:
+        action = line_action
+    elif not action:
+        action = _agent_provider_action_hint(prompt, provider)
+    params = _prompt_json_object_value(prompt, "params", "parameters", "المعاملات")
+    params = _agent_provider_params_from_prompt(prompt, provider, action, params)
+    return {
+        "tool": "agent_provider_action_prepare",
+        "description": f"تحضير فعل Zapier لمزود التطبيق {provider}",
+        "args": {
+            "provider": provider,
+            "action": action,
+            "objective": prompt[:1200],
+            "params": params,
+        },
+    }
+
+
+def _agent_provider_from_text(value: str) -> str:
+    text = value.casefold()
+    for provider in AGENT_PROVIDER_APPS:
+        if provider.casefold() in text:
+            return "ChatGPT (OpenAI)" if provider.casefold() == "chatgpt" else provider
+        aliases = AGENT_PROVIDER_ALIASES.get(provider, ())
+        if any(alias.casefold() in text for alias in aliases):
+            return "ChatGPT (OpenAI)" if provider.casefold() == "chatgpt" else provider
+    return ""
+
+
+def _agent_provider_action_hint(prompt: str, provider: str) -> str:
+    text = prompt.casefold()
+    provider_key = provider.casefold()
+    wants_continue = any(
+        term in text
+        for term in ("continue", "followup", "follow up", "كمل", "تابع", "استكمل")
+    )
+    wants_create = any(
+        term in text
+        for term in ("create", "new", "task", "انشئ", "أنشئ", "مهمة", "سوي", "سوّي")
+    )
+    wants_run = any(
+        term in text
+        for term in ("launch", "run", "start", "execute", "شغل", "شغّل", "تشغيل", "ابدأ")
+    )
+    if "manus" in provider_key:
+        if wants_continue:
+            return "Continue Task"
+        if wants_create or wants_run:
+            return "Create Task"
+    if "cursor" in provider_key:
+        if wants_continue:
+            return "Add Followup Instruction to Agent"
+        if wants_run or wants_create:
+            return "Launch Agent"
+    if provider_key == "agents" and (wants_run or wants_create):
+        return "Run Agent"
+    if "netlify" in provider_key and wants_run:
+        return "Start Deploy"
+    if "apify" in provider_key and (wants_run or wants_create):
+        return "Run Actor"
+    if "chatgpt" in provider_key and (wants_run or wants_create):
+        return "Send Prompt"
+    if "ai by zapier" in provider_key and (wants_run or wants_create):
+        return "Analyze and Return Data"
+    return ""
+
+
+def _agent_provider_params_from_prompt(
+    prompt: str,
+    provider: str,
+    action: str,
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    prepared = dict(params)
+    provider_key = provider.casefold()
+    action_key = action.casefold()
+    objective = _agent_provider_objective_text(prompt, provider)
+    if "cursor" in provider_key:
+        repo_url = _github_repo_url_from_text(prompt)
+        if repo_url and not _has_prompt_param(prepared, "repository_url"):
+            prepared["repository_url"] = repo_url
+        if (
+            ("launch" in action_key or "agent" in action_key or not action_key)
+            and objective
+            and not _has_prompt_param(prepared, "prompt_text")
+        ):
+            prepared["prompt_text"] = objective
+    elif "manus" in provider_key:
+        if (
+            ("create" in action_key or "task" in action_key or not action_key)
+            and objective
+            and not _has_prompt_param(prepared, "prompt")
+        ):
+            prepared["prompt"] = objective
+        elif (
+            "continue" in action_key
+            and objective
+            and not _has_prompt_param(prepared, "prompt")
+        ):
+            prepared["prompt"] = objective
+    elif provider_key == "agents":
+        if objective and not _has_prompt_param(prepared, "instructions"):
+            prepared["instructions"] = objective
+    return prepared
+
+
+def _has_prompt_param(params: dict[str, Any], key: str) -> bool:
+    value = params.get(key)
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return True
+
+
+def _github_repo_url_from_text(value: str) -> str:
+    match = re.search(
+        r"https?://(?:www\.)?github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?",
+        value,
+        re.IGNORECASE,
+    )
+    return match.group(0).rstrip(".,،؛)") if match else ""
+
+
+def _agent_provider_objective_text(prompt: str, provider: str) -> str:
+    text = re.sub(r"https?://\S+", "", prompt).strip()
+    text = re.sub(
+        r"(?i)\b(?:agent\s+provider\s+action|prepare\s+provider\s+action)\b\s*:?",
+        "",
+        text,
+    )
+    for alias in AGENT_PROVIDER_ALIASES.get(provider, (provider,)):
+        text = re.sub(re.escape(alias), "", text, flags=re.IGNORECASE)
+    text = re.sub(
+        r"\b(?:launch|run|start|execute|create|continue|task|agent)\b",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"(?:شغل|شغّل|تشغيل|ابدأ|انشئ|أنشئ|مهمة|وكيل|كمل|تابع|استكمل|خل|خلي|سوي|سوّي|اعمل|أعمل)",
+        "",
+        text,
+    )
+    text = re.sub(r"\s+", " ", text).strip(" .،؛:-")
+    text = _clean_provider_objective_prefix(text)
+    return text[:1200] if text else prompt[:1200]
+
+
+def _clean_provider_objective_prefix(value: str) -> str:
+    text = value
+    for _ in range(4):
+        before = text
+        text = re.sub(r"^(?:على|عن|حول|في|بخصوص)\s+", "", text).strip()
+        text = re.sub(r"^و(?=\S)", "", text).strip()
+        if text == before:
+            break
+    return text.strip(" .،؛:-")
+
+
+def _connected_app_catalog_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    if _github_codespaces_requested(prompt):
+        return None
+    explicit = re.search(
+        r"(?:connected\s+app\s+catalog|FATHIYA_CONNECTED_APP_COMMAND_V1|كتالوج\s+تطبيق)\s*:?\s*([^\n\r]*)",
+        prompt,
+        re.IGNORECASE,
+    )
+    app = ""
+    candidate = explicit.group(1).strip() if explicit else ""
+    app = _connected_app_from_text(candidate) if candidate else ""
+    if not app and (
+        "connected app catalog" in text
+        or "fathiya_connected_app_command_v1" in text
+        or "كتالوج تطبيق" in text
+    ):
+        app = _connected_app_from_text(prompt)
+    if not app and _connected_app_catalog_requested(prompt):
+        app = _connected_app_from_text(prompt)
+    if not app:
+        return None
+    return {
+        "tool": "zapier_action_catalog",
+        "description": f"قراءة كتالوج تطبيق {app} عبر Zapier MCP",
+        "args": {"app": app, "refresh": False},
+    }
+
+
+def _connected_app_from_text(value: str) -> str:
+    text = value.casefold()
+    for app in CONNECTED_APP_CATALOG_APPS:
+        if app.casefold() in text:
+            return app
+        aliases = CONNECTED_APP_ALIASES.get(app, ())
+        if any(alias.casefold() in text for alias in aliases):
+            return app
+    return ""
+
+
+def _connected_app_catalog_requested(prompt: str) -> bool:
+    text = prompt.casefold()
+    if not _connected_app_from_text(prompt):
+        return False
+    return any(
+        term in text
+        for term in (
+            "catalog",
+            "actions",
+            "available",
+            "enabled",
+            "what can",
+            "show actions",
+            "list actions",
+            "probe",
+            "inspect",
+            "status",
+            "افحص",
+            "اعرض",
+            "وش المتاح",
+            "ما المتاح",
+            "الأفعال",
+            "الافعال",
+            "الإجراءات",
+            "الاجراءات",
+            "جاهزية",
+            "حالة",
+        )
+    )
+
+
+def _safe_zapier_read_step(prompt: str) -> dict[str, Any] | None:
+    actions = _safe_zapier_read_actions(prompt)
+    return actions[0] if actions else None
+
+
+def _safe_zapier_read_actions(prompt: str) -> list[dict[str, Any]]:
+    if _zapier_action_step(prompt):
+        return []
+    if _agent_provider_action_prepare_step(prompt) or _agent_provider_probe_step(prompt):
+        return []
+    actions: list[dict[str, Any]] = []
+    github_params = _github_repository_params_from_prompt(prompt)
+    if github_params:
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة GitHub Repository عبر Zapier MCP",
+                "args": {
+                    "app": "GitHub",
+                    "action": "Find Repository",
+                    "params": github_params,
+                    "instructions": prompt[:2_000],
+                    "output": "Return repository receipt-safe identifiers and permission summary.",
+                },
+            }
+        )
+    text = prompt.casefold()
+    if "manus" in text and any(
+        term in text
+        for term in ("task", "tasks", "get tasks", "list tasks", "مهام", "المهام", "قائمة")
+    ):
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Manus Tasks عبر Zapier MCP",
+                "args": {
+                    "app": "Manus",
+                    "action": "Get Tasks",
+                    "params": {},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe task identifiers and status summary.",
+                },
+            }
+        )
+    gmail_query = _mail_search_query_from_prompt(
+        prompt,
+        app_terms=("gmail", "جيميل", "جي ميل"),
+    )
+    if gmail_query:
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Gmail Search عبر Zapier MCP",
+                "args": {
+                    "app": "Gmail",
+                    "action": "New Email Matching Search",
+                    "params": {"query": gmail_query},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe Gmail match identifiers and a brief non-sensitive summary.",
+                },
+            }
+        )
+    outlook_query = _mail_search_query_from_prompt(
+        prompt,
+        app_terms=("outlook", "microsoft outlook", "أوتلوك", "اوتلوك"),
+    )
+    if outlook_query:
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Outlook Email Search عبر Zapier MCP",
+                "args": {
+                    "app": "Microsoft Outlook",
+                    "action": "Find Emails",
+                    "params": {"searchValue": outlook_query},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe Outlook email identifiers and a brief non-sensitive summary.",
+                },
+            }
+        )
+    cursor_agent_id = _cursor_agent_id_from_prompt(prompt)
+    if cursor_agent_id and "cursor" in text and any(
+        term in text for term in ("status", "حالة", "تحقق", "افحص")
+    ):
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Cursor Agent Status عبر Zapier MCP",
+                "args": {
+                    "app": "Cursor",
+                    "action": "Find Agent Status",
+                    "params": {"agent_id": cursor_agent_id},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe agent status fields.",
+                },
+            }
+        )
+    tables_preflight = _zapier_tables_find_records_preflight_step(prompt)
+    if tables_preflight:
+        actions.append(tables_preflight)
+    return actions
+
+
+def _zapier_tables_find_records_preflight_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    if not any(
+        term in text
+        for term in ("zapier tables", "zapier table", "جداول زابير", "جدول زابير")
+    ):
+        return None
+    if not any(
+        term in text
+        for term in (
+            "find records",
+            "search records",
+            "list records",
+            "اعرض السجلات",
+            "ابحث في السجلات",
+            "السجلات",
+            "records",
+        )
+    ):
+        return None
+    params: dict[str, Any] = {}
+    table_id = _prompt_inline_value(prompt, "table_id", "table id", "table", "معرف الجدول")
+    if table_id:
+        params["table_id"] = table_id
+    filter_value = _prompt_inline_value(prompt, "filter", "where", "query", "فلتر", "شرط")
+    if filter_value:
+        params["filter"] = filter_value
+    limit_value = _prompt_inline_value(prompt, "limit", "max", "حد")
+    if limit_value and limit_value.isdigit():
+        params["limit"] = int(limit_value)
+    return {
+        "tool": "zapier_action_preflight",
+        "description": "تحقق من قراءة Zapier Tables Find Records وتجهيز الحقول قبل التنفيذ",
+        "args": {
+            "app": "Zapier Tables",
+            "action": "Find Records",
+            "params": params,
+            "instructions": prompt[:2_000],
+            "output": "Return receipt-safe Zapier Tables record identifiers and missing-field guidance.",
+        },
+    }
+
+
+def _mail_search_query_from_prompt(
+    prompt: str,
+    *,
+    app_terms: tuple[str, ...],
+) -> str:
+    text = prompt.casefold()
+    if not any(term.casefold() in text for term in app_terms):
+        return ""
+    if not any(
+        term in text
+        for term in (
+            "search",
+            "find",
+            "lookup",
+            "look up",
+            "show",
+            "list",
+            "read",
+            "ابحث",
+            "بحث",
+            "اعرض",
+            "فتش",
+            "تحقق",
+            "دور",
+        )
+    ):
+        return ""
+    quoted = re.search(r"[\"'“”«»](.{2,160}?)[\"'“”«»]", prompt)
+    if quoted:
+        return quoted.group(1).strip()
+    operator_match = re.search(
+        r"\b(?:from|to|subject|in|label|after|before|has):[^\n\r،؛;]{2,160}",
+        prompt,
+        re.IGNORECASE,
+    )
+    if operator_match:
+        return operator_match.group(0).strip()
+    app_pattern = "|".join(re.escape(term) for term in app_terms)
+    after_app = re.search(
+        rf"(?:{app_pattern}).{{0,40}}?(?:for|about|query|search|عن|حول|بخصوص|كلمة)\s+([^\n\r،؛;]{{2,160}})",
+        prompt,
+        re.IGNORECASE,
+    )
+    if after_app:
+        return _clean_mail_query(after_app.group(1))
+    after_search = re.search(
+        rf"(?:search|find|lookup|look\s+up|ابحث|بحث|فتش|دور).{{0,40}}?(?:{app_pattern}).{{0,40}}?(?:for|about|query|عن|حول|بخصوص|كلمة)?\s*([^\n\r،؛;]{{2,160}})",
+        prompt,
+        re.IGNORECASE,
+    )
+    if after_search:
+        return _clean_mail_query(after_search.group(1))
+    return ""
+
+
+def _clean_mail_query(value: str) -> str:
+    cleaned = re.sub(
+        r"(?:وسجل|ثم|and\s+record|and\s+log|without|بدون|بلا).*$",
+        "",
+        value.strip(),
+        flags=re.IGNORECASE,
+    )
+    return cleaned.strip(" .،؛;:")[:160]
+
+
+def _github_repository_params_from_prompt(prompt: str) -> dict[str, str] | None:
+    text = prompt.casefold()
+    wants_github = any(term in text for term in ("github", "git hub", "جيت هب", "قيتهب"))
+    if not wants_github:
+        return None
+    url_match = re.search(
+        r"github\.com[:/]+(?P<owner>[A-Za-z0-9_.-]+)/(?P<repo>[A-Za-z0-9_.-]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if url_match:
+        return {
+            "owner": url_match.group("owner"),
+            "repo": _clean_repo_name(url_match.group("repo")),
+        }
+    slug_match = re.search(
+        r"(?<![A-Za-z0-9_.-])(?P<owner>[A-Za-z0-9_.-]{2,})/(?P<repo>[A-Za-z0-9_.-]{2,})(?:\.git)?(?![A-Za-z0-9_.-])",
+        prompt,
+    )
+    if slug_match:
+        return {
+            "owner": slug_match.group("owner"),
+            "repo": _clean_repo_name(slug_match.group("repo")),
+        }
+    if any(term in text for term in ("fathiya", "فتحية", "فاثيا")):
+        return {"owner": "fathya-core", "repo": "fathiya-core"}
+    return None
+
+
+def _clean_repo_name(value: str) -> str:
+    return re.sub(r"\.git$", "", value.strip().rstrip("/).,]؛،"), flags=re.IGNORECASE)
+
+
+def _cursor_agent_id_from_prompt(prompt: str) -> str:
+    match = re.search(
+        r"(?:agent[_\s-]*id|cursor[_\s-]*agent|معرف)\s*[:=]?\s*([A-Za-z0-9][A-Za-z0-9_-]{5,})",
+        prompt,
+        re.IGNORECASE,
+    )
+    return match.group(1) if match else ""
+
+
+def _openrouter_model_strategy_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.lower()
+    explicit = re.search(
+        r"(?:openrouter\s+model\s+strategy|fusion\s+strategy|استراتيجية\s+(?:OpenRouter|اوبن\s*راوتر|أوبن\s*راوتر)|مسار\s+Fusion)\s*:?",
+        prompt,
+        re.IGNORECASE,
+    )
+    strategy_terms = (
+        "openrouter",
+        "fusion",
+        "advisor",
+        "subagent",
+        "multi-model",
+        "multimodel",
+        "model routing",
+        "اوبن راوتر",
+        "أوبن راوتر",
+        "دمج النماذج",
+        "بحث عميق",
+    )
+    if not explicit and not any(term in text for term in strategy_terms):
+        return None
+    return {
+        "tool": "openrouter_model_strategy",
+        "description": "قراءة استراتيجية OpenRouter وFusion والنماذج المجانية دون إنفاق رموز",
+        "args": {},
+    }
+
+
 def _zapier_action_step(prompt: str) -> dict[str, Any] | None:
     match = re.search(
         r"(?:zapier\s+action|إجراء\s+زابير)\s*:\s*([^/\n]+)\s*/\s*([^\n]+)",
@@ -1040,19 +2793,7 @@ def _zapier_action_step(prompt: str) -> dict[str, Any] | None:
         return None
     app = match.group(1).strip()
     action = match.group(2).strip()
-    params: dict[str, Any] = {}
-    params_match = re.search(
-        r"(?:params|parameters|المعاملات)\s*:\s*(\{[^\n]*\})",
-        prompt,
-        re.IGNORECASE,
-    )
-    if params_match:
-        try:
-            parsed = json.loads(params_match.group(1))
-            if isinstance(parsed, dict):
-                params = parsed
-        except json.JSONDecodeError:
-            params = {}
+    params = _prompt_json_object_value(prompt, "params", "parameters", "المعاملات")
     return {
         "tool": "zapier_action",
         "description": f"تنفيذ إجراء Zapier {app}/{action}",
@@ -1062,6 +2803,30 @@ def _zapier_action_step(prompt: str) -> dict[str, Any] | None:
             "params": params,
             "instructions": prompt[:2_000],
             "output": "Return the action result and receipt-safe identifiers.",
+        },
+    }
+
+
+def _zapier_action_preflight_step(prompt: str) -> dict[str, Any] | None:
+    match = re.search(
+        r"(?:zapier\s+action\s+preflight|zapier\s+preflight|تحقق\s+إجراء\s+زابير)\s*:\s*([^/\n]+)\s*/\s*([^\n]+)",
+        prompt,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    app = match.group(1).strip()
+    action = match.group(2).strip()
+    params = _prompt_json_object_value(prompt, "params", "parameters", "المعاملات")
+    return {
+        "tool": "zapier_action_preflight",
+        "description": f"تحقق من إجراء Zapier {app}/{action} وتجهيز الحقول قبل التنفيذ",
+        "args": {
+            "app": app,
+            "action": action,
+            "params": params,
+            "instructions": prompt[:2_000],
+            "output": "Return required fields and a ready-to-run prompt when params are complete.",
         },
     }
 
