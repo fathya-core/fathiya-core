@@ -30,11 +30,27 @@ def build_integration_readiness(
     zapier_bridge_ready = bool(
         connector_by_name.get("zapier_fathiya_webhook", {}).get("configured")
     )
-    zapier_direct_ready = bool(
-        ZapierTokenStore(
-            config.zapier_mcp_token_path,
-            config.zapier_mcp_access_token,
-        ).status()["connected"]
+    zapier_status = ZapierTokenStore(
+        config.zapier_mcp_token_path,
+        config.zapier_mcp_access_token,
+    )
+    zapier_auth = zapier_status.status()
+    zapier_direct_connected = bool(zapier_auth.get("connected"))
+    zapier_needs_reconnect = bool(
+        zapier_direct_connected
+        and (
+            zapier_auth.get("expired")
+            or zapier_auth.get("refresh_recommended")
+            or zapier_auth.get("last_refresh_error")
+        )
+    )
+    zapier_direct_ready = bool(zapier_direct_connected and not zapier_needs_reconnect)
+    zapier_action_path = (
+        None
+        if zapier_direct_ready
+        else "/api/agent/oauth/zapier/start?force=1"
+        if zapier_needs_reconnect
+        else "/api/agent/oauth/zapier/start"
     )
     n8n_health_ready = bool(
         connector_by_name.get("n8n_health", {}).get("configured")
@@ -57,16 +73,44 @@ def build_integration_readiness(
         for item in (local_capabilities or {}).get("capabilities", [])
         if isinstance(item, dict)
     ]
+    capability_by_id = {
+        str(item.get("id")): item for item in capability_rows if item.get("id")
+    }
     ready_capabilities = [
         str(item.get("name"))
         for item in capability_rows
         if item.get("status") in {"active", "ready"} and item.get("name")
     ]
-    partial_capabilities = [
+    required_partial_capabilities = [
         str(item.get("name"))
         for item in capability_rows
-        if item.get("status") in {"partial", "degraded"} and item.get("name")
+        if item.get("status") in {"partial", "degraded"}
+        and item.get("name")
+        and item.get("required_for_core") is not False
     ]
+    optional_attention_capabilities = [
+        str(item.get("name"))
+        for item in capability_rows
+        if item.get("status") in {"partial", "degraded", "unavailable"}
+        and item.get("name")
+        and item.get("required_for_core") is False
+    ]
+    kali_capability = capability_by_id.get("kali_wsl", {})
+    kali_status = str(kali_capability.get("status") or "")
+    kali_ready = kali_status in {"active", "ready"}
+    kali_partial = kali_status in {"partial", "degraded"}
+    codespaces_capability = capability_by_id.get("github_codespaces", {})
+    codespaces_status = str(codespaces_capability.get("status") or "")
+    codespaces_ready = codespaces_status in {"active", "ready"}
+    codespaces_partial = codespaces_status in {"partial", "degraded"}
+    codespace_count = int(codespaces_capability.get("codespace_count") or 0)
+    active_codespace_count = int(
+        codespaces_capability.get("active_codespace_count") or 0
+    )
+    codespaces_auth_command = (
+        str(codespaces_capability.get("auth_command") or "").strip()
+        or "gh auth login -h github.com -p https -s repo,workflow,read:org,gist,codespace -w"
+    )
 
     supabase_missing = [
         name
@@ -77,6 +121,12 @@ def build_integration_readiness(
         if not value
     ]
     supabase_active = not supabase_missing and config.store == "supabase"
+    core_ready_count = int(
+        (local_capabilities or {}).get("core_ready_count") or len(ready_capabilities)
+    )
+    core_capability_count = int(
+        (local_capabilities or {}).get("core_capability_count") or len(capability_rows)
+    )
 
     integrations = [
         {
@@ -85,7 +135,7 @@ def build_integration_readiness(
             "category": "automation",
             "status": (
                 "ready"
-                if capability_rows and not partial_capabilities
+                if capability_rows and not required_partial_capabilities
                 else "partial"
                 if ready_capabilities
                 else "needs_setup"
@@ -94,13 +144,15 @@ def build_integration_readiness(
             "account_required": False,
             "credential_policy": "none",
             "summary": (
-                f"{len(ready_capabilities)} من {len(capability_rows)} بوابات محلية جاهزة للتنفيذ."
+                f"{core_ready_count} من {core_capability_count} بوابات تشغيل أساسية جاهزة."
                 if capability_rows
                 else "لم يُنفذ فحص شبكة التنفيذ المحلية."
             ),
             "next_step": (
-                f"أكمل البوابات الجزئية: {', '.join(partial_capabilities)}."
-                if partial_capabilities
+                f"أكمل البوابات الأساسية الجزئية: {', '.join(required_partial_capabilities)}."
+                if required_partial_capabilities
+                else f"اختياري فقط: {', '.join(optional_attention_capabilities)}."
+                if optional_attention_capabilities
                 else "لا إجراء مطلوب."
             ),
             "missing_env": [],
@@ -116,8 +168,11 @@ def build_integration_readiness(
             ),
             "details": {
                 "ready_count": len(ready_capabilities),
-                "partial_count": len(partial_capabilities),
+                "partial_count": len(required_partial_capabilities),
+                "optional_attention_count": len(optional_attention_capabilities),
                 "capability_count": len(capability_rows),
+                "core_ready_count": core_ready_count,
+                "core_capability_count": core_capability_count,
             },
         },
         {
@@ -136,6 +191,8 @@ def build_integration_readiness(
             else "فعّل FATHIYA_ENABLE_HF_RETRIEVAL أو FATHIYA_ENABLE_LOCAL_GENERATION محليًا.",
             "missing_env": [],
             "connected_apps": [],
+            "settings_path": "/api/agent/settings/huggingface_local",
+            "settings_label": "إعداد Hugging Face المحلي",
             "probe_path": "/api/agent/integrations/huggingface_local/probe",
             "probe_label": "اختبار المحلي",
             "task_label": "تشغيل وكيل النموذج",
@@ -146,6 +203,7 @@ def build_integration_readiness(
             "details": {
                 "retrieval_enabled": config.enable_hf_retrieval,
                 "generation_enabled": config.enable_local_generation,
+                "planning_enabled": config.enable_local_planning,
                 "retrieval_model": config.hf_model,
                 "generation_model": config.local_model,
             },
@@ -178,11 +236,83 @@ def build_integration_readiness(
             "details": {
                 "model": config.openrouter_model,
                 "model_candidates": list(config.openrouter_model_candidates),
+                "research_model": config.openrouter_research_model,
+                "safety_model": config.openrouter_safety_model,
                 "trading_advisory_model": config.trading_advisory_model,
                 "trading_advisory_model_candidates": list(
                     config.trading_advisory_model_candidates
                 ),
+                "fusion_policy": {
+                    "invocation_modes": [
+                        "direct_model_slug",
+                        "server_tool_from_current_model",
+                    ],
+                    "enabled_for": [
+                        "deep research",
+                        "knowledge learning",
+                        "source-grounded comparison",
+                    ],
+                    "not_default_for": ["coding agents", "general chat"],
+                    "panel_limit": 8,
+                    "web_search_default": True,
+                },
                 "free_model_routing": True,
+            },
+        },
+        {
+            "id": "github_codespaces",
+            "name": "GitHub Codespaces",
+            "category": "engineering",
+            "status": (
+                "ready"
+                if codespaces_ready
+                else "partial"
+                if codespaces_partial
+                else "needs_setup"
+            ),
+            "connection_mode": "github_remote_dev",
+            "account_required": True,
+            "credential_policy": "oauth_managed",
+            "summary": (
+                f"حساب GitHub يعرض {codespace_count} Codespaces، منها {active_codespace_count} نشطة."
+                if codespaces_ready
+                else "GitHub CLI موجود لكن وصول Codespaces غير مؤكد."
+                if codespaces_partial
+                else "لم تُؤكد جاهزية GitHub Codespaces بعد."
+            ),
+            "next_step": (
+                "لا إجراء مطلوب للفحص؛ التنفيذ داخل Codespace يبقى موافقة منفصلة."
+                if codespaces_ready
+                else f"أكمل تفويض GitHub CLI: {codespaces_auth_command}"
+            ),
+            "missing_env": [],
+            "connected_apps": ["gh codespace"] if codespaces_ready else [],
+            "action_path": None
+            if codespaces_ready
+            else "/api/agent/oauth/github/codespaces/start",
+            "action_label": None
+            if codespaces_ready
+            else "تفويض GitHub Codespaces",
+            "probe_path": "/api/agent/integrations/github_codespaces/probe",
+            "probe_label": "اختبار Codespaces",
+            "task_label": "تشغيل وكيل Codespaces",
+            "task_prompt": (
+                "integration probe: github_codespaces\n"
+                "افحص GitHub Codespaces المتاحة لحساب GitHub المصادق دون تنفيذ أوامر بعيدة، ثم سجل إيصالًا."
+            ),
+            "details": {
+                "status": codespaces_status or "unknown",
+                "codespace_count": codespace_count,
+                "active_codespace_count": active_codespace_count,
+                "execution_mode": codespaces_capability.get("execution_mode"),
+                "auth_state": codespaces_capability.get("auth_state"),
+                "missing_scope": codespaces_capability.get("missing_scope"),
+                "operator_action_required": bool(
+                    codespaces_capability.get("operator_action_required")
+                ),
+                "required_scope": "codespace",
+                "auth_command": codespaces_auth_command,
+                "requires_approval_for_remote_execution": True,
             },
         },
         {
@@ -206,9 +336,15 @@ def build_integration_readiness(
             else "المشغّل المحلي يعمل على SQLite؛ قناة الإنتاج غير مربوطة.",
             "next_step": "لا إجراء مطلوب."
             if supabase_active
-            else "أعد تشغيل المشغّل بوضع Supabase بعد تطبيق مخطط قاعدة البيانات."
+            else (
+                "طبّق supabase/migrations/20260604120000_agent_runtime_v1.sql "
+                "ثم أعد تشغيل المشغّل بوضع Supabase."
+            )
             if not supabase_missing
-            else "أدخل URL ومفتاح الخدمة من إعداد Supabase المحلي.",
+            else (
+                "طبّق supabase/migrations/20260604120000_agent_runtime_v1.sql، "
+                "ثم أدخل URL ومفتاح الخدمة من إعداد Supabase المحلي."
+            ),
             "missing_env": supabase_missing,
             "connected_apps": [],
             "settings_path": "/api/agent/settings/supabase",
@@ -223,6 +359,7 @@ def build_integration_readiness(
             "details": {
                 "active_store": config.store,
                 "restart_required": not supabase_active,
+                "migration_path": "supabase/migrations/20260604120000_agent_runtime_v1.sql",
             },
         },
         {
@@ -272,12 +409,58 @@ def build_integration_readiness(
             },
         },
         {
+            "id": "kali_wsl",
+            "name": "Kali Linux WSL",
+            "category": "security",
+            "status": (
+                "ready"
+                if kali_ready
+                else "partial"
+                if kali_partial
+                else "needs_setup"
+            ),
+            "connection_mode": "local_wsl",
+            "account_required": False,
+            "credential_policy": "none",
+            "summary": (
+                f"Kali WSL جاهز وفيه {int(kali_capability.get('tool_count') or 0)} أدوات أمنية أساسية."
+                if kali_ready
+                else "Kali WSL موجود جزئيًا؛ بعض أدوات الأمن غير مؤكدة."
+                if kali_partial
+                else "لم تُؤكد جاهزية Kali WSL بعد."
+            ),
+            "next_step": (
+                "لا إجراء مطلوب."
+                if kali_ready
+                else "شغّل فحص Kali أو راجع WSL وتثبيت أدوات nmap/nuclei/httpx/subfinder."
+            ),
+            "missing_env": [],
+            "connected_apps": (
+                ["nmap", "nuclei", "httpx", "subfinder", "git", "python3"]
+                if kali_ready
+                else []
+            ),
+            "probe_path": "/api/agent/integrations/kali_wsl/probe",
+            "probe_label": "اختبار Kali",
+            "task_label": "تشغيل وكيل Kali",
+            "task_prompt": (
+                "integration probe: kali_wsl\n"
+                "افحص Kali WSL وأدواته الأمنية المتاحة، ثم سجل إيصالًا."
+            ),
+            "details": {
+                "status": kali_status or "unknown",
+                "tool_count": int(kali_capability.get("tool_count") or 0),
+                "missing_tool_count": int(kali_capability.get("missing_tool_count") or 0),
+                "execution_mode": kali_capability.get("execution_mode"),
+            },
+        },
+        {
             "id": "zapier_mcp",
             "name": "Zapier MCP",
             "category": "automation",
             "status": (
                 "ready"
-                if zapier_inventory_ready and (zapier_direct_ready or zapier_bridge_ready)
+                if zapier_inventory_ready and zapier_direct_ready
                 else "partial"
                 if zapier_inventory_ready
                 else "needs_setup"
@@ -291,21 +474,21 @@ def build_integration_readiness(
             )
             if zapier_inventory_ready
             else "لم يُحمّل مخزون حسابات Zapier المتصلة.",
-            "next_step": "اربط Zapier MCP بالمحرك المحلي عبر OAuth؛ لا ترسل كلمة مرور أو رمزًا."
+            "next_step": "أعد ربط Zapier MCP بالكامل؛ رمز OAuth المحلي منتهي أو فشل تجديده."
+            if zapier_inventory_ready and zapier_needs_reconnect
+            else "اربط Zapier MCP بالمحرك المحلي عبر OAuth؛ لا ترسل كلمة مرور أو رمزًا."
             if zapier_inventory_ready and not zapier_direct_ready
             else "لا إجراء مطلوب."
-            if zapier_inventory_ready and (zapier_direct_ready or zapier_bridge_ready)
+            if zapier_inventory_ready and zapier_direct_ready
             else "اربط التطبيقات المطلوبة داخل Zapier MCP عبر OAuth.",
             "missing_env": [],
             "connected_apps": zapier_apps,
-            "action_path": (
-                None
-                if zapier_direct_ready
-                else "/api/agent/oauth/zapier/start"
-            ),
+            "action_path": zapier_action_path,
             "action_label": (
                 None
                 if zapier_direct_ready
+                else "إعادة ربط كاملة"
+                if zapier_needs_reconnect
                 else "ربط Zapier MCP محليًا"
             ),
             "probe_path": "/api/agent/integrations/zapier_mcp/probe",
@@ -318,7 +501,13 @@ def build_integration_readiness(
             "details": {
                 "app_count": len(zapier_apps),
                 "action_count": int(inventory.get("zapier_action_count", 0)),
-                "direct_oauth_connected": zapier_direct_ready,
+                "direct_oauth_connected": zapier_direct_connected,
+                "direct_live_available": zapier_direct_ready,
+                "needs_reconnect": zapier_needs_reconnect,
+                "expired": bool(zapier_auth.get("expired")),
+                "refresh_recommended": bool(zapier_auth.get("refresh_recommended")),
+                "last_refresh_error": zapier_auth.get("last_refresh_error"),
+                "last_refresh_status_code": zapier_auth.get("last_refresh_status_code"),
                 "webhook_bridge_ready": zapier_bridge_ready,
             },
         },

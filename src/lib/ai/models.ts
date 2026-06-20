@@ -10,13 +10,18 @@ export interface AIModel {
 export const AI_MODELS: readonly AIModel[] = [
   // OpenRouter free routing
   { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "Nemotron 3 Super (مجاني قوي)", tier: "free", provider: "openrouter" },
+  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", label: "Nemotron 3 Ultra 550B (تقييم مجاني)", tier: "free", provider: "openrouter" },
   { id: "nex-agi/nex-n2-pro:free", label: "Nex-N2-Pro (مجاني Agentic)", tier: "free", provider: "openrouter" },
   { id: "google/gemma-4-31b-it:free", label: "Gemma 4 31B (مجاني)", tier: "free", provider: "openrouter" },
   { id: "qwen/qwen3-next-80b-a3b-instruct:free", label: "Qwen3 Next 80B (مجاني)", tier: "free", provider: "openrouter" },
   { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder 480B (مجاني)", tier: "free", provider: "openrouter" },
   { id: "openai/gpt-oss-120b:free", label: "gpt-oss 120B (مجاني)", tier: "free", provider: "openrouter" },
+  { id: "nvidia/nemotron-3.5-content-safety:free", label: "Nemotron 3.5 Safety (حراسة مجانية)", tier: "free", provider: "openrouter" },
   { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (مجاني)", tier: "free", provider: "openrouter" },
   // OpenRouter paid/fast options
+  { id: "openrouter/fusion", label: "OpenRouter Fusion (بحث عميق)", tier: "premium", provider: "openrouter" },
+  { id: "qwen/qwen3.7-plus", label: "Qwen3.7 Plus (1M context)", tier: "fast", provider: "openrouter" },
+  { id: "moonshotai/kimi-k2.7-code", label: "Kimi K2.7 Code (وكيل كود طويل)", tier: "premium", provider: "openrouter" },
   { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (سريع)", tier: "fast", provider: "openrouter" },
   { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", tier: "premium", provider: "openrouter" },
   { id: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick", tier: "fast", provider: "openrouter" },

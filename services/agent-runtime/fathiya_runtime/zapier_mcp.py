@@ -63,15 +63,44 @@ class ZapierTokenStore:
         except OSError:
             pass
 
+    def reset_oauth_registration(self) -> bool:
+        if self.environment_access_token:
+            return False
+        credentials = self.load()
+        for key in (
+            "access_token",
+            "refresh_token",
+            "id_token",
+            "expires_at",
+            "client_id",
+            "client_secret",
+            "redirect_uri",
+            "registration_endpoint",
+            "token_endpoint",
+            "last_refresh_error",
+            "last_refresh_status_code",
+            "last_refresh_at",
+        ):
+            credentials.pop(key, None)
+        credentials["token_source"] = "oauth_file"
+        credentials["oauth_reset_at"] = time.time()
+        self.save(credentials)
+        return True
+
     def status(self) -> dict[str, Any]:
         payload = self.load()
         expires_at = float(payload.get("expires_at") or 0)
+        expired = bool(expires_at and expires_at <= time.time())
         return {
             "connected": bool(payload.get("access_token")),
             "token_source": payload.get("token_source", "oauth_file"),
             "has_refresh_token": bool(payload.get("refresh_token")),
             "expires_at": expires_at or None,
-            "expired": bool(expires_at and expires_at <= time.time()),
+            "expired": expired,
+            "refresh_recommended": expired and bool(payload.get("refresh_token")),
+            "last_refresh_error": payload.get("last_refresh_error"),
+            "last_refresh_status_code": payload.get("last_refresh_status_code"),
+            "last_refresh_at": payload.get("last_refresh_at"),
         }
 
 
@@ -81,7 +110,10 @@ class ZapierOAuthManager:
         self.token_store = token_store
         self.pending: dict[str, dict[str, Any]] = {}
 
-    def start(self, callback_url: str, return_to: str) -> str:
+    def start(self, callback_url: str, return_to: str, *, force_new: bool = False) -> str:
+        if force_new:
+            self.token_store.reset_oauth_registration()
+            self.pending.clear()
         credentials = self.token_store.load()
         client_id = str(credentials.get("client_id") or "")
         client_secret = str(credentials.get("client_secret") or "")
@@ -156,6 +188,9 @@ class ZapierOAuthManager:
                 "token_endpoint": ZAPIER_TOKEN_ENDPOINT,
                 "token_source": "oauth_file",
                 "expires_at": time.time() + float(token.get("expires_in") or 3600),
+                "last_refresh_error": None,
+                "last_refresh_status_code": response.status_code,
+                "last_refresh_at": time.time(),
             }
         )
         self.token_store.save(credentials)
@@ -295,9 +330,18 @@ class StreamableHttpMCPClient:
         return response
 
     def _access_token(self) -> str:
-        token = str(self.token_store.load().get("access_token") or "")
+        credentials = self.token_store.load()
+        token = str(credentials.get("access_token") or "")
         if not token:
             raise ZapierMCPError("Zapier MCP OAuth is not connected")
+        expires_at = float(credentials.get("expires_at") or 0)
+        if (
+            expires_at
+            and expires_at <= time.time() + 60
+            and credentials.get("refresh_token")
+            and self._refresh_access_token()
+        ):
+            token = str(self.token_store.load().get("access_token") or token)
         return token
 
     def _refresh_access_token(self) -> bool:
@@ -305,27 +349,56 @@ class StreamableHttpMCPClient:
         refresh_token = str(credentials.get("refresh_token") or "")
         client_id = str(credentials.get("client_id") or "")
         if not refresh_token or not client_id:
+            self._record_refresh_failure(
+                credentials,
+                "missing_refresh_credentials",
+                None,
+            )
             return False
-        response = requests.post(
-            str(credentials.get("token_endpoint") or ZAPIER_TOKEN_ENDPOINT),
-            data={
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
-                "client_id": client_id,
-                "client_secret": str(credentials.get("client_secret") or ""),
-                "resource": self.config.zapier_mcp_url,
-            },
-            timeout=30,
-        )
+        try:
+            response = requests.post(
+                str(credentials.get("token_endpoint") or ZAPIER_TOKEN_ENDPOINT),
+                data={
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                    "client_id": client_id,
+                    "client_secret": str(credentials.get("client_secret") or ""),
+                    "resource": self.config.zapier_mcp_url,
+                },
+                timeout=30,
+            )
+        except requests.RequestException:
+            self._record_refresh_failure(credentials, "request_exception", None)
+            return False
         if not response.ok:
+            self._record_refresh_failure(
+                credentials,
+                f"http_{response.status_code}",
+                response.status_code,
+            )
             return False
         token = response.json()
         if not isinstance(token, dict) or not token.get("access_token"):
+            self._record_refresh_failure(credentials, "invalid_token_payload", None)
             return False
         credentials.update(token)
         credentials["expires_at"] = time.time() + float(token.get("expires_in") or 3600)
+        credentials["last_refresh_error"] = None
+        credentials["last_refresh_status_code"] = response.status_code
+        credentials["last_refresh_at"] = time.time()
         self.token_store.save(credentials)
         return True
+
+    def _record_refresh_failure(
+        self,
+        credentials: dict[str, Any],
+        reason: str,
+        status_code: int | None,
+    ) -> None:
+        credentials["last_refresh_error"] = reason
+        credentials["last_refresh_status_code"] = status_code
+        credentials["last_refresh_at"] = time.time()
+        self.token_store.save(credentials)
 
 
 class ZapierMCPGateway:
@@ -359,8 +432,14 @@ class ZapierMCPGateway:
             "direct_execution": self.configured,
         }
 
-    def start_oauth(self, callback_url: str, return_to: str) -> str:
-        return self.oauth.start(callback_url, return_to)
+    def start_oauth(
+        self,
+        callback_url: str,
+        return_to: str,
+        *,
+        force_new: bool = False,
+    ) -> str:
+        return self.oauth.start(callback_url, return_to, force_new=force_new)
 
     def complete_oauth(self, code: str, state: str) -> str:
         return self.oauth.complete(code, state)
@@ -433,6 +512,52 @@ class ZapierMCPGateway:
             ),
         }
 
+    def action_details(self, app: str, action: str) -> dict[str, Any]:
+        resolved = self.resolve_action(app, action)
+        payload = self._call_list_enabled(
+            {
+                "selected_api": resolved["selected_api"],
+                "action": resolved["key"],
+            }
+        )
+        entries = payload if isinstance(payload, list) else [payload]
+        params: list[dict[str, Any]] = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            for item in entry.get("actions", []):
+                if not isinstance(item, dict):
+                    continue
+                if str(item.get("key") or "").casefold() != resolved["key"].casefold():
+                    continue
+                raw_params = item.get("params")
+                if isinstance(raw_params, list):
+                    params = [
+                        _safe_action_param(param)
+                        for param in raw_params
+                        if isinstance(param, dict) and param.get("key")
+                    ]
+                break
+            if params:
+                break
+        required_keys = [
+            str(param["key"]) for param in params if bool(param.get("required"))
+        ]
+        return {
+            "available": True,
+            "connected": True,
+            "provider": "Zapier MCP",
+            "app": resolved["app"],
+            "action": resolved["name"],
+            "action_key": resolved["key"],
+            "tool_name": resolved["tool_name"],
+            "mode": resolved["mode"],
+            "params": params,
+            "required_keys": required_keys,
+            "param_template": _param_template(params),
+            "requires_approval": resolved["mode"] != "read",
+        }
+
     def resolve_action(self, app: str, action: str) -> dict[str, Any]:
         requested_app = app.strip().casefold()
         requested_action = action.strip().casefold()
@@ -495,17 +620,33 @@ class ZapierMCPGateway:
             if resolved["mode"] == "read"
             else "execute_zapier_write_action"
         )
+        execution_instructions = _execution_safe_text(
+            instructions,
+            fallback=(
+                f"Execute {resolved['app']} / {resolved['name']} using only these "
+                f"locked params: {json.dumps(params, ensure_ascii=True, sort_keys=True, default=str)}. "
+                "Return receipt-safe result data."
+            ),
+            limit=2_000,
+        )
+        execution_output = _execution_safe_text(
+            output,
+            fallback="Return the action result and receipt-safe identifiers.",
+            limit=1_000,
+        )
         result = self._client_instance().call_tool(
             executor,
             {
                 "selected_api": resolved["selected_api"],
                 "action": resolved["key"],
-                "instructions": instructions[:2_000],
-                "output": output[:1_000],
+                "instructions": execution_instructions,
+                "output": execution_output,
                 "params": params,
             },
         )
-        return {
+        safe_response = _safe_result(result)
+        failed, error, needs_reconnect = _zapier_response_issue(safe_response)
+        payload = {
             "available": True,
             "executed": True,
             "provider": "Zapier MCP",
@@ -513,8 +654,18 @@ class ZapierMCPGateway:
             "action": resolved["name"],
             "action_key": resolved["key"],
             "mode": resolved["mode"],
-            "response": _safe_result(result),
+            "response": safe_response,
         }
+        if failed:
+            payload.update(
+                {
+                    "execution_failed": True,
+                    "error": error,
+                    "needs_reconnect": needs_reconnect,
+                    "auth_state": "reconnect_required" if needs_reconnect else "action_error",
+                }
+            )
+        return payload
 
     def _apps(self, *, force: bool = False) -> list[dict[str, Any]]:
         if self._catalog_cache and not force and self._catalog_cache[0] > time.time():
@@ -554,6 +705,20 @@ class ZapierMCPGateway:
     def _find_tool(self, purpose: str) -> str:
         tools = self._client_instance().list_tools()
         purpose = purpose.casefold()
+        if purpose == "list_enabled":
+            for item in tools:
+                name = str(item.get("name") or "")
+                if name.casefold() == "list_enabled_zapier_actions":
+                    return name
+            for item in tools:
+                name = str(item.get("name") or "")
+                lowered = name.casefold()
+                if "list_enabled" in lowered and "zapier" in lowered:
+                    return name
+        for item in tools:
+            name = str(item.get("name") or "")
+            if name.casefold() == purpose:
+                return name
         for item in tools:
             name = str(item.get("name") or "")
             description = str(item.get("description") or "")
@@ -572,6 +737,61 @@ class ZapierMCPGateway:
         if self._client is None:
             self._client = self._client_factory()
         return self._client
+
+
+def _execution_safe_text(value: str, *, fallback: str, limit: int) -> str:
+    text = str(value or "").strip()
+    if text and text.isascii():
+        return text[:limit]
+    fallback_text = str(fallback or "").strip()
+    if fallback_text and fallback_text.isascii():
+        return fallback_text[:limit]
+    return fallback_text.encode("ascii", "ignore").decode("ascii")[:limit]
+
+
+def _safe_action_param(param: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {
+        "key": str(param.get("key") or "")[:160],
+        "label": str(param.get("label") or param.get("key") or "")[:240],
+        "type": str(param.get("type") or "string")[:80],
+        "required": bool(param.get("required")),
+    }
+    help_text = str(param.get("help_text") or param.get("helpText") or "").strip()
+    if help_text:
+        safe["help_text"] = help_text[:500]
+    choices = param.get("choices") or param.get("options")
+    if isinstance(choices, list):
+        safe["choices"] = [
+            {
+                key: str(choice.get(key) or "")[:240]
+                for key in ("label", "value")
+                if isinstance(choice, dict) and choice.get(key) is not None
+            }
+            if isinstance(choice, dict)
+            else {"label": str(choice)[:240], "value": str(choice)[:240]}
+            for choice in choices[:25]
+        ]
+    return safe
+
+
+def _param_template(params: list[dict[str, Any]]) -> dict[str, Any]:
+    template: dict[str, Any] = {}
+    for param in params:
+        key = str(param.get("key") or "").strip()
+        if not key:
+            continue
+        value_type = str(param.get("type") or "string").casefold()
+        if value_type in {"boolean", "bool"}:
+            template[key] = False
+        elif value_type in {"integer", "int", "number", "float"}:
+            template[key] = 0
+        elif value_type in {"array", "list"}:
+            template[key] = []
+        elif value_type in {"object", "dict"}:
+            template[key] = {}
+        else:
+            template[key] = ""
+    return template
 
 
 def _mcp_message(response: requests.Response) -> dict[str, Any]:
@@ -630,6 +850,72 @@ def _safe_result(value: Any) -> Any:
     if len(text) <= 20_000:
         return value
     return {"truncated": True, "preview": text[:20_000]}
+
+
+def _zapier_response_issue(value: Any) -> tuple[bool, str, bool]:
+    text = json.dumps(value, ensure_ascii=False, default=str)
+    folded = text.casefold()
+    failed = False
+    if isinstance(value, dict) and bool(value.get("isError")):
+        failed = True
+    if not failed and '"iserror": true' in folded:
+        failed = True
+    if not failed and any(
+        marker in folded
+        for marker in (
+            "zapierfacadeerror",
+            "error during booting",
+            "authorization refresh_token missing",
+        )
+    ):
+        failed = True
+    needs_reconnect = any(
+        marker in folded
+        for marker in (
+            "authorization refresh_token missing",
+            "refresh_token missing",
+            "invalid_grant",
+            "unauthorized",
+            "401",
+        )
+    )
+    return failed, _zapier_error_message(value), needs_reconnect
+
+
+def _zapier_error_message(value: Any) -> str:
+    if isinstance(value, dict):
+        for key in ("error", "message"):
+            message = value.get(key)
+            if isinstance(message, str) and message.strip():
+                return message.strip()[:1_000]
+        for key, item in value.items():
+            if str(key).casefold() in {"type", "iserror"}:
+                continue
+            message = _zapier_error_message(item)
+            if message:
+                return message
+    if isinstance(value, list):
+        for item in value:
+            message = _zapier_error_message(item)
+            if message:
+                return message
+    if isinstance(value, str):
+        stripped = value.strip()
+        folded = stripped.casefold()
+        if stripped and any(
+            marker in folded
+            for marker in (
+                "error",
+                "missing",
+                "unauthorized",
+                "invalid",
+                "failed",
+                "401",
+                "zapier",
+            )
+        ):
+            return stripped[:1_000]
+    return "Zapier MCP returned an error response."
 
 
 def _sensitive_result_key(key: str) -> bool:

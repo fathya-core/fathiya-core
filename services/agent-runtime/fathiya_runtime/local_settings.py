@@ -10,6 +10,62 @@ from urllib.parse import urlparse
 
 
 LOCAL_SETTINGS_GROUPS: dict[str, dict[str, Any]] = {
+    "huggingface_local": {
+        "name": "Hugging Face المحلي",
+        "description": "تشغيل الاسترجاع والتوليد والتخطيط المحلي داخل فتحية.",
+        "restart_required": True,
+        "fields": (
+            {
+                "name": "FATHIYA_ENABLE_HF_RETRIEVAL",
+                "label": "تفعيل الاسترجاع المحلي",
+                "kind": "text",
+                "required": False,
+                "placeholder": "true",
+            },
+            {
+                "name": "FATHIYA_ENABLE_LOCAL_GENERATION",
+                "label": "تفعيل التوليد المحلي",
+                "kind": "text",
+                "required": False,
+                "placeholder": "true",
+            },
+            {
+                "name": "FATHIYA_ENABLE_LOCAL_PLANNING",
+                "label": "تفعيل التخطيط المحلي",
+                "kind": "text",
+                "required": False,
+                "placeholder": "true",
+            },
+            {
+                "name": "FATHIYA_HF_MODEL",
+                "label": "نموذج الاسترجاع",
+                "kind": "text",
+                "required": False,
+                "placeholder": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            },
+            {
+                "name": "FATHIYA_LOCAL_MODEL",
+                "label": "نموذج التوليد/التخطيط",
+                "kind": "text",
+                "required": False,
+                "placeholder": "Qwen/Qwen2.5-0.5B-Instruct",
+            },
+            {
+                "name": "FATHIYA_LOCAL_MAX_NEW_TOKENS",
+                "label": "حد التوليد المحلي",
+                "kind": "text",
+                "required": False,
+                "placeholder": "384",
+            },
+            {
+                "name": "FATHIYA_LOCAL_MAX_GENERATION_SECONDS",
+                "label": "مهلة التوليد المحلي",
+                "kind": "text",
+                "required": False,
+                "placeholder": "20",
+            },
+        ),
+    },
     "openrouter": {
         "name": "OpenRouter",
         "description": "نماذج التخطيط والتقييم الثقيلة.",
@@ -36,8 +92,23 @@ LOCAL_SETTINGS_GROUPS: dict[str, dict[str, Any]] = {
                 "placeholder": (
                     "nvidia/nemotron-3-super-120b-a12b:free,"
                     "nex-agi/nex-n2-pro:free,"
-                    "google/gemma-4-31b-it:free"
+                    "google/gemma-4-31b-it:free,"
+                    "nvidia/nemotron-3-ultra-550b-a55b:free"
                 ),
+            },
+            {
+                "name": "FATHIYA_OPENROUTER_RESEARCH_MODEL",
+                "label": "نموذج البحث العميق",
+                "kind": "text",
+                "required": False,
+                "placeholder": "openrouter/fusion",
+            },
+            {
+                "name": "FATHIYA_OPENROUTER_SAFETY_MODEL",
+                "label": "نموذج الحراسة المجاني",
+                "kind": "text",
+                "required": False,
+                "placeholder": "nvidia/nemotron-3.5-content-safety:free",
             },
             {
                 "name": "FATHIYA_TRADING_ADVISORY_MODEL",
@@ -107,23 +178,9 @@ LOCAL_SETTINGS_GROUPS: dict[str, dict[str, Any]] = {
     },
     "local_execution_mesh": {
         "name": "جسور الوكلاء",
-        "description": "روابط Webhook وBridge التي تسمح بتفويض Cursor وManus وZapier وn8n بعد الموافقة.",
+        "description": "روابط Webhook وBridge التي تسمح بتفويض Zapier وn8n بعد الموافقة.",
         "restart_required": False,
         "fields": (
-            {
-                "name": "FATHIYA_CURSOR_AGENT_URL",
-                "label": "Cursor bridge URL",
-                "kind": "url",
-                "required": False,
-                "placeholder": "https://...",
-            },
-            {
-                "name": "FATHIYA_MANUS_AGENT_URL",
-                "label": "Manus bridge URL",
-                "kind": "url",
-                "required": False,
-                "placeholder": "https://...",
-            },
             {
                 "name": "FATHIYA_ZAPIER_WEBHOOK_URL",
                 "label": "Zapier webhook URL",

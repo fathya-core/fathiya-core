@@ -296,14 +296,6 @@ class AgentModelRouter:
 
     def plan_complete(self, system: str, user: str, *, json_mode: bool = True) -> str:
         errors: list[str] = []
-        if self.openrouter.available:
-            try:
-                result = self.openrouter.complete(system, user, json_mode=json_mode)
-                self.last_provider = self.openrouter.last_provider
-                self.last_error = None
-                return result
-            except Exception as exc:
-                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
         if self.enable_local_planning and self.local.available:
             try:
                 result = self.local.complete(
@@ -317,6 +309,14 @@ class AgentModelRouter:
                 return result
             except Exception as exc:
                 errors.append(f"huggingface_local: {type(exc).__name__}: {str(exc)[:500]}")
+        if self.openrouter.available:
+            try:
+                result = self.openrouter.complete(system, user, json_mode=json_mode)
+                self.last_provider = self.openrouter.last_provider
+                self.last_error = "; ".join(errors) or None
+                return result
+            except Exception as exc:
+                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
         if self.local.available and not self.enable_local_planning:
             errors.append("local planning disabled; using deterministic planner")
         self.last_error = "; ".join(errors) or "No planning model provider is configured"
@@ -324,18 +324,6 @@ class AgentModelRouter:
 
     def synthesize(self, system: str, user: str) -> str:
         errors: list[str] = []
-        if self.openrouter.available:
-            try:
-                result = self.openrouter.complete(
-                    system,
-                    user,
-                    max_new_tokens=700,
-                )
-                self.last_provider = self.openrouter.last_provider
-                self.last_error = None
-                return result
-            except Exception as exc:
-                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
         if self.local.available:
             try:
                 result = self.local.complete(
@@ -344,10 +332,22 @@ class AgentModelRouter:
                     max_new_tokens=96,
                 )
                 self.last_provider = self.local.last_provider
-                self.last_error = "; ".join(errors) or None
+                self.last_error = None
                 return result
             except Exception as exc:
                 errors.append(f"huggingface_local: {type(exc).__name__}: {str(exc)[:500]}")
+        if self.openrouter.available:
+            try:
+                result = self.openrouter.complete(
+                    system,
+                    user,
+                    max_new_tokens=700,
+                )
+                self.last_provider = self.openrouter.last_provider
+                self.last_error = "; ".join(errors) or None
+                return result
+            except Exception as exc:
+                errors.append(f"openrouter: {type(exc).__name__}: {str(exc)[:500]}")
         self.last_error = "; ".join(errors) or "No synthesis model provider is configured"
         raise RuntimeError(self.last_error)
 

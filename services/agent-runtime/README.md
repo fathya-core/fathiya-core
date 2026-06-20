@@ -24,6 +24,92 @@ worker together:
 .\.venv\Scripts\fathiya-runtime serve
 ```
 
+From the repository root, use the daily operator command first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\fathiya.ps1
+```
+
+It starts or attaches to the runtime and operator UI, runs the health check,
+then prints the remaining activation gates. If the API or UI is already running,
+it reuses them instead of failing on an occupied port.
+
+After code changes to the local runtime, restart the API while reusing the same
+operator page:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\fathiya.ps1 -RestartRuntime
+```
+
+After code changes to the local operator UI, restart both loopback processes so
+port `5180` cannot keep serving an old page:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -SkipInstall -RestartRuntime -RestartWeb -Detached -OpenBrowser
+```
+
+The lower-level helper starts both the local runtime and the operator website:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1
+```
+
+For daily use, run it detached so PowerShell returns immediately and the local
+runtime keeps working in the background:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -Detached -OpenBrowser
+```
+
+To also start the local n8n instance used by the integration probe, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-fathiya.ps1 -Detached -StartN8n -OpenBrowser
+```
+
+To verify the running local engine, direct workspaces, and allowed production
+origins:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-fathiya.ps1
+```
+
+Use the strict activation gate when you want the command to fail until Zapier
+live OAuth, GitHub Codespaces scope, Supabase production queue, and Testnet
+readiness are all complete:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-fathiya.ps1 -StrictActivation
+```
+
+To focus only on the remaining activation gates and optionally open the local
+authorization/settings routes:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\activate-fathiya.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\activate-fathiya.ps1 -OpenActions
+```
+
+The UI opens at `http://127.0.0.1:5180/agent-tasks`. Direct local workspaces are:
+
+- Trading: `http://127.0.0.1:5180/agent-tasks/?view=trading`
+- Bug bounty: `http://127.0.0.1:5180/agent-tasks/?view=bug-bounty`
+- Knowledge intake: `http://127.0.0.1:5180/agent-tasks/?view=knowledge`
+- Reports: `http://127.0.0.1:5180/agent-tasks/?view=reports`
+- Tools/activation: `http://127.0.0.1:5180/agent-tasks/?view=tools`
+
+The default UI is a
+lightweight local operator page that does not depend on the TanStack/Vite dev
+SSR server. Use `-FullVite` only when you specifically want the full React
+development server.
+
+The local command center can also be driven directly from PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8765/api/agent/command-center
+Invoke-RestMethod -Uri http://127.0.0.1:8765/api/agent/command-center/run -Method Post -ContentType 'application/json' -Body '{"command_id":"execute_mesh"}'
+```
+
 `/agent-tasks` automatically connects to `http://127.0.0.1:8765` in development
 and production so the hosted operator site can use the engine running on the
 operator's own machine. The local API accepts browser requests only from
@@ -33,6 +119,19 @@ remote web origins are rejected.
 The default SQLite store is for local verification. Set `FATHIYA_STORE=supabase`,
 `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` to connect the worker to the
 production task queue.
+
+Before switching a deployed operator site or local worker to Supabase, apply the
+agent runtime schema in the Supabase project:
+
+```text
+supabase/migrations/20260604120000_agent_runtime_v1.sql
+```
+
+That migration creates `agent_tasks`, `agent_task_events`, `agent_receipts`, and
+`agent_workers`, enables RLS for authenticated reads, and turns on realtime for
+task progress, events, and receipts. The website uses the anon/authenticated
+client path for the signed-in operator, while the local worker uses only the
+service-role key stored on the operator machine.
 
 ### Multi-round agent loop
 
@@ -50,16 +149,15 @@ resumes that round without repeating completed actions. Receipts record the
 round count and termination reason.
 
 `local_capability_inventory` performs a cached, secret-safe live probe of the
-local execution mesh: Cursor Agent, Claude Code, GitHub CLI, Docker, n8n, Kali
-WSL, Zapier MCP, Hugging Face, OpenRouter, and the primary paper-trading agent.
+local execution mesh: Claude Code, GitHub CLI, GitHub Codespaces, Docker, n8n,
+Kali WSL, Zapier MCP, Hugging Face, OpenRouter, and the primary paper-trading agent.
 The operator UI uses the same probe, so "ready" means a runtime check passed,
 not merely that an integration was listed in configuration.
 
 `agent_delegate` is an approval-gated delegation gateway. It can run an
-objective through the authenticated local Claude Code CLI, the official Cursor
-Agent CLI installed inside Kali WSL, or Cursor/Manus through their exact Zapier
-MCP actions. Provider `auto` chooses the first authenticated local agent before
-falling back to Zapier MCP. Local CLI delegation uses structured process
+objective through the authenticated local Claude Code CLI. Connected app work
+uses the explicit `zapier_action` gateway instead of hidden agent-provider
+fallbacks. Provider `auto` chooses the first authenticated local agent. Local CLI delegation uses structured process
 arguments, a bounded timeout, a bounded dollar budget where supported, and no
 operator-content shell interpolation.
 
@@ -75,6 +173,7 @@ OpenRouter is missing or unavailable:
 
 ```powershell
 $env:FATHIYA_ENABLE_LOCAL_GENERATION="true"
+$env:FATHIYA_ENABLE_LOCAL_PLANNING="true"
 $env:FATHIYA_LOCAL_MODEL="Qwen/Qwen2.5-0.5B-Instruct"
 $env:FATHIYA_LOCAL_MAX_GENERATION_SECONDS="20"
 ```
@@ -82,13 +181,24 @@ $env:FATHIYA_LOCAL_MAX_GENERATION_SECONDS="20"
 The model is loaded lazily on CPU and each local generation is time bounded.
 OpenRouter remains the first route for planning, synthesis, and evaluation.
 When it is unavailable, the deterministic multi-tool planner selects the
-actions, local Hugging Face produces a short evidence summary, and the
-deterministic evaluator verifies that tool results exist. Local model planning
-can be enabled explicitly with `FATHIYA_ENABLE_LOCAL_PLANNING=true`, but is off
-by default on low-memory machines to keep task progress responsive.
+actions, local Hugging Face can review follow-up planning, local Hugging Face
+produces a short evidence summary, and the deterministic evaluator verifies
+that tool results exist. The `scripts/start-fathiya.ps1` helper enables
+retrieval, local generation, and local planning by default when those variables
+are not already set, so daily local runs use an OpenRouter-then-Hugging-Face
+planning route without storing model keys in the browser.
 
 The worker never reads a browser-exposed OpenRouter key. `OPENROUTER_API_KEY`
 is read only by the local process.
+
+OpenRouter's Fusion pattern is registered as an on-demand research route, not
+as a default planner fallback. `FATHIYA_OPENROUTER_RESEARCH_MODEL` defaults to
+`openrouter/fusion` for deep research, learning missions, and source-grounded
+comparison tasks. `FATHIYA_OPENROUTER_SAFETY_MODEL` defaults to
+`nvidia/nemotron-3.5-content-safety:free` as a guardrail candidate. The
+`openrouter_model_strategy` tool exposes the cheap-first route, the trading
+advisor route, the Fusion route, and the safety model without making a network
+call or spending tokens.
 
 `GET /api/agent/integrations` returns a secret-safe readiness view for local
 models, OpenRouter, Supabase, n8n, Zapier MCP, and the Binance Spot Testnet
@@ -162,10 +272,17 @@ report into the receipt.
 ### Continuous knowledge intake
 
 The local control plane starts a continuous knowledge-intake watcher alongside
-the task worker. Drop `.md`, `.txt`, `.json`, or `.csv` reports into
-`services/agent-runtime/runtime/knowledge-inbox`. Each new or changed report is
-wrapped as a knowledge mission, queued exactly once per content digest, executed
-through the normal multi-round agent loop, and recorded with a receipt.
+the task worker. Drop `.md`, `.txt`, `.json`, `.csv`, `.pdf`, or `.zip` reports
+into `services/agent-runtime/runtime/knowledge-inbox`. Each new or changed
+report is wrapped as a knowledge mission, queued exactly once per content
+digest, executed through the normal multi-round agent loop, and recorded with a
+receipt.
+
+PDF files are converted to bounded page text before ingestion. ZIP archives are
+read in memory and only supported knowledge files inside the archive are
+converted; unsupported, encrypted, oversized, or unsafe-path entries are skipped
+and noted in the generated mission content. Archives are never extracted onto
+disk by the watcher.
 
 Regular reports use the configured internal-inspection objective. A
 `*.mission.json` file may provide explicit `source_name`, `objective`, and
@@ -177,6 +294,22 @@ evidence and cannot originate hidden external or destructive actions.
 .\.venv\Scripts\fathiya-runtime intake-status
 .\.venv\Scripts\fathiya-runtime intake-scan
 ```
+
+### Meta-learning bootstrap
+
+FATHIYA can turn courses, training posts, Medium writeups, and local notes into
+a measured learning session instead of storing them as passive references. The
+session writes learning cards, quiz questions, a spaced-review queue, and a
+mastery report under `knowledge/learning`.
+
+```powershell
+.\.venv\Scripts\fathiya-runtime learning-bootstrap --path .\runtime\bugcrowd-work\FATHIYA_TRAINING_CORPUS_BOOTSTRAP_2026-06-16.md
+.\.venv\Scripts\fathiya-runtime learning-bootstrap --url https://portswigger.net/web-security --url https://owasp.org/www-project-api-security/
+```
+
+The same capability is registered in the tool catalog as `learning_bootstrap`,
+so normal agent tasks that mention DataCamp, Medium, training posts, Hacktivity,
+or "learn how to learn" can build a receipt-backed mastery session.
 
 The local control plane exposes:
 
@@ -202,8 +335,8 @@ plane when `FATHIYA_TRADING_AUTOSTART=true` and continues independently at the
 configured cadence.
 
 Version-controlled connector profiles in `config/connector_profiles.json`
-provide a single execution contract for n8n, Zapier, Cursor, Manus, and future
-agent providers. Read-only configured profiles run automatically. External
+provide a single execution contract for n8n, Zapier, and future owned
+execution providers. Read-only configured profiles run automatically. External
 write profiles are selected by the planner but pause in `awaiting_approval`
 before the HTTP request is sent. URLs and authentication headers are resolved
 from local environment variables and are never returned by the connector
@@ -238,9 +371,8 @@ For local SQLite tasks:
 ```
 
 The connected-tool registry is refreshed from the live Zapier MCP inventory and
-records agent providers such as Manus, Cursor, Zapier Agents, GitHub, and
-Netlify. Read-only inventory is automatic; connected-app writes remain approval
-gated.
+records connected apps such as Zapier Agents, GitHub, and Netlify. Read-only
+inventory is automatic; connected-app writes remain approval gated.
 
 ### Direct Zapier MCP gateway
 

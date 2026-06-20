@@ -1,7 +1,7 @@
 {
   "schema_version": "connected_tool_inventory_v1",
-  "captured_at": "2026-06-05T00:32:00+03:00",
-  "source": "live Zapier MCP enabled-action inventory and local runtime checks",
+  "captured_at": "2026-06-18T11:45:00+03:00",
+  "source": "live Zapier MCP enabled-action inventory, Codex-hosted Zapier MCP checks, and local runtime checks",
   "policy": {
     "read_actions": "automatic",
     "owned_local_actions": "automatic",
@@ -12,27 +12,248 @@
   },
   "zapier_mcp_status": {
     "inventory": "active",
-    "action_execution": "requires_local_oauth",
-    "note": "Enabled-action inventory is live. The Codex-exposed executor omits selected_api, so the local runtime now uses a direct OAuth MCP gateway that resolves and forwards selected_api itself."
+    "action_execution": "codex_hosted_available; local_oauth_pending",
+    "note": "Codex-hosted Zapier MCP has live enabled actions. The local runtime also has a direct OAuth MCP gateway, but local OAuth is pending and should be connected from the operator page before unattended local execution."
   },
   "additional_zapier_mcp_sources": [
     {
-      "name": "codex_personal_zapier_mcp",
-      "captured_at": "2026-06-13T00:00:00+03:00",
+      "name": "codex_hosted_zapier_mcp",
+      "captured_at": "2026-06-18T11:45:00+03:00",
       "source": "live Codex Zapier MCP enabled-action inventory",
       "apps": [
-        { "app": "GitHub", "action_count": 39, "modes": ["read", "approval_gated_write"] },
-        { "app": "Manus", "action_count": 8, "modes": ["read", "approval_gated_write"] },
-        { "app": "ChatGPT (OpenAI)", "action_count": 27, "modes": ["read", "approval_gated_write"] },
-        { "app": "Gmail", "action_count": 20, "modes": ["read", "approval_gated_write"] },
-        { "app": "Microsoft Outlook", "action_count": 44, "modes": ["read", "approval_gated_write"] },
-        { "app": "Apify", "action_count": 10, "modes": ["read", "approval_gated_write"] },
-        { "app": "Zapier Tables", "action_count": 11, "modes": ["read", "approval_gated_write"] },
-        { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
+        { "app": "GitHub", "action_count": 19, "modes": ["read", "approval_gated_write"] },
+        { "app": "Cursor", "action_count": 6, "modes": ["read", "approval_gated_write"] },
+        { "app": "Manus", "action_count": 6, "modes": ["read", "approval_gated_write"] },
         { "app": "AI by Zapier", "action_count": 3, "modes": ["approval_gated_write"] },
-        { "app": "Cursor", "action_count": 10, "modes": ["read", "approval_gated_write"] },
-        { "app": "MCP Client by Zapier", "action_count": 4, "modes": ["read", "approval_gated_write"] }
-      ]
+        { "app": "Webhooks by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+        { "app": "MCP Client by Zapier", "action_count": 2, "modes": ["read", "approval_gated_write"] },
+        { "app": "Gmail", "action_count": 12, "modes": ["read", "approval_gated_write"] },
+        { "app": "Code by Zapier", "action_count": 2, "modes": ["approval_gated_write"] },
+        { "app": "RSS by Zapier", "action_count": 1, "modes": ["read"] },
+        { "app": "Zapier Lead Router", "action_count": 6, "modes": ["approval_gated_write"] },
+        { "app": "Zapier Manager", "action_count": 5, "modes": ["read", "approval_gated_write"] },
+        { "app": "Files By Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+        { "app": "Zapier Forms", "action_count": 3, "modes": ["approval_gated_write"] },
+        { "app": "Zapier Chatbots", "action_count": 1, "modes": ["approval_gated_write"] },
+        { "app": "Web Parser by Zapier", "action_count": 1, "modes": ["read"] },
+        { "app": "Zapier Chrome extension", "action_count": 1, "modes": ["approval_gated_write"] },
+        { "app": "Microsoft Outlook", "action_count": 32, "modes": ["read", "approval_gated_write"] },
+        { "app": "Zapier Functions", "action_count": 1, "modes": ["approval_gated_write"] },
+        { "app": "Agents", "action_count": 1, "modes": ["approval_gated_write"] },
+        { "app": "Zapier Tables", "action_count": 11, "modes": ["read", "approval_gated_write"] },
+        { "app": "Formatter by Zapier", "action_count": 4, "modes": ["approval_gated_write"] },
+        { "app": "Netlify", "action_count": 1, "modes": ["approval_gated_write"] }
+      ],
+      "action_samples": {
+        "GitHub": {
+          "read": ["Find Repository", "Find Issue", "Find Pull Request", "Find Branch", "Find User"],
+          "approval_gated_write": ["Create Pull Request", "Create Issue", "Create Comment", "Create or Update File"]
+        },
+        "Gmail": {
+          "read": ["Find Email", "Get Attachment by Filename"],
+          "approval_gated_write": ["Create Draft", "Send Email", "Reply to Email", "Archive Email"]
+        },
+        "Cursor": {
+          "read": ["Find Agent Status", "Make API GET Request"],
+          "approval_gated_write": ["Launch Agent", "Add Followup Instruction to Agent", "Make API Mutating Request"]
+        },
+        "Manus": {
+          "read": ["Get Tasks"],
+          "approval_gated_write": ["Create Task", "Continue Task (Add a New Prompt)", "Update Task"]
+        },
+        "AI by Zapier": {
+          "approval_gated_write": ["Analyze and Return Data", "Extract Content From URL", "Search Content Across URLs"]
+        }
+      },
+      "action_schemas": {
+        "Cursor": [
+          {
+            "name": "Find Agent Status",
+            "key": "find_agent_status",
+            "tool_name": "cursor_find_agent_status",
+            "mode": "read",
+            "required_params": ["agent_id"],
+            "optional_params": []
+          },
+          {
+            "name": "Launch Agent",
+            "key": "launch_agent",
+            "tool_name": "cursor_launch_agent",
+            "mode": "approval_gated_write",
+            "required_params": ["repository_url", "prompt_text"],
+            "optional_params": ["model", "images", "webhook_url", "repository_ref", "webhook_secret", "target_branch_name", "target_auto_create_pr"],
+            "defaults": {
+              "repository_ref": "main",
+              "target_auto_create_pr": "false"
+            },
+            "dynamic_properties_depends_on": ["model"],
+            "notes": "Use for delegated coding work. Prepare first, then require operator approval before hosted execution."
+          },
+          {
+            "name": "Add Followup Instruction to Agent",
+            "key": "add_followup_instruction_to_agent",
+            "tool_name": "cursor_add_followup_instruction_to_agent",
+            "mode": "approval_gated_write",
+            "required_params": ["agent_id", "prompt_text"],
+            "optional_params": ["images"]
+          }
+        ],
+        "Manus": [
+          {
+            "name": "Get Tasks",
+            "key": "get_tasks",
+            "tool_name": "manus_get_tasks",
+            "mode": "read",
+            "required_params": [],
+            "optional_params": []
+          },
+          {
+            "name": "Create Task",
+            "key": "create_task",
+            "tool_name": "manus_create_task",
+            "mode": "approval_gated_write",
+            "required_params": ["prompt", "agent_profile", "share_visibility"],
+            "optional_params": ["connectors", "hide_in_task_list"],
+            "defaults": {
+              "agent_profile": "manus-1.6",
+              "share_visibility": "private"
+            },
+            "notes": "Use private visibility for FATHIYA delegated work unless the operator explicitly chooses otherwise."
+          },
+          {
+            "name": "Continue Task (Add a New Prompt)",
+            "key": "continue_task",
+            "tool_name": "manus_continue_task",
+            "mode": "approval_gated_write",
+            "required_params": ["task_id", "prompt"],
+            "optional_params": ["connectors"]
+          }
+        ],
+        "Agents": [
+          {
+            "name": "Run Agent",
+            "key": "run_agent",
+            "tool_name": "agents_run_agent",
+            "mode": "approval_gated_write",
+            "required_params": ["agent_id"],
+            "optional_params": ["agent_input_message", "wait_for_response"],
+            "defaults": {
+              "wait_for_response": "true"
+            },
+            "dynamic_properties_depends_on": ["agent_id", "wait_for_response"]
+          }
+        ],
+        "GitHub": [
+          {
+            "name": "Find Repository",
+            "key": "find_repository",
+            "tool_name": "github_find_repository",
+            "mode": "read",
+            "required_params": ["repo"],
+            "optional_params": ["owner"]
+          },
+          {
+            "name": "Create Issue",
+            "key": "create_issue",
+            "tool_name": "github_create_issue",
+            "mode": "approval_gated_write",
+            "required_params": ["repo", "title", "body"],
+            "optional_params": ["labels", "assignee", "milestone"],
+            "dynamic_properties_depends_on": ["repo"]
+          }
+        ],
+        "Gmail": [
+          {
+            "name": "Find Email",
+            "key": "find_email",
+            "tool_name": "gmail_find_email",
+            "mode": "read",
+            "required_params": ["query"],
+            "optional_params": []
+          },
+          {
+            "name": "Create Draft",
+            "key": "create_draft",
+            "tool_name": "gmail_create_draft",
+            "mode": "approval_gated_write",
+            "required_params": ["to", "subject", "body"],
+            "optional_params": ["cc", "bcc", "from"]
+          }
+        ],
+        "Netlify": [
+          {
+            "name": "Start Deploy",
+            "key": "start_deploy",
+            "tool_name": "netlify_start_deploy",
+            "mode": "approval_gated_write",
+            "required_params": ["site_id"],
+            "optional_params": [],
+            "dynamic_properties_depends_on": ["site_id"]
+          }
+        ],
+        "AI by Zapier": [
+          {
+            "name": "Extract Content From URL",
+            "key": "extract_content_from_url",
+            "tool_name": "ai_by_zapier_extract_content_from_url",
+            "mode": "approval_gated_write",
+            "required_params": ["url"],
+            "optional_params": ["instructions"]
+          },
+          {
+            "name": "Search Content Across URLs",
+            "key": "search_content_across_urls",
+            "tool_name": "ai_by_zapier_search_content_across_urls",
+            "mode": "approval_gated_write",
+            "required_params": ["query", "urls"],
+            "optional_params": ["instructions"]
+          },
+          {
+            "name": "Analyze and Return Data",
+            "key": "analyze_and_return_data",
+            "tool_name": "ai_by_zapier_analyze_and_return_data",
+            "mode": "approval_gated_write",
+            "required_params": ["content", "instructions"],
+            "optional_params": []
+          }
+        ],
+        "Zapier Tables": [
+          {
+            "name": "Find Records",
+            "key": "find_records",
+            "tool_name": "zapier_tables_find_records",
+            "mode": "read",
+            "required_params": ["table_id"],
+            "optional_params": ["filter", "limit"]
+          },
+          {
+            "name": "Create Record",
+            "key": "create_record",
+            "tool_name": "zapier_tables_create_record",
+            "mode": "approval_gated_write",
+            "required_params": ["table_id", "fields"],
+            "optional_params": []
+          }
+        ]
+      },
+      "execution_notes": [
+        "Codex-hosted Zapier read execution was verified on 2026-06-18 with GitHub: Find Repository for fathya-core/fathiya-core.",
+        "The hosted executor requires the internal selected_api when executing, even though the public tool schema does not expose it. Never display selected_api to the operator; keep it as internal routing metadata."
+      ],
+      "receipt_safe_probe": {
+        "app": "GitHub",
+        "action": "Find Repository",
+        "tool_name": "github_find_repository",
+        "status": "SUCCESS",
+        "execution_id": "938845b6-6cba-4aa8-b1ef-6b82131de834",
+        "target": "fathya-core/fathiya-core",
+        "result": {
+          "id": 1217977608,
+          "full_name": "fathya-core/fathiya-core",
+          "default_branch": "main",
+          "visibility": "public"
+        }
+      }
     }
   ],
   "local_tools": [
@@ -96,9 +317,9 @@
     },
     {
       "app": "OpenRouter",
-      "status": "not_configured",
-      "capabilities": ["planning", "synthesis", "evaluation"],
-      "note": "No local OPENROUTER_API_KEY is configured; local Hugging Face and deterministic fallbacks remain active"
+      "status": "active",
+      "capabilities": ["planning", "synthesis", "evaluation", "openrouter/fusion deep research", "advisor escalation"],
+      "note": "Local OPENROUTER_API_KEY is configured. FATHIYA routes routine planning through cheap/free OpenRouter models, uses Hugging Face local planning as fallback, and reserves openrouter/fusion for research-heavy work."
     },
     {
       "app": "Binance Spot Testnet",

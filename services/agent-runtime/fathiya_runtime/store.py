@@ -49,6 +49,25 @@ class TaskStore(Protocol):
     def mark_stalled(self, age_seconds: int = 120) -> int: ...
 
 
+def _attach_receipt_summary(
+    task: dict[str, Any],
+    receipts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    task["receipt_count"] = len(receipts)
+    if receipts:
+        latest = receipts[0]
+        task["latest_receipt_id"] = latest.get("receipt_id")
+        task["latest_receipt_status"] = latest.get("status")
+        task["latest_receipt_at"] = latest.get("created_at")
+        task["latest_receipt_summary"] = latest.get("summary")
+    else:
+        task["latest_receipt_id"] = None
+        task["latest_receipt_status"] = None
+        task["latest_receipt_at"] = None
+        task["latest_receipt_summary"] = None
+    return task
+
+
 class SQLiteTaskStore:
     def __init__(self, path: Path):
         self.path = path
@@ -329,6 +348,7 @@ class SQLiteTaskStore:
         receipts = [dict(row) for row in receipt_rows]
         for receipt in receipts:
             receipt["evidence"] = json.loads(receipt["evidence"] or "{}")
+        _attach_receipt_summary(task, receipts)
         return {"task": task, "events": events, "receipts": receipts}
 
     def list_tasks(self, limit: int = 20) -> list[dict[str, Any]]:
@@ -336,7 +356,27 @@ class SQLiteTaskStore:
             rows = conn.execute(
                 "SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?", (limit,)
             ).fetchall()
-        return [self._decode_task(row) for row in rows]
+            tasks = [self._decode_task(row) for row in rows]
+            if tasks:
+                placeholders = ",".join("?" for _task in tasks)
+                receipt_rows = conn.execute(
+                    f"""
+                    SELECT task_id, receipt_id, status, summary, created_at
+                    FROM receipts
+                    WHERE task_id IN ({placeholders})
+                    ORDER BY created_at DESC
+                    """,
+                    tuple(task["id"] for task in tasks),
+                ).fetchall()
+            else:
+                receipt_rows = []
+        receipts_by_task: dict[str, list[dict[str, Any]]] = {}
+        for row in receipt_rows:
+            receipt = dict(row)
+            receipts_by_task.setdefault(receipt["task_id"], []).append(receipt)
+        for task in tasks:
+            _attach_receipt_summary(task, receipts_by_task.get(task["id"], []))
+        return tasks
 
     def mark_stalled(self, age_seconds: int = 120) -> int:
         threshold = (datetime.now(UTC) - timedelta(seconds=age_seconds)).isoformat()
@@ -533,13 +573,30 @@ class SupabaseTaskStore:
             "GET",
             f"agent_receipts?task_id=eq.{task_id}&select=*&order=created_at.desc",
         )
+        _attach_receipt_summary(task, receipts)
         return {"task": task, "events": events, "receipts": receipts}
 
     def list_tasks(self, limit: int = 20) -> list[dict[str, Any]]:
-        return self._request(
+        tasks = self._request(
             "GET",
             f"agent_tasks?select=*&order=created_at.desc&limit={int(limit)}",
         )
+        if not tasks:
+            return tasks
+        task_ids = ",".join(str(task["id"]) for task in tasks)
+        receipts = self._request(
+            "GET",
+            "agent_receipts"
+            f"?task_id=in.({task_ids})"
+            "&select=task_id,receipt_id,status,summary,created_at"
+            "&order=created_at.desc",
+        )
+        receipts_by_task: dict[str, list[dict[str, Any]]] = {}
+        for receipt in receipts:
+            receipts_by_task.setdefault(receipt["task_id"], []).append(receipt)
+        for task in tasks:
+            _attach_receipt_summary(task, receipts_by_task.get(task["id"], []))
+        return tasks
 
     def mark_stalled(self, age_seconds: int = 120) -> int:
         threshold = (datetime.now(UTC) - timedelta(seconds=age_seconds)).isoformat()

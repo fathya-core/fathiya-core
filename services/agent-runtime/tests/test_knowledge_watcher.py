@@ -5,6 +5,7 @@ import os
 import tempfile
 import time
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -80,6 +81,68 @@ class KnowledgeIntakeWatcherTests(unittest.TestCase):
         self.assertEqual(second["enqueued"], [])
         self.assertEqual(second["status"]["tracked_files"], 1)
         self.assertEqual(second["status"]["enqueued_count"], 1)
+
+    def test_supported_extensions_include_pdf_and_zip(self) -> None:
+        status = self.watcher.status()
+
+        self.assertIn(".pdf", status["supported_extensions"])
+        self.assertIn(".zip", status["supported_extensions"])
+
+    def test_pdf_report_becomes_knowledge_mission(self) -> None:
+        class FakePage:
+            def extract_text(self) -> str:
+                return "PDF lesson: prioritize evidence-backed impact and dedupe first."
+
+        class FakeReader:
+            def __init__(self, stream: object) -> None:
+                self.pages = [FakePage()]
+
+        self.inbox.mkdir(parents=True)
+        (self.inbox / "openrouter-fusion-email.pdf").write_bytes(b"%PDF-1.4 fake")
+
+        with patch("fathiya_runtime.knowledge_watcher.PdfReader", FakeReader):
+            scanned = self.watcher.scan_once()
+
+        task = self.store.get_task(scanned["enqueued"][0]["task_id"])
+        mission = parse_knowledge_mission(task["prompt"])
+
+        self.assertEqual(mission.source_name, "openrouter-fusion-email.pdf")
+        self.assertIn("PDF lesson", mission.content)
+
+    def test_zip_report_ingests_supported_members_without_extracting_paths(self) -> None:
+        self.inbox.mkdir(parents=True)
+        archive = self.inbox / "awareness-security-bundle.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            bundle.writestr(
+                "notes/bug-bounty.md",
+                "# Bug bounty\nDemonstrate concrete customer impact before submission.",
+            )
+            bundle.writestr("../escape.md", "this must never be extracted")
+            bundle.writestr("bin/tool.exe", b"\x00\x01")
+
+        scanned = self.watcher.scan_once()
+        task = self.store.get_task(scanned["enqueued"][0]["task_id"])
+        mission = parse_knowledge_mission(task["prompt"])
+
+        self.assertEqual(mission.source_name, "awareness-security-bundle.zip")
+        self.assertIn("notes/bug-bounty.md", mission.content)
+        self.assertIn("concrete customer impact", mission.content)
+        self.assertIn("Skipped archive entries", mission.content)
+        self.assertFalse((Path(self.temp.name) / "escape.md").exists())
+
+    def test_sensitive_tokens_are_redacted_before_knowledge_mission(self) -> None:
+        self.inbox.mkdir(parents=True)
+        (self.inbox / "secrets-note.md").write_text(
+            "OpenRouter key sk-or-v1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa should not persist.",
+            encoding="utf-8",
+        )
+
+        scanned = self.watcher.scan_once()
+        task = self.store.get_task(scanned["enqueued"][0]["task_id"])
+        mission = parse_knowledge_mission(task["prompt"])
+
+        self.assertNotIn("sk-or-v1-", mission.content)
+        self.assertIn("[REDACTED_SECRET_LIKE_VALUE]", mission.content)
 
     def test_changed_report_enqueues_new_task_and_persistent_state_deduplicates(self) -> None:
         self.inbox.mkdir(parents=True)
