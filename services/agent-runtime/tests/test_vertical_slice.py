@@ -4083,6 +4083,31 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             [step["tool"] for step in mesh_with_codespaces_fast_control],
             ["agent_mesh_execute"],
         )
+        full_agent_os_prompt = "\n".join(
+            [
+                "agent mesh execute:",
+                "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
+                "نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet متاح الآن عبر الأدوات المحلية.",
+                "استخدم Zapier MCP inventory/live reads وn8n وKali WSL وGitHub/Codespaces.",
+                "لا تتوقف عند نقص Supabase أو Testnet أو OAuth.",
+            ]
+        )
+        full_agent_os_plan = build_plan(
+            {"prompt": full_agent_os_prompt},
+            [],
+            model,
+            catalog,
+            max_tool_steps=4,
+        )
+        self.assertEqual(
+            [step["tool"] for step in full_agent_os_plan if step.get("kind") == "tool"],
+            ["agent_mesh_execute"],
+        )
+        full_agent_os_fast_control = fast_control_steps(full_agent_os_prompt, catalog)
+        self.assertEqual(
+            [step["tool"] for step in full_agent_os_fast_control],
+            ["agent_mesh_execute"],
+        )
         mesh_audit_plan = build_plan(
             {"prompt": "agent mesh audit:\nاستكشف فقط"},
             [],

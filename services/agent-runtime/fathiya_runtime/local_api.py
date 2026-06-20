@@ -1315,6 +1315,13 @@ def _build_agent_mesh_summary(
     ]
     quick_actions = [
         {
+            "id": "agent_os_full_execute",
+            "label": "تشغيل Agent OS كامل",
+            "title": "تشغيل فتحية كوكلاء منفذين",
+            "prompt": _agent_os_full_execute_prompt(),
+            "mode": "execution",
+        },
+        {
             "id": "execute_mesh",
             "label": "تشغيل فتحية الآن",
             "title": "تشغيل شبكة فتحية",
@@ -1493,6 +1500,11 @@ def _build_command_center_payload(
                 "-Method Post -ContentType 'application/json' "
                 "-Body '{\"command_id\":\"execute_mesh\"}'"
             ),
+            "run_agent_os": (
+                f"Invoke-RestMethod -Uri {api_base}/api/agent/command-center/run "
+                "-Method Post -ContentType 'application/json' "
+                "-Body '{\"command_id\":\"agent_os_full_execute\"}'"
+            ),
             "run_trading": (
                 f"Invoke-RestMethod -Uri {api_base}/api/agent/command-center/run "
                 "-Method Post -ContentType 'application/json' "
@@ -1628,7 +1640,7 @@ def _command_center_lane(
         return "tools"
     if raw_id == "learn_and_execute":
         return "knowledge"
-    if raw_id == "execute_mesh":
+    if raw_id in {"execute_mesh", "agent_os_full_execute"}:
         return "execution"
     return _normalize_command_center_lane(raw_id)
 
@@ -2179,6 +2191,21 @@ def _zapier_diagnostics_payload(
         "next_actions": next_actions,
         "secret_safe": True,
     }
+
+
+def _agent_os_full_execute_prompt() -> str:
+    return "\n".join(
+        [
+            "agent mesh execute:",
+            "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
+            "شغّل فتحية الآن كمحرك وكلاء منفذين لا كمحلل تقارير فقط.",
+            "ابدأ من المعرفة المحلية: استرجع ما يلزم عبر Hugging Face، ثم استخدم OpenRouter للتخطيط والتقييم الثقيل عند الحاجة.",
+            "نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet متاح الآن عبر الأدوات المحلية: Zapier MCP inventory/live reads، n8n، Kali WSL، GitHub/Codespaces، ووكلاء التطبيقات مثل Manus وCursor وAI by Zapier عند توفر OAuth.",
+            "افصل المسارات عمليًا: التداول الورقي بنبض الثانية أولًا، صيد الثغرات كمسودة مصرح بها مع dedupe، التقارير كإيصالات، والطلب المباشر كهدف واحد يتحول إلى أدوات.",
+            "لا تتوقف عند نقص Supabase أو Testnet أو OAuth؛ نفذ المتاح الآن، وحوّل الناقص إلى next_action محدد.",
+            "سجل إيصالًا يثبت الأدوات التي تحركت فعليًا، نتيجة كل مسار، وما بقي فقط بسبب إعداد خارجي أو أثر عالي.",
+        ]
+    )
 
 
 def _mesh_execute_prompt() -> str:

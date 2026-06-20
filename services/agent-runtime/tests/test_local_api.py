@@ -439,6 +439,10 @@ class LocalAgentApiTests(unittest.TestCase):
             action["id"]: action for action in mesh_summary["quick_actions"]
         }
         self.assertIn(
+            "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
+            quick_action_by_id["agent_os_full_execute"]["prompt"],
+        )
+        self.assertIn(
             "knowledge execution mission:",
             quick_action_by_id["learn_and_execute"]["prompt"],
         )
@@ -529,6 +533,7 @@ class LocalAgentApiTests(unittest.TestCase):
         command_by_id = {
             command["id"]: command for command in command_center["commands"]
         }
+        self.assertIn("agent_os_full_execute", command_by_id)
         self.assertIn("execute_mesh", command_by_id)
         self.assertIn("verify_production_site", command_by_id)
         self.assertIn("verify_github_zapier_read", command_by_id)
@@ -541,6 +546,7 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn("agent_provider_cursor", command_by_id)
         self.assertIn("connected_app_github", command_by_id)
         self.assertIn("connected_app_gmail", command_by_id)
+        self.assertEqual(command_by_id["agent_os_full_execute"]["mode"], "execution")
         self.assertEqual(command_by_id["execute_mesh"]["mode"], "execution")
         self.assertEqual(command_by_id["execute_mesh"]["group"], "محرك الوكلاء")
         self.assertEqual(command_by_id["lane_trading"]["mode"], "trading")
@@ -549,6 +555,14 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(command_by_id["verify_gmail_zapier_read"]["mode"], "tools")
         self.assertEqual(command_by_id["agent_provider_cursor"]["mode"], "connected_apps")
         self.assertEqual(command_by_id["connected_app_gmail"]["mode"], "connected_apps")
+        self.assertIn(
+            "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
+            command_by_id["agent_os_full_execute"]["prompt"],
+        )
+        self.assertIn(
+            "وكلاء منفذين",
+            command_by_id["agent_os_full_execute"]["prompt"],
+        )
         self.assertIn(
             "agent mesh execute:",
             command_by_id["execute_mesh"]["prompt"],
@@ -611,6 +625,10 @@ class LocalAgentApiTests(unittest.TestCase):
             "/api/agent/command-center/run",
             command_center["powershell"]["run_execute_mesh"],
         )
+        self.assertIn(
+            "agent_os_full_execute",
+            command_center["powershell"]["run_agent_os"],
+        )
         command_run = requests.post(
             f"{self.base_url}/api/agent/command-center/run",
             headers=self.headers,
@@ -628,6 +646,27 @@ class LocalAgentApiTests(unittest.TestCase):
         )
         self.assertEqual(cancel_command_task.status_code, 200)
         self.assertEqual(cancel_command_task.json()["task"]["status"], "canceled")
+        agent_os_run = requests.post(
+            f"{self.base_url}/api/agent/command-center/run",
+            headers=self.headers,
+            json={"command_id": "agent_os_full_execute"},
+            timeout=5,
+        )
+        self.assertEqual(agent_os_run.status_code, 201)
+        agent_os_task = agent_os_run.json()["task"]
+        self.assertEqual(agent_os_task["status"], "queued")
+        self.assertEqual(agent_os_run.json()["command"]["id"], "agent_os_full_execute")
+        self.assertIn(
+            "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
+            agent_os_run.json()["command"]["prompt"],
+        )
+        cancel_agent_os_task = requests.post(
+            f"{self.base_url}/api/agent/tasks/{agent_os_task['id']}/cancel",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(cancel_agent_os_task.status_code, 200)
+        self.assertEqual(cancel_agent_os_task.json()["task"]["status"], "canceled")
         github_read_run = requests.post(
             f"{self.base_url}/api/agent/command-center/run",
             headers=self.headers,
