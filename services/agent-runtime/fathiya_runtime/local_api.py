@@ -1070,7 +1070,7 @@ def _integration_probe(
         status = server.tools.zapier.status()
         inventory = server.tools.execute(
             "connected_tool_inventory",
-            "اختبر مخزون Zapier MCP الآمن",
+            "اختبر مخزون Zapier MCP",
         )
         connected = bool(status.get("connected"))
         app_count = int(inventory.get("zapier_app_count") or 0)
@@ -1255,7 +1255,7 @@ def _build_agent_mesh_summary(
             "محرك الوكلاء",
             "ready" if worker_online and ready_count >= 3 else "partial",
             f"{ready_count}/{total_count} تكاملات جاهزة · {tool_count} أداة",
-            "شغّل الشبكة الآمنة الآن",
+            "شغّل الشبكة الآن",
             _mesh_execute_prompt(),
         ),
         _mesh_lane(

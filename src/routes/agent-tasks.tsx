@@ -1695,7 +1695,7 @@ function AgentTasksPage() {
     {
       id: "guided" as const,
       label: MISSION_AUTONOMY_LABELS.guided,
-      description: "يتوقف عند أثر خارجي واضح",
+      description: "يفتح بوابة أثر واضحة",
     },
     {
       id: "activation" as const,
@@ -4054,7 +4054,7 @@ function AgentTasksPage() {
                           maxLength={20_000}
                         />
                         <p className="text-[10px] leading-5 text-muted-foreground">
-                          فتحية تختار تلقائيًا قراءة Zapier المناسبة لهذه الطلبات وتنفذها بإيصال إذا كانت آمنة.
+                          فتحية تختار تلقائيًا قراءة Zapier المناسبة، تنفذ الجاهز، وتحول غير المربوط إلى متابعة تشغيلية بإيصال.
                         </p>
                       </TabsContent>
                       <TabsContent value="knowledge" className="space-y-3">

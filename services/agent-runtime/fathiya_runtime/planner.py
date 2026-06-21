@@ -502,7 +502,7 @@ def build_follow_up_decision(
         return {
             "complete": True,
             "reason": (
-                "اكتمل تنفيذ شبكة الوكلاء الآمنة وسُجلت حالة Codespaces "
+                "اكتمل تنفيذ شبكة الوكلاء وسُجلت حالة Codespaces "
                 "وباقي التكاملات في إيصال قابل للمراجعة."
             ),
             "steps": [],
@@ -2120,7 +2120,7 @@ def _agent_mesh_execute_step(prompt: str) -> dict[str, Any] | None:
         return None
     return {
         "tool": "agent_mesh_execute",
-        "description": "تشغيل شبكة الوكلاء الآمنة وتنفيذ الأدوات الداخلية الجاهزة",
+        "description": "تشغيل شبكة الوكلاء وتنفيذ الأدوات الداخلية الجاهزة",
         "args": {"refresh": True, "max_steps": 20},
     }
 

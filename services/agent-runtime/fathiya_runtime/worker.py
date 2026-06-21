@@ -449,7 +449,7 @@ class AgentWorker:
                         task,
                         "agent_round_paused",
                         (
-                            f"نفذ الوكيل {len(execution_steps)} خطوات آمنة من الجولة "
+                            f"نفذ الوكيل {len(execution_steps)} خطوات داخلية من الجولة "
                             f"{round_number} وتوقف قبل الأداة الحساسة."
                         ),
                         status="running",
@@ -1393,7 +1393,7 @@ def _deterministic_synthesis(
                 elif zapier_inventory_available:
                     zapier_state = "مخزونه محفوظ وOAuth المحلي غير مكتمل"
                 evidence.append(
-                    "تشغيل شبكة الوكلاء الآمنة نفذ "
+                    "تشغيل شبكة الوكلاء نفذ "
                     f"{summary.get('safe_execution_count', 0)} خطوة داخلية، "
                     f"مع {summary.get('failed_step_count', 0)} فشل، "
                     f"وتخطى {summary.get('skipped_high_risk_count', 0)} خطوات عالية الأثر."

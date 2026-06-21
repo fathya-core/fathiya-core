@@ -155,7 +155,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
     def test_agent_mesh_execute_is_safe_internal_execution(self) -> None:
         risk = classify_risk(
             "agent mesh execute:\n"
-            "تشغيل شبكة الوكلاء الآمنة ووكيل التداول الورقي دون أموال حقيقية أو إرسال خارجي."
+            "تشغيل شبكة الوكلاء ووكيل التداول الورقي دون أموال حقيقية أو إرسال خارجي."
         )
 
         self.assertEqual(risk.risk_class, "internal_owned")
@@ -364,7 +364,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
     def test_knowledge_mission_operator_objective_can_run_agent_mesh_execute(self) -> None:
         prompt = build_knowledge_mission_prompt(
             "mesh readiness report",
-            "تشغيل شبكة الوكلاء الآمنة الآن وسجل الإيصال",
+            "تشغيل شبكة الوكلاء الآن وسجل الإيصال",
             "The report says Zapier, n8n, Kali, and the trading advisor should be checked.",
         )
         model = AgentModelRouter(
@@ -400,7 +400,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             {
                 "prompt": (
                     "knowledge execution mission:\n"
-                    "استوعب التقارير والمعرفة ثم اختر الأدوات والنماذج ونفذ شبكة الوكلاء الآمنة."
+                    "استوعب التقارير والمعرفة ثم اختر الأدوات والنماذج ونفذ شبكة الوكلاء."
                 )
             },
             [
@@ -4052,7 +4052,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
             ["trading_strategy_refresh"],
         )
         mesh_execute_plan = build_plan(
-            {"prompt": "تشغيل شبكة الوكلاء الآمنة الآن"},
+            {"prompt": "تشغيل شبكة الوكلاء الآن"},
             [],
             model,
             catalog,
@@ -5030,7 +5030,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         ):
             result = executor.execute(
                 "agent_mesh_execute",
-                "تشغيل شبكة الوكلاء الآمنة الآن",
+                "تشغيل شبكة الوكلاء الآن",
                 {"max_steps": 24},
             )
 

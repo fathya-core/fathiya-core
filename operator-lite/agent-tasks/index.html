@@ -686,6 +686,37 @@
       color: var(--gold-100);
       box-shadow: 0 0 0 3px rgba(201, 161, 74, 0.1);
     }
+    .deploy-strip {
+      border-color: rgba(124, 199, 232, 0.34);
+      background: linear-gradient(180deg, rgba(8, 18, 23, 0.96), rgba(10, 10, 10, 0.98));
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+    @media (max-width: 860px) { .deploy-strip { grid-template-columns: 1fr; } }
+    .deploy-strip h2 {
+      font-size: 16px;
+      margin-top: 6px;
+    }
+    .deploy-facts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    @media (max-width: 760px) { .deploy-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 480px) { .deploy-facts { grid-template-columns: 1fr; } }
+    .deploy-actions {
+      display: grid;
+      gap: 8px;
+      align-content: end;
+    }
+    .deploy-actions button {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: 11px;
+    }
     .workspace-home {
       border-color: rgba(228, 197, 127, 0.5);
       background:
@@ -1181,7 +1212,7 @@
         <div class="eyebrow">FATHIYA · OPS</div>
         <h1 class="gold-gradient-text">المنشأة السيادية الذكية</h1>
         <p>SOVEREIGN INTELLIGENCE LAB</p>
-        <p>فتحية واجهة خاصة للتداول وصيد الثغرات: تشغيل، متابعة، تقارير، وإيصالات واضحة قبل أي إجراء خارجي.</p>
+        <p>فتحية محرك وكلاء محلي: يستوعب المعرفة، يختار النماذج، يستخدم الأدوات، وينتج إجراءً أو تقريرًا بإيصال.</p>
       </div>
 
       <form id="login-form" class="login-card">
@@ -1206,7 +1237,7 @@
     <div class="wrap top">
       <div>
         <h1>المنشأة السيادية الذكية</h1>
-        <p>فتحية · التداول وصيد الثغرات - متصلة بالمشغل على <span id="api-label"></span></p>
+        <p>فتحية · وكلاء التداول وصيد الثغرات والمعرفة - متصلة بالمشغل على <span id="api-label"></span></p>
       </div>
       <div class="row">
         <span class="badge" id="api-status">يتحقق...</span>
@@ -1225,7 +1256,7 @@
         <div class="row">
           <div>
             <h2>مركز أوامر فتحية</h2>
-            <p>يفهم المعرفة، يختار النموذج، ينفذ الأدوات الداخلية، ويترك العالي الأثر كخطوة تفعيل واضحة.</p>
+            <p>يفهم المعرفة، يختار النموذج، يستخدم الأدوات المتاحة، وينفذ ما يمكن تنفيذه الآن بدل الاكتفاء بالتحليل.</p>
           </div>
           <span class="badge" id="command-ready">--</span>
         </div>
@@ -1237,7 +1268,7 @@
           <div class="metric"><span>Ready now</span><strong id="command-ready-now">--</strong></div>
         </div>
         <div class="command-panel-actions">
-          <button id="command-run-engine">تشغيل المحرك</button>
+          <button id="command-run-engine">نفّذ بالوكلاء الآن</button>
           <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
           <button id="command-run-github-proof" class="secondary">إثبات GitHub</button>
           <button id="command-run-manus-proof" class="secondary">إثبات Manus</button>
@@ -1267,8 +1298,8 @@
 
     <div class="quick-grid view-hidden">
       <button class="quick-action primary" id="run-engine">
-        <strong>تشغيل فتحية</strong>
-        <span>HF · OpenRouter · Zapier · n8n · Kali · Codespaces</span>
+        <strong>نفّذ الآن</strong>
+        <span>معرفة · نماذج · أدوات · إيصال</span>
       </button>
       <button class="quick-action" id="open-trading">
         <strong>وكيل التداول</strong>
@@ -1276,7 +1307,7 @@
       </button>
       <button class="quick-action sky" id="open-bounty">
         <strong>صيد الثغرات</strong>
-        <span>HackerOne · Bugcrowd · Draft</span>
+        <span>HackerOne · Bugcrowd · تقرير</span>
       </button>
       <button class="quick-action github" id="run-codespaces">
         <strong>وكيل Codespaces</strong>
@@ -1302,16 +1333,40 @@
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
 
+    <div class="card deploy-strip" id="deploy-strip">
+      <div>
+        <div class="row" style="justify-content:flex-start;">
+          <span class="badge sky" id="deploy-origin-badge">يفحص النشر</span>
+          <span class="badge" id="deploy-version">FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS</span>
+        </div>
+        <h2>حالة فتحية على المحلي والدومين</h2>
+        <p class="muted" id="deploy-summary" style="margin-top:6px;">
+          أفصل بين المحرك المحلي العامل وبين نسخة fathya-core.com حتى لا تبدو الصفحة مفعلة وهي تخدم نشرًا قديمًا.
+        </p>
+        <div class="deploy-facts">
+          <div class="metric"><span>الموقع الحالي</span><strong id="deploy-current-host">--</strong></div>
+          <div class="metric"><span>المحرك المحلي</span><strong id="deploy-runtime-state">--</strong></div>
+          <div class="metric"><span>النشر العام</span><strong id="deploy-public-state">Netlify</strong></div>
+          <div class="metric"><span>المسار الصحيح</span><strong id="deploy-next-step">--</strong></div>
+        </div>
+      </div>
+      <div class="deploy-actions">
+        <button id="deploy-copy-command" type="button">انسخ أمر نشر Netlify</button>
+        <button id="deploy-open-public" class="secondary" type="button">افتح fathya-core.com</button>
+        <button id="deploy-open-tools" class="secondary" type="button">افتح التفعيل والأدوات</button>
+      </div>
+    </div>
+
     <div class="card workspace-home" id="workspace-home">
       <div class="workspace-home-head">
         <div>
           <span class="badge ok">لوحة تشغيل</span>
           <h2>فتحية Agent OS: تشغيل محلي واضح</h2>
           <p class="muted" style="margin-top:6px;">
-            زر واحد يشغّل المحرك، ثم تختار مسارًا مستقلًا: التداول، صيد الثغرات، المعرفة، التقارير، أو الأدوات.
+            زر واحد يرسل الهدف للوكيل: يستوعب المعرفة، يختار OpenRouter/Hugging Face، يشغل n8n/Kali/Zapier/Codespaces عند توفرها، ثم يرجع إيصالًا.
           </p>
         </div>
-          <button id="workspace-run-core" type="button">شغّل المحرك وأظهر الإيصال</button>
+          <button id="workspace-run-core" type="button">نفّذ هدفًا كاملًا وأظهر الإيصال</button>
       </div>
       <div class="agent-os" id="agent-os">
         <div class="agent-os-head">
@@ -1322,7 +1377,7 @@
               يتصل بالمحرك المحلي، يسترجع المعرفة، يختار النماذج، وينفذ الأدوات الداخلية الجاهزة.
             </p>
           </div>
-          <button id="agent-os-run" type="button">تشغيل كامل الآن</button>
+          <button id="agent-os-run" type="button">نفّذ كامل الآن</button>
         </div>
         <div class="agent-os-metrics">
           <div class="metric"><span>Worker</span><strong id="agent-os-worker">--</strong></div>
@@ -1361,7 +1416,7 @@
           </button>
           <button class="sky" type="button" data-agent-os-command="lane_bug_bounty">
             <strong>صيد الثغرات</strong>
-            <span>Dedupe ثم Draft</span>
+            <span>Dedupe ثم تقرير</span>
           </button>
           <button type="button" data-agent-os-command="learn_and_execute">
             <strong>المعرفة</strong>
@@ -1399,7 +1454,7 @@
         </button>
         <button class="workspace-lane bounty-lane" type="button" data-workspace-view="bug-bounty">
           <strong>صيد الثغرات</strong>
-          <span>اختيار برنامج HackerOne/Bugcrowd، dedupe، خطة إثبات، ومسودة تقرير داخلية.</span>
+          <span>اختيار برنامج HackerOne/Bugcrowd، dedupe، خطة إثبات، وتقرير قابل للمراجعة.</span>
         </button>
         <button class="workspace-lane report-lane" type="button" data-workspace-view="reports">
           <strong>التقارير</strong>
@@ -1533,7 +1588,7 @@
           </button>
           <button class="mode-button" type="button" data-mission-mode="bounty">
             <strong>صيد الثغرات</strong>
-            <span>HackerOne · Bugcrowd · Draft</span>
+          <span>HackerOne · Bugcrowd · تقرير</span>
           </button>
           <button class="mode-button" type="button" data-mission-mode="knowledge">
             <strong>معرفة وتقارير</strong>
@@ -1556,7 +1611,7 @@
             </button>
             <button class="autonomy-button" type="button" data-autonomy-mode="guided">
               موجّه
-              <span>يتوقف عند أثر خارجي واضح</span>
+              <span>يفتح بوابة أثر واضحة</span>
             </button>
             <button class="autonomy-button" type="button" data-autonomy-mode="activation">
               تفعيل الأدوات
@@ -1564,7 +1619,7 @@
             </button>
           </div>
           <p class="muted" style="margin:8px 0 0; font-size:11px;">
-            الداخلي والقراءة والنماذج المحلية تعمل مباشرة؛ OAuth والمال والإرسال الخارجي تظهر كمتابعات قابلة للتشغيل بدل تعطيل المهمة.
+            الداخلي والقراءة والنماذج المحلية تعمل مباشرة؛ أي ربط ناقص يظهر كمتابعة تشغيلية بدل تعطيل المهمة.
           </p>
         </div>
         <div class="mission-status">
@@ -1660,7 +1715,7 @@
         <input id="direct-title" placeholder="اختياري" />
         <label for="direct-prompt">المهمة</label>
         <textarea id="direct-prompt" placeholder="مثال: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اعرض مهام Manus الحالية."></textarea>
-        <p class="muted" style="font-size:11px;">فتحية تختار تلقائيًا قراءة Zapier المناسبة لهذه الطلبات وتنفذها بإيصال إذا كانت آمنة.</p>
+        <p class="muted" style="font-size:11px;">فتحية تختار تلقائيًا قراءة Zapier المناسبة، تنفذ الجاهز، وتحول غير المربوط إلى متابعة تشغيلية بإيصال.</p>
         <label for="direct-sources">روابط أو مسارات معرفة</label>
         <textarea id="direct-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي، مثال: services/agent-runtime/runtime/knowledge-inbox/openrouter-fusion-email-2026-06-17.md"></textarea>
         <div class="row" style="margin-top:10px;">
@@ -1725,7 +1780,7 @@
         <label for="zapier-params">JSON params</label>
         <textarea id="zapier-params" dir="ltr" placeholder='{"owner":"fathya-core","repo":"fathiya-core"}'>{}</textarea>
         <label for="zapier-instructions">تعليمات للوكيل</label>
-        <textarea id="zapier-instructions" placeholder="نفذ قراءة آمنة فقط وسجل الإيصال."></textarea>
+        <textarea id="zapier-instructions" placeholder="نفذ القراءة الجاهزة وسجل الإيصال."></textarea>
         <button id="run-zapier-action" style="width:100%; margin-top:10px;">تشغيل الإجراء عبر الوكيل</button>
       </div>
     </div>
@@ -1816,16 +1871,16 @@
         <div class="row">
           <div>
             <h2>صيد الثغرات</h2>
-            <p>مسار واضح: نطاق، dedupe، مراجعة ساكنة، إثبات، ثم Draft داخلي قابل للمراجعة.</p>
+            <p>مسار واضح: نطاق، dedupe، مراجعة معرفة/مصدر، إثبات، ثم تقرير قابل للمراجعة.</p>
           </div>
-          <span class="badge sky">Draft</span>
+          <span class="badge sky">تقرير</span>
         </div>
 
         <div class="bounty-flow">
           <div class="bounty-step"><strong>1. النطاق</strong><span>حدد منصة البرنامج والرابط والأصول المسموحة.</span></div>
           <div class="bounty-step"><strong>2. Dedupe</strong><span>افحص الجدة قبل كتابة التقرير حتى لا نكرر الإغلاقات السابقة.</span></div>
           <div class="bounty-step"><strong>3. الدليل</strong><span>اجمع أثرًا قابلًا للعرض: خطوات، لقطة، ملف PoC، أو مسار كود.</span></div>
-          <div class="bounty-step"><strong>4. Draft</strong><span>اكتب مسودة داخل فتحية فقط، ثم تعرضها في التقارير.</span></div>
+          <div class="bounty-step"><strong>4. تقرير</strong><span>اكتب تقريرًا بدليل وقرار جاهزية، ثم اعرضه في التقارير.</span></div>
         </div>
 
         <div class="grid2">
@@ -1869,13 +1924,13 @@
         <textarea id="dedupe-notes" placeholder="ضع report IDs أو أسماء دوال أو CVEs أو روابط disclosed reports التي يجب استبعادها قبل الصياغة."></textarea>
 
         <div class="row" style="margin-top: 12px;">
-          <button class="sky" id="start-hunt">ابدأ صيد + Draft</button>
+          <button class="sky" id="start-hunt">ابدأ صيد + تقرير</button>
           <button class="secondary" id="dedupe-hunt">Dedupe فقط</button>
-          <button class="secondary" id="draft-gate">تحقق من Draft</button>
+          <button class="secondary" id="draft-gate">تحقق من التقرير</button>
           <button class="secondary" id="fill-h1">HackerOne</button>
           <button class="secondary" id="fill-bc">Bugcrowd</button>
         </div>
-        <p style="margin-top: 10px;">يعرض التقرير والإثبات داخل فتحية قبل أي إرسال خارجي.</p>
+        <p style="margin-top: 10px;">يعرض التقرير والإثبات داخل فتحية مع قرار جاهزية واضح.</p>
       </div>
     </section>
 
@@ -1918,20 +1973,22 @@
   <script>
     const apiBase = new URLSearchParams(location.search).get("api") || "http://127.0.0.1:8765";
     const localOperatorUrl = "http://127.0.0.1:5180/agent-tasks/";
+    const publicOperatorUrl = "https://fathya-core.com/agent-tasks/";
     const localStartCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-fathiya.ps1 -Detached -OpenBrowser -StartN8n";
+    const netlifyDeployCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy-fathiya-netlify.ps1 -OpenLogin";
     const pageOrigin = location.origin === "null" ? "local-file" : location.origin;
     const activeStatuses = new Set(["queued", "running", "awaiting_approval", "stalled"]);
     const platformLabels = { auto: "تلقائي", hackerone: "HackerOne", bugcrowd: "Bugcrowd" };
     const knowledgePath = "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
     const meshPrompt = [
       "agent mesh execute:",
-      "شغّل شبكة وكلاء فتحية الآمنة: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، GitHub Codespaces، ووكيل التداول الأساسي.",
-      "نفّذ فقط الأدوات الداخلية أو القراءة أو Paper/Testnet التي لا تحتاج موافقة، ثم سجل ما عمل وما تخطّيته بسبب بوابة المخاطر."
+      "شغّل شبكة وكلاء فتحية: الأدوات المحلية، Hugging Face المحلي، OpenRouter، Zapier MCP، n8n، Kali WSL، GitHub Codespaces، ووكيل التداول الأساسي.",
+      "تصرف كوكيل تنفيذ: افهم الهدف، اختر النموذج والأداة، نفذ الجاهز محليًا أو قراءة أو Paper/Testnet، وحوّل أي ربط ناقص إلى متابعة تشغيلية واضحة."
     ].join("\n");
     const codespacesPrompt = [
       "شغّل وكيل GitHub Codespaces للهدف الهندسي:",
       "استخدم حساب GitHub المصادق واشتراك Codespaces كبيئة وكيل بعيدة.",
-      "ابدأ بجرد Codespaces، اختر البيئة الأنسب لمستودع فتحية إن وجدت، ولا تنفذ أوامر بعيدة الآن.",
+      "ابدأ بجرد Codespaces، اختر البيئة الأنسب لمستودع فتحية إن وجدت، وجهز أمر التشغيل البعيد التالي مع إيصال.",
       "أخرج إيصالًا فيه الجاهزية، Codespace المختارة، وما يحتاجه التشغيل البعيد التالي."
     ].join("\n");
     const modelStrategyPrompt = [
@@ -1946,8 +2003,8 @@
       "FATHIYA_KNOWLEDGE_EXECUTION_V1",
       "استوعب المعرفة والتقارير الحالية، ثم اختر الأدوات والنماذج المناسبة، ثم نفذ شبكة الوكلاء الداخلية الجاهزة.",
       "استخدم Hugging Face المحلي للاسترجاع/الفهم، OpenRouter لتوجيه النماذج، Zapier MCP وn8n وKali وGitHub ووكيل التداول كقدرات تنفيذ.",
-      "نفّذ داخليًا ما لا يحتاج موافقة، واترك الإرسال الخارجي أو المال أو الفحص الحي أو الحذف كبوابات أثر لا كتعطيل.",
-      "أخرج إيصالًا يثبت: ما فهمته، الأدوات التي اختيرت، ما نُفذ فعليًا، وما بقي ينتظر ربطًا أو موافقة."
+      "نفّذ ما هو جاهز الآن، ثم اربط نتيجة الفهم بخطوة عملية: أمر أداة، تقرير، إيصال، أو متابعة OAuth/Settings واضحة.",
+      "أخرج إيصالًا يثبت: ما فهمته، الأدوات التي اختيرت، ما نُفذ فعليًا، وما هي الخطوة التنفيذية التالية."
     ].join("\n");
     const executionOsPrompt = [
       "agent mesh execute:",
@@ -1955,7 +2012,7 @@
       "شغّل محرك فتحية التنفيذي كشبكة وكلاء لا كتحليل فقط.",
       "ابدأ وكيل التداول الورقي إذا كان متوقفًا، وفعّل مستشار الاستراتيجية، واجعل التنبؤ والتنفيذ الورقي بنبض الثانية هو الأولوية الأولى.",
       "افحص جاهزية Hugging Face المحلي وOpenRouter وSupabase وn8n المحلي وZapier MCP وKali WSL وGitHub Codespaces وBroker Testnet.",
-      "استخدم جرد Zapier وموفري الوكلاء المفيدين مثل ChatGPT وAI by Zapier وApify كقدرات تنفيذ، مع ترك الأفعال عالية الأثر لبوابة المخاطر.",
+      "استخدم جرد Zapier وموفري الوكلاء المفيدين مثل ChatGPT وAI by Zapier وApify كقدرات تنفيذ وتحضير، ولا تجعل الربط الناقص يوقف المهمة.",
       "سجل إيصالًا واضحًا: ما نُفّذ فعليًا، ما أصبح جاهزًا، ما يحتاج ربطًا، وما هي المتابعة التنفيذية التالية."
     ].join("\n");
     const activationSweepPrompt = [
@@ -1963,7 +2020,7 @@
       "FATHIYA_ACTIVATION_SWEEP_V1",
       "فعّل الناقص في فتحية كمسار تشغيل واحد لا كتنقل بين الإعدادات.",
       "افحص بوابات Zapier MCP وGitHub Codespaces وSupabase وn8n المحلي وKali WSL وOpenRouter وHugging Face وBroker Testnet.",
-      "نفّذ كل فحص أو قراءة أو تشغيل داخلي آمن متاح الآن، ولا توقف المهمة بسبب بوابات OAuth أو مفاتيح أو موافقة أثر.",
+      "نفّذ كل فحص أو قراءة أو تشغيل داخلي متاح الآن، ولا توقف المهمة بسبب بوابات OAuth أو مفاتيح أو موافقة أثر.",
       "حوّل كل بوابة غير جاهزة إلى next_action واضح: ماذا أضغط، ماذا أربط، وأي إعداد محلي مطلوب بدون كشف أسرار.",
       "ابدأ أو تحقق من وكيل التداول الورقي، وأثبت أن مسار النماذج المحلي/OpenRouter جاهز.",
       "سجل إيصالًا فيه: الجاهز الآن، ما نُفّذ، ما بقي، وأول ثلاث خطوات تفعيل مرتبة."
@@ -2043,6 +2100,26 @@
       document.getElementById("bridge-note").textContent = connected
         ? "هذا هو وضع التشغيل المطلوب: الموقع يتصل بمحرك محلي على جهازك، والمفاتيح تبقى محلية، والمهام الداخلية لا تنتظر الواجهة."
         : `أمر التشغيل المحلي: ${localStartCommand}`;
+      updateDeployState(connected);
+    }
+
+    function updateDeployState(runtimeConnected = bridgeConnected) {
+      const host = location.hostname || pageOrigin;
+      const onPublicDomain = host === "fathya-core.com" || host === "www.fathya-core.com";
+      const originBadge = document.getElementById("deploy-origin-badge");
+      originBadge.textContent = onPublicDomain ? "الدومين العام" : "نسخة محلية";
+      originBadge.className = onPublicDomain ? "badge sky" : "badge ok";
+      document.getElementById("deploy-current-host").textContent = host || "local";
+      document.getElementById("deploy-runtime-state").textContent = runtimeConnected ? "متصل وينفذ" : "يحتاج تشغيل محلي";
+      document.getElementById("deploy-public-state").textContent = onPublicDomain
+        ? runtimeConnected ? "الدومين متصل بالمحرك" : "الدومين ينتظر الجسر"
+        : "الدومين يحتاج نشر Netlify";
+      document.getElementById("deploy-next-step").textContent = onPublicDomain
+        ? runtimeConnected ? "شغّل مهمة" : "افتح المحلي أو فعّل CORS"
+        : "Netlify deploy";
+      document.getElementById("deploy-summary").textContent = onPublicDomain
+        ? "هذه نسخة fathya-core.com؛ التنفيذ الكامل يحتاج وصولًا إلى المحرك المحلي 127.0.0.1:8765 من متصفحك."
+        : "هذه النسخة المحلية هي المصدر العامل الآن. لن يظهر نفس الترتيب على fathya-core.com حتى يتم تفويض Netlify أو إضافة أسرار النشر.";
     }
 
     async function copyLocalStartCommand() {
@@ -2051,6 +2128,15 @@
         document.getElementById("bridge-note").textContent = "تم نسخ أمر التشغيل. شغّله من PowerShell داخل مجلد المشروع.";
       } catch {
         document.getElementById("bridge-note").textContent = localStartCommand;
+      }
+    }
+
+    async function copyNetlifyDeployCommand() {
+      try {
+        await navigator.clipboard.writeText(netlifyDeployCommand);
+        document.getElementById("deploy-summary").textContent = "تم نسخ أمر النشر. بعد تسجيل دخول Netlify سيبني dist وينشره مباشرة على الموقع.";
+      } catch {
+        document.getElementById("deploy-summary").textContent = netlifyDeployCommand;
       }
     }
 
@@ -2125,7 +2211,7 @@
           objective || "استوعب مصادر المعرفة المحددة ثم اختر الأدوات والنماذج المناسبة ونفذ الداخلي الجاهز.",
           references,
           "استخدم Hugging Face المحلي للاسترجاع والفهم، وOpenRouter/Fusion فقط عند الحاجة للبحث العميق، ثم شغّل الأدوات الداخلية الجاهزة وسجل إيصالًا واضحًا.",
-          "الأفعال الخارجية أو المالية أو الفحص الحي تبقى كبوابات أثر ولا تمنع التنفيذ الداخلي."
+          "أي ربط أو أثر غير جاهز يتحول إلى متابعة تشغيلية ولا يمنع التنفيذ المحلي."
         ].filter(Boolean).join("\n")
       };
     }
@@ -2160,7 +2246,7 @@
       if (selectedMissionAutonomyMode === "guided") {
         return [
           "autonomy_mode: guided",
-          "افهم الهدف، اختر الأدوات المناسبة، نفذ الداخلي والقراءة، ثم توقف عند أول فعل خارجي عالي الأثر مع صياغة متابعة قابلة للتشغيل.",
+          "افهم الهدف، اختر الأدوات المناسبة، نفذ الداخلي والقراءة، ثم افتح بوابة أثر لأول فعل خارجي عالي الأثر مع صياغة متابعة قابلة للتشغيل.",
           "اعرض السبب والأداة المقترحة قبل أي إرسال خارجي أو حذف أو مال أو فحص حي."
         ].join("\n");
       }
@@ -2306,8 +2392,8 @@
             `focus: ${cleanObjective}`,
             references,
             `knowledge_path: ${knowledgePath}`,
-            "draft_gate: internal_only",
-            "constraints: استخدم المعرفة والأدوات المحلية والمصادر المصرح بها، واعرض التقرير والإثبات داخل فتحية قبل أي إرسال خارجي."
+            "report_gate: readiness_decision",
+            "output: استخدم المعرفة والأدوات المحلية والمصادر المصرح بها، ثم اعرض تقريرًا بإثبات وقرار ready_to_submit أو needs_more_evidence أو duplicate_or_not_applicable."
           ].filter(Boolean).join("\n")
         };
       }
@@ -2387,12 +2473,12 @@
       const programUrl = normalizeUrl(document.getElementById("program-url").value);
       const repoInput = fieldText("repo-url");
       const repoUrl = normalizeUrl(repoInput || (isGithubRepoUrl(programUrl) ? programUrl : ""));
-      const focus = fieldText("focus") || "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب مسودة تقرير داخل فتحية.";
+      const focus = fieldText("focus") || "استخدم معرفة تقارير HackerOne High/Critical لصيد مرشح قوي، ثم صعّد فقط بالدليل واكتب تقرير جاهزية داخل فتحية.";
       const allowedScope = fieldText("scope-allow") || "use_program_scope_only";
       const exclusions = fieldText("scope-exclude") || "respect_program_policy; no live testing unless explicitly in-scope and approved";
       const evidencePlan = fieldText("evidence-plan") || "steps_to_reproduce; impact_statement; screenshots_or_local_poc_if_available; severity_reasoning";
       const dedupeNotes = fieldText("dedupe-notes") || "check disclosed reports, prior duplicate IDs, GitHub issues/PRs, changelog, CVEs, exact function names, and root-cause terms before drafting";
-      const phase = mode === "dedupe" ? "dedupe_only" : "hunt_static_review_then_internal_draft";
+      const phase = mode === "dedupe" ? "dedupe_only" : "hunt_review_then_evidence_report";
       const titlePrefix = mode === "dedupe" ? "Dedupe صيد ثغرات" : "صيد ثغرات";
       const scopeNote = [
         `platform=${platformLabels[platform]}`,
@@ -2418,10 +2504,10 @@
           `evidence_required: ${evidencePlan}`,
           `dedupe_required: ${dedupeNotes}`,
           `knowledge_path: ${knowledgePath}`,
-          mode === "dedupe" ? "" : "draft_gate: internal_only",
-          "novelty_gate: لا تكتب Draft قابل للرفع إذا كان الجذر أو الاستغلال أو الأثر مكررًا؛ اكتب قرار not_ready مع سبب dedupe.",
+          mode === "dedupe" ? "" : "report_gate: readiness_decision",
+          "novelty_gate: لا تكتب تقريرًا قابلًا للرفع إذا كان الجذر أو الاستغلال أو الأثر مكررًا؛ اكتب قرار not_ready مع سبب dedupe.",
           "impact_gate: لا تصعّد severity بلا أثر عملي قابل للعرض. يجب أن يجيب التقرير: as an attacker I could ... بدليل.",
-          "constraints: مراجعة معرفة ومصادر مصرح بها؛ لا فحص حي ولا إرسال خارجي من هذا المسار؛ التقرير والإثبات يظهران داخل فتحية قبل أي رفع."
+          "output: تقرير فتحية يجب أن ينتهي بقرار واحد: ready_to_submit أو needs_more_evidence أو duplicate_or_not_applicable، مع الأدلة المطلوبة التالية."
         ].filter(Boolean).join("\n")
       };
     }
@@ -2431,15 +2517,15 @@
       const programUrl = normalizeUrl(document.getElementById("program-url").value);
       const program = programLabel(platform, programUrl);
       return {
-        title: `تحقق Draft: ${program}`,
+        title: `تحقق تقرير: ${program}`,
         prompt: [
-          "bug bounty draft gate:",
+          "bug bounty report gate:",
           `platform: ${platformLabels[platform]}`,
           `program: ${program}`,
           programUrl ? `program_url: ${programUrl}` : "program_url: auto",
-          "تحقق من أحدث تقرير static review داخل فتحية.",
-          "لا ترفعه خارجيًا. قيّم فقط: هل فيه أثر عملي؟ هل فيه دليل؟ هل تجاوز dedupe؟ هل يصلح Draft داخلي؟",
-          "إذا ناقص، اكتب not_ready مع قائمة الأدلة المطلوبة بدل صياغة تقرير ضعيف."
+          "تحقق من أحدث تقرير داخل فتحية.",
+          "قيّم: هل فيه أثر عملي؟ هل فيه دليل؟ هل تجاوز dedupe؟ هل يصلح للتقديم؟",
+          "إذا ناقص، اكتب needs_more_evidence مع قائمة الأدلة المطلوبة بدل صياغة تقرير ضعيف."
         ].join("\n")
       };
     }
@@ -2542,7 +2628,7 @@
             "agent mesh execute:",
             "FATHIYA_POST_SETTINGS_PROBE_V1",
             "افحص جسر الوكلاء المحلي بعد حفظ الإعدادات بدون كشف الأسرار.",
-            "نفذ فقط جرد الأدوات والقراءة الداخلية الآمنة، وسجل إيصالًا يوضح الجاهز والناقص."
+            "نفذ جرد الأدوات والقراءة الداخلية الجاهزة، وسجل إيصالًا يوضح الجاهز والناقص."
           ].join("\n")
         },
         openrouter: {
@@ -2683,9 +2769,9 @@
         ? "إعادة ربط OAuth"
         : liveAvailable
           ? "متصل حي"
-          : inventoryAvailable || summary.connected
-            ? "مخزون فقط"
-            : "غير متصل";
+        : inventoryAvailable || summary.connected
+            ? "جاهز للجرد والتحضير"
+            : "ينتظر الربط";
       setZapierStatus(statusText, liveAvailable && !needsReconnect ? "badge ok" : "badge warn");
       renderZapierAuthDetail(summary);
       renderZapierDiagnostics();
@@ -2748,7 +2834,7 @@
       if (zapierCatalog.needs_reconnect) {
         setZapierStatus("إعادة ربط OAuth", "badge warn");
       } else if (zapierCatalog.live_available === false) {
-        setZapierStatus("مخزون فقط", "badge warn");
+        setZapierStatus("جاهز للجرد والتحضير", "badge warn");
       } else if (zapierCatalog.connected) {
         setZapierStatus("متصل حي", "badge ok");
       }
@@ -2775,11 +2861,11 @@
       } else if (authState === "refresh_recommended") {
         el.textContent = `Zapier متصل لكن التوكن منتهي؛ سيحاول فتحية التجديد قبل التنفيذ.`;
       } else if (data.live_available === false || inventoryAvailable) {
-        el.textContent = `Zapier يعمل من المخزون المحلي فقط الآن: ${apps} تطبيق / ${actions} إجراء. اربط OAuth المحلي للتنفيذ الحي.`;
+        el.textContent = `Zapier جاهز للجرد والتحضير الآن: ${apps} تطبيق / ${actions} إجراء. OAuth المحلي يفتح التنفيذ الحي للتطبيقات.`;
       } else if (data.connected) {
         el.textContent = `Zapier متصل حيًا: ${apps} تطبيق / ${actions} إجراء.`;
       } else {
-        el.textContent = "Zapier غير متصل بعد.";
+        el.textContent = "Zapier ينتظر الربط الحي، لكن فتحية تستمر بما هو متاح محليًا.";
       }
     }
 
@@ -2796,8 +2882,8 @@
         : state === "reconnect_required"
           ? "إعادة ربط"
           : state === "inventory_only"
-            ? "مخزون فقط"
-            : "غير متصل";
+            ? "جرد وتحضير"
+            : "ينتظر الربط";
       const providers = Array.isArray(zapierDiagnostics.agent_providers)
         ? zapierDiagnostics.agent_providers.slice(0, 6).map((provider) => provider.app).filter(Boolean)
         : [];
@@ -2842,7 +2928,7 @@
       const mode = details?.mode || action?.mode || "--";
       const badge = document.getElementById("zapier-action-mode");
       const toolName = details?.tool_name || action?.tool_name || action?.key || "";
-      badge.textContent = action ? `${mode === "write" || details?.requires_approval ? "يتطلب موافقة" : "قراءة"} · ${toolName}` : "--";
+      badge.textContent = action ? `${mode === "write" || details?.requires_approval ? "جاهز بعد تأكيد" : "قراءة جاهزة"} · ${toolName}` : "--";
       badge.className = mode === "write" ? "badge warn" : "badge ok";
     }
 
@@ -2947,7 +3033,7 @@
         return;
       }
       if (zapierCatalog?.live_available === false) {
-        showError("إجراءات Zapier ظاهرة من المخزون فقط الآن. اربط Zapier OAuth المحلي قبل التنفيذ الحي.");
+        showError("Zapier جاهز للجرد والتحضير الآن. اربط OAuth المحلي لتشغيل هذا الإجراء حيًا من فتحية.");
         setWorkspaceView("tools", { scroll: false });
         return;
       }
@@ -2988,8 +3074,8 @@
         prompt: [
           `Zapier action: ${app} / ${action.name}`,
           mode === "write"
-            ? "حضّر إجراء Zapier خارجي عبر مشغل فتحية وبوابة المخاطر، ولا ترسل أو تعدل شيئًا خارج الحساب قبل موافقة صريحة داخل المهمة."
-            : "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
+            ? "حضّر إجراء Zapier كتشغيل وكيل: تحقق من الحقول، جهز الأثر المتوقع، وسجل بوابة التأكيد داخل المهمة قبل أي تعديل خارجي."
+            : "نفذ إجراء قراءة من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
           instructions ? `instructions: ${instructions}` : "",
           `params:${JSON.stringify(parsedParams)}`
         ].filter(Boolean).join("\n")
@@ -2999,7 +3085,7 @@
     function zapierConnectionTaskPrompt(integration = commandZapierIntegration) {
       return integration?.task_prompt || [
         "integration probe: zapier_mcp",
-        "افحص جاهزية Zapier MCP بعد الربط أو التحديث، ابدأ بالجرد الحي للأفعال المتاحة، ولا تنفذ أي إجراء خارجي.",
+        "افحص جاهزية Zapier MCP بعد الربط أو التحديث، ابدأ بالجرد الحي للأفعال المتاحة، وحضّر أي إجراء خارجي عبر بوابة أثر.",
         "سجل إيصالًا فيه: حالة OAuth، عدد التطبيقات، عدد الإجراءات، وما بقي للتفعيل."
       ].join("\n");
     }
@@ -3075,7 +3161,7 @@
         prompt: [
           `agent provider probe: ${provider}`,
           "افحص هذا المزود من مخزون Zapier MCP داخل فتحية.",
-          "اعرض أفعال القراءة والكتابة المتاحة، ولا تنفذ أي إجراء خارجي."
+          "اعرض أفعال القراءة والكتابة المتاحة، وحضّر الأثر الخارجي كبوابة تشغيل."
         ].join("\n")
       });
     }
@@ -3088,7 +3174,7 @@
         prompt: [
           `agent provider action: ${provider}`,
           "حضّر أفضل فعل Zapier مناسب لتشغيل هذا المزود كوكيل تطبيق.",
-          "لا تنفذ أي إجراء خارجي الآن؛ أعد action name وtask prompt واحتياج OAuth/الموافقة."
+          "حضّر الإجراء الخارجي الآن كبوابة تشغيل؛ أعد action name وtask prompt واحتياج OAuth/الموافقة."
         ].join("\n")
       });
     }
@@ -3154,6 +3240,8 @@
         renderCommandZapierButton(byId.zapier_mcp);
         renderCommandCodespacesIntegration(byId.github_codespaces);
         const ready = integrationData.summary ? `${integrationData.summary.ready}/${integrationData.summary.total}` : "--";
+        document.getElementById("api-status").textContent = health.worker_online ? "متصل" : "ينتظر";
+        document.getElementById("api-status").className = health.worker_online ? "badge ok" : "badge warn";
         document.getElementById("engine-status").textContent = health.worker_online ? "المحرك يعمل" : "المحرك ينتظر";
         document.getElementById("engine-status").className = health.worker_online ? "badge ok" : "badge warn";
         updateBridgeState("connected", {
@@ -3204,6 +3292,8 @@
         });
         commandMeshSummary = null;
         commandCenterState = null;
+        document.getElementById("api-status").textContent = "غير متصل";
+        document.getElementById("api-status").className = "badge warn";
         document.getElementById("engine-status").textContent = "المحرك غير متصل";
         document.getElementById("engine-status").className = "badge warn";
         document.getElementById("engine-worker").textContent = "--";
@@ -3609,7 +3699,7 @@
       const hints = {
         execution: "تشغيل شبكة الوكلاء المحلية وجمع الإيصال.",
         trading: "نبض التداول الورقي ومستشار OpenRouter.",
-        bug_bounty: "مسار صيد مصرح ينتج Draft داخلي.",
+        bug_bounty: "مسار صيد مصرح ينتج تقريرًا وقرار جاهزية.",
         knowledge: "استيعاب التقارير ثم تشغيل الأدوات المناسبة.",
         tools: "فحص Zapier وn8n وKali والجسور الناقصة.",
         connected_apps: "تحضير Manus وCursor وGmail وGitHub عبر Zapier."
@@ -4408,12 +4498,12 @@
       const apps = integration.details.app_count || 0;
       const actions = integration.details.action_count || 0;
       if (integration.details.needs_reconnect) return `${apps} تطبيق · إعادة ربط`;
-      if (integration.details.direct_live_available === false) return `${apps} تطبيق · مخزون فقط`;
+      if (integration.details.direct_live_available === false) return `${apps} تطبيق · جرد وتحضير`;
       return `${apps} تطبيق · ${actions} إجراء`;
     }
 
     function marketNotice(source) {
-      if (source === "coinbase_spot") return "بيانات سوق عامة مباشرة، والتنفيذ Paper/Testnet فقط في هذه الواجهة.";
+      if (source === "coinbase_spot") return "بيانات سوق عامة مباشرة، ووكيل Paper/Testnet يعمل كمسار التنفيذ الحالي.";
       if (source) return `مصدر السوق الحالي: ${source}`;
       return "لم يتصل مصدر السوق بعد.";
     }
@@ -4507,7 +4597,7 @@
       const commandVisible = selected === "tools";
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
-      home?.classList.toggle("view-hidden", selected !== "request");
+      home?.classList.toggle("view-hidden", selected !== "tools");
       bridge?.classList.toggle("view-hidden", selected !== "tools");
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
@@ -4529,7 +4619,7 @@
       if (options.url !== false) writeWorkspaceViewToLocation(selected);
 
       if (options.scroll !== false) {
-        const target = selected === "request" ? (home || mission) : selected === "tools" ? (commandPanel || tools) : selected === "knowledge" ? knowledge : main;
+        const target = selected === "request" ? mission : selected === "tools" ? (commandPanel || home || tools) : selected === "knowledge" ? knowledge : main;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
@@ -4646,6 +4736,13 @@
       copyLocalStartCommand().catch(showError);
     });
     document.getElementById("bridge-show-tools").addEventListener("click", () => setWorkspaceView("tools"));
+    document.getElementById("deploy-copy-command").addEventListener("click", () => {
+      copyNetlifyDeployCommand().catch(showError);
+    });
+    document.getElementById("deploy-open-public").addEventListener("click", () => {
+      window.open(publicOperatorUrl, "_blank", "noopener,noreferrer");
+    });
+    document.getElementById("deploy-open-tools").addEventListener("click", () => setWorkspaceView("tools"));
     document.getElementById("run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("scan-mesh").addEventListener("click", () => createTask({ title: "فحص شبكة الوكلاء", prompt: meshPrompt }).catch(showError));
     document.getElementById("run-codespaces").addEventListener("click", () => createTask({ title: "تشغيل وكيل GitHub Codespaces", prompt: codespacesPrompt }).catch(showError));
@@ -4755,13 +4852,13 @@
     document.getElementById("fill-h1").addEventListener("click", () => {
       document.getElementById("platform").value = "hackerone";
       document.getElementById("focus").value = "ركز على CI supply-chain وOIDC/JWT وSSRF وابحث عن أثر جديد غير مكرر.";
-      document.getElementById("scope-exclude").value = "احترم نطاق HackerOne والسياسات. لا فحص حي أو إرسال خارجي من فتحية قبل مراجعة التقرير.";
+      document.getElementById("scope-exclude").value = "احترم نطاق HackerOne والسياسات. ركز على دليل عملي وقرار جاهزية واضح.";
       document.getElementById("evidence-plan").value = "خطوات إعادة إنتاج، أثر عملي، سبب severity، وسبب عدم التكرار مقارنة بتقارير HackerOne disclosed/duplicate.";
     });
     document.getElementById("fill-bc").addEventListener("click", () => {
       document.getElementById("platform").value = "bugcrowd";
-      document.getElementById("focus").value = "راجع النطاق والسياسات ثم ابحث عن مرشح قوي واكتب Draft داخلي بإثبات واضح.";
-      document.getElementById("scope-exclude").value = "احترم VRT والنطاق. لا إرسال خارجي من هذا الزر، ولا تصعيد severity بلا أثر قابل للعرض.";
+      document.getElementById("focus").value = "راجع النطاق والسياسات ثم ابحث عن مرشح قوي واكتب تقرير جاهزية بإثبات واضح.";
+      document.getElementById("scope-exclude").value = "احترم VRT والنطاق. ركز على دليل قابل للعرض وقرار جاهزية واضح.";
       document.getElementById("evidence-plan").value = "PoC داخلي أو لقطة/فيديو، خطوات واضحة، أثر على عميل/تطبيق/مستخدم، وتبرير VRT.";
     });
     document.getElementById("tasks").addEventListener("click", (event) => {
@@ -4795,6 +4892,7 @@
 
     function startOperator() {
       if (refreshTimer || tradingTimer) return;
+      updateDeployState(false);
       setWorkspaceView(readWorkspaceViewFromLocation(), { scroll: false });
       syncAgentProviderForm();
       refreshAll().then(() => handleIntegrationReturn()).catch(showError);

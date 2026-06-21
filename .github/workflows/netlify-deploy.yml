@@ -1,0 +1,52 @@
+name: Deploy FATHIYA Operator To Netlify
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - name: Check Netlify configuration
+        id: netlify_config
+        shell: bash
+        run: |
+          if [ -n "$NETLIFY_AUTH_TOKEN" ] && [ -n "$NETLIFY_SITE_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID repository secrets to enable production deploys."
+          fi
+
+      - name: Checkout
+        if: steps.netlify_config.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.netlify_config.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.netlify_config.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Build static operator
+        if: steps.netlify_config.outputs.ready == 'true'
+        run: npm run build
+
+      - name: Deploy production site
+        if: steps.netlify_config.outputs.ready == 'true'
+        run: npx netlify-cli deploy --prod --dir dist --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
