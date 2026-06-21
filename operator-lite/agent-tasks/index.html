@@ -1352,7 +1352,7 @@
       </div>
       <div class="deploy-actions">
         <button id="deploy-copy-command" type="button">انسخ أمر نشر Netlify</button>
-        <button id="deploy-open-public" class="secondary" type="button">افتح fathya-core.com</button>
+        <button id="deploy-open-public" class="secondary" type="button">افتح النسخة المنشورة العاملة</button>
         <button id="deploy-open-tools" class="secondary" type="button">افتح التفعيل والأدوات</button>
       </div>
     </div>
@@ -1973,7 +1973,7 @@
   <script>
     const apiBase = new URLSearchParams(location.search).get("api") || "http://127.0.0.1:8765";
     const localOperatorUrl = "http://127.0.0.1:5180/agent-tasks/";
-    const publicOperatorUrl = "https://fathya-core.com/agent-tasks/";
+    const verifiedOperatorUrl = "https://main--thriving-fenglisu-ef18b1.netlify.app/agent-tasks/";
     const localStartCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-fathiya.ps1 -Detached -OpenBrowser -StartN8n";
     const netlifyDeployCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy-fathiya-netlify.ps1 -OpenLogin";
     const pageOrigin = location.origin === "null" ? "local-file" : location.origin;
@@ -2106,20 +2106,23 @@
     function updateDeployState(runtimeConnected = bridgeConnected) {
       const host = location.hostname || pageOrigin;
       const onPublicDomain = host === "fathya-core.com" || host === "www.fathya-core.com";
+      const onVerifiedNetlify = host === "main--thriving-fenglisu-ef18b1.netlify.app" || host === "thriving-fenglisu-ef18b1.netlify.app";
       const originBadge = document.getElementById("deploy-origin-badge");
-      originBadge.textContent = onPublicDomain ? "الدومين العام" : "نسخة محلية";
-      originBadge.className = onPublicDomain ? "badge sky" : "badge ok";
+      originBadge.textContent = onPublicDomain ? "الدومين العام" : onVerifiedNetlify ? "نشر Netlify العامل" : "نسخة محلية";
+      originBadge.className = onPublicDomain ? "badge warn" : "badge ok";
       document.getElementById("deploy-current-host").textContent = host || "local";
       document.getElementById("deploy-runtime-state").textContent = runtimeConnected ? "متصل وينفذ" : "يحتاج تشغيل محلي";
       document.getElementById("deploy-public-state").textContent = onPublicDomain
         ? runtimeConnected ? "الدومين متصل بالمحرك" : "الدومين ينتظر الجسر"
-        : "الدومين يحتاج نشر Netlify";
+        : onVerifiedNetlify ? "هذه النسخة المنشورة الصحيحة" : "الدومين يحتاج ربط DNS";
       document.getElementById("deploy-next-step").textContent = onPublicDomain
         ? runtimeConnected ? "شغّل مهمة" : "افتح المحلي أو فعّل CORS"
-        : "Netlify deploy";
+        : onVerifiedNetlify ? "اربط fathya-core.com هنا" : "Netlify deploy";
       document.getElementById("deploy-summary").textContent = onPublicDomain
-        ? "هذه نسخة fathya-core.com؛ التنفيذ الكامل يحتاج وصولًا إلى المحرك المحلي 127.0.0.1:8765 من متصفحك."
-        : "هذه النسخة المحلية هي المصدر العامل الآن. لن يظهر نفس الترتيب على fathya-core.com حتى يتم تفويض Netlify أو إضافة أسرار النشر.";
+        ? "هذه نسخة fathya-core.com الحالية؛ إذا لم تظهر علامة FATHIYA_DEPLOY_MARKER فهي ما زالت على ربط قديم ويجب نقل DNS/الدومين إلى نشر Netlify العامل."
+        : onVerifiedNetlify
+          ? "هذه هي النسخة المنشورة العاملة الآن. الخطوة المتبقية هي نقل fathya-core.com وwww من الربط القديم إلى هذا النشر."
+          : "هذه النسخة المحلية هي المصدر العامل الآن. لن يظهر نفس الترتيب على fathya-core.com حتى يتم ربط DNS أو الدومين بالنشر الصحيح.";
     }
 
     async function copyLocalStartCommand() {
@@ -4740,7 +4743,7 @@
       copyNetlifyDeployCommand().catch(showError);
     });
     document.getElementById("deploy-open-public").addEventListener("click", () => {
-      window.open(publicOperatorUrl, "_blank", "noopener,noreferrer");
+      window.open(verifiedOperatorUrl, "_blank", "noopener,noreferrer");
     });
     document.getElementById("deploy-open-tools").addEventListener("click", () => setWorkspaceView("tools"));
     document.getElementById("run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
