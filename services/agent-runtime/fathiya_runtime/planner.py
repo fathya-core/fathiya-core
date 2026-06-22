@@ -667,6 +667,8 @@ def _company_web_intake_result_complete(
 def fast_control_steps(
     prompt: str,
     tool_catalog: list[dict[str, Any]],
+    *,
+    source_guidance: list[RetrievedSource] | None = None,
 ) -> list[dict[str, Any]]:
     available = {
         str(item["name"])
@@ -703,7 +705,11 @@ def fast_control_steps(
 
     knowledge_steps = [
         step
-        for step in _knowledge_execution_steps(prompt, 6)
+        for step in _knowledge_execution_steps(
+            prompt,
+            6,
+            source_guidance=source_guidance,
+        )
         if step["tool"] in available
     ]
     if knowledge_steps:

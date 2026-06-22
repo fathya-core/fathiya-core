@@ -205,7 +205,11 @@ class AgentWorker:
                 direct_control = (
                     []
                     if knowledge_only_requested(prompt_for_control)
-                    else fast_control_steps(prompt_for_control, tool_catalog)
+                    else fast_control_steps(
+                        prompt_for_control,
+                        tool_catalog,
+                        source_guidance=[mission_source] if mission_source else None,
+                    )
                 )
                 if direct_control:
                     sources = []
@@ -1303,6 +1307,7 @@ def _deterministic_synthesis(
     names: list[str] = []
     evidence: list[str] = []
     follow_up: list[str] = []
+    learning_source_count = 0
     for item in tool_results:
         result = item.get("result")
         if not isinstance(result, dict):
@@ -1649,6 +1654,7 @@ def _deterministic_synthesis(
             else:
                 follow_up.append("لا ترفع خارجيًا الآن؛ ابحث عن مسار استغلال مثبت أو هدف آخر.")
         elif tool == "learning_bootstrap":
+            learning_source_count += int(result.get("source_count") or 0)
             evidence.append(
                 "جلسة التعلم أنشأت "
                 f"{result.get('card_count', 0)} بطاقات قرار و"
@@ -1791,6 +1797,8 @@ def _deterministic_synthesis(
     ]
     if source_count:
         lines.append(f"استُرجع {source_count} مصادر معرفة مرتبطة بالطلب.")
+    elif learning_source_count:
+        lines.append(f"استخدمت جلسة التعلم {learning_source_count} مصادر معرفة مباشرة.")
     elif names and all(name in FAST_CONTROL_TOOLS for name in names):
         lines.append("لم يحتج أمر التحكم المحلي إلى استرجاع مصادر معرفة.")
     else:

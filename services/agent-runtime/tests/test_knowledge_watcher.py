@@ -58,7 +58,11 @@ class KnowledgeIntakeWatcherTests(unittest.TestCase):
         self.inbox.mkdir(parents=True)
         report = self.inbox / "runtime-readiness.md"
         report.write_text(
-            "# Runtime readiness\nGitHub and Kali are available for internal inspection.",
+            (
+                "# Runtime readiness\n"
+                "OpenRouter Fusion, Advisor, Subagent, :floor, max_price, "
+                "and model routing are available for internal inspection."
+            ),
             encoding="utf-8",
         )
 
@@ -78,6 +82,14 @@ class KnowledgeIntakeWatcherTests(unittest.TestCase):
         self.assertEqual(processed, 1)
         self.assertEqual(detail["task"]["status"], "completed")
         self.assertEqual(len(detail["receipts"]), 1)
+        self.assertIn("استخدمت جلسة التعلم", detail["receipts"][0]["summary"])
+        learning = next(
+            item["result"]
+            for item in detail["task"]["result"]["tool_results"]
+            if item.get("result", {}).get("schema") == "fathiya_learning_session_v1"
+        )
+        self.assertIn("model-routing", learning["coverage_topics"])
+        self.assertIn("runtime-readiness-md", Path(learning["report_path"]).read_text(encoding="utf-8"))
         self.assertEqual(second["enqueued"], [])
         self.assertEqual(second["status"]["tracked_files"], 1)
         self.assertEqual(second["status"]["enqueued_count"], 1)

@@ -8,7 +8,8 @@ from pathlib import Path
 from fathiya_runtime.config import RuntimeConfig
 from fathiya_runtime.learning import build_learning_session, make_learning_source
 from fathiya_runtime.models import AgentModelRouter
-from fathiya_runtime.planner import build_plan
+from fathiya_runtime.planner import build_plan, fast_control_steps
+from fathiya_runtime.retrieval import RetrievedSource
 from fathiya_runtime.tools import ToolExecutor
 
 
@@ -184,6 +185,29 @@ class LearningBootstrapTests(unittest.TestCase):
         quiz = Path(result["session_dir"], "quiz.json").read_text(encoding="utf-8")
         self.assertIn("Fusion judge", quiz)
         self.assertIn(":floor or max_price", quiz)
+
+    def test_fast_knowledge_control_preserves_mission_source_paths(self) -> None:
+        executor = ToolExecutor(self.config)
+        steps = fast_control_steps(
+            "knowledge execution mission:\nاستوعب التقرير الجديد ونفذ الأدوات الداخلية",
+            executor.catalog(),
+            source_guidance=[
+                RetrievedSource(
+                    path="intake/runtime/openrouter-fusion.md",
+                    score=1.0,
+                    excerpt="OpenRouter Fusion Advisor Subagent model routing",
+                )
+            ],
+        )
+
+        learning_step = next(
+            step for step in steps if step["tool"] == "learning_bootstrap"
+        )
+
+        self.assertEqual(
+            learning_step["args"]["source_paths"],
+            ["intake/runtime/openrouter-fusion.md"],
+        )
 
 
 if __name__ == "__main__":
