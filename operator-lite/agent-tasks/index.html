@@ -4294,6 +4294,7 @@
       const summaryText = latestReceipt?.summary || lastEvent?.message || task.current_step || "لا يوجد ملخص بعد.";
       const activation = detailActivationPlan(data);
       const commandCenter = detailExecutionCommandCenter(data);
+      const operatorStatus = detailOperatorStatus(data);
       const providerActionPlan = detailAgentProviderActionPlan(data);
       detailActivationActions = [
         ...(commandCenter?.actions || []),
@@ -4307,6 +4308,8 @@
         <div class="metric"><span>آخر خطوة</span><strong>${escapeHtml(task.current_step || "--")}</strong></div>
         <div class="metric"><span>آخر إيصال</span><strong>${escapeHtml(latestReceipt?.receipt_id || "--")}</strong></div>
         <div class="metric"><span>الأدوات / المصادر</span><strong>${tools.length || "--"} أدوات · ${evidence.source_count ?? "--"} مصادر</strong></div>
+        ${operatorStatus ? `<div class="metric"><span>تنفيذ فعلي</span><strong>${escapeHtml(operatorStatus.stateLabel)}</strong></div>` : ""}
+        ${operatorStatus ? `<div class="metric" style="grid-column: span 3;"><span>حالة المحرك</span><strong>${escapeHtml(operatorStatus.headline)}</strong></div>` : ""}
         ${commandCenter ? `<div class="metric"><span>مركز التنفيذ</span><strong>${escapeHtml(commandCenter.counts)}</strong></div>` : ""}
         ${commandCenter ? `<div class="metric" style="grid-column: span 3;"><span>أوامر جاهزة</span><strong>${escapeHtml(commandCenter.next)}</strong></div>` : ""}
         ${activation ? `<div class="metric"><span>خطة التفعيل</span><strong>${escapeHtml(activation.counts)}</strong></div>` : ""}
@@ -4343,6 +4346,27 @@
         counts: `${summary.ready_command_count ?? commands.length} أوامر · ${summary.operator_queue_count ?? queue.length} طابور`,
         next: commands.map((item) => item?.title).filter(Boolean).slice(0, 5).join(" · ") || "لا توجد أوامر جاهزة",
         actions
+      };
+    }
+
+    function detailOperatorStatus(data) {
+      const result = data?.task?.result || {};
+      const toolResults = Array.isArray(result.tool_results) ? result.tool_results : [];
+      const mesh = toolResults
+        .map((item) => item?.result)
+        .find((item) => item?.tool === "agent_mesh_execute" || item?.tool === "agent_mesh_audit");
+      const status = mesh?.operator_status;
+      if (!status) return null;
+      const state = String(status.state || "operator");
+      const labels = {
+        executed_now: "نفذ الآن",
+        executed_with_warnings: "نفذ مع تنبيهات",
+        prepared_only: "تحضير فقط"
+      };
+      return {
+        state,
+        stateLabel: `${labels[state] || state} · ${Number(status.executed_tool_count || 0)} خطوة`,
+        headline: status.headline || status.next_step || "حالة التنفيذ غير مسجلة."
       };
     }
 

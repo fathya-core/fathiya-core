@@ -445,8 +445,10 @@ export type AgentCommandCenter = {
   powershell: {
     inspect: string;
     run_execute_mesh: string;
+    run_agent_os?: string;
     run_trading: string;
     run_bug_bounty_draft: string;
+    run_production_site_audit?: string;
   };
 };
 

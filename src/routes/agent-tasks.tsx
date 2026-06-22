@@ -5623,9 +5623,19 @@ function CommandCenterLauncherPanel({
           );
         })}
       </div>
-      <p dir="ltr" className="mt-2 truncate font-mono text-[9px] text-muted-foreground">
-        {commandCenter.powershell.run_execute_mesh}
-      </p>
+      <div className="mt-2 grid gap-1">
+        {[commandCenter.powershell.run_agent_os, commandCenter.powershell.run_execute_mesh]
+          .filter((command): command is string => Boolean(command))
+          .map((command) => (
+            <p
+              key={command}
+              dir="ltr"
+              className="truncate font-mono text-[9px] text-muted-foreground"
+            >
+              {command}
+            </p>
+          ))}
+      </div>
     </section>
   );
 }
@@ -5655,7 +5665,13 @@ function AgentMeshRuntimePanel({
   const probes = asRecord(value.integration_probes) ?? {};
   const activationPlan = asRecord(value.activation_plan);
   const executionCenter = asRecord(value.execution_command_center);
+  const operatorStatus = asRecord(value.operator_status);
   const executionCenterSummary = asRecord(executionCenter?.summary);
+  const operatorHeadline =
+    typeof operatorStatus?.headline === "string" ? operatorStatus.headline : "";
+  const operatorState = typeof operatorStatus?.state === "string" ? operatorStatus.state : "";
+  const operatorNextStep =
+    typeof operatorStatus?.next_step === "string" ? operatorStatus.next_step : "";
   const readyCommands = Array.isArray(executionCenter?.ready_commands)
     ? executionCenter.ready_commands.flatMap((item) => {
         const command = asRecord(item);
@@ -5759,6 +5775,24 @@ function AgentMeshRuntimePanel({
           {String(value.action ?? "agent_mesh_execute")}
         </Badge>
       </div>
+      {operatorHeadline && (
+        <div className="mb-3 rounded-md border border-emerald-500/20 bg-background/40 p-2">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold">حالة التنفيذ الفعلية</span>
+            <Badge variant="outline" className="font-mono text-[9px] font-normal">
+              {operatorState || "operator"}
+            </Badge>
+          </div>
+          <p className="break-words text-[10px] leading-5 text-muted-foreground">
+            {operatorHeadline}
+          </p>
+          {operatorNextStep && (
+            <p className="mt-1 break-words text-[10px] leading-5 text-muted-foreground">
+              {operatorNextStep}
+            </p>
+          )}
+        </div>
+      )}
       <div className="grid gap-2 text-[10px] sm:grid-cols-4">
         <InfoField label="خطوات منفذة" value={String(summary.safe_execution_count ?? "--")} />
         <InfoField label="فحوصات تكامل" value={String(summary.integration_probe_count ?? "--")} />

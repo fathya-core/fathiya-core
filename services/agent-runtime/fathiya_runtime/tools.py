@@ -1746,6 +1746,14 @@ class ToolExecutor:
             next_actions=next_actions,
             skipped_high_risk=skipped_high_risk,
         )
+        operator_status = _agent_mesh_operator_status(
+            safe_executions=safe_executions,
+            failed_steps=failed_steps,
+            skipped_high_risk=skipped_high_risk,
+            integration_probes=integration_probes,
+            zapier_inventory_available=zapier_inventory_available,
+            zapier_direct_live_available=zapier_direct_live_available,
+        )
         execution_command_center = _agent_mesh_execution_command_center(
             prompt=prompt,
             safe_executions=safe_executions,
@@ -1834,6 +1842,7 @@ class ToolExecutor:
             "integration_probes": integration_probes,
             "next_actions": next_actions,
             "activation_plan": activation_plan,
+            "operator_status": operator_status,
             "execution_command_center": execution_command_center,
             "operator_prompt": prompt[:1000],
         }
@@ -7015,6 +7024,90 @@ def _agent_mesh_execution_command_center(
         "ready_commands": ready_commands,
         "operator_queue": operator_queue,
         "routable_tools": routable_tools,
+    }
+
+
+def _agent_mesh_operator_status(
+    *,
+    safe_executions: list[dict[str, Any]],
+    failed_steps: list[dict[str, Any]],
+    skipped_high_risk: list[dict[str, Any]],
+    integration_probes: dict[str, dict[str, Any]],
+    zapier_inventory_available: bool,
+    zapier_direct_live_available: bool,
+) -> dict[str, Any]:
+    ready_integrations = sorted(
+        integration_id
+        for integration_id, probe in integration_probes.items()
+        if isinstance(probe, dict) and bool(probe.get("ok"))
+    )
+    activation_required = sorted(
+        integration_id
+        for integration_id, probe in integration_probes.items()
+        if isinstance(probe, dict)
+        and not bool(probe.get("ok"))
+        and str(probe.get("status") or "") in {"partial", "needs_setup", "needs_operator"}
+    )
+    executed_tool_names = [
+        str(step.get("tool") or "")
+        for step in safe_executions
+        if isinstance(step, dict) and step.get("tool")
+    ]
+    executed_count = len(executed_tool_names)
+    state = (
+        "executed_with_warnings"
+        if executed_count and failed_steps
+        else "executed_now"
+        if executed_count
+        else "prepared_only"
+    )
+    paper_trading_running = any(
+        step.get("tool") in {"trading_status", "trading_start"}
+        and isinstance(step.get("result"), dict)
+        and bool(step["result"].get("running"))
+        for step in safe_executions
+    )
+    model_route_ready = {
+        "huggingface_local": "huggingface_local" in ready_integrations,
+        "openrouter": "openrouter" in ready_integrations,
+    }
+    local_tool_route_ready = {
+        "n8n_local": "n8n_local" in ready_integrations,
+        "kali_wsl": "kali_wsl" in ready_integrations,
+        "github_codespaces": "github_codespaces" in ready_integrations,
+    }
+    headline = (
+        f"نفذت فتحية {executed_count} خطوة محلية الآن."
+        if executed_count
+        else "فتحية جهزت خطة التنفيذ لكنها لم تنفذ خطوة محلية بعد."
+    )
+    if activation_required:
+        headline += f" بقي {len(activation_required)} بوابات ترقية لا توقف التنفيذ المحلي."
+    return {
+        "mode": "fathiya_operator_status_v1",
+        "state": state,
+        "can_execute_now": bool(executed_count),
+        "headline": headline,
+        "executed_tool_count": executed_count,
+        "executed_tools": executed_tool_names[:16],
+        "failed_step_count": len(failed_steps),
+        "ready_integration_count": len(ready_integrations),
+        "activation_required_count": len(activation_required),
+        "ready_integrations": ready_integrations,
+        "activation_required_integrations": activation_required,
+        "paper_trading_running": paper_trading_running,
+        "model_route_ready": model_route_ready,
+        "local_tool_route_ready": local_tool_route_ready,
+        "zapier_inventory_available": zapier_inventory_available,
+        "zapier_live_execution_available": zapier_direct_live_available,
+        "high_impact_followup_count": len(skipped_high_risk),
+        "local_execution_not_blocked_by_upgrades": True,
+        "next_step": (
+            "اكتب الهدف التالي في الطلب المباشر؛ سيستخدم المحرك المعرفة والنماذج والأدوات الجاهزة."
+            if executed_count
+            else "شغل agent_mesh_execute أو أصلح اتصال العامل المحلي ثم أعد الطلب."
+        ),
+        "secret_safe": True,
     }
 
 

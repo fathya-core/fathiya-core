@@ -3087,6 +3087,13 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         routed_names = {item["name"] for item in command_center["routable_tools"]}
         self.assertIn("agent_provider_action_prepare", routed_names)
         self.assertIn("trading_strategy_refresh", routed_names)
+        operator_status = result["operator_status"]
+        self.assertEqual(operator_status["mode"], "fathiya_operator_status_v1")
+        self.assertEqual(operator_status["state"], "executed_now")
+        self.assertTrue(operator_status["can_execute_now"])
+        self.assertTrue(operator_status["local_execution_not_blocked_by_upgrades"])
+        self.assertIn("openrouter", operator_status["ready_integrations"])
+        self.assertIn("zapier_mcp", operator_status["activation_required_integrations"])
 
     def test_codespaces_missing_scope_is_clear_in_deterministic_synthesis(self) -> None:
         summary = _deterministic_synthesis(
@@ -5050,6 +5057,9 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertIn("openrouter", result["integration_probes"])
         self.assertIn("zapier_mcp", result["integration_probes"])
         self.assertTrue(result["summary"]["paper_trading_advisor_refreshed"])
+        self.assertEqual(result["operator_status"]["state"], "executed_now")
+        self.assertGreaterEqual(result["operator_status"]["executed_tool_count"], 5)
+        self.assertTrue(result["operator_status"]["can_execute_now"])
         zapier_catalog.assert_any_call("", force=False)
         self.assertEqual(zapier_catalog.call_count, 2)
         self.assertIn(
