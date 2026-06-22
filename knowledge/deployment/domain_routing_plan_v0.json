@@ -2,7 +2,7 @@
   "schema_version": "domain_routing_plan_v0",
   "description": "FATHIYA CORE domain routing and current deployment state. No secrets.",
   "last_updated": "2026-06-22",
-  "status": "netlify_current_domain_stale",
+  "status": "github_pages_fallback_verified_domain_stale",
   "adr": "ADR-004",
   "verified_public_surface": {
     "checked_at": "2026-06-22",
@@ -52,15 +52,15 @@
       "artifact_root": "dist/client",
       "custom_domain_file": "pending_dns_cutover",
       "custom_domain": "fathya-core.com",
-      "pages_status": "enabled_with_workflow_build_type_on_2026-06-22",
-      "default_url": "https://fathya-core.github.io/fathiya-core/",
-      "default_url_verified_at": "2026-06-22T08:29:00Z",
+      "pages_status": "enabled_with_legacy_gh_pages_branch_on_2026-06-22",
+      "default_url": "https://fathya-core.github.io/fathiya-core/agent-tasks/",
+      "default_url_verified_at": "2026-06-22T15:24:00Z",
       "default_url_current_release_marker": true,
       "default_url_stale_stop_text_detected": false,
       "custom_domain_status": "not_attached_until_dns_cutover_to_avoid_redirecting_pages_to_stale_netlify",
       "status": "default_pages_visible_pending_dns_cutover"
     },
-    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but Netlify remote builds are blocked by account credit usage and fathya-core.com is reserved by another Netlify/Bolt site. The GitHub Pages fallback is enabled on the default github.io URL; attach fathya-core.com only after DNS cutover so Pages does not redirect back to the stale Netlify/Bolt site."
+    "note": "The current release is verified on the GitHub Pages fallback URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is stored for GitHub Actions, but Netlify remote builds are blocked by account credit usage and fathya-core.com is reserved by another Netlify/Bolt site. Attach fathya-core.com to the verified Pages or Netlify target only after DNS cutover so the domain stops serving the stale Netlify/Bolt copy."
   },
 
   "domains": [
