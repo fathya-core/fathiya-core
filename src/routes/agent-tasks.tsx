@@ -3320,6 +3320,11 @@ function AgentTasksPage() {
                             <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
                               {zapierDiagnostics.headline}
                             </p>
+                            {zapierDiagnostics.hosted_execution_issue && (
+                              <p className="mt-2 rounded-md border border-amber-500/20 bg-background/40 p-2 text-[10px] leading-5 text-amber-100">
+                                المستضاف: {zapierDiagnostics.hosted_execution_issue}
+                              </p>
+                            )}
                             <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] md:grid-cols-4">
                               <InfoField
                                 label="التطبيقات"
@@ -3340,6 +3345,16 @@ function AgentTasksPage() {
                               <InfoField
                                 label="Callback"
                                 value="127.0.0.1"
+                              />
+                              <InfoField
+                                label="Hosted"
+                                value={
+                                  zapierDiagnostics.hosted_execution_state === "schema_blocked"
+                                    ? "schema blocked"
+                                    : zapierDiagnostics.hosted_inventory_available
+                                      ? "inventory"
+                                      : "none"
+                                }
                               />
                             </div>
                             {zapierDiagnostics.last_refresh_error && (

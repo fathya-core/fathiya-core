@@ -185,6 +185,9 @@ export type AgentZapierDiagnostics = {
   last_refresh_at?: number | null;
   endpoint?: string | null;
   inventory_available: boolean;
+  hosted_inventory_available?: boolean;
+  hosted_execution_state?: "schema_blocked" | "available" | "not_available" | string;
+  hosted_execution_issue?: string | null;
   app_count: number;
   action_count: number;
   agent_provider_count: number;

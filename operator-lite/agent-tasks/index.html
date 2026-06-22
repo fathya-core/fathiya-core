@@ -2934,6 +2934,7 @@
           <p class="muted" style="margin:6px 0 0;">
             ${Number(zapierDiagnostics.app_count || 0)} تطبيق · ${Number(zapierDiagnostics.action_count || 0)} إجراء · ${Number(zapierDiagnostics.agent_provider_count || 0)} وكلاء تطبيق
           </p>
+          ${zapierDiagnostics.hosted_execution_issue ? `<p class="muted" style="margin:6px 0 0;">المستضاف: ${escapeHtml(zapierDiagnostics.hosted_execution_issue)}</p>` : ""}
           ${zapierDiagnostics.last_refresh_error ? `<p class="muted" style="margin:6px 0 0;">آخر تجديد فشل: ${escapeHtml(zapierDiagnostics.last_refresh_error)}${zapierDiagnostics.last_refresh_status_code ? ` · HTTP ${escapeHtml(String(zapierDiagnostics.last_refresh_status_code))}` : ""}</p>` : ""}
           ${providers.length ? `<p class="muted" style="margin:6px 0 0;">يفتح الربط: ${escapeHtml(providers.join(" · "))}</p>` : ""}
         </div>

@@ -2126,6 +2126,29 @@ def _zapier_diagnostics_payload(
         inventory if isinstance(inventory, dict) else {},
         direct_live_override=live_candidate,
     )
+    hosted_sources = (
+        inventory.get("additional_zapier_mcp_sources")
+        if isinstance(inventory, dict)
+        else []
+    )
+    if not isinstance(hosted_sources, list):
+        hosted_sources = []
+    hosted_inventory_available = any(
+        isinstance(source, dict)
+        and source.get("name") == "codex_hosted_zapier_mcp"
+        and isinstance(source.get("apps"), list)
+        and len(source.get("apps", [])) > 0
+        for source in hosted_sources
+    )
+    hosted_execution_state = "not_available"
+    hosted_execution_issue = ""
+    if hosted_inventory_available:
+        hosted_execution_state = "schema_blocked"
+        hosted_execution_issue = (
+            "Zapier hosted MCP exposes inventory, but direct execution currently "
+            "fails before dispatch because the hosted execute tool requires a hidden "
+            "selected_api argument. Use local Zapier OAuth for live execution."
+        )
     if live_candidate:
         activation_state = "live"
         headline = "Zapier MCP متصل حيًا ويمكن تشغيل إجراءات القراءة مباشرة."
@@ -2201,6 +2224,9 @@ def _zapier_diagnostics_payload(
         "last_refresh_at": status.get("last_refresh_at"),
         "endpoint": status.get("endpoint"),
         "inventory_available": bool(inventory.get("available")) if isinstance(inventory, dict) else False,
+        "hosted_inventory_available": hosted_inventory_available,
+        "hosted_execution_state": hosted_execution_state,
+        "hosted_execution_issue": hosted_execution_issue or None,
         "app_count": int(inventory.get("zapier_app_count") or 0) if isinstance(inventory, dict) else 0,
         "action_count": int(inventory.get("zapier_action_count") or 0) if isinstance(inventory, dict) else 0,
         "agent_provider_count": len(providers),

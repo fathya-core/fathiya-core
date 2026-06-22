@@ -880,6 +880,12 @@ class LocalAgentApiTests(unittest.TestCase):
             zapier_diagnostics["callback_url"],
         )
         self.assertGreaterEqual(zapier_diagnostics["app_count"], 20)
+        self.assertIn(
+            zapier_diagnostics["hosted_execution_state"],
+            {"schema_blocked", "not_available", "available"},
+        )
+        if zapier_diagnostics["hosted_execution_state"] == "schema_blocked":
+            self.assertIn("selected_api", zapier_diagnostics["hosted_execution_issue"])
         provider_names = {
             provider["app"] for provider in zapier_diagnostics["agent_providers"]
         }
