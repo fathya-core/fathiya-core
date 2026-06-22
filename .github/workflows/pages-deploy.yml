@@ -43,7 +43,6 @@ jobs:
         run: |
           test -f dist/client/agent-tasks/index.html
           cp dist/client/agent-tasks/index.html dist/client/index.html
-          printf '%s\n' 'fathya-core.com' > dist/client/CNAME
           touch dist/client/.nojekyll
 
       - name: Configure Pages

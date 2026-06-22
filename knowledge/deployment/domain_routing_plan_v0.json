@@ -50,14 +50,14 @@
     "github_pages_fallback": {
       "workflow": ".github/workflows/pages-deploy.yml",
       "artifact_root": "dist/client",
-      "custom_domain_file": "public/CNAME",
+      "custom_domain_file": "pending_dns_cutover",
       "custom_domain": "fathya-core.com",
       "pages_status": "enabled_with_workflow_build_type_on_2026-06-22",
       "default_url": "https://fathya-core.github.io/fathiya-core/",
-      "custom_domain_status": "registered_without_https_until_dns_cutover",
-      "status": "prepared_pending_dns_cutover"
+      "custom_domain_status": "not_attached_until_dns_cutover_to_avoid_redirecting_pages_to_stale_netlify",
+      "status": "default_pages_visible_pending_dns_cutover"
     },
-    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but Netlify remote builds are blocked by account credit usage and fathya-core.com is reserved by another Netlify/Bolt site. Remove the domain from that site or transfer ownership, or cut DNS over to the prepared GitHub Pages fallback."
+    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but Netlify remote builds are blocked by account credit usage and fathya-core.com is reserved by another Netlify/Bolt site. The GitHub Pages fallback is enabled on the default github.io URL; attach fathya-core.com only after DNS cutover so Pages does not redirect back to the stale Netlify/Bolt site."
   },
 
   "domains": [
