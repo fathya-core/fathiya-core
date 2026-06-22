@@ -880,6 +880,40 @@
       line-height: 1.5;
       overflow-wrap: anywhere;
     }
+    .agent-os-split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 760px) { .agent-os-split { grid-template-columns: 1fr; } }
+    .agent-os-split-box {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 8px;
+      background: rgba(10, 10, 10, 0.72);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      min-height: 124px;
+    }
+    .agent-os-split-box.ready { border-color: rgba(114, 214, 168, 0.34); background: rgba(7, 18, 14, 0.56); }
+    .agent-os-split-box.upgrade { border-color: rgba(228, 197, 127, 0.34); background: rgba(28, 23, 12, 0.54); }
+    .agent-os-split-box strong {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .agent-os-split-box p {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .agent-os-split-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
     .agent-os-strip {
       display: flex;
       flex-wrap: wrap;
@@ -1432,6 +1466,28 @@
           <div class="agent-os-runway-item">
             <span>إعداد فقط</span>
             <strong id="agent-os-setup-route">--</strong>
+          </div>
+        </div>
+        <div class="agent-os-split" aria-label="جاهزية التنفيذ مقابل الترقيات">
+          <div class="agent-os-split-box ready">
+            <strong>
+              <span>ينفذ الآن محليًا</span>
+              <span class="badge ok" id="agent-os-ready-count">--</span>
+            </strong>
+            <div class="agent-os-split-list" id="agent-os-ready-now">
+              <span class="badge">يفحص</span>
+            </div>
+            <p>هذا المسار لا ينتظر Zapier أو Supabase: المعرفة، Hugging Face، OpenRouter، n8n، Kali، Codespaces، والتداول الورقي تعمل عندما تظهر جاهزة.</p>
+          </div>
+          <div class="agent-os-split-box upgrade">
+            <strong>
+              <span>ترقيات خارجية لا توقف الداخلي</span>
+              <span class="badge warn" id="agent-os-upgrade-count">--</span>
+            </strong>
+            <div class="agent-os-split-list" id="agent-os-upgrades">
+              <span class="badge warn">يفحص</span>
+            </div>
+            <p>Manus وCursor وGmail وباقي Zapier تظهر هنا كمخزون أو OAuth مطلوب، لكنها لا تمنع تشغيل الوكلاء المحليين.</p>
           </div>
         </div>
         <div class="agent-os-actions" id="agent-os-actions">
@@ -3431,6 +3487,22 @@
           ? "لا يوجد قفل يمنع التشغيل المحلي"
           : "--";
 
+      const lanes = Array.isArray(commandCenter?.lanes)
+        ? commandCenter.lanes
+        : Array.isArray(mesh?.lanes)
+          ? mesh.lanes
+          : [];
+      const readyLanes = lanes
+        .filter((lane) => lane.status === "ready")
+        .map((lane) => lane.label || lane.id)
+        .filter(Boolean)
+        .slice(0, 6);
+      const upgradeQueue = queue
+        .filter((item) => item && (item.action_tier === "upgrade" || item.blocks_local_execution === false))
+        .map((item) => item.name || item.title || item.id)
+        .filter(Boolean)
+        .slice(0, 5);
+
       const agents = Array.isArray(commandCenter?.agent_providers)
         ? commandCenter.agent_providers
         : Array.isArray(mesh?.agent_providers)
@@ -3451,6 +3523,17 @@
       document.getElementById("agent-os-agents").innerHTML = chips.length
         ? chips.map((item) => `<span class="badge sky">${escapeHtml(item)}</span>`).join("")
         : '<span class="badge warn">بانتظار جرد الوكلاء</span>';
+      document.getElementById("agent-os-ready-count").textContent = `${readyLanes.length || readyIntegrations} جاهزة`;
+      document.getElementById("agent-os-ready-now").innerHTML = (readyLanes.length ? readyLanes : ["المحرك", "المعرفة", "التداول الورقي"])
+        .map((item) => `<span class="badge ok">${escapeHtml(item)}</span>`)
+        .join("");
+      const upgradeLabels = upgradeQueue.length
+        ? upgradeQueue
+        : agents.filter((item) => item.inventory_only).slice(0, 5).map((item) => item.app || "Zapier Agent");
+      document.getElementById("agent-os-upgrade-count").textContent = `${upgradeLabels.length || setupOnly.length} ترقية`;
+      document.getElementById("agent-os-upgrades").innerHTML = upgradeLabels.length
+        ? upgradeLabels.map((item) => `<span class="badge warn">${escapeHtml(item)}</span>`).join("")
+        : '<span class="badge ok">لا توجد ترقية مانعة</span>';
     }
 
     function renderAgentExplorer(commandCenter = null, mesh = null) {
