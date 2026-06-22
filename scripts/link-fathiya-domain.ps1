@@ -105,11 +105,16 @@ function Test-AgentOsPage {
 
   try {
     $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 15
+    $hasDeployMarker = $response.Content.Contains("FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS")
+    $hasOldStopText = $response.Content.Contains("يتوقف عند")
     [pscustomobject]@{
       url = $Url
       status_code = [int]$response.StatusCode
       has_agent_os = $response.Content.Contains("agent-os")
       has_workspace_home = $response.Content.Contains("workspace-home")
+      has_deploy_marker = $hasDeployMarker
+      has_old_stop_text = $hasOldStopText
+      is_current_operator = $hasDeployMarker -and -not $hasOldStopText
       etag = ($response.Headers["ETag"] -join ",")
       age = ($response.Headers["Age"] -join ",")
     }
@@ -119,6 +124,9 @@ function Test-AgentOsPage {
       status_code = $null
       has_agent_os = $false
       has_workspace_home = $false
+      has_deploy_marker = $false
+      has_old_stop_text = $false
+      is_current_operator = $false
       error = $_.Exception.Message
     }
   }
@@ -167,8 +175,11 @@ if (-not $Apply) {
 if ($siteAfter.custom_domain -ne $Domain) {
   $nextActions += "Netlify custom_domain is not $Domain yet."
 }
-if (-not $domainPage.has_agent_os) {
-  $nextActions += "The public domain is still not serving the current FATHIYA agent OS."
+if (-not $netlifyPage.is_current_operator) {
+  $nextActions += "The Netlify deploy check did not find the current FATHIYA marker; rebuild and redeploy before changing DNS."
+}
+if (-not $domainPage.is_current_operator) {
+  $nextActions += "$Domain is still serving a stale operator build; attach this custom domain to $($siteAfter.name).netlify.app or update DNS/domain routing."
 }
 $nextActions += "In DNS, keep the apex on Netlify-compatible A records and point www to $($siteAfter.name).netlify.app instead of Bolt."
 
@@ -210,6 +221,8 @@ Write-Host "Netlify custom_domain: $($result.site.custom_domain)"
 Write-Host "Desired domain: $Domain"
 Write-Host "Netlify page has agent OS: $($result.page_checks.netlify.has_agent_os)"
 Write-Host "Public domain has agent OS: $($result.page_checks.domain.has_agent_os)"
+Write-Host "Netlify page current marker: $($result.page_checks.netlify.has_deploy_marker)"
+Write-Host "Public domain current marker: $($result.page_checks.domain.has_deploy_marker)"
 Write-Host ""
 Write-Host "Next actions:"
 foreach ($item in $result.next_actions) {
