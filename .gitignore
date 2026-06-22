@@ -40,3 +40,4 @@ services/agent-runtime/memory/
 services/agent-runtime/*.egg-info/
 services/agent-runtime/tools/security_core/fathiya_core/memory/*.db
 knowledge/intake/runtime/
+knowledge/learning/20*T*-fathiya-knowledge-execution-mission/
