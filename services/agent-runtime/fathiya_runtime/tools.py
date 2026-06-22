@@ -900,6 +900,12 @@ class ToolExecutor:
                 "name": "Claude Code",
                 "execution_mode": "local_cli",
                 "requires_approval": True,
+                "required_for_core": False,
+                "optional": True,
+                "optional_reason": (
+                    "Useful as an extra coding agent, but FATHIYA's local "
+                    "execution mesh does not depend on it."
+                ),
             }
         )
         github = self._probe_cli("gh", ("--version",), auth_args=("auth", "status"))
@@ -920,6 +926,12 @@ class ToolExecutor:
             "status": str(codespaces_status.get("status") or "unavailable"),
             "execution_mode": "github_codespaces_remote_dev",
             "requires_approval": True,
+            "required_for_core": False,
+            "optional": True,
+            "optional_reason": (
+                "Remote development capacity is an upgrade path; local agents "
+                "continue running without a Codespace."
+            ),
             "codespace_count": int(codespaces_status.get("codespace_count") or 0),
             "active_codespace_count": int(
                 codespaces_status.get("active_codespace_count") or 0
@@ -973,6 +985,12 @@ class ToolExecutor:
             "status": "active" if zapier_status.get("connected") else "partial",
             "execution_mode": "oauth_mcp",
             "requires_approval": True,
+            "required_for_core": False,
+            "optional": True,
+            "optional_reason": (
+                "Zapier live OAuth unlocks connected apps, while inventory and "
+                "local tools remain usable before OAuth is refreshed."
+            ),
         }
         hugging_face_ready = (
             self.config.enable_hf_retrieval

@@ -1653,6 +1653,17 @@ function AgentTasksPage() {
   const workerOnline = Boolean(runtimeHealth?.worker_online);
   const intakeRunning = Boolean(runtimeHealth?.knowledge_intake.running ?? intake?.running);
   const meshActivation = meshSummary?.activation_overview;
+  const localExecutionReady = Boolean(
+    workerOnline &&
+      (commandCenter?.ready_to_execute ||
+        meshSummary?.ready_to_execute ||
+        meshActivation?.executable_now),
+  );
+  const readyLaneLabel = meshActivation
+    ? `${meshActivation.ready_lane_count}/${meshActivation.lane_count} مسارات`
+    : `${engineReadyCount}/${integrationSummary?.total ?? integrations.length} تكاملات`;
+  const upgradeActionCount = meshActivation?.upgrade_action_count ?? 0;
+  const blockingActionCount = meshActivation?.blocking_action_count ?? 0;
   const planningRoute = runtimeHealth?.agent_loop.local_planning_enabled
     ? "Hugging Face المحلي ثم OpenRouter"
     : "OpenRouter→حتمي";
@@ -1960,7 +1971,8 @@ function AgentTasksPage() {
                 <p className="break-all text-[11px] text-muted-foreground">
                   {localMode ? `${localAgentRuntimeUrl} · ` : ""}
                   {activeCount} نشطة من {tasks.length} مهمة
-                  {localMode && ` · ${engineReadyCount}/${integrationSummary?.total ?? 0} تكاملات جاهزة`}
+                  {localMode &&
+                    ` · ${localExecutionReady ? "المحرك المحلي جاهز" : "المحرك ينتظر فحص"} · ${readyLaneLabel}`}
                 </p>
               </div>
             </div>
@@ -2021,9 +2033,10 @@ function AgentTasksPage() {
           <section className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <InfoField label="المهام النشطة" value={String(activeCount)} />
             <InfoField
-              label="التكاملات الجاهزة"
-              value={`${engineReadyCount}/${integrationSummary?.total ?? integrations.length}`}
+              label="المحرك المحلي"
+              value={localExecutionReady ? "جاهز للتنفيذ" : "ينتظر فحص"}
             />
+            <InfoField label="المسارات" value={readyLaneLabel} />
             <InfoField
               label="التداول"
               value={trading?.running ? "ينبض الآن" : trading ? "متوقف" : "غير محمل"}
@@ -2032,11 +2045,38 @@ function AgentTasksPage() {
               label="صيد الثغرات"
               value={startingBugBountyHunt ? "ينشئ مهمة" : "جاهز للمسودة"}
             />
-            <InfoField
-              label="Fusion"
-              value={runtimeHealth?.agent_loop.openrouter_research_model || "openrouter/fusion"}
-            />
           </section>
+
+          {localMode && (
+            <section className="mb-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.45fr)]">
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/[0.035] p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold">الجوهر التنفيذي</p>
+                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                      Hugging Face المحلي، OpenRouter، n8n، Kali، GitHub، ووكيل التداول الورقي
+                      يعملون كمسار محلي. الحسابات الخارجية تزيد القوة ولا توقف التشغيل.
+                    </p>
+                  </div>
+                  <Badge
+                    className={
+                      localExecutionReady
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                    }
+                  >
+                    {localExecutionReady ? "ينفذ الآن" : "افحص المحرك"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="rounded-md border border-border/60 bg-background/35 p-3">
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <InfoField label="ترقيات" value={String(upgradeActionCount)} />
+                  <InfoField label="أقفال" value={String(blockingActionCount)} />
+                </div>
+              </div>
+            </section>
+          )}
 
           {latestLiveExecution && (
             <section className="mb-3 rounded-md border border-emerald-500/25 bg-emerald-500/[0.045] p-3">
@@ -4920,6 +4960,9 @@ function buildExecutionDecision({
   const activationOverview = meshSummary?.activation_overview;
   const blockingActions = activationOverview?.blocking_actions ?? [];
   const upgradeActions = activationOverview?.upgrade_actions ?? [];
+  const readyLaneFact = activationOverview
+    ? `${activationOverview.ready_lane_count}/${activationOverview.lane_count} مسارات تعمل`
+    : `${ready}/${total || integrations.length} تكاملات جاهزة`;
   const incomplete = activationIntegrations.filter((item) => item.status !== "ready");
   const fallbackAttention = incomplete.map((item) => `${item.name}: ${activationSummary(item)}`);
   const blockingAttention = blockingActions.map(
@@ -4931,7 +4974,9 @@ function buildExecutionDecision({
   const zapierState = zapierDiagnostics?.activation_state ?? "unknown";
   const facts = [
     workerOnline ? "Worker online" : "Worker offline",
-    `${ready}/${total || integrations.length} تكاملات جاهزة`,
+    readyLaneFact,
+    blockingActions.length ? `${blockingActions.length} قفل محلي` : "لا قفل محلي",
+    upgradeActions.length ? `${upgradeActions.length} ترقيات اختيارية` : "الترقيات مكتملة أو غير مطلوبة",
     toolCount ? `${toolCount} أداة محلية` : "الأدوات قيد الفحص",
     `Zapier ${zapierAppCount || zapierDiagnostics?.app_count || 0}/${zapierActionCount || zapierDiagnostics?.action_count || 0}`,
     trading?.running ? `${trading.symbol} paper · ثانية` : "Paper trading ينتظر",
