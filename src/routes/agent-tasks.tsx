@@ -3722,6 +3722,60 @@ function AgentTasksPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="rounded-md border border-emerald-500/25 bg-background/35 p-3">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <Badge
+                            className={
+                              trading?.running
+                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                : "border-border bg-muted/30 text-muted-foreground"
+                            }
+                          >
+                            {trading?.running ? "ينبض الآن" : "جاهز للتشغيل"}
+                          </Badge>
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            {trading?.symbol || "BTC-USD"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {formatSeconds(trading?.execution_cadence.latest_interval_seconds ?? null)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-semibold">المسار السريع للتداول</p>
+                        <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                          زر واحد يشغل أو يوقف وكيل Paper، والمستشار يتجدد عبر النماذج بدون فتح إعدادات.
+                        </p>
+                      </div>
+                      <div className="flex min-w-[220px] flex-wrap gap-2 lg:justify-end">
+                        <Button
+                          type="button"
+                          className="min-w-[150px] flex-1"
+                          onClick={() => void tradingAction(trading?.running ? "stop" : "start")}
+                          disabled={tradingActing || !trading}
+                        >
+                          {tradingActing ? (
+                            <Loader2 className="animate-spin" />
+                          ) : trading?.running ? (
+                            <Square />
+                          ) : (
+                            <Play />
+                          )}
+                          {trading?.running ? "إيقاف الوكيل" : "تشغيل الوكيل"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => void tradingAction("strategy-refresh")}
+                          disabled={tradingActing || !trading}
+                        >
+                          <BrainCircuit />
+                          <span className="sr-only">تحديث المستشار</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                   {localMode && trading ? (
                     <>
                       <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -3882,6 +3936,56 @@ function AgentTasksPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="rounded-md border border-sky-500/25 bg-background/35 p-3">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <Badge className="border-sky-500/30 bg-sky-500/10 text-sky-300">
+                            مسار سريع
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            Kali {integrationStatusShort(integrations, "kali_wsl")}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            Dedupe أولًا
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-semibold">صيد ثغرات بزر واحد</p>
+                        <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                          يختار تلقائيًا برنامجًا مصرحًا أو يستخدم الرابط المدخل، يفحص التكرار، ثم يكتب Draft داخلي بدليل.
+                        </p>
+                      </div>
+                      <div className="flex min-w-[260px] flex-wrap gap-2 lg:justify-end">
+                        <Button
+                          type="button"
+                          className="min-w-[150px] flex-1 justify-center"
+                          onClick={() => void startBugBountyHunt("hunt")}
+                          disabled={startingBugBountyHunt}
+                        >
+                          {startingBugBountyAction === "hunt" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <FileCheck2 />
+                          )}
+                          ابدأ الصيد
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-w-[120px] flex-1 justify-center"
+                          onClick={() => void startBugBountyHunt("dedupe")}
+                          disabled={startingBugBountyHunt}
+                        >
+                          {startingBugBountyAction === "dedupe" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <ListChecks />
+                          )}
+                          Dedupe
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                   <div className="grid gap-2 text-[10px] sm:grid-cols-2 xl:grid-cols-4">
                     {[
                       ["1. النطاق", "حدد البرنامج والأصول المسموحة."],
@@ -3898,6 +4002,12 @@ function AgentTasksPage() {
                       </div>
                     ))}
                   </div>
+                  <details className="group rounded-md border border-border/60 bg-background/25 p-3">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold">
+                      إعدادات الصيد المتقدمة
+                      <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="mt-3 space-y-3">
                   <div className="grid gap-3 sm:grid-cols-[130px_minmax(0,1fr)]">
                     <div className="space-y-1.5">
                       <Label htmlFor="bug-platform">المنصة</Label>
@@ -3995,6 +4105,8 @@ function AgentTasksPage() {
                       maxLength={1600}
                     />
                   </div>
+                    </div>
+                  </details>
                   <div className="grid gap-2 sm:grid-cols-3">
                     <Button
                       type="button"
