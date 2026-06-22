@@ -2053,6 +2053,11 @@ function AgentTasksPage() {
               runtimeHealth={runtimeHealth}
               startingBugBounty={startingBugBountyHunt || startingCommandCenterId === "lane_bug_bounty"}
               startingEngine={startingExecutionOs || startingCommandCenterId === "agent_os_full_execute"}
+              startingKnowledge={
+                startingKnowledgeExecution ||
+                startingCommandCenterId === "learn_and_execute" ||
+                startingCommandCenterId === "lane_knowledge"
+              }
               startingTrading={tradingActing || startingCommandCenterId === "lane_trading"}
               tasksCount={tasks.length}
               trading={trading}
@@ -2066,6 +2071,10 @@ function AgentTasksPage() {
               }}
               onRunEngine={() => {
                 void runCommandCenterCommandById("agent_os_full_execute", startExecutionOsMission);
+              }}
+              onRunKnowledge={() => {
+                setWorkspaceView("knowledge");
+                void runCommandCenterCommandById("learn_and_execute", startKnowledgeExecution);
               }}
               onRunTrading={() => {
                 setWorkspaceView("trading");
@@ -4812,6 +4821,7 @@ function AgentLiveCommandStrip({
   runtimeHealth,
   startingBugBounty,
   startingEngine,
+  startingKnowledge,
   startingTrading,
   tasksCount,
   trading,
@@ -4821,6 +4831,7 @@ function AgentLiveCommandStrip({
   onOpenTools,
   onRunBugBounty,
   onRunEngine,
+  onRunKnowledge,
   onRunTrading,
 }: {
   activeCount: number;
@@ -4832,6 +4843,7 @@ function AgentLiveCommandStrip({
   runtimeHealth: AgentRuntimeHealth | null;
   startingBugBounty: boolean;
   startingEngine: boolean;
+  startingKnowledge: boolean;
   startingTrading: boolean;
   tasksCount: number;
   trading: AgentTradingStatus | null;
@@ -4841,6 +4853,7 @@ function AgentLiveCommandStrip({
   onOpenTools: () => void;
   onRunBugBounty: () => void;
   onRunEngine: () => void;
+  onRunKnowledge: () => void;
   onRunTrading: () => void;
 }) {
   const localModel = runtimeHealth?.agent_loop.local_model || "HF local";
@@ -4849,9 +4862,22 @@ function AgentLiveCommandStrip({
     trading?.latest_receipt_id || runtimeHealth?.trading.latest_receipt_id || "لم يصدر بعد";
   const commandCount = commandCenter?.summary.ready_command_count ?? commandCenter?.commands.length ?? 0;
   const toolCount = commandCenter?.summary.tool_count ?? 0;
+  const knowledgeFiles = runtimeHealth?.knowledge_intake.tracked_files ?? 0;
+  const readyLanes = (commandCenter?.lanes ?? [])
+    .filter((lane) => lane.status === "ready")
+    .map((lane) => lane.label)
+    .slice(0, 5);
+  const upgradeItems = (commandCenter?.operator_queue ?? [])
+    .filter((item) => item.action_tier === "upgrade" || !item.blocks_local_execution)
+    .slice(0, 4);
+  const providerItems = (commandCenter?.agent_providers ?? [])
+    .filter((provider) => provider.inventory_only)
+    .slice(0, 4);
   const powershellCommands = [
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\import-fathiya-knowledge.ps1 -Scan",
     "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunEngine",
     "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunTrading",
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunKnowledge",
     "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunBugBounty",
   ];
 
@@ -4890,7 +4916,7 @@ function AgentLiveCommandStrip({
             </Button>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
             <Button type="button" onClick={onRunEngine} disabled={startingEngine}>
               {startingEngine ? <Loader2 className="animate-spin" /> : <Play />}
               تشغيل الوكلاء
@@ -4903,6 +4929,15 @@ function AgentLiveCommandStrip({
             >
               {startingTrading ? <Loader2 className="animate-spin" /> : <TrendingUp />}
               وكيل التداول
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onRunKnowledge}
+              disabled={startingKnowledge}
+            >
+              {startingKnowledge ? <Loader2 className="animate-spin" /> : <FolderSearch />}
+              استيعاب وتشغيل
             </Button>
             <Button
               type="button"
@@ -4923,7 +4958,7 @@ function AgentLiveCommandStrip({
             <InfoField label="النماذج" value={`${localModel} · ${openRouterModel}`} />
             <InfoField
               label="المعرفة"
-              value={intakeRunning ? "تراقب الملفات الآن" : "متوقفة"}
+              value={intakeRunning ? `${knowledgeFiles} ملفات · تراقب` : "متوقفة"}
             />
             <InfoField
               label="التداول"
@@ -4934,6 +4969,68 @@ function AgentLiveCommandStrip({
               }
             />
             <InfoField label="آخر إيصال" value={latestReceipt} />
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-md border border-emerald-500/20 bg-emerald-500/[0.035] p-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold">ينفذ الآن محليًا</p>
+                <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                  {readyLanes.length || commandCenter?.summary.integration_ready || 0} مسارات
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(readyLanes.length ? readyLanes : ["المحرك", "المعرفة", "التداول الورقي"]).map(
+                  (lane) => (
+                    <Badge key={lane} variant="outline" className="text-[10px]">
+                      {lane}
+                    </Badge>
+                  ),
+                )}
+              </div>
+              <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+                هذا الجزء لا ينتظر Zapier أو Supabase: يستخدم الملفات المحلية، Hugging Face،
+                OpenRouter، n8n، Kali، Codespaces، والتداول الورقي عندما تكون جاهزة.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-amber-500/20 bg-amber-500/[0.035] p-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold">ترقيات خارجية لا توقف الداخلي</p>
+                <Badge variant="outline" className="text-[10px]">
+                  {upgradeActionCount || upgradeItems.length || providerItems.length} ترقية
+                </Badge>
+              </div>
+              <div className="space-y-1.5">
+                {upgradeItems.length ? (
+                  upgradeItems.map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-2 text-[10px]">
+                      <span className="min-w-0 break-words text-muted-foreground">
+                        {item.name}
+                      </span>
+                      <Badge variant="outline" className="shrink-0 text-[9px]">
+                        {item.action_label}
+                      </Badge>
+                    </div>
+                  ))
+                ) : providerItems.length ? (
+                  providerItems.map((provider) => (
+                    <div key={provider.app} className="flex items-start justify-between gap-2 text-[10px]">
+                      <span className="min-w-0 break-words text-muted-foreground">
+                        {provider.app}
+                      </span>
+                      <Badge variant="outline" className="shrink-0 text-[9px]">
+                        {provider.total_actions} إجراء
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">
+                    لا توجد ترقيات ظاهرة الآن؛ كل شيء قابل للتشغيل من المسارات المحلية.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
