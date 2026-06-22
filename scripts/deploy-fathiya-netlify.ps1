@@ -12,7 +12,7 @@ try {
   }
 
   npm run build
-  npx netlify-cli deploy --prod --dir dist
+  npx netlify-cli deploy --prod --dir dist/client
 } finally {
   Pop-Location
 }

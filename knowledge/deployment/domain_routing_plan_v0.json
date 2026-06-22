@@ -41,7 +41,7 @@
     "deployment_gate": {
       "github_secret_netlify_site_id": "present",
       "github_secret_netlify_auth_token": "present_on_2026-06-22",
-      "netlify_remote_build_status": "blocked_by_account_credit_usage_exceeded_on_2026-06-22",
+      "netlify_remote_build_status": "blocked_by_account_credit_usage_exceeded_and_cli_deploy_forbidden_on_2026-06-22",
       "domain_conflict_netlify_site_id": "c2cfc731-193e-466b-b331-fbc1b34d347a",
       "domain_conflict_visible_to_current_netlify_account": false,
       "netlify_workflow_trigger": "manual_only_until_credit_and_domain_conflict_are_resolved",
