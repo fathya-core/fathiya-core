@@ -2487,7 +2487,7 @@ function AgentTasksPage() {
             </div>
           </section>
 
-          {localMode && (workspaceView === "request" || workspaceView === "tools") && commandCenter && (
+          {localMode && workspaceView === "tools" && commandCenter && (
             <CommandCenterLauncherPanel
               commandCenter={commandCenter}
               startingCommandId={startingCommandCenterId}
