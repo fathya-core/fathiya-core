@@ -77,18 +77,21 @@ New-Item -ItemType Directory -Force $env:FATHIYA_KNOWLEDGE_WATCH_ROOT | Out-Null
 
 function Test-RuntimeImport {
   try {
-    & $RuntimePython -c "import fathiya_runtime" | Out-Null
+    & $RuntimePython -c "import dotenv, fathiya_runtime, openpyxl, pydantic, pypdf, requests" | Out-Null
     return $LASTEXITCODE -eq 0
   } catch {
     return $false
   }
 }
 
+$runtimeImportReady = Test-RuntimeImport
 if (-not $SkipInstall) {
-  $runtimeImportReady = Test-RuntimeImport
   if ($ForceInstall -or -not $runtimeImportReady) {
     Write-Host "Installing FATHIYA runtime package..."
     & $RuntimePython -m pip install -e $RuntimeRoot
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to install FATHIYA runtime package."
+    }
   } else {
     Write-Host "FATHIYA runtime package is already importable; skipping reinstall."
   }
@@ -102,10 +105,15 @@ if (-not $SkipInstall) {
       Pop-Location
     }
   }
+} elseif (-not $runtimeImportReady) {
+  throw "FATHIYA runtime dependencies are missing. Rerun without -SkipInstall once to repair the local venv."
 }
 
 Write-Host "Initializing local task store..."
 & $RuntimePython -m fathiya_runtime.cli init
+if ($LASTEXITCODE -ne 0) {
+  throw "Failed to initialize FATHIYA local task store."
+}
 
 $apiUrl = "http://127.0.0.1:$ApiPort"
 $webUrl = "http://127.0.0.1:$WebPort/agent-tasks"
@@ -114,6 +122,13 @@ $bugBountyUrl = "$webUrl/?view=bug-bounty"
 $knowledgeUrl = "$webUrl/?view=knowledge"
 $reportsUrl = "$webUrl/?view=reports"
 $n8nUrl = "http://127.0.0.1:$N8nPort"
+$previewScript = Join-Path $RepoRoot "scripts\fathiya-local-preview.mjs"
+$distServerEntry = Join-Path $RepoRoot "dist\server\index.js"
+$distClientRoot = Join-Path $RepoRoot "dist\client"
+$builtPreviewReady =
+  (Test-Path $previewScript) -and
+  (Test-Path $distServerEntry) -and
+  (Test-Path $distClientRoot)
 
 if (-not $env:FATHIYA_ENABLE_HF_RETRIEVAL) {
   $env:FATHIYA_ENABLE_HF_RETRIEVAL = "true"
@@ -311,6 +326,9 @@ try {
     if ($FullVite) {
       $webCommand = "`$env:VITE_FATHIYA_LOCAL_API_URL='$apiUrl'; npm run dev -- --host 127.0.0.1 --port $WebPort"
       $webWorkingDirectory = $RepoRoot
+    } elseif ($builtPreviewReady) {
+      $webCommand = "`$env:FATHIYA_API_URL='$apiUrl'; `$env:FATHIYA_WEB_PORT='$WebPort'; node '$previewScript'"
+      $webWorkingDirectory = $RepoRoot
     } else {
       $liteRoot = Join-Path $RepoRoot "operator-lite"
       $webCommand = "& '$RuntimePython' -m http.server $WebPort --bind 127.0.0.1"
@@ -344,6 +362,10 @@ try {
   } elseif ($FullVite) {
     $env:VITE_FATHIYA_LOCAL_API_URL = $apiUrl
     npm run dev -- --host 127.0.0.1 --port $WebPort
+  } elseif ($builtPreviewReady) {
+    $env:FATHIYA_API_URL = $apiUrl
+    $env:FATHIYA_WEB_PORT = "$WebPort"
+    node $previewScript
   } else {
     Push-Location (Join-Path $RepoRoot "operator-lite")
     try {

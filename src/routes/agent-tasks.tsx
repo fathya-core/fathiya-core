@@ -1033,6 +1033,18 @@ function AgentTasksPage() {
     }
   }
 
+  async function runCommandCenterCommandById(
+    commandId: string,
+    fallback: () => Promise<void> | void,
+  ) {
+    const command = commandCenter?.commands.find((item) => item.id === commandId);
+    if (localMode && command) {
+      await runCommandCenterCommand(command);
+      return;
+    }
+    await fallback();
+  }
+
   async function startExecutionOsMission() {
     if (!hasAccess) return;
     setStartingExecutionOs(true);
@@ -2030,52 +2042,39 @@ function AgentTasksPage() {
             }
           />
 
-          <section className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <InfoField label="المهام النشطة" value={String(activeCount)} />
-            <InfoField
-              label="المحرك المحلي"
-              value={localExecutionReady ? "جاهز للتنفيذ" : "ينتظر فحص"}
-            />
-            <InfoField label="المسارات" value={readyLaneLabel} />
-            <InfoField
-              label="التداول"
-              value={trading?.running ? "ينبض الآن" : trading ? "متوقف" : "غير محمل"}
-            />
-            <InfoField
-              label="صيد الثغرات"
-              value={startingBugBountyHunt ? "ينشئ مهمة" : "جاهز للمسودة"}
-            />
-          </section>
-
           {localMode && (
-            <section className="mb-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.45fr)]">
-              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/[0.035] p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold">الجوهر التنفيذي</p>
-                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
-                      Hugging Face المحلي، OpenRouter، n8n، Kali، GitHub، ووكيل التداول الورقي
-                      يعملون كمسار محلي. الحسابات الخارجية تزيد القوة ولا توقف التشغيل.
-                    </p>
-                  </div>
-                  <Badge
-                    className={
-                      localExecutionReady
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                    }
-                  >
-                    {localExecutionReady ? "ينفذ الآن" : "افحص المحرك"}
-                  </Badge>
-                </div>
-              </div>
-              <div className="rounded-md border border-border/60 bg-background/35 p-3">
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <InfoField label="ترقيات" value={String(upgradeActionCount)} />
-                  <InfoField label="أقفال" value={String(blockingActionCount)} />
-                </div>
-              </div>
-            </section>
+            <AgentLiveCommandStrip
+              activeCount={activeCount}
+              blockingActionCount={blockingActionCount}
+              commandCenter={commandCenter}
+              intakeRunning={intakeRunning}
+              localExecutionReady={localExecutionReady}
+              readyLaneLabel={readyLaneLabel}
+              runtimeHealth={runtimeHealth}
+              startingBugBounty={startingBugBountyHunt || startingCommandCenterId === "lane_bug_bounty"}
+              startingEngine={startingExecutionOs || startingCommandCenterId === "agent_os_full_execute"}
+              startingTrading={tradingActing || startingCommandCenterId === "lane_trading"}
+              tasksCount={tasks.length}
+              trading={trading}
+              upgradeActionCount={upgradeActionCount}
+              workerOnline={workerOnline}
+              onOpenReports={() => setWorkspaceView("reports")}
+              onOpenTools={() => setWorkspaceView("tools")}
+              onRunBugBounty={() => {
+                setWorkspaceView("bug-bounty");
+                void runCommandCenterCommandById("lane_bug_bounty", () => startBugBountyHunt("hunt"));
+              }}
+              onRunEngine={() => {
+                void runCommandCenterCommandById("agent_os_full_execute", startExecutionOsMission);
+              }}
+              onRunTrading={() => {
+                setWorkspaceView("trading");
+                if (!trading?.running) {
+                  void tradingAction("start");
+                }
+                void runCommandCenterCommandById("lane_trading", () => undefined);
+              }}
+            />
           )}
 
           {latestLiveExecution && (
@@ -4786,6 +4785,175 @@ function IntegrationStatusBadge({ status }: { status: AgentIntegrationStatus }) 
     needs_operator: "border-violet-500/30 bg-violet-500/10 text-violet-300",
   };
   return <Badge className={cn("shrink-0", tone[status])}>{labels[status]}</Badge>;
+}
+
+function AgentLiveCommandStrip({
+  activeCount,
+  blockingActionCount,
+  commandCenter,
+  intakeRunning,
+  localExecutionReady,
+  readyLaneLabel,
+  runtimeHealth,
+  startingBugBounty,
+  startingEngine,
+  startingTrading,
+  tasksCount,
+  trading,
+  upgradeActionCount,
+  workerOnline,
+  onOpenReports,
+  onOpenTools,
+  onRunBugBounty,
+  onRunEngine,
+  onRunTrading,
+}: {
+  activeCount: number;
+  blockingActionCount: number;
+  commandCenter: AgentCommandCenter | null;
+  intakeRunning: boolean;
+  localExecutionReady: boolean;
+  readyLaneLabel: string;
+  runtimeHealth: AgentRuntimeHealth | null;
+  startingBugBounty: boolean;
+  startingEngine: boolean;
+  startingTrading: boolean;
+  tasksCount: number;
+  trading: AgentTradingStatus | null;
+  upgradeActionCount: number;
+  workerOnline: boolean;
+  onOpenReports: () => void;
+  onOpenTools: () => void;
+  onRunBugBounty: () => void;
+  onRunEngine: () => void;
+  onRunTrading: () => void;
+}) {
+  const localModel = runtimeHealth?.agent_loop.local_model || "HF local";
+  const openRouterModel = runtimeHealth?.agent_loop.openrouter_model || "OpenRouter";
+  const latestReceipt =
+    trading?.latest_receipt_id || runtimeHealth?.trading.latest_receipt_id || "لم يصدر بعد";
+  const commandCount = commandCenter?.summary.ready_command_count ?? commandCenter?.commands.length ?? 0;
+  const toolCount = commandCenter?.summary.tool_count ?? 0;
+  const powershellCommands = [
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunEngine",
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunTrading",
+    "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunBugBounty",
+  ];
+
+  return (
+    <Card className="mb-4 overflow-hidden border-border/70 bg-card/80">
+      <CardContent className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Badge
+              className={
+                localExecutionReady
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+              }
+            >
+              {localExecutionReady ? "فتحية حية" : "تحتاج فحص"}
+            </Badge>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {workerOnline ? "worker online" : "worker offline"}
+            </Badge>
+            <Badge variant="outline" className="text-[10px]">
+              {readyLaneLabel}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold">غرفة قيادة فتحية</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                شغّل الوكلاء من هنا مباشرة: فهم المعرفة محليًا عبر Hugging Face، تخطيط وتقييم
+                عبر OpenRouter، وتنفيذ داخلي عبر الأدوات والجسور المتاحة.
+              </p>
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={onOpenTools}>
+              <Settings2 />
+              الأدوات
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <Button type="button" onClick={onRunEngine} disabled={startingEngine}>
+              {startingEngine ? <Loader2 className="animate-spin" /> : <Play />}
+              تشغيل الوكلاء
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onRunTrading}
+              disabled={startingTrading}
+            >
+              {startingTrading ? <Loader2 className="animate-spin" /> : <TrendingUp />}
+              وكيل التداول
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onRunBugBounty}
+              disabled={startingBugBounty}
+            >
+              {startingBugBounty ? <Loader2 className="animate-spin" /> : <ShieldAlert />}
+              صيد الثغرات
+            </Button>
+            <Button type="button" variant="outline" onClick={onOpenReports}>
+              <FileCheck2 />
+              التقارير
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <InfoField label="النماذج" value={`${localModel} · ${openRouterModel}`} />
+            <InfoField
+              label="المعرفة"
+              value={intakeRunning ? "تراقب الملفات الآن" : "متوقفة"}
+            />
+            <InfoField
+              label="التداول"
+              value={
+                trading?.running
+                  ? `${trading.symbol} · ${trading.cycle_target_seconds}s`
+                  : "Paper جاهز"
+              }
+            />
+            <InfoField label="آخر إيصال" value={latestReceipt} />
+          </div>
+        </div>
+
+        <div className="min-w-0 rounded-md border border-border/60 bg-background/35 p-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold">تشغيل من PowerShell</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                افتح المشروع وشغّل أي أمر من هذه الأوامر.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-[10px]">
+              {commandCount} أوامر جاهزة
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            {powershellCommands.map((command) => (
+              <code
+                key={command}
+                className="block break-all rounded-md border border-border/50 bg-muted/25 px-2 py-2 text-[10px]"
+              >
+                {command}
+              </code>
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <InfoField label="المهام" value={`${activeCount} نشطة / ${tasksCount}`} />
+            <InfoField label="الأدوات" value={`${toolCount} أداة`} />
+            <InfoField label="ترقيات" value={String(upgradeActionCount)} />
+            <InfoField label="أقفال" value={String(blockingActionCount)} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ExecutionDecisionPanel({
