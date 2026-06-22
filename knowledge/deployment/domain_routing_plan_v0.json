@@ -41,11 +41,23 @@
     "deployment_gate": {
       "github_secret_netlify_site_id": "present",
       "github_secret_netlify_auth_token": "present_on_2026-06-22",
+      "netlify_remote_build_status": "blocked_by_account_credit_usage_exceeded_on_2026-06-22",
       "domain_conflict_netlify_site_id": "c2cfc731-193e-466b-b331-fbc1b34d347a",
       "domain_conflict_visible_to_current_netlify_account": false,
+      "netlify_workflow_trigger": "manual_only_until_credit_and_domain_conflict_are_resolved",
       "workflow_policy": "deployment must fail loudly when Netlify deploy credentials are missing or the custom domain serves a stale operator copy"
     },
-    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but fathya-core.com is reserved by another Netlify/Bolt site. Remove the domain from that site or transfer ownership, then attach it to thriving-fenglisu-ef18b1."
+    "github_pages_fallback": {
+      "workflow": ".github/workflows/pages-deploy.yml",
+      "artifact_root": "dist/client",
+      "custom_domain_file": "public/CNAME",
+      "custom_domain": "fathya-core.com",
+      "pages_status": "enabled_with_workflow_build_type_on_2026-06-22",
+      "default_url": "https://fathya-core.github.io/fathiya-core/",
+      "custom_domain_status": "registered_without_https_until_dns_cutover",
+      "status": "prepared_pending_dns_cutover"
+    },
+    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but Netlify remote builds are blocked by account credit usage and fathya-core.com is reserved by another Netlify/Bolt site. Remove the domain from that site or transfer ownership, or cut DNS over to the prepared GitHub Pages fallback."
   },
 
   "domains": [

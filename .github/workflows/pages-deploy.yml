@@ -1,0 +1,59 @@
+name: Deploy FATHIYA Operator To GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: fathiya-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and deploy Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static operator
+        run: npm run build
+
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          test -f dist/client/agent-tasks/index.html
+          cp dist/client/agent-tasks/index.html dist/client/index.html
+          printf '%s\n' 'fathya-core.com' > dist/client/CNAME
+          touch dist/client/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/client
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
