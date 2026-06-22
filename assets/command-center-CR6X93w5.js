@@ -1,0 +1,1 @@
+import{j as o}from"./index-jARRioin.js";import{F as r}from"./FathiyaFocusRedirect-DIpacBok.js";import"./badge-Bf3AwGK1.js";import"./button-CrNmWmXe.js";import"./arrow-right-DHyCR0eY.js";function p(){return o.jsx(r,{source:"Command Center القديم"})}export{p as component};
