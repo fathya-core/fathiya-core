@@ -54,6 +54,9 @@
       "custom_domain": "fathya-core.com",
       "pages_status": "enabled_with_workflow_build_type_on_2026-06-22",
       "default_url": "https://fathya-core.github.io/fathiya-core/",
+      "default_url_verified_at": "2026-06-22T08:29:00Z",
+      "default_url_current_release_marker": true,
+      "default_url_stale_stop_text_detected": false,
       "custom_domain_status": "not_attached_until_dns_cutover_to_avoid_redirecting_pages_to_stale_netlify",
       "status": "default_pages_visible_pending_dns_cutover"
     },
