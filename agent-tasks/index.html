@@ -1380,7 +1380,7 @@
         </div>
       </div>
       <div class="deploy-actions">
-        <button id="deploy-copy-command" type="button">انسخ أمر نشر Netlify</button>
+        <button id="deploy-copy-command" type="button">انسخ أمر نشر GitHub Pages</button>
         <button id="deploy-open-public" class="secondary" type="button">افتح النسخة المنشورة العاملة</button>
         <button id="deploy-open-tools" class="secondary" type="button">افتح التفعيل والأدوات</button>
       </div>
@@ -2004,7 +2004,7 @@
     const localOperatorUrl = "http://127.0.0.1:5180/agent-tasks/";
     const verifiedOperatorUrl = "https://fathya-core.github.io/fathiya-core/agent-tasks/";
     const localStartCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-fathiya.ps1 -Detached -OpenBrowser -StartN8n";
-    const netlifyDeployCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy-fathiya-netlify.ps1 -OpenLogin";
+    const pagesDeployCommand = "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\deploy-fathiya-pages.ps1";
     const pageOrigin = location.origin === "null" ? "local-file" : location.origin;
     const activeStatuses = new Set(["queued", "running", "awaiting_approval", "stalled"]);
     const platformLabels = { auto: "تلقائي", hackerone: "HackerOne", bugcrowd: "Bugcrowd" };
@@ -2171,12 +2171,12 @@
       }
     }
 
-    async function copyNetlifyDeployCommand() {
+    async function copyPagesDeployCommand() {
       try {
-        await navigator.clipboard.writeText(netlifyDeployCommand);
-        document.getElementById("deploy-summary").textContent = "تم نسخ أمر النشر. بعد تسجيل دخول Netlify سيبني dist وينشره مباشرة على الموقع.";
+        await navigator.clipboard.writeText(pagesDeployCommand);
+        document.getElementById("deploy-summary").textContent = "تم نسخ أمر GitHub Pages. هذا المسار يبني dist، يحدّث gh-pages، ويثبت النسخة العامة العاملة.";
       } catch {
-        document.getElementById("deploy-summary").textContent = netlifyDeployCommand;
+        document.getElementById("deploy-summary").textContent = pagesDeployCommand;
       }
     }
 
@@ -4810,7 +4810,7 @@
     });
     document.getElementById("bridge-show-tools").addEventListener("click", () => setWorkspaceView("tools"));
     document.getElementById("deploy-copy-command").addEventListener("click", () => {
-      copyNetlifyDeployCommand().catch(showError);
+      copyPagesDeployCommand().catch(showError);
     });
     document.getElementById("deploy-open-public").addEventListener("click", () => {
       window.open(verifiedOperatorUrl, "_blank", "noopener,noreferrer");
