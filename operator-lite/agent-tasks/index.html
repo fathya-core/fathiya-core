@@ -190,6 +190,27 @@
     .command-panel-actions button {
       flex: 1 1 150px;
     }
+    .command-powershell {
+      border: 1px solid rgba(122, 93, 36, 0.3);
+      border-radius: 8px;
+      background: rgba(7, 7, 7, 0.58);
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+    }
+    .command-powershell code {
+      display: block;
+      direction: ltr;
+      text-align: left;
+      border: 1px solid rgba(122, 93, 36, 0.26);
+      border-radius: 7px;
+      background: rgba(20, 20, 20, 0.72);
+      color: var(--gold-100);
+      padding: 8px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
     .command-room-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1251,11 +1272,11 @@
   </header>
 
   <section class="wrap command-strip">
-    <div class="card command-panel view-hidden">
+    <div class="card command-panel">
       <div class="command-panel-main">
         <div class="row">
           <div>
-            <h2>مركز أوامر فتحية</h2>
+            <h2>غرفة قيادة فتحية</h2>
             <p>يفهم المعرفة، يختار النموذج، يستخدم الأدوات المتاحة، وينفذ ما يمكن تنفيذه الآن بدل الاكتفاء بالتحليل.</p>
           </div>
           <span class="badge" id="command-ready">--</span>
@@ -1269,6 +1290,8 @@
         </div>
         <div class="command-panel-actions">
           <button id="command-run-engine">نفّذ بالوكلاء الآن</button>
+          <button id="command-run-trading" class="secondary">وكيل التداول</button>
+          <button id="command-run-bounty" class="secondary">صيد الثغرات</button>
           <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
           <button id="command-run-github-proof" class="secondary">إثبات GitHub</button>
           <button id="command-run-manus-proof" class="secondary">إثبات Manus</button>
@@ -1282,6 +1305,12 @@
             <strong><span>غرف التشغيل</span><span class="badge warn">يفحص</span></strong>
             <p class="muted" style="font-size:11px;">جارٍ تحميل أوامر فتحية المصنفة.</p>
           </div>
+        </div>
+        <div class="command-powershell" aria-label="أوامر تشغيل فتحية من PowerShell">
+          <p class="muted" style="font-size:11px;">أوامر مباشرة من PowerShell داخل مجلد المشروع:</p>
+          <code>powershell -ExecutionPolicy Bypass -File .\scripts\fathiya.ps1 -RunEngine</code>
+          <code>powershell -ExecutionPolicy Bypass -File .\scripts\fathiya.ps1 -RunTrading</code>
+          <code>powershell -ExecutionPolicy Bypass -File .\scripts\fathiya.ps1 -RunBugBounty</code>
         </div>
       </div>
       <div class="command-summary">
@@ -4621,7 +4650,7 @@
       const bounty = document.getElementById("bounty-card");
       const reports = document.getElementById("reports-panel");
 
-      const commandVisible = selected === "tools";
+      const commandVisible = selected === "request" || selected === "tools";
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
       home?.classList.toggle("view-hidden", selected !== "tools");
@@ -4703,6 +4732,14 @@
       if (view) setWorkspaceView(view.dataset.workspaceView);
     });
     document.getElementById("command-run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
+    document.getElementById("command-run-trading").addEventListener("click", () => {
+      setWorkspaceView("trading");
+      runCommandCenterCommand("lane_trading", meshQuickTask("lane_trading", "تشغيل وكيل التداول", "شغّل وكيل التداول الورقي بنبض الثانية، حدّث مستشار الاستراتيجية، وسجل إيصالًا واضحًا.")).catch(showError);
+    });
+    document.getElementById("command-run-bounty").addEventListener("click", () => {
+      setWorkspaceView("bounty");
+      runCommandCenterCommand("lane_bug_bounty", meshQuickTask("lane_bug_bounty", "تشغيل صيد الثغرات", "شغّل مسار صيد الثغرات المصرح: dedupe أولًا، ثم مسودة تقرير بإثبات عملي واضح.")).catch(showError);
+    });
     document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
     document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
     document.getElementById("command-run-manus-proof").addEventListener("click", () => runCommandCenterCommand("verify_manus_zapier_read").catch(showError));
