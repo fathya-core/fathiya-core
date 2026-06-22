@@ -1272,7 +1272,7 @@
   </header>
 
   <section class="wrap command-strip">
-    <div class="card command-panel">
+    <div class="card command-panel view-hidden">
       <div class="command-panel-main">
         <div class="row">
           <div>
@@ -1362,7 +1362,7 @@
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
 
-    <div class="card deploy-strip" id="deploy-strip">
+    <div class="card deploy-strip view-hidden" id="deploy-strip">
       <div>
         <div class="row" style="justify-content:flex-start;">
           <span class="badge sky" id="deploy-origin-badge">يفحص النشر</span>
@@ -1386,7 +1386,7 @@
       </div>
     </div>
 
-    <div class="card workspace-home" id="workspace-home">
+    <div class="card workspace-home view-hidden" id="workspace-home">
       <div class="workspace-home-head">
         <div>
           <span class="badge ok">لوحة تشغيل</span>
@@ -2138,19 +2138,25 @@
       const onVerifiedPages = host === "fathya-core.github.io";
       const onVerifiedNetlify = host === "main--thriving-fenglisu-ef18b1.netlify.app" || host === "thriving-fenglisu-ef18b1.netlify.app";
       const onVerifiedPublic = onVerifiedPages || onVerifiedNetlify;
+      const marker = document.getElementById("deploy-version")?.textContent || "";
+      const currentBuildVisible = marker.includes("FATHIYA_DEPLOY_MARKER");
       const originBadge = document.getElementById("deploy-origin-badge");
-      originBadge.textContent = onPublicDomain ? "الدومين العام" : onVerifiedPages ? "نشر GitHub Pages العامل" : onVerifiedNetlify ? "نشر Netlify العامل" : "نسخة محلية";
-      originBadge.className = onPublicDomain ? "badge warn" : "badge ok";
+      originBadge.textContent = onPublicDomain && currentBuildVisible
+        ? "الدومين محدث"
+        : onPublicDomain ? "الدومين العام" : onVerifiedPages ? "نشر GitHub Pages العامل" : onVerifiedNetlify ? "نشر Netlify العامل" : "نسخة محلية";
+      originBadge.className = onPublicDomain && !currentBuildVisible ? "badge warn" : "badge ok";
       document.getElementById("deploy-current-host").textContent = host || "local";
       document.getElementById("deploy-runtime-state").textContent = runtimeConnected ? "متصل وينفذ" : "يحتاج تشغيل محلي";
       document.getElementById("deploy-public-state").textContent = onPublicDomain
-        ? runtimeConnected ? "الدومين متصل بالمحرك" : "الدومين ينتظر الجسر"
+        ? runtimeConnected ? "الدومين متصل بالمحرك" : currentBuildVisible ? "الدومين محدث وينتظر المحرك" : "الدومين ينتظر الجسر"
         : onVerifiedPublic ? "هذه النسخة المنشورة الصحيحة" : "الدومين يحتاج ربط DNS";
       document.getElementById("deploy-next-step").textContent = onPublicDomain
-        ? runtimeConnected ? "شغّل مهمة" : "افتح المحلي أو فعّل CORS"
+        ? runtimeConnected ? "شغّل مهمة" : "شغّل PowerShell المحلي"
         : onVerifiedPublic ? "اربط fathya-core.com هنا" : "نشر عام";
       document.getElementById("deploy-summary").textContent = onPublicDomain
-        ? "هذه نسخة fathya-core.com الحالية؛ إذا لم تظهر علامة FATHIYA_DEPLOY_MARKER فهي ما زالت على ربط قديم ويجب نقل DNS/الدومين إلى النشر العامل."
+        ? currentBuildVisible
+          ? "الدومين يعرض فتحية Agent OS. التنفيذ الحقيقي يأتي من المحرك المحلي على جهازك؛ إذا كان متصلًا ستتحول الصفحة من عرض إلى تشغيل."
+          : "هذه نسخة fathya-core.com الحالية؛ إذا لم تظهر علامة FATHIYA_DEPLOY_MARKER فهي ما زالت على ربط قديم ويجب نقل DNS/الدومين إلى النشر العامل."
         : onVerifiedPublic
           ? "هذه هي النسخة المنشورة العاملة الآن. الخطوة المتبقية هي نقل fathya-core.com وwww من الربط القديم إلى هذا النشر."
           : "هذه النسخة المحلية هي المصدر العامل الآن. لن يظهر نفس الترتيب على fathya-core.com حتى يتم ربط DNS أو الدومين بالنشر الصحيح.";
@@ -4652,11 +4658,12 @@
       const bounty = document.getElementById("bounty-card");
       const reports = document.getElementById("reports-panel");
 
-      const commandVisible = selected === "request" || selected === "tools";
+      const commandVisible = selected === "tools";
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
-      home?.classList.toggle("view-hidden", !(selected === "request" || selected === "tools"));
+      home?.classList.toggle("view-hidden", selected !== "tools");
       bridge?.classList.toggle("view-hidden", selected !== "tools");
+      document.getElementById("deploy-strip")?.classList.toggle("view-hidden", selected !== "tools");
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
       tools.classList.toggle("view-hidden", selected !== "tools");
@@ -4677,7 +4684,7 @@
       if (options.url !== false) writeWorkspaceViewToLocation(selected);
 
       if (options.scroll !== false) {
-        const target = selected === "request" ? (commandPanel || home || mission) : selected === "tools" ? (commandPanel || home || tools) : selected === "knowledge" ? knowledge : main;
+        const target = selected === "request" ? mission : selected === "tools" ? (commandPanel || home || tools) : selected === "knowledge" ? knowledge : main;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
