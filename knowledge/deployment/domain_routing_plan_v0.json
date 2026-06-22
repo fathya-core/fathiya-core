@@ -1,18 +1,55 @@
 {
   "schema_version": "domain_routing_plan_v0",
-  "description": "FATHIYA CORE domain routing plan. Architecture only -- no live DNS. No secrets.",
-  "last_updated": "2026-05-18",
-  "status": "planned",
+  "description": "FATHIYA CORE domain routing and current deployment state. No secrets.",
+  "last_updated": "2026-06-22",
+  "status": "netlify_current_domain_stale",
   "adr": "ADR-004",
+  "verified_public_surface": {
+    "checked_at": "2026-06-22",
+    "apex_domain": {
+      "url": "https://fathya-core.com/agent-tasks/",
+      "status": "live_stale_operator_console",
+      "title": "FATHIYA - المنشأة السيادية الذكية",
+      "current_release_marker": false,
+      "stale_stop_text_detected": true,
+      "dns": {
+        "type": "A",
+        "value": "75.2.60.5",
+        "provider_path": "Netlify-compatible apex target"
+      }
+    },
+    "www_alias": {
+      "url": "https://www.fathya-core.com/agent-tasks/",
+      "status": "live_stale_operator_console",
+      "title": "FATHIYA - المنشأة السيادية الذكية",
+      "current_release_marker": false,
+      "stale_stop_text_detected": true,
+      "dns": {
+        "type": "CNAME",
+        "value": "site-dns.bolt.host",
+        "provider_path": "Bolt-hosted alias path"
+      }
+    },
+    "netlify_site": {
+      "url": "https://main--thriving-fenglisu-ef18b1.netlify.app/agent-tasks/",
+      "status": "live_operator_console_verified",
+      "title": "FATHIYA - المنشأة السيادية الذكية",
+      "current_release_marker": true,
+      "stale_stop_text_detected": false
+    },
+    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. Attach the custom domain to the current Netlify site and move www away from the Bolt alias path."
+  },
 
   "domains": [
     {
       "domain": "fathya-core.com",
-      "role": "landing",
-      "description": "Public landing page and system status",
-      "status": "planned",
+      "role": "operator_console_public_ui",
+      "description": "Public FATHIYA operator console and system status",
+      "status": "live_stale_operator_console",
+      "aliases": ["www.fathya-core.com"],
       "routes": [
-        { "path": "/", "handler": "landing page" },
+        { "path": "/", "handler": "FATHIYA shell" },
+        { "path": "/agent-tasks/", "handler": "Trading, bug bounty, reports, and operator task console" },
         { "path": "/status", "handler": "public deployment status" }
       ],
       "auth_required": false,
@@ -130,7 +167,7 @@
 
   "no_live_dns_rule": {
     "enforced": true,
-    "description": "No DNS changes in this PR. Architecture artifacts only."
+    "description": "This artifact records DNS observations only; it does not perform DNS changes."
   },
 
   "no_live_webhooks_rule": {

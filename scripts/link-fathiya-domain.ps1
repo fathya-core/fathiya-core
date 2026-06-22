@@ -105,16 +105,36 @@ function Test-AgentOsPage {
 
   try {
     $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 15
+    $titleMatch = [regex]::Match($response.Content, "<title[^>]*>(.*?)</title>", "IgnoreCase,Singleline")
+    $title = if ($titleMatch.Success) { ($titleMatch.Groups[1].Value -replace "\s+", " ").Trim() } else { "" }
     $hasDeployMarker = $response.Content.Contains("FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS")
     $hasOldStopText = $response.Content.Contains("يتوقف عند")
+    $hasIdentity = (
+      $response.Content.Contains("FATHIYA") -or
+      $response.Content.Contains("فتحية") -or
+      $response.Content.Contains("المنشأة السيادية الذكية") -or
+      $response.Content.Contains("المنصة السيادية الذكية")
+    )
+    $hasOperatorConsole = (
+      $response.Content.Contains("agent-tasks") -or
+      $response.Content.Contains("وكيل التداول") -or
+      $response.Content.Contains("صيد الثغرات") -or
+      $response.Content.Contains("محرك الوكلاء") -or
+      $response.Content.Contains("المسار السريع للتداول") -or
+      $response.Content.Contains("صيد ثغرات بزر واحد")
+    )
+    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and -not $hasOldStopText)
     [pscustomobject]@{
       url = $Url
       status_code = [int]$response.StatusCode
+      title = $title
       has_agent_os = $response.Content.Contains("agent-os")
       has_workspace_home = $response.Content.Contains("workspace-home")
       has_deploy_marker = $hasDeployMarker
       has_old_stop_text = $hasOldStopText
-      is_current_operator = $hasDeployMarker -and -not $hasOldStopText
+      has_fathiya_identity = $hasIdentity
+      has_operator_console = $hasOperatorConsole
+      is_current_operator = $isCurrentOperator
       etag = ($response.Headers["ETag"] -join ",")
       age = ($response.Headers["Age"] -join ",")
     }
@@ -126,6 +146,8 @@ function Test-AgentOsPage {
       has_workspace_home = $false
       has_deploy_marker = $false
       has_old_stop_text = $false
+      has_fathiya_identity = $false
+      has_operator_console = $false
       is_current_operator = $false
       error = $_.Exception.Message
     }
@@ -223,6 +245,8 @@ Write-Host "Netlify page has agent OS: $($result.page_checks.netlify.has_agent_o
 Write-Host "Public domain has agent OS: $($result.page_checks.domain.has_agent_os)"
 Write-Host "Netlify page current marker: $($result.page_checks.netlify.has_deploy_marker)"
 Write-Host "Public domain current marker: $($result.page_checks.domain.has_deploy_marker)"
+Write-Host "Netlify page current operator: $($result.page_checks.netlify.is_current_operator)"
+Write-Host "Public domain current operator: $($result.page_checks.domain.is_current_operator)"
 Write-Host ""
 Write-Host "Next actions:"
 foreach ($item in $result.next_actions) {
