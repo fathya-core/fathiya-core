@@ -1,0 +1,1 @@
+import{j as o}from"./index-BYtVCxXZ.js";import{F as r}from"./FathiyaFocusRedirect-C3glS4Mh.js";import"./badge-5Pe6RXWs.js";import"./button-Dagwf3O_.js";import"./arrow-right-BcRxYLkQ.js";function n(){return o.jsx(r,{source:"AI Console القديم"})}export{n as component};
