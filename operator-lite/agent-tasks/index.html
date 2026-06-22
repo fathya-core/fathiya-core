@@ -1353,7 +1353,7 @@
     </div>
 
     <nav class="workspace-tabs" aria-label="مسارات فتحية">
-      <button class="workspace-tab active" type="button" data-workspace-view="request">الطلب المباشر</button>
+      <button class="workspace-tab active" type="button" data-workspace-view="request">تشغيل الوكلاء</button>
       <button class="workspace-tab" type="button" data-workspace-view="trading">التداول</button>
       <button class="workspace-tab" type="button" data-workspace-view="bug-bounty">صيد الثغرات</button>
       <button class="workspace-tab" type="button" data-workspace-view="knowledge">المعرفة</button>
@@ -4655,7 +4655,7 @@
       const commandVisible = selected === "request" || selected === "tools";
       commandPanel?.classList.toggle("view-hidden", !commandVisible);
       quickGrid?.classList.toggle("view-hidden", !commandVisible);
-      home?.classList.toggle("view-hidden", selected !== "tools");
+      home?.classList.toggle("view-hidden", !(selected === "request" || selected === "tools"));
       bridge?.classList.toggle("view-hidden", selected !== "tools");
       mission.classList.toggle("view-hidden", selected !== "request");
       engine.classList.toggle("view-hidden", selected !== "tools");
@@ -4677,7 +4677,7 @@
       if (options.url !== false) writeWorkspaceViewToLocation(selected);
 
       if (options.scroll !== false) {
-        const target = selected === "request" ? mission : selected === "tools" ? (commandPanel || home || tools) : selected === "knowledge" ? knowledge : main;
+        const target = selected === "request" ? (commandPanel || home || mission) : selected === "tools" ? (commandPanel || home || tools) : selected === "knowledge" ? knowledge : main;
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }

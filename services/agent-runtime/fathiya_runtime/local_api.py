@@ -1248,6 +1248,16 @@ def _build_agent_mesh_summary(
     intake_status = server.intake.status()
     agent_providers = _mesh_agent_provider_summaries(inventory)
     zapier_apps = _mesh_zapier_app_summaries(inventory)
+    zapier_direct = inventory.get("direct_zapier_mcp")
+    zapier_direct_live = (
+        isinstance(zapier_direct, dict)
+        and bool(zapier_direct.get("connected"))
+        and bool(zapier_direct.get("direct_execution"))
+        and not bool(zapier_direct.get("expired"))
+        and not bool(zapier_direct.get("needs_reconnect"))
+        and bool(zapier_direct.get("live_available", True))
+    )
+    zapier_command_status = "ready" if zapier_direct_live else "partial"
 
     lanes = [
         _mesh_lane(
@@ -1351,24 +1361,39 @@ def _build_agent_mesh_summary(
         },
         {
             "id": "verify_github_zapier_read",
-            "label": "إثبات GitHub",
-            "title": "قراءة GitHub عبر Zapier",
+            "label": "إثبات GitHub" if zapier_direct_live else "تحضير GitHub",
+            "title": (
+                "قراءة GitHub عبر Zapier"
+                if zapier_direct_live
+                else "تحضير قراءة GitHub عبر Zapier"
+            ),
             "prompt": _zapier_github_repository_read_prompt(),
             "mode": "tools",
+            "status": zapier_command_status,
         },
         {
             "id": "verify_manus_zapier_read",
-            "label": "إثبات Manus",
-            "title": "قراءة مهام Manus عبر Zapier",
+            "label": "إثبات Manus" if zapier_direct_live else "تحضير Manus",
+            "title": (
+                "قراءة مهام Manus عبر Zapier"
+                if zapier_direct_live
+                else "تحضير قراءة مهام Manus عبر Zapier"
+            ),
             "prompt": _zapier_manus_tasks_read_prompt(),
             "mode": "tools",
+            "status": zapier_command_status,
         },
         {
             "id": "verify_gmail_zapier_read",
-            "label": "إثبات Gmail",
-            "title": "قراءة Gmail عبر Zapier",
+            "label": "إثبات Gmail" if zapier_direct_live else "تحضير Gmail",
+            "title": (
+                "قراءة Gmail عبر Zapier"
+                if zapier_direct_live
+                else "تحضير قراءة Gmail عبر Zapier"
+            ),
             "prompt": _zapier_gmail_openrouter_read_prompt(),
             "mode": "tools",
+            "status": zapier_command_status,
         },
         {
             "id": "prepare_cursor_zapier_read",
@@ -1376,6 +1401,7 @@ def _build_agent_mesh_summary(
             "title": "تحضير قراءة Cursor عبر Zapier",
             "prompt": _zapier_cursor_status_preflight_prompt(),
             "mode": "tools",
+            "status": zapier_command_status,
         },
     ]
     activation_overview = _mesh_activation_overview(

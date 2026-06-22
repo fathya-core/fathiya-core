@@ -2402,9 +2402,9 @@ function AgentTasksPage() {
             {[
               {
                 id: "request" as const,
-                label: "الطلب",
+                label: "تشغيل",
                 icon: BrainCircuit,
-                meta: composerMode === "knowledge" ? "معرفة" : "مباشر",
+                meta: "وكلاء",
               },
               {
                 id: "trading" as const,
@@ -2487,7 +2487,7 @@ function AgentTasksPage() {
             </div>
           </section>
 
-          {localMode && workspaceView === "tools" && commandCenter && (
+          {localMode && (workspaceView === "request" || workspaceView === "tools") && commandCenter && (
             <CommandCenterLauncherPanel
               commandCenter={commandCenter}
               startingCommandId={startingCommandCenterId}
@@ -5916,7 +5916,10 @@ function CommandCenterLauncherPanel({
                 {commands.length ? (
                   commands.map((command) => {
                     const running = startingCommandId === command.id;
-                    const primary = command.id === "execute_mesh" || command.id === "lane_trading";
+                    const commandReady = command.status === "ready";
+                    const primary =
+                      commandReady &&
+                      (command.id === "execute_mesh" || command.id === "lane_trading");
                     return (
                       <Button
                         key={command.id}
@@ -5929,8 +5932,15 @@ function CommandCenterLauncherPanel({
                         onClick={() => onRunCommand(command)}
                         disabled={running}
                       >
-                        <span className="min-w-0 truncate">
-                          {command.title || command.label || command.id}
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="min-w-0 truncate">
+                            {command.title || command.label || command.id}
+                          </span>
+                          {!commandReady ? (
+                            <span className="shrink-0 rounded border border-amber-500/30 px-1 py-0.5 text-[8px] text-amber-300">
+                              تحضير
+                            </span>
+                          ) : null}
                         </span>
                         {running ? (
                           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />

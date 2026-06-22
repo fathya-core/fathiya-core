@@ -553,6 +553,10 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(command_by_id["lane_bug_bounty"]["mode"], "bug_bounty")
         self.assertEqual(command_by_id["verify_production_site"]["mode"], "tools")
         self.assertEqual(command_by_id["verify_gmail_zapier_read"]["mode"], "tools")
+        self.assertEqual(command_by_id["verify_github_zapier_read"]["status"], "partial")
+        self.assertIn("تحضير", command_by_id["verify_github_zapier_read"]["title"])
+        self.assertEqual(command_by_id["verify_manus_zapier_read"]["status"], "partial")
+        self.assertEqual(command_by_id["verify_gmail_zapier_read"]["status"], "partial")
         self.assertEqual(command_by_id["agent_provider_cursor"]["mode"], "connected_apps")
         self.assertEqual(command_by_id["connected_app_gmail"]["mode"], "connected_apps")
         self.assertIn(
