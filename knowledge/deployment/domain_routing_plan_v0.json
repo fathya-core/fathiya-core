@@ -31,13 +31,21 @@
       }
     },
     "netlify_site": {
-      "url": "https://main--thriving-fenglisu-ef18b1.netlify.app/agent-tasks/",
+      "url": "https://thriving-fenglisu-ef18b1.netlify.app/agent-tasks/",
+      "branch_url": "https://main--thriving-fenglisu-ef18b1.netlify.app/agent-tasks/",
       "status": "live_operator_console_verified",
       "title": "FATHIYA - المنشأة السيادية الذكية",
       "current_release_marker": true,
       "stale_stop_text_detected": false
     },
-    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. Attach the custom domain to the current Netlify site and move www away from the Bolt alias path."
+    "deployment_gate": {
+      "github_secret_netlify_site_id": "present",
+      "github_secret_netlify_auth_token": "present_on_2026-06-22",
+      "domain_conflict_netlify_site_id": "c2cfc731-193e-466b-b331-fbc1b34d347a",
+      "domain_conflict_visible_to_current_netlify_account": false,
+      "workflow_policy": "deployment must fail loudly when Netlify deploy credentials are missing or the custom domain serves a stale operator copy"
+    },
+    "note": "The current release is verified on the Netlify site URL. The apex and www domains answer with the FATHIYA shell, but they do not show the current release marker and still include stale stop text. NETLIFY_AUTH_TOKEN is now stored for GitHub Actions, but fathya-core.com is reserved by another Netlify/Bolt site. Remove the domain from that site or transfer ownership, then attach it to thriving-fenglisu-ef18b1."
   },
 
   "domains": [

@@ -156,24 +156,37 @@ function Test-AgentOsPage {
 
 $siteBefore = Invoke-NetlifyApi -Path "/sites/$SiteId"
 $changes = @()
+$applyError = $null
 
 if ($Apply) {
-  $updateBody = @{
-    custom_domain = $Domain
-    domain_aliases = $Aliases
-    force_ssl = $true
-  }
-  $siteAfter = Invoke-NetlifyApi -Path "/sites/$SiteId" -Method "PATCH" -Body $updateBody -RequireToken
-  $changes += "updated_site_custom_domain"
+  try {
+    $updateBody = @{
+      custom_domain = $Domain
+      domain_aliases = $Aliases
+    }
+    $siteAfter = Invoke-NetlifyApi -Path "/sites/$SiteId" -Method "PATCH" -Body $updateBody -RequireToken
+    $changes += "updated_site_custom_domain"
 
-  if ($ConfigureDns) {
-    Invoke-NetlifyApi -Path "/sites/$SiteId/dns" -Method "PUT" -RequireToken | Out-Null
-    $changes += "configured_netlify_dns"
-  }
+    if ($ConfigureDns) {
+      Invoke-NetlifyApi -Path "/sites/$SiteId/dns" -Method "PUT" -RequireToken | Out-Null
+      $changes += "configured_netlify_dns"
+    }
 
-  if ($ProvisionSsl) {
-    Invoke-NetlifyApi -Path "/sites/$SiteId/ssl" -Method "POST" -Body @{} -RequireToken | Out-Null
-    $changes += "requested_tls_certificate"
+    if ($ProvisionSsl) {
+      Invoke-NetlifyApi -Path "/sites/$SiteId/ssl" -Method "POST" -Body @{} -RequireToken | Out-Null
+      $changes += "requested_tls_certificate"
+
+      try {
+        $siteAfter = Invoke-NetlifyApi -Path "/sites/$SiteId" -Method "PATCH" -Body @{ force_ssl = $true } -RequireToken
+        $changes += "enabled_force_ssl"
+      } catch {
+        $changes += "force_ssl_pending_certificate"
+      }
+    }
+  } catch {
+    $applyError = if ($_.ErrorDetails.Message) { $_.ErrorDetails.Message } else { $_.Exception.Message }
+    $changes += "failed_to_update_site_custom_domain"
+    $siteAfter = $siteBefore
   }
 } else {
   $siteAfter = $siteBefore
@@ -185,10 +198,18 @@ foreach ($alias in $Aliases) {
   $aliasRecords += @(Resolve-Record -Name $alias -Type "CNAME")
 }
 
-$netlifyUrl = "https://main--$($siteAfter.name).netlify.app/agent-tasks/"
+$netlifyBaseUrl = if ($siteAfter.ssl_url) { [string]$siteAfter.ssl_url } else { "https://$($siteAfter.name).netlify.app" }
+$netlifyUrl = "$($netlifyBaseUrl.TrimEnd('/'))/agent-tasks/"
 $domainUrl = "https://$Domain/agent-tasks/"
 $netlifyPage = Test-AgentOsPage -Url $netlifyUrl
 $domainPage = Test-AgentOsPage -Url $domainUrl
+$aliasPages = @()
+foreach ($alias in $Aliases) {
+  $aliasPages += [pscustomobject]@{
+    alias = $alias
+    page = Test-AgentOsPage -Url "https://$alias/agent-tasks/"
+  }
+}
 
 $nextActions = @()
 if (-not $Apply) {
@@ -197,17 +218,26 @@ if (-not $Apply) {
 if ($siteAfter.custom_domain -ne $Domain) {
   $nextActions += "Netlify custom_domain is not $Domain yet."
 }
+if ($applyError) {
+  $nextActions += "Domain attach failed: $applyError"
+}
 if (-not $netlifyPage.is_current_operator) {
   $nextActions += "The Netlify deploy check did not find the current FATHIYA marker; rebuild and redeploy before changing DNS."
 }
 if (-not $domainPage.is_current_operator) {
   $nextActions += "$Domain is still serving a stale operator build; attach this custom domain to $($siteAfter.name).netlify.app or update DNS/domain routing."
 }
+foreach ($aliasPage in $aliasPages) {
+  if (-not $aliasPage.page.is_current_operator) {
+    $nextActions += "$($aliasPage.alias) is not serving the current FATHIYA operator build."
+  }
+}
 $nextActions += "In DNS, keep the apex on Netlify-compatible A records and point www to $($siteAfter.name).netlify.app instead of Bolt."
 
 $result = [pscustomobject]@{
   applied = [bool]$Apply
   changes = $changes
+  apply_error = $applyError
   site = [pscustomobject]@{
     id = $siteAfter.id
     name = $siteAfter.name
@@ -228,6 +258,7 @@ $result = [pscustomobject]@{
   page_checks = [pscustomobject]@{
     netlify = $netlifyPage
     domain = $domainPage
+    aliases = $aliasPages
   }
   next_actions = $nextActions
 }

@@ -16,37 +16,63 @@ jobs:
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      FATHIYA_NETLIFY_URL: https://thriving-fenglisu-ef18b1.netlify.app/agent-tasks/
+      FATHIYA_DOMAIN_URL: https://fathya-core.com/agent-tasks/
+      FATHIYA_WWW_URL: https://www.fathya-core.com/agent-tasks/
     steps:
       - name: Check Netlify configuration
-        id: netlify_config
         shell: bash
         run: |
-          if [ -n "$NETLIFY_AUTH_TOKEN" ] && [ -n "$NETLIFY_SITE_ID" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID repository secrets to enable production deploys."
+          missing=0
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::Missing NETLIFY_AUTH_TOKEN repository secret. The workflow cannot deploy FATHIYA to Netlify without it."
+            missing=1
+          fi
+          if [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "::error::Missing NETLIFY_SITE_ID repository secret. The workflow cannot select the FATHIYA Netlify site without it."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
           fi
 
       - name: Checkout
-        if: steps.netlify_config.outputs.ready == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node
-        if: steps.netlify_config.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
       - name: Install dependencies
-        if: steps.netlify_config.outputs.ready == 'true'
         run: npm ci
 
       - name: Build static operator
-        if: steps.netlify_config.outputs.ready == 'true'
         run: npm run build
 
       - name: Deploy production site
-        if: steps.netlify_config.outputs.ready == 'true'
-        run: npx netlify-cli deploy --prod --dir dist --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
+        run: npx netlify-cli deploy --prod --dir dist/client --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
+
+      - name: Verify FATHIYA deploy freshness
+        shell: bash
+        run: |
+          check_url() {
+            local label="$1"
+            local url="$2"
+            local body
+            body="$(mktemp)"
+            curl --fail --silent --show-error --location "$url" --output "$body"
+            if ! grep -q "FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS" "$body"; then
+              echo "::error::$label does not contain the current FATHIYA deploy marker: $url"
+              exit 1
+            fi
+            if grep -q "يتوقف عند" "$body"; then
+              echo "::error::$label is still serving the stale operator copy: $url"
+              exit 1
+            fi
+          }
+
+          check_url "Netlify production URL" "$FATHIYA_NETLIFY_URL"
+          check_url "apex custom domain" "$FATHIYA_DOMAIN_URL"
+          check_url "www custom domain" "$FATHIYA_WWW_URL"
