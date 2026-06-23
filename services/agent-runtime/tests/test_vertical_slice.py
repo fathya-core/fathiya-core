@@ -3231,6 +3231,53 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
         self.assertIn("Cursor", result["agent_provider_actions"])
         self.assertIn("Manus", result["agent_provider_actions"])
 
+    def test_zapier_inventory_schema_without_params_wins_over_sample_slug(self) -> None:
+        inventory_path = Path(self.temp.name) / "connected_tool_inventory_v1.json"
+        inventory_path.write_text(
+            json.dumps(
+                {
+                    "captured_at": "2026-06-23T00:00:00+00:00",
+                    "zapier_apps": [
+                        {
+                            "app": "Cursor",
+                            "action_count": 1,
+                            "modes": ["read"],
+                        },
+                    ],
+                    "action_samples": {
+                        "Cursor": {
+                            "read": ["Find Agent Status"],
+                        },
+                    },
+                    "action_schemas": {
+                        "Cursor": [
+                            {
+                                "name": "Find Agent Status",
+                                "key": "agent_status",
+                                "tool_name": "cursor_find_agent_status",
+                                "mode": "read",
+                                "required_params": [],
+                                "optional_params": [],
+                            }
+                        ],
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        executor = ToolExecutor(replace(self.config, tool_inventory_path=inventory_path))
+
+        result = executor.execute(
+            "zapier_action_catalog",
+            "اعرض كتالوج Cursor",
+            {"app": "Cursor"},
+        )
+
+        action = result["actions"][0]
+        self.assertEqual(action["name"], "Find Agent Status")
+        self.assertEqual(action["key"], "agent_status")
+        self.assertEqual(action["tool_name"], "cursor_find_agent_status")
+
     def test_agent_provider_probe_reads_cursor_inventory_without_live_oauth(self) -> None:
         inventory_path = Path(self.temp.name) / "connected_tool_inventory_v1.json"
         inventory_path.write_text(

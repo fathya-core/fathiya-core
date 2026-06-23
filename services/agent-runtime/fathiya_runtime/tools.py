@@ -5717,6 +5717,7 @@ def _zapier_inventory_action_samples(
                     or f"inventory_only:{key or slug or action_name}",
                     "mode": mode,
                     "inventory_only": True,
+                    "inventory_schema": True,
                     "required_params": _string_list(item.get("required_params")),
                     "optional_params": _string_list(item.get("optional_params")),
                     "dynamic_properties_depends_on": _string_list(
@@ -5771,7 +5772,8 @@ def _zapier_inventory_action_samples(
         key = (str(action["name"]).casefold(), str(action["mode"]))
         existing = deduped.get(key)
         has_schema = bool(
-            action.get("params")
+            action.get("inventory_schema")
+            or action.get("params")
             or action.get("required_params")
             or action.get("optional_params")
             or action.get("dynamic_properties_depends_on")
@@ -5779,7 +5781,8 @@ def _zapier_inventory_action_samples(
         existing_has_schema = bool(
             existing
             and (
-                existing.get("params")
+                existing.get("inventory_schema")
+                or existing.get("params")
                 or existing.get("required_params")
                 or existing.get("optional_params")
                 or existing.get("dynamic_properties_depends_on")
