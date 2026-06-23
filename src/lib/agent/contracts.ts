@@ -188,6 +188,16 @@ export type AgentZapierDiagnostics = {
   hosted_inventory_available?: boolean;
   hosted_execution_state?: "schema_blocked" | "available" | "not_available" | string;
   hosted_execution_issue?: string | null;
+  local_oauth_required?: boolean;
+  live_read_probe?: {
+    app: string;
+    action: string;
+    status: "ready" | "oauth_required" | string;
+    can_execute_now: boolean;
+    execution_mode: "live_zapier_mcp" | "inventory_only_until_oauth" | string;
+    prompt: string;
+    summary: string;
+  } | null;
   app_count: number;
   action_count: number;
   agent_provider_count: number;

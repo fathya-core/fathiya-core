@@ -455,7 +455,7 @@ class LocalAgentApiTests(unittest.TestCase):
             quick_action_by_id["verify_manus_zapier_read"]["prompt"],
         )
         self.assertIn(
-            "Zapier action: Gmail / New Email Matching Search",
+            "Zapier action: Gmail / Find Email",
             quick_action_by_id["verify_gmail_zapier_read"]["prompt"],
         )
         self.assertIn(
@@ -586,6 +586,10 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn(
             "Zapier action: Manus / Get Tasks",
             command_by_id["verify_manus_zapier_read"]["prompt"],
+        )
+        self.assertIn(
+            "Zapier action: Gmail / Find Email",
+            command_by_id["verify_gmail_zapier_read"]["prompt"],
         )
         self.assertIn(
             '"query":"from:(openrouter.ai)',
@@ -885,7 +889,17 @@ class LocalAgentApiTests(unittest.TestCase):
             {"schema_blocked", "not_available", "available"},
         )
         if zapier_diagnostics["hosted_execution_state"] == "schema_blocked":
-            self.assertIn("selected_api", zapier_diagnostics["hosted_execution_issue"])
+            self.assertIn(
+                "internal hosted routing metadata",
+                zapier_diagnostics["hosted_execution_issue"],
+            )
+            self.assertNotIn("selected_api", zapier_diagnostics["hosted_execution_issue"])
+        self.assertIn("local_oauth_required", zapier_diagnostics)
+        read_probe = zapier_diagnostics["live_read_probe"]
+        self.assertIsNotNone(read_probe)
+        self.assertIn(read_probe["status"], {"ready", "oauth_required"})
+        self.assertIn("Zapier action:", read_probe["prompt"])
+        self.assertNotIn("selected_api", json.dumps(read_probe))
         provider_names = {
             provider["app"] for provider in zapier_diagnostics["agent_providers"]
         }

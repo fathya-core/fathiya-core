@@ -357,6 +357,7 @@ type ZapierReadAction = {
   id: string;
   app: string;
   action: string;
+  prompt?: string;
 };
 
 type WorkspaceView = "request" | "trading" | "bug-bounty" | "knowledge" | "reports" | "tools";
@@ -1480,11 +1481,13 @@ function AgentTasksPage() {
     try {
       const body: CreateAgentTaskBody = {
         title: `قراءة Zapier: ${action.app}/${action.action}`,
-        prompt: [
-          `Zapier action: ${action.app} / ${action.action}`,
-          "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
-          "params:{}",
-        ].join("\n"),
+        prompt:
+          action.prompt ??
+          [
+            `Zapier action: ${action.app} / ${action.action}`,
+            "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال.",
+            "params:{}",
+          ].join("\n"),
       };
       const data = await agentApi<{ task: AgentTask }>(null, "/api/agent/tasks", {
         method: "POST",
@@ -3383,6 +3386,15 @@ function AgentTasksPage() {
                                   .join(" · ")}
                               </p>
                             )}
+                            {zapierDiagnostics.live_read_probe && (
+                              <p className="mt-2 rounded-md border border-emerald-500/20 bg-emerald-500/[0.06] p-2 text-[10px] leading-5 text-emerald-100">
+                                قراءة الإثبات: {zapierDiagnostics.live_read_probe.app} /{" "}
+                                {zapierDiagnostics.live_read_probe.action} ·{" "}
+                                {zapierDiagnostics.live_read_probe.can_execute_now
+                                  ? "جاهزة للتشغيل"
+                                  : "تنتظر OAuth المحلي"}
+                              </p>
+                            )}
                           </div>
                           <div className="flex shrink-0 flex-wrap gap-2">
                             {zapierDiagnostics.activation_state !== "live" && (
@@ -3406,6 +3418,35 @@ function AgentTasksPage() {
                                 {zapierDiagnostics.activation_state === "reconnect_required"
                                   ? "إعادة ربط كاملة"
                                   : "ربط Zapier الآن"}
+                              </Button>
+                            )}
+                            {zapierDiagnostics.live_read_probe && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-[10px]"
+                                disabled={
+                                  !zapierDiagnostics.live_read_probe.can_execute_now ||
+                                  startingZapierReadAction ===
+                                    `diagnostic:${zapierDiagnostics.live_read_probe.app}:${zapierDiagnostics.live_read_probe.action}`
+                                }
+                                onClick={() =>
+                                  void startZapierReadTask({
+                                    id: `diagnostic:${zapierDiagnostics.live_read_probe?.app}:${zapierDiagnostics.live_read_probe?.action}`,
+                                    app: zapierDiagnostics.live_read_probe?.app ?? "",
+                                    action: zapierDiagnostics.live_read_probe?.action ?? "",
+                                    prompt: zapierDiagnostics.live_read_probe?.prompt,
+                                  })
+                                }
+                              >
+                                {startingZapierReadAction ===
+                                `diagnostic:${zapierDiagnostics.live_read_probe.app}:${zapierDiagnostics.live_read_probe.action}` ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Play />
+                                )}
+                                تشغيل قراءة الإثبات
                               </Button>
                             )}
                             {zapierIntegration?.task_prompt && (

@@ -2146,8 +2146,8 @@ def _zapier_diagnostics_payload(
         hosted_execution_state = "schema_blocked"
         hosted_execution_issue = (
             "Zapier hosted MCP exposes inventory, but direct execution currently "
-            "fails before dispatch because the hosted execute tool requires a hidden "
-            "selected_api argument. Use local Zapier OAuth for live execution."
+            "requires internal hosted routing metadata before dispatch. Use local "
+            "Zapier OAuth for live execution."
         )
     if live_candidate:
         activation_state = "live"
@@ -2204,6 +2204,7 @@ def _zapier_diagnostics_payload(
             "summary": "يشغل فحصًا داخليًا بعد الرجوع من OAuth أو عند تحديث المخزون.",
         }
     )
+    live_read_probe = _zapier_live_read_probe(providers, live_candidate)
     return {
         "mode": "zapier_mcp_activation_diagnostics_v1",
         "activation_state": activation_state,
@@ -2227,6 +2228,8 @@ def _zapier_diagnostics_payload(
         "hosted_inventory_available": hosted_inventory_available,
         "hosted_execution_state": hosted_execution_state,
         "hosted_execution_issue": hosted_execution_issue or None,
+        "local_oauth_required": activation_state != "live",
+        "live_read_probe": live_read_probe,
         "app_count": int(inventory.get("zapier_app_count") or 0) if isinstance(inventory, dict) else 0,
         "action_count": int(inventory.get("zapier_action_count") or 0) if isinstance(inventory, dict) else 0,
         "agent_provider_count": len(providers),
@@ -2243,6 +2246,64 @@ def _zapier_diagnostics_payload(
         "next_actions": next_actions,
         "secret_safe": True,
     }
+
+
+def _zapier_live_read_probe(
+    providers: list[dict[str, Any]],
+    live_available: bool,
+) -> dict[str, Any] | None:
+    provider_by_name = {
+        str(provider.get("app") or "").casefold(): provider
+        for provider in providers
+        if isinstance(provider, dict) and provider.get("app")
+    }
+    for preferred in ("Manus", "GitHub", "Gmail", "Microsoft Outlook", "Zapier Tables", "Cursor"):
+        provider = provider_by_name.get(preferred.casefold())
+        if not provider:
+            continue
+        read_actions = [
+            str(action).strip()
+            for action in provider.get("read_actions", [])
+            if str(action).strip()
+        ]
+        if not read_actions:
+            continue
+        if preferred == "Manus" and "Get Tasks" in read_actions:
+            prompt = _zapier_manus_tasks_read_prompt()
+            action = "Get Tasks"
+        elif preferred == "GitHub" and "Find Repository" in read_actions:
+            prompt = _zapier_github_repository_read_prompt()
+            action = "Find Repository"
+        elif preferred == "Gmail" and "Find Email" in read_actions:
+            prompt = _zapier_gmail_openrouter_read_prompt()
+            action = "Find Email"
+        else:
+            action = read_actions[0]
+            prompt = "\n".join(
+                [
+                    f"Zapier action: {preferred} / {action}",
+                    "نفذ إجراء قراءة آمن من Zapier MCP عبر مشغل فتحية، ثم سجل التقدم والإيصال بدون أسرار.",
+                    "params:{}",
+                ]
+            )
+        return {
+            "app": preferred,
+            "action": action,
+            "status": "ready" if live_available else "oauth_required",
+            "can_execute_now": live_available,
+            "execution_mode": (
+                "live_zapier_mcp"
+                if live_available
+                else "inventory_only_until_oauth"
+            ),
+            "prompt": prompt,
+            "summary": (
+                f"{preferred}/{action} جاهز كقراءة إثبات حية."
+                if live_available
+                else f"{preferred}/{action} هو probe القراءة الآمن بعد ربط OAuth المحلي."
+            ),
+        }
+    return None
 
 
 def _agent_os_full_execute_prompt() -> str:
@@ -2332,7 +2393,7 @@ def _zapier_manus_tasks_read_prompt() -> str:
 def _zapier_gmail_openrouter_read_prompt() -> str:
     return "\n".join(
         [
-            "Zapier action: Gmail / New Email Matching Search",
+            "Zapier action: Gmail / Find Email",
             "instructions: Execute a safe Gmail search for recent OpenRouter/Fusion-related mail, summarize only receipt-safe identifiers, and do not expose email bodies or secrets.",
             'params:{"query":"from:(openrouter.ai) OR subject:(OpenRouter) OR subject:(Fusion)"}',
         ]
