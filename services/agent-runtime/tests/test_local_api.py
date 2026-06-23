@@ -7,6 +7,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import Mock, patch
 
 import requests
@@ -946,6 +947,57 @@ class LocalAgentApiTests(unittest.TestCase):
             "https://mcp.zapier.com/oauth/authorize?fresh=1",
         )
         self.assertTrue(fresh_start_oauth.call_args.kwargs["force_new"])
+
+        with (
+            patch.object(
+                self.server.tools.zapier,
+                "complete_oauth",
+                return_value=f"{self.base_url}/agent-tasks",
+            ) as complete_oauth,
+            patch(
+                "fathiya_runtime.local_api._zapier_diagnostics_payload",
+                return_value={
+                    "live_read_probe": {
+                        "app": "Manus",
+                        "action": "Get Tasks",
+                        "status": "ready",
+                        "can_execute_now": True,
+                        "execution_mode": "live_zapier_mcp",
+                        "prompt": (
+                            "Zapier action: Manus / Get Tasks\n"
+                            "instructions: Execute a safe read of Manus task metadata through Zapier MCP.\n"
+                            "params:{}"
+                        ),
+                        "summary": "Manus/Get Tasks جاهز كقراءة إثبات حية.",
+                    }
+                },
+            ),
+        ):
+            callback = requests.get(
+                f"{self.base_url}/api/agent/oauth/zapier/callback",
+                headers=self.headers,
+                params={"code": "oauth-code", "state": "oauth-state"},
+                allow_redirects=False,
+                timeout=5,
+            )
+        self.assertEqual(callback.status_code, 302)
+        complete_oauth.assert_called_once_with("oauth-code", "oauth-state")
+        callback_query = parse_qs(urlparse(callback.headers["Location"]).query)
+        self.assertEqual(callback_query["integration"], ["zapier_mcp"])
+        self.assertEqual(callback_query["status"], ["connected"])
+        self.assertEqual(callback_query["zapier_probe"], ["queued"])
+        self.assertEqual(callback_query["probe_app"], ["Manus"])
+        self.assertEqual(callback_query["probe_action"], ["Get Tasks"])
+        self.assertNotIn("selected_api", callback.headers["Location"])
+        proof_task_id = callback_query["probe_task_id"][0]
+        proof_detail = self.store.get_detail(proof_task_id)
+        self.assertIsNotNone(proof_detail)
+        proof_task = proof_detail["task"]
+        self.assertEqual(proof_task["user_id"], "local-zapier-oauth")
+        self.assertEqual(proof_task["status"], "queued")
+        self.assertIn("إثبات Zapier", proof_task["title"])
+        self.assertIn("Zapier action: Manus / Get Tasks", proof_task["prompt"])
+        self.assertNotIn("selected_api", json.dumps(proof_detail, ensure_ascii=False))
 
         denied = requests.get(
             f"{self.base_url}/healthz",

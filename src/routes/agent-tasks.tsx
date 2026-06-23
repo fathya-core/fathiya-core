@@ -1793,14 +1793,29 @@ function AgentTasksPage() {
       return;
     }
     window.sessionStorage.setItem(guardKey, guardValue);
+    const probeTaskId = params.get("probe_task_id");
     const cleanUrl = new URL(window.location.href);
-    cleanUrl.searchParams.delete("integration");
-    cleanUrl.searchParams.delete("status");
+    for (const key of [
+      "integration",
+      "status",
+      "zapier_probe",
+      "probe_task_id",
+      "probe_app",
+      "probe_action",
+    ]) {
+      cleanUrl.searchParams.delete(key);
+    }
     window.history.replaceState(
       null,
       "",
       `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`,
     );
+    if (probeTaskId) {
+      setSelectedId(probeTaskId);
+      setWorkspaceView("reports");
+      void loadTasks();
+      return;
+    }
     void startIntegrationTask(zapierIntegration);
   }, [localMode, zapierIntegration]);
 

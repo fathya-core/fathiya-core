@@ -195,8 +195,18 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
                     HTTPStatus.BAD_GATEWAY,
                     f"Zapier OAuth callback failed: {type(exc).__name__}",
                 )
+            proof = _enqueue_zapier_live_read_proof(self.server, return_to=return_to)
+            redirect_fields = {"integration": "zapier_mcp", "status": "connected"}
+            if proof:
+                redirect_fields["zapier_probe"] = str(proof.get("status") or "not_ready")
+                if proof.get("task_id"):
+                    redirect_fields["probe_task_id"] = str(proof["task_id"])
+                if proof.get("app"):
+                    redirect_fields["probe_app"] = str(proof["app"])
+                if proof.get("action"):
+                    redirect_fields["probe_action"] = str(proof["action"])
             return self._send_redirect(
-                _append_query(return_to, {"integration": "zapier_mcp", "status": "connected"})
+                _append_query(return_to, redirect_fields)
             )
         if path in {"/healthz", "/api/agent/health"}:
             return self._send_json(_runtime_health_payload(self.server))
@@ -2304,6 +2314,55 @@ def _zapier_live_read_probe(
             ),
         }
     return None
+
+
+def _enqueue_zapier_live_read_proof(
+    server: LocalAgentHTTPServer,
+    *,
+    return_to: str,
+) -> dict[str, Any] | None:
+    try:
+        diagnostics = _zapier_diagnostics_payload(server, return_to=return_to)
+    except Exception:
+        return {"status": "diagnostics_failed"}
+    probe = diagnostics.get("live_read_probe")
+    if not isinstance(probe, dict):
+        return {"status": "no_probe"}
+    if not probe.get("can_execute_now"):
+        return {
+            "status": str(probe.get("status") or "not_ready"),
+            "app": probe.get("app"),
+            "action": probe.get("action"),
+        }
+    prompt = str(probe.get("prompt") or "").strip()
+    app = str(probe.get("app") or "Zapier").strip()
+    action = str(probe.get("action") or "read proof").strip()
+    if len(prompt) < 3:
+        return {"status": "missing_prompt", "app": app, "action": action}
+    task = server.store.enqueue(
+        f"إثبات Zapier: {app} / {action}"[:120],
+        prompt,
+        "local-zapier-oauth",
+    )
+    server.store.add_event(
+        task,
+        "zapier_oauth_live_read_proof",
+        f"تم إنشاء قراءة إثبات Zapier بعد OAuth: {app} / {action}.",
+        status=task["status"],
+        progress=0,
+        payload={
+            "app": app,
+            "action": action,
+            "execution_mode": probe.get("execution_mode"),
+            "secret_safe": True,
+        },
+    )
+    return {
+        "status": "queued",
+        "task_id": task["id"],
+        "app": app,
+        "action": action,
+    }
 
 
 def _agent_os_full_execute_prompt() -> str:
