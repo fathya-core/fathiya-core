@@ -3281,13 +3281,15 @@
       const params = new URLSearchParams(location.search);
       const integration = params.get("integration");
       const status = params.get("status");
+      const probeTaskId = params.get("probe_task_id");
       if (!integration || !status) {
         return;
       }
       const guardValue = `${location.pathname}?${params.toString()}`;
       const cleanUrl = new URL(location.href);
-      cleanUrl.searchParams.delete("integration");
-      cleanUrl.searchParams.delete("status");
+      for (const key of ["integration", "status", "zapier_probe", "probe_task_id", "probe_app", "probe_action"]) {
+        cleanUrl.searchParams.delete(key);
+      }
       history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
       if (integration === "zapier_mcp" && status === "connected") {
         const guardKey = "fathiya.zapier.oauth.connected.task.v1";
@@ -3295,6 +3297,12 @@
           return;
         }
         sessionStorage.setItem(guardKey, guardValue);
+        if (probeTaskId) {
+          selectedTaskId = probeTaskId;
+          setWorkspaceView("reports", { scroll: false });
+          loadTasks().then(() => loadDetail(probeTaskId)).catch(showError);
+          return;
+        }
         createTask({
           title: "فحص Zapier بعد الربط",
           prompt: zapierConnectionTaskPrompt(commandZapierIntegration)
