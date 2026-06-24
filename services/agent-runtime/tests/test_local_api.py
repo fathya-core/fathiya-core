@@ -35,6 +35,10 @@ class ZapierProviderSummaryTests(unittest.TestCase):
                 "live_available": False,
             },
             "agent_provider_actions": {
+                "ChatGPT (OpenAI)": {
+                    "read": ["Ask Assistant"],
+                    "approval_gated_write": ["Start Conversation"],
+                },
                 "Cursor": {
                     "read": ["Find Agent Status"],
                     "approval_gated_write": ["Launch Agent"],
@@ -48,7 +52,7 @@ class ZapierProviderSummaryTests(unittest.TestCase):
 
         providers = _mesh_agent_provider_summaries(inventory)
 
-        self.assertEqual({provider["app"] for provider in providers}, {"Cursor", "Manus"})
+        self.assertEqual({provider["app"] for provider in providers}, {"ChatGPT (OpenAI)"})
         self.assertTrue(all(provider["status"] == "inventory_only" for provider in providers))
         self.assertTrue(all(provider["inventory_only"] for provider in providers))
         self.assertTrue(
@@ -66,16 +70,16 @@ class ZapierProviderSummaryTests(unittest.TestCase):
                 "live_available": True,
             },
             "agent_provider_actions": {
-                "Cursor": {
-                    "read": ["Find Agent Status"],
-                    "approval_gated_write": ["Launch Agent"],
+                "Agents": {
+                    "read": ["Find Agent"],
+                    "approval_gated_write": ["Run Agent"],
                 },
             },
         }
 
         providers = _mesh_agent_provider_summaries(inventory)
 
-        self.assertEqual(providers[0]["app"], "Cursor")
+        self.assertEqual(providers[0]["app"], "Agents")
         self.assertEqual(providers[0]["status"], "ready")
         self.assertFalse(providers[0]["inventory_only"])
         self.assertEqual(providers[0]["execution_mode"], "live_zapier_mcp")
@@ -452,16 +456,8 @@ class LocalAgentApiTests(unittest.TestCase):
             quick_action_by_id["activate_tools"]["prompt"],
         )
         self.assertIn(
-            "Zapier action: Manus / Get Tasks",
-            quick_action_by_id["verify_manus_zapier_read"]["prompt"],
-        )
-        self.assertIn(
             "Zapier action: Gmail / Find Email",
             quick_action_by_id["verify_gmail_zapier_read"]["prompt"],
-        )
-        self.assertIn(
-            "Zapier action preflight: Cursor / Find Agent Status",
-            quick_action_by_id["prepare_cursor_zapier_read"]["prompt"],
         )
         self.assertIn(
             "agent mesh execute:",
@@ -471,7 +467,6 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(activation_overview["mode"], "agent_activation_overview_v1")
         self.assertGreaterEqual(activation_overview["safe_tool_count"], 20)
         self.assertGreaterEqual(activation_overview["ready_lane_count"], 1)
-        self.assertGreaterEqual(mesh_summary["summary"]["agent_provider_count"], 2)
         self.assertGreaterEqual(mesh_summary["summary"]["connected_app_count"], 5)
         provider_by_app = {
             provider["app"]: provider
@@ -483,19 +478,14 @@ class LocalAgentApiTests(unittest.TestCase):
         }
         self.assertIn("GitHub", zapier_app_names)
         self.assertIn("Gmail", zapier_app_names)
-        self.assertIn("Manus", provider_by_app)
-        self.assertIn("Cursor", provider_by_app)
-        self.assertEqual(provider_by_app["Manus"]["status"], "inventory_only")
-        self.assertEqual(
-            provider_by_app["Cursor"]["execution_mode"],
-            "inventory_only_until_oauth",
-        )
-        self.assertGreaterEqual(
-            activation_overview["agent_provider_write_action_count"],
-            1,
-        )
-        self.assertIn(
+        self.assertNotIn("Manus", provider_by_app)
+        self.assertNotIn("Cursor", provider_by_app)
+        self.assertNotIn(
             "Manus",
+            {provider["app"] for provider in activation_overview["agent_providers"]},
+        )
+        self.assertNotIn(
+            "Cursor",
             {provider["app"] for provider in activation_overview["agent_providers"]},
         )
         self.assertIn("تشغيل فتحية الآن", activation_overview["default_action"]["label"])
@@ -527,7 +517,6 @@ class LocalAgentApiTests(unittest.TestCase):
             "bug_bounty",
             "knowledge",
             "tools",
-            "connected_apps",
         }:
             self.assertIn(group_id, group_by_id)
             self.assertGreaterEqual(group_by_id[group_id]["command_count"], 1)
@@ -538,15 +527,13 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn("execute_mesh", command_by_id)
         self.assertIn("verify_production_site", command_by_id)
         self.assertIn("verify_github_zapier_read", command_by_id)
-        self.assertIn("verify_manus_zapier_read", command_by_id)
         self.assertIn("verify_gmail_zapier_read", command_by_id)
-        self.assertIn("prepare_cursor_zapier_read", command_by_id)
         self.assertIn("lane_trading", command_by_id)
         self.assertIn("lane_bug_bounty", command_by_id)
-        self.assertIn("agent_provider_manus", command_by_id)
-        self.assertIn("agent_provider_cursor", command_by_id)
-        self.assertIn("connected_app_github", command_by_id)
-        self.assertIn("connected_app_gmail", command_by_id)
+        self.assertNotIn("verify_manus_zapier_read", command_by_id)
+        self.assertNotIn("prepare_cursor_zapier_read", command_by_id)
+        self.assertNotIn("agent_provider_manus", command_by_id)
+        self.assertNotIn("agent_provider_cursor", command_by_id)
         self.assertEqual(command_by_id["agent_os_full_execute"]["mode"], "execution")
         self.assertEqual(command_by_id["execute_mesh"]["mode"], "execution")
         self.assertEqual(command_by_id["execute_mesh"]["group"], "محرك الوكلاء")
@@ -556,10 +543,7 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(command_by_id["verify_gmail_zapier_read"]["mode"], "tools")
         self.assertEqual(command_by_id["verify_github_zapier_read"]["status"], "partial")
         self.assertIn("تحضير", command_by_id["verify_github_zapier_read"]["title"])
-        self.assertEqual(command_by_id["verify_manus_zapier_read"]["status"], "partial")
         self.assertEqual(command_by_id["verify_gmail_zapier_read"]["status"], "partial")
-        self.assertEqual(command_by_id["agent_provider_cursor"]["mode"], "connected_apps")
-        self.assertEqual(command_by_id["connected_app_gmail"]["mode"], "connected_apps")
         self.assertIn(
             "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
             command_by_id["agent_os_full_execute"]["prompt"],
@@ -585,50 +569,12 @@ class LocalAgentApiTests(unittest.TestCase):
             command_by_id["verify_github_zapier_read"]["prompt"],
         )
         self.assertIn(
-            "Zapier action: Manus / Get Tasks",
-            command_by_id["verify_manus_zapier_read"]["prompt"],
-        )
-        self.assertIn(
             "Zapier action: Gmail / Find Email",
             command_by_id["verify_gmail_zapier_read"]["prompt"],
         )
         self.assertIn(
             '"query":"from:(openrouter.ai)',
             command_by_id["verify_gmail_zapier_read"]["prompt"],
-        )
-        self.assertIn(
-            "Zapier action preflight: Cursor / Find Agent Status",
-            command_by_id["prepare_cursor_zapier_read"]["prompt"],
-        )
-        self.assertEqual(command_by_id["agent_provider_manus"]["source"], "agent_provider")
-        self.assertEqual(command_by_id["connected_app_github"]["source"], "connected_app")
-        self.assertIn(
-            "prepare provider action: Manus",
-            command_by_id["agent_provider_manus"]["prompt"],
-        )
-        self.assertIn(
-            "action: Create Task",
-            command_by_id["agent_provider_manus"]["prompt"],
-        )
-        self.assertIn(
-            "connected app catalog: GitHub",
-            command_by_id["connected_app_github"]["prompt"],
-        )
-        self.assertIn(
-            "FATHIYA_CONNECTED_APP_COMMAND_V1",
-            command_by_id["connected_app_gmail"]["prompt"],
-        )
-        self.assertIn(
-            "approval_gated_action_count:",
-            command_by_id["agent_provider_cursor"]["prompt"],
-        )
-        self.assertIn(
-            "action: Launch Agent",
-            command_by_id["agent_provider_cursor"]["prompt"],
-        )
-        self.assertIn(
-            "https://github.com/fathya-core/fathiya-core",
-            command_by_id["agent_provider_cursor"]["prompt"],
         )
         self.assertIn(
             "/api/agent/command-center/run",
@@ -697,44 +643,6 @@ class LocalAgentApiTests(unittest.TestCase):
         )
         self.assertEqual(cancel_github_read_task.status_code, 200)
         self.assertEqual(cancel_github_read_task.json()["task"]["status"], "canceled")
-        manus_read_run = requests.post(
-            f"{self.base_url}/api/agent/command-center/run",
-            headers=self.headers,
-            json={"command_id": "verify_manus_zapier_read"},
-            timeout=5,
-        )
-        self.assertEqual(manus_read_run.status_code, 201)
-        manus_read_task = manus_read_run.json()["task"]
-        self.assertEqual(manus_read_task["status"], "queued")
-        self.assertEqual(manus_read_run.json()["command"]["id"], "verify_manus_zapier_read")
-        self.assertIn(
-            "Zapier action: Manus / Get Tasks",
-            manus_read_run.json()["command"]["prompt"],
-        )
-        cancel_manus_read_task = requests.post(
-            f"{self.base_url}/api/agent/tasks/{manus_read_task['id']}/cancel",
-            headers=self.headers,
-            timeout=5,
-        )
-        self.assertEqual(cancel_manus_read_task.status_code, 200)
-        self.assertEqual(cancel_manus_read_task.json()["task"]["status"], "canceled")
-        connected_app_run = requests.post(
-            f"{self.base_url}/api/agent/command-center/run",
-            headers=self.headers,
-            json={"command_id": "connected_app_github"},
-            timeout=5,
-        )
-        self.assertEqual(connected_app_run.status_code, 201)
-        connected_app_task = connected_app_run.json()["task"]
-        self.assertEqual(connected_app_task["status"], "queued")
-        self.assertEqual(connected_app_run.json()["command"]["id"], "connected_app_github")
-        cancel_connected_app_task = requests.post(
-            f"{self.base_url}/api/agent/tasks/{connected_app_task['id']}/cancel",
-            headers=self.headers,
-            timeout=5,
-        )
-        self.assertEqual(cancel_connected_app_task.status_code, 200)
-        self.assertEqual(cancel_connected_app_task.json()["task"]["status"], "canceled")
         openrouter_probe = requests.post(
             f"{self.base_url}/api/agent/integrations/openrouter/probe",
             headers=self.headers,
@@ -904,8 +812,8 @@ class LocalAgentApiTests(unittest.TestCase):
         provider_names = {
             provider["app"] for provider in zapier_diagnostics["agent_providers"]
         }
-        self.assertIn("Manus", provider_names)
-        self.assertIn("Cursor", provider_names)
+        self.assertNotIn("Manus", provider_names)
+        self.assertNotIn("Cursor", provider_names)
         with patch.object(
             self.server.tools.zapier,
             "start_oauth",
@@ -958,17 +866,16 @@ class LocalAgentApiTests(unittest.TestCase):
                 "fathiya_runtime.local_api._zapier_diagnostics_payload",
                 return_value={
                     "live_read_probe": {
-                        "app": "Manus",
-                        "action": "Get Tasks",
+                        "app": "GitHub",
+                        "action": "Find Repository",
                         "status": "ready",
                         "can_execute_now": True,
                         "execution_mode": "live_zapier_mcp",
                         "prompt": (
-                            "Zapier action: Manus / Get Tasks\n"
-                            "instructions: Execute a safe read of Manus task metadata through Zapier MCP.\n"
-                            "params:{}"
+                            "Zapier action: GitHub / Find Repository\n"
+                            "params:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}"
                         ),
-                        "summary": "Manus/Get Tasks جاهز كقراءة إثبات حية.",
+                        "summary": "GitHub/Find Repository جاهز كقراءة إثبات حية.",
                     }
                 },
             ),
@@ -986,8 +893,8 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(callback_query["integration"], ["zapier_mcp"])
         self.assertEqual(callback_query["status"], ["connected"])
         self.assertEqual(callback_query["zapier_probe"], ["queued"])
-        self.assertEqual(callback_query["probe_app"], ["Manus"])
-        self.assertEqual(callback_query["probe_action"], ["Get Tasks"])
+        self.assertEqual(callback_query["probe_app"], ["GitHub"])
+        self.assertEqual(callback_query["probe_action"], ["Find Repository"])
         self.assertNotIn("selected_api", callback.headers["Location"])
         proof_task_id = callback_query["probe_task_id"][0]
         proof_detail = self.store.get_detail(proof_task_id)
@@ -996,8 +903,14 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertEqual(proof_task["user_id"], "local-zapier-oauth")
         self.assertEqual(proof_task["status"], "queued")
         self.assertIn("إثبات Zapier", proof_task["title"])
-        self.assertIn("Zapier action: Manus / Get Tasks", proof_task["prompt"])
+        self.assertIn("Zapier action: GitHub / Find Repository", proof_task["prompt"])
         self.assertNotIn("selected_api", json.dumps(proof_detail, ensure_ascii=False))
+        cancel_proof_task = requests.post(
+            f"{self.base_url}/api/agent/tasks/{proof_task_id}/cancel",
+            headers=self.headers,
+            timeout=5,
+        )
+        self.assertEqual(cancel_proof_task.status_code, 200)
 
         denied = requests.get(
             f"{self.base_url}/healthz",

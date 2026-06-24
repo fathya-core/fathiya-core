@@ -267,7 +267,7 @@ class ToolExecutor:
                 ),
                 ToolSpec(
                     "agent_provider_probe",
-                    "Inspect a Zapier-backed agent provider such as Manus, Cursor, Agents, ChatGPT, Apify, or Netlify and return exact inventory/read/write actions plus OAuth readiness.",
+                    "Inspect a Zapier-backed agent provider such as Agents, ChatGPT, Apify, or Netlify and return exact inventory/read/write actions plus OAuth readiness.",
                     "connectors",
                     inputs=("provider", "refresh"),
                 ),
@@ -5466,7 +5466,7 @@ def _agent_mesh_requests_trading_start(prompt: str) -> bool:
 
 def _is_visible_agent_provider_app(app: str) -> bool:
     normalized = app.strip().casefold()
-    return bool(normalized)
+    return bool(normalized) and "cursor" not in normalized and "manus" not in normalized
 
 
 def _string_list(value: Any) -> list[str]:
@@ -5604,10 +5604,6 @@ def _select_agent_provider_action(
         if any(term in text for term in ("status", "find", "get", "read", "افحص", "حالة", "اقرأ")):
             if any(term in normalized for term in ("status", "find", "get", "make api get")):
                 value += 40
-        if "cursor" in app and normalized == "launch agent":
-            value += 25
-        if "manus" in app and normalized == "create task":
-            value += 25
         if app == "agents" and normalized == "run agent":
             value += 30
         if "netlify" in app and normalized == "start deploy":
@@ -7362,10 +7358,21 @@ def _agent_provider_names(inventory: dict[str, Any]) -> list[str]:
     actions = inventory.get("agent_provider_actions")
     if not isinstance(actions, dict):
         return []
-    preferred = ["ChatGPT (OpenAI)", "Agents", "Manus", "Cursor", "Apify", "Netlify"]
-    names = [name for name in preferred if name in actions]
-    names.extend(sorted(str(name) for name in actions if str(name) not in names))
+    preferred = ["ChatGPT (OpenAI)", "Agents", "Apify", "Netlify"]
+    names = [name for name in preferred if name in actions and not _hidden_agent_provider_name(name)]
+    names.extend(
+        sorted(
+            str(name)
+            for name in actions
+            if str(name) not in names and not _hidden_agent_provider_name(str(name))
+        )
+    )
     return names
+
+
+def _hidden_agent_provider_name(name: str) -> bool:
+    normalized = name.casefold()
+    return "cursor" in normalized or "manus" in normalized
 
 
 def _production_base_url(prompt: str, args: dict[str, Any]) -> str:

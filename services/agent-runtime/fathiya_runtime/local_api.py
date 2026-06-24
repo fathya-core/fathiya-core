@@ -1328,7 +1328,7 @@ def _build_agent_mesh_summary(
             (
                 "tool bridge sweep:\n"
                 "FATHIYA_TOOL_BRIDGE_SWEEP_V1\n"
-                "افحص Zapier MCP وn8n وCodespaces ووكلاء التطبيقات مثل Manus وCursor، "
+                "افحص Zapier MCP وn8n وCodespaces وتطبيقات القراءة المفيدة، "
                 "نفذ ما هو آمن داخليًا، وأظهر أزرار التفعيل المطلوبة لما تبقى."
             ),
         ),
@@ -1382,18 +1382,6 @@ def _build_agent_mesh_summary(
             "status": zapier_command_status,
         },
         {
-            "id": "verify_manus_zapier_read",
-            "label": "إثبات Manus" if zapier_direct_live else "تحضير Manus",
-            "title": (
-                "قراءة مهام Manus عبر Zapier"
-                if zapier_direct_live
-                else "تحضير قراءة مهام Manus عبر Zapier"
-            ),
-            "prompt": _zapier_manus_tasks_read_prompt(),
-            "mode": "tools",
-            "status": zapier_command_status,
-        },
-        {
             "id": "verify_gmail_zapier_read",
             "label": "إثبات Gmail" if zapier_direct_live else "تحضير Gmail",
             "title": (
@@ -1402,14 +1390,6 @@ def _build_agent_mesh_summary(
                 else "تحضير قراءة Gmail عبر Zapier"
             ),
             "prompt": _zapier_gmail_openrouter_read_prompt(),
-            "mode": "tools",
-            "status": zapier_command_status,
-        },
-        {
-            "id": "prepare_cursor_zapier_read",
-            "label": "تحضير Cursor",
-            "title": "تحضير قراءة Cursor عبر Zapier",
-            "prompt": _zapier_cursor_status_preflight_prompt(),
             "mode": "tools",
             "status": zapier_command_status,
         },
@@ -1602,39 +1582,6 @@ def _command_center_commands_from_mesh(mesh: dict[str, Any]) -> list[dict[str, A
             lane_id = str(raw.get("id") or "").strip()
             add(raw, source="lane", command_id=f"lane_{lane_id}" if lane_id else None)
 
-    agent_providers = mesh.get("agent_providers", [])
-    if isinstance(agent_providers, list):
-        for provider in agent_providers[:8]:
-            if not isinstance(provider, dict):
-                continue
-            provider_command = _command_center_agent_provider_command(provider)
-            if provider_command:
-                add(
-                    provider_command,
-                    source="agent_provider",
-                    command_id=str(provider_command.get("id") or ""),
-                )
-
-    zapier_apps = mesh.get("zapier_apps", [])
-    provider_names = {
-        str(provider.get("app") or "").casefold()
-        for provider in agent_providers
-        if isinstance(provider, dict)
-    }
-    if isinstance(zapier_apps, list):
-        for app in zapier_apps:
-            if not isinstance(app, dict):
-                continue
-            if str(app.get("app") or "").casefold() in provider_names:
-                continue
-            app_command = _command_center_connected_app_command(app)
-            if app_command:
-                add(
-                    app_command,
-                    source="connected_app",
-                    command_id=str(app_command.get("id") or ""),
-                )
-
     return commands
 
 
@@ -1654,7 +1601,7 @@ COMMAND_CENTER_GROUP_LABELS = {
     "bug_bounty": "صيد الثغرات",
     "knowledge": "المعرفة والتقارير",
     "tools": "الأدوات والجسور",
-    "connected_apps": "وكلاء التطبيقات",
+    "connected_apps": "تطبيقات Zapier",
 }
 
 
@@ -1672,7 +1619,7 @@ def _command_center_lane(
         return "connected_apps"
     if source == "lane":
         return _normalize_command_center_lane(raw_id.removeprefix("lane_"))
-    if raw_id in {"activate_tools", "verify_production_site", "verify_github_zapier_read", "verify_manus_zapier_read", "verify_gmail_zapier_read", "prepare_cursor_zapier_read"}:
+    if raw_id in {"activate_tools", "verify_production_site", "verify_github_zapier_read", "verify_gmail_zapier_read"}:
         return "tools"
     if raw_id == "learn_and_execute":
         return "knowledge"
@@ -1775,7 +1722,7 @@ def _command_center_connected_app_command(app_summary: dict[str, Any]) -> dict[s
 
 def _command_center_agent_provider_command(provider: dict[str, Any]) -> dict[str, Any] | None:
     app = str(provider.get("app") or "").strip()
-    if not app:
+    if not app or _hidden_operator_provider(app):
         return None
     read_actions = [
         str(item)
@@ -1826,41 +1773,20 @@ def _command_center_agent_provider_command(provider: dict[str, Any]) -> dict[str
 
 
 def _command_center_agent_launch_action(app: str, write_actions: list[str]) -> str:
-    normalized = app.casefold()
-    if "cursor" in normalized and any(action == "Launch Agent" for action in write_actions):
-        return "Launch Agent"
-    if "manus" in normalized:
-        for action in ("Create Task", "Create Private Task", "Launch Agent"):
-            if action in write_actions:
-                return action
     return ""
 
 
 def _command_center_agent_launch_objective(app: str) -> str:
-    normalized = app.casefold()
-    if "cursor" in normalized:
-        return "راجع مسار فتحية التشغيلي وارجع بملاحظات تنفيذية فقط."
-    if "manus" in normalized:
-        return "نفذ مراجعة تشغيلية لفتحية وارجع بملاحظات عملية."
     return "حضّر تشغيل وكيل التطبيق داخل فتحية."
 
 
 def _command_center_agent_launch_params(app: str) -> dict[str, Any]:
-    normalized = app.casefold()
-    if "cursor" in normalized:
-        return {
-            "repository_url": "https://github.com/fathya-core/fathiya-core",
-            "prompt_text": _command_center_agent_launch_objective(app),
-            "repository_ref": "main",
-            "target_auto_create_pr": "false",
-        }
-    if "manus" in normalized:
-        return {
-            "prompt": _command_center_agent_launch_objective(app),
-            "agent_profile": "manus-1.6",
-            "share_visibility": "private",
-        }
     return {}
+
+
+def _hidden_operator_provider(app: str) -> bool:
+    normalized = app.casefold()
+    return "cursor" in normalized or "manus" in normalized
 
 
 def _command_center_slug(value: str) -> str:
@@ -1891,6 +1817,8 @@ def _mesh_zapier_app_summaries(inventory: dict[str, Any]) -> list[dict[str, Any]
             continue
         app = str(item.get("app") or "").strip()
         if not app or app.casefold() in seen:
+            continue
+        if _hidden_operator_provider(app):
             continue
         seen.add(app.casefold())
         modes = [
@@ -2043,6 +1971,9 @@ def _mesh_agent_provider_summaries(
     for app, action_set in action_sets.items():
         if not isinstance(action_set, dict):
             continue
+        app_name = str(app).strip()
+        if not app_name or _hidden_operator_provider(app_name):
+            continue
         raw_read_actions = action_set.get("read", [])
         raw_write_actions = action_set.get("approval_gated_write", [])
         read_actions = [
@@ -2058,7 +1989,6 @@ def _mesh_agent_provider_summaries(
         total = len(read_actions) + len(write_actions)
         if total <= 0:
             continue
-        app_name = str(app).strip()
         execution_mode = "live_zapier_mcp" if direct_live else "inventory_only_until_oauth"
         providers.append(
             {
@@ -2267,7 +2197,7 @@ def _zapier_live_read_probe(
         for provider in providers
         if isinstance(provider, dict) and provider.get("app")
     }
-    for preferred in ("Manus", "GitHub", "Gmail", "Microsoft Outlook", "Zapier Tables", "Cursor"):
+    for preferred in ("GitHub", "Gmail", "Microsoft Outlook", "Zapier Tables"):
         provider = provider_by_name.get(preferred.casefold())
         if not provider:
             continue
@@ -2278,10 +2208,7 @@ def _zapier_live_read_probe(
         ]
         if not read_actions:
             continue
-        if preferred == "Manus" and "Get Tasks" in read_actions:
-            prompt = _zapier_manus_tasks_read_prompt()
-            action = "Get Tasks"
-        elif preferred == "GitHub" and "Find Repository" in read_actions:
+        if preferred == "GitHub" and "Find Repository" in read_actions:
             prompt = _zapier_github_repository_read_prompt()
             action = "Find Repository"
         elif preferred == "Gmail" and "Find Email" in read_actions:
@@ -2372,7 +2299,7 @@ def _agent_os_full_execute_prompt() -> str:
             "FATHIYA_AGENT_OS_FULL_EXECUTION_V1",
             "شغّل فتحية الآن كمحرك وكلاء منفذين لا كمحلل تقارير فقط.",
             "ابدأ من المعرفة المحلية: استرجع ما يلزم عبر Hugging Face، ثم استخدم OpenRouter للتخطيط والتقييم الثقيل عند الحاجة.",
-            "نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet متاح الآن عبر الأدوات المحلية: Zapier MCP inventory/live reads، n8n، Kali WSL، GitHub/Codespaces، ووكلاء التطبيقات مثل Manus وCursor وAI by Zapier عند توفر OAuth.",
+            "نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet متاح الآن عبر الأدوات المحلية: Zapier MCP inventory/live reads، n8n، Kali WSL، GitHub/Codespaces، وAI by Zapier عند توفر OAuth.",
             "افصل المسارات عمليًا: التداول الورقي بنبض الثانية أولًا، صيد الثغرات كمسودة مصرح بها مع dedupe، التقارير كإيصالات، والطلب المباشر كهدف واحد يتحول إلى أدوات.",
             "لا تتوقف عند نقص Supabase أو Testnet أو OAuth؛ نفذ المتاح الآن، وحوّل الناقص إلى next_action محدد.",
             "سجل إيصالًا يثبت الأدوات التي تحركت فعليًا، نتيجة كل مسار، وما بقي فقط بسبب إعداد خارجي أو أثر عالي.",
@@ -2439,32 +2366,12 @@ def _zapier_github_repository_read_prompt() -> str:
     )
 
 
-def _zapier_manus_tasks_read_prompt() -> str:
-    return "\n".join(
-        [
-            "Zapier action: Manus / Get Tasks",
-            "instructions: Execute a safe read of Manus task metadata through Zapier MCP, then record progress and a receipt without exposing task secrets.",
-            "params:{}",
-        ]
-    )
-
-
 def _zapier_gmail_openrouter_read_prompt() -> str:
     return "\n".join(
         [
             "Zapier action: Gmail / Find Email",
             "instructions: Execute a safe Gmail search for recent OpenRouter/Fusion-related mail, summarize only receipt-safe identifiers, and do not expose email bodies or secrets.",
             'params:{"query":"from:(openrouter.ai) OR subject:(OpenRouter) OR subject:(Fusion)"}',
-        ]
-    )
-
-
-def _zapier_cursor_status_preflight_prompt() -> str:
-    return "\n".join(
-        [
-            "Zapier action preflight: Cursor / Find Agent Status",
-            "instructions: Prepare the safe Cursor agent-status read. Do not execute until agent_id is supplied; return required fields and a ready task prompt.",
-            "params:{}",
         ]
     )
 

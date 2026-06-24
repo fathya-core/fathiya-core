@@ -190,6 +190,22 @@ const KNOWLEDGE_EXECUTION_PROMPT = [
   "أخرج إيصالًا يثبت: ما فهمته، الأدوات التي اختيرت، ما نُفذ فعليًا، وما بقي ينتظر ربطًا أو موافقة.",
 ].join("\n");
 
+const DAILY_INTELLIGENCE_REPORT_PROMPT = [
+  "knowledge execution mission:",
+  "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1",
+  "أنشئ تقرير فتحية اليومي من مصادر المعرفة المحفوظة وروابط البحث المهمة، ثم حوّله إلى تنفيذ عملي.",
+  "source_path: intake/runtime/Gmail---Deep-research-performance-gains-with-multi-model-Fusion-pdf-20b5be5a9fdc.md",
+  "source_path: cards/FATHIYA_OPENROUTER_FUSION_ROUTING_CARD_v1.md",
+  "source_path: reports/study/FATHIYA_BUG_BOUNTY_WEB_AND_LOCAL_TRAINING_REPORT_v1.md",
+  "source_path: reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_TRAINING_REPORT_v1.md",
+  "source_path: raw/imports/awareness_knowledge_roadmap_security_2026_05_15/aks-104-0a649a207d-the-bug-bounty-automation-stack-that-can-generate-10k-open-source-tools.md",
+  "reference_url: https://medium.com/",
+  "reference_url: https://www.datacamp.com/",
+  "reference_url: https://trainingpost.com/",
+  "المطلوب: لخص الجديد، استخرج دروس bug bounty والتعلم الآلي، اختبر الفهم بأسئلة تطبيقية، حدّث توصية النماذج المجانية/القوية، ثم نفذ فحص الأدوات الداخلية الجاهزة وسجل إيصالًا.",
+  "لا تنتظر حسابات خارجية؛ استخدم المعرفة المحلية أولًا، وحوّل أي مصدر يحتاج تسجيل دخول إلى next_action واضح.",
+].join("\n");
+
 const FATHIYA_EXECUTION_OS_PROMPT = [
   "agent mesh execute:",
   "FATHIYA_EXECUTION_OS_MISSION_V1",
@@ -224,7 +240,8 @@ const BUG_BOUNTY_KNOWLEDGE_PATH =
   "knowledge/security/bug-bounty/hackerone/20260615-hacktivity-high-critical-lessons.md";
 
 function isVisibleAgentProviderApp(app: string): boolean {
-  return Boolean(app.trim());
+  const normalized = app.trim().toLowerCase();
+  return Boolean(normalized) && !normalized.includes("cursor") && !normalized.includes("manus");
 }
 
 function normalizeOptionalUrl(value: string): string {
@@ -657,9 +674,8 @@ function AgentTasksPage() {
   const [startingCodespacesAgent, setStartingCodespacesAgent] = useState(false);
   const [startingOpenRouterStrategy, setStartingOpenRouterStrategy] = useState(false);
   const [startingKnowledgeExecution, setStartingKnowledgeExecution] = useState(false);
+  const [startingDailyReport, setStartingDailyReport] = useState(false);
   const [startingBugBountyHunt, setStartingBugBountyHunt] = useState(false);
-  const [startingAgentProviderProbe, setStartingAgentProviderProbe] = useState<string | null>(null);
-  const [startingAgentProviderPrepare, setStartingAgentProviderPrepare] = useState<string | null>(null);
   const [bugBountyPlatform, setBugBountyPlatform] = useState<BugBountyPlatform>("auto");
   const [bugBountyProgramUrl, setBugBountyProgramUrl] = useState("");
   const [bugBountyRepoUrl, setBugBountyRepoUrl] = useState("");
@@ -1140,60 +1156,6 @@ function AgentTasksPage() {
     }
   }
 
-  async function startAgentProviderProbe(providerApp: string) {
-    if (!hasAccess || !providerApp.trim()) return;
-    setStartingAgentProviderProbe(providerApp);
-    setError("");
-    try {
-      const body: CreateAgentTaskBody = {
-        title: `فحص وكيل تطبيق: ${providerApp}`,
-        prompt: [
-          `agent provider probe: ${providerApp}`,
-          "افحص هذا المزود من مخزون Zapier MCP داخل فتحية.",
-          "اعرض أفعال القراءة والكتابة المتاحة، ولا تنفذ أي إجراء خارجي.",
-        ].join("\n"),
-      };
-      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      setSelectedId(data.task.id);
-      setWorkspaceView("reports");
-      await loadTasks();
-    } catch (taskError) {
-      setError(String(taskError));
-    } finally {
-      setStartingAgentProviderProbe(null);
-    }
-  }
-
-  async function startAgentProviderPrepare(providerApp: string) {
-    if (!hasAccess || !providerApp.trim()) return;
-    setStartingAgentProviderPrepare(providerApp);
-    setError("");
-    try {
-      const body: CreateAgentTaskBody = {
-        title: `تحضير تشغيل وكيل: ${providerApp}`,
-        prompt: [
-          `agent provider action: ${providerApp}`,
-          "حضّر أفضل فعل Zapier مناسب لتشغيل هذا المزود كوكيل تطبيق.",
-          "لا تنفذ أي إجراء خارجي الآن؛ أعد action name وtask prompt واحتياج OAuth/الموافقة.",
-        ].join("\n"),
-      };
-      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      setSelectedId(data.task.id);
-      setWorkspaceView("reports");
-      await loadTasks();
-    } catch (taskError) {
-      setError(String(taskError));
-    } finally {
-      setStartingAgentProviderPrepare(null);
-    }
-  }
-
   async function startKnowledgeExecution() {
     if (!hasAccess) return;
     setStartingKnowledgeExecution(true);
@@ -1215,6 +1177,29 @@ function AgentTasksPage() {
       setError(String(taskError));
     } finally {
       setStartingKnowledgeExecution(false);
+    }
+  }
+
+  async function startDailyIntelligenceReport() {
+    if (!hasAccess) return;
+    setStartingDailyReport(true);
+    setError("");
+    try {
+      const body: CreateAgentTaskBody = {
+        title: "تقرير فتحية اليومي",
+        prompt: DAILY_INTELLIGENCE_REPORT_PROMPT,
+      };
+      const data = await agentApi<{ task: AgentTask }>(session ?? null, "/api/agent/tasks", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      setSelectedId(data.task.id);
+      setWorkspaceView("reports");
+      await loadTasks();
+    } catch (taskError) {
+      setError(String(taskError));
+    } finally {
+      setStartingDailyReport(false);
     }
   }
 
@@ -1748,26 +1733,6 @@ function AgentTasksPage() {
     () => buildZapierReadActions(connectedInventory),
     [connectedInventory],
   );
-  const agentProviderSummaries = useMemo(
-    () =>
-      Object.entries(connectedInventory?.agent_provider_actions ?? {})
-        .filter(([app]) => isVisibleAgentProviderApp(app))
-        .map(([app, actionSet]) => ({
-          app,
-          readCount: actionSet.read?.length ?? 0,
-          writeCount: actionSet.approval_gated_write?.length ?? 0,
-          readActions: actionSet.read ?? [],
-          writeActions: actionSet.approval_gated_write ?? [],
-        }))
-        .sort((a, b) => b.readCount + b.writeCount - (a.readCount + a.writeCount))
-        .slice(0, 8),
-    [connectedInventory],
-  );
-  const meshAgentProviders =
-    meshSummary?.agent_providers ?? meshActivation?.agent_providers ?? [];
-  const meshAgentProviderCount =
-    meshActivation?.agent_provider_count ??
-    (meshAgentProviders.length || agentProviderSummaries.length);
   const visibleZapierApps = useMemo(
     () =>
       connectedInventory?.zapier_apps
@@ -2197,8 +2162,8 @@ function AgentTasksPage() {
                     value={`${meshActivation?.safe_tool_count ?? meshSummary?.summary.tool_count ?? "--"} أداة · n8n ${integrationStatusShort(integrations, "n8n_local")}`}
                   />
                   <InfoField
-                    label="وكلاء التطبيقات"
-                    value={`${meshAgentProviderCount} وكلاء · ${integrationStatusShort(integrations, "zapier_mcp")}`}
+                    label="تطبيقات Zapier"
+                    value={`${visibleZapierApps.length} تطبيق · ${integrationStatusShort(integrations, "zapier_mcp")}`}
                   />
                   <InfoField label="التداول" value={trading?.running ? `${trading.symbol} · ثانية` : "Paper جاهز"} />
                 </div>
@@ -2216,67 +2181,6 @@ function AgentTasksPage() {
                         <p className="line-clamp-2 text-[10px] text-muted-foreground">
                           {lane.signal}
                         </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                {meshAgentProviders.length ? (
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    {meshAgentProviders.slice(0, 4).map((provider) => (
-                      <div
-                        key={provider.app}
-                        className="rounded-md border border-border/50 bg-background/30 p-2"
-                      >
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <span className="truncate text-[11px] font-semibold">
-                            {provider.app}
-                          </span>
-                          <Badge
-                            className={
-                              provider.status === "ready"
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                            }
-                          >
-                            {provider.status === "ready" ? "تنفيذ" : "OAuth"}
-                          </Badge>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          قراءة {provider.read_count} · كتابة {provider.write_count}
-                        </p>
-                        <div className="mt-2 grid grid-cols-2 gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[10px]"
-                            disabled={startingAgentProviderProbe === provider.app}
-                            onClick={() => void startAgentProviderProbe(provider.app)}
-                          >
-                            {startingAgentProviderProbe === provider.app ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <Play />
-                            )}
-                            فحص
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[10px]"
-                            disabled={startingAgentProviderPrepare === provider.app}
-                            onClick={() => void startAgentProviderPrepare(provider.app)}
-                          >
-                            {startingAgentProviderPrepare === provider.app ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <Activity />
-                            )}
-                            حضّر
-                          </Button>
-                        </div>
                       </div>
                     ))}
                   </div>
@@ -3176,6 +3080,16 @@ function AgentTasksPage() {
                   <Button
                     type="button"
                     variant="outline"
+                    onClick={() => void startDailyIntelligenceReport()}
+                    disabled={startingDailyReport}
+                    className="h-10 justify-center"
+                  >
+                    {startingDailyReport ? <Loader2 className="animate-spin" /> : <FileCheck2 />}
+                    تقرير يومي
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => void intakeAction("scan")}
                     disabled={intakeActing}
                     className="h-10 justify-center"
@@ -3311,13 +3225,13 @@ function AgentTasksPage() {
                 <Card className="border-violet-500/25 bg-violet-500/[0.035]">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between gap-3">
-                      <CardTitle className="text-sm">وكلاء وتطبيقات متصلة</CardTitle>
+                    <CardTitle className="text-sm">تطبيقات وأدوات Zapier</CardTitle>
                       <Badge className="border-violet-500/30 bg-violet-500/10 text-violet-300">
                         Zapier {zapierAppCount} · {zapierActionCount}
                       </Badge>
                     </div>
                     <CardDescription>
-                      مخزون أدوات Zapier ومزودو الوكلاء. التنفيذ الحي يحتاج OAuth محلي مفعل.
+                      مخزون أدوات Zapier المفيدة. التنفيذ الحي يحتاج OAuth محلي مفعل.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -3358,8 +3272,8 @@ function AgentTasksPage() {
                                 value={`${zapierDiagnostics.app_count} / ${zapierDiagnostics.action_count}`}
                               />
                               <InfoField
-                                label="وكلاء التطبيقات"
-                                value={`${zapierDiagnostics.agent_provider_count} · ${zapierDiagnostics.agent_provider_write_action_count} كتابة`}
+                                label="الأفعال المفيدة"
+                                value={`${zapierDiagnostics.action_count} إجراء`}
                               />
                               <InfoField
                                 label="Refresh"
@@ -3390,15 +3304,6 @@ function AgentTasksPage() {
                                 {zapierDiagnostics.last_refresh_status_code
                                   ? ` · HTTP ${zapierDiagnostics.last_refresh_status_code}`
                                   : ""}
-                              </p>
-                            )}
-                            {zapierDiagnostics.agent_providers.length > 0 && (
-                              <p className="mt-2 break-words text-[10px] text-muted-foreground">
-                                يفتح الربط:{" "}
-                                {zapierDiagnostics.agent_providers
-                                  .slice(0, 6)
-                                  .map((provider) => provider.app)
-                                  .join(" · ")}
                               </p>
                             )}
                             {zapierDiagnostics.live_read_probe && (
@@ -3673,36 +3578,6 @@ function AgentTasksPage() {
                             )}
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {agentProviderSummaries.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-[11px] font-semibold">مزودو الوكلاء</p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {agentProviderSummaries.map((provider) => (
-                            <div
-                              key={provider.app}
-                              className="rounded-md border border-border/60 bg-background/30 p-2"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="truncate text-[11px] font-semibold">
-                                  {provider.app}
-                                </p>
-                                <Badge variant="outline" className="shrink-0 text-[9px]">
-                                  {provider.readCount + provider.writeCount}
-                                </Badge>
-                              </div>
-                              <p className="mt-1 text-[10px] text-muted-foreground">
-                                قراءة {provider.readCount} · كتابة {provider.writeCount}
-                              </p>
-                              <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                                {[...provider.readActions, ...provider.writeActions][0] ||
-                                  "لا توجد أفعال مسماة"}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     )}
 
@@ -4280,7 +4155,7 @@ function AgentTasksPage() {
                           id="task-prompt"
                           value={prompt}
                           onChange={(event) => setPrompt(event.target.value)}
-                          placeholder="اكتب الهدف فقط؛ مثل: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اعرض مهام Manus الحالية."
+                          placeholder="اكتب الهدف فقط؛ مثل: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اطلب تقرير فتحية اليومي."
                           rows={7}
                           maxLength={20_000}
                         />
@@ -4926,9 +4801,6 @@ function AgentLiveCommandStrip({
   const upgradeItems = (commandCenter?.operator_queue ?? [])
     .filter((item) => item.action_tier === "upgrade" || !item.blocks_local_execution)
     .slice(0, 4);
-  const providerItems = (commandCenter?.agent_providers ?? [])
-    .filter((provider) => provider.inventory_only)
-    .slice(0, 4);
   const powershellCommands = [
     "powershell -ExecutionPolicy Bypass -File .\\scripts\\import-fathiya-knowledge.ps1 -Scan",
     "powershell -ExecutionPolicy Bypass -File .\\scripts\\fathiya.ps1 -RunEngine",
@@ -5054,7 +4926,7 @@ function AgentLiveCommandStrip({
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold">ترقيات خارجية لا توقف الداخلي</p>
                 <Badge variant="outline" className="text-[10px]">
-                  {upgradeActionCount || upgradeItems.length || providerItems.length} ترقية
+                  {upgradeActionCount || upgradeItems.length} ترقية
                 </Badge>
               </div>
               <div className="space-y-1.5">
@@ -5066,17 +4938,6 @@ function AgentLiveCommandStrip({
                       </span>
                       <Badge variant="outline" className="shrink-0 text-[9px]">
                         {item.action_label}
-                      </Badge>
-                    </div>
-                  ))
-                ) : providerItems.length ? (
-                  providerItems.map((provider) => (
-                    <div key={provider.app} className="flex items-start justify-between gap-2 text-[10px]">
-                      <span className="min-w-0 break-words text-muted-foreground">
-                        {provider.app}
-                      </span>
-                      <Badge variant="outline" className="shrink-0 text-[9px]">
-                        {provider.total_actions} إجراء
                       </Badge>
                     </div>
                   ))
@@ -5470,7 +5331,7 @@ function buildExecutionDecision({
       state: "local_ready",
       title: "فتحية تعمل الآن؛ الباقي ترقيات خارجية",
       summary: zapierNeedsReconnect
-        ? "المحرك ينفذ المعرفة، النماذج، n8n، Kali، Codespaces، والتداول الورقي الآن. Zapier ظاهر كمخزون أدوات، وإعادة OAuth ترقية للتنفيذ الحي في Manus/Cursor/Gmail وغيرها."
+        ? "المحرك ينفذ المعرفة، النماذج، n8n، Kali، Codespaces، والتداول الورقي الآن. Zapier ظاهر كمخزون أدوات، وإعادة OAuth ترقية للقراءات الحية مثل Gmail وGitHub."
         : "المحرك المحلي جاهز للتنفيذ الداخلي. قناة الإنتاج أو Testnet أو OAuth تظهر كترقيات واضحة ولا تمنع تشغيل الوكلاء المحليين.",
       badge: "جاهز محليًا",
       primaryAction: "run",
@@ -6150,7 +6011,7 @@ function commandCenterGroupHint(id: string) {
     bug_bounty: "صيد مصرح ينتج Draft داخلي.",
     knowledge: "استيعاب التقارير ثم تشغيل الأدوات المناسبة.",
     tools: "Zapier وn8n وKali والجسور الناقصة.",
-    connected_apps: "تحضير Manus وCursor وGmail وGitHub عبر Zapier.",
+    connected_apps: "قراءات Gmail/GitHub وتطبيقات Zapier عبر OAuth.",
   };
   return hints[id] ?? "أوامر مساعدة مرتبطة بالمحرك.";
 }
