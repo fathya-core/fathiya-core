@@ -1286,14 +1286,10 @@
           <div class="metric"><span>Ready now</span><strong id="command-ready-now">--</strong></div>
         </div>
         <div class="command-panel-actions">
-          <button id="command-run-engine">نفّذ بالوكلاء الآن</button>
+          <button id="command-run-engine">أرسل طلب</button>
           <button id="command-run-trading" class="secondary">وكيل التداول</button>
           <button id="command-run-bounty" class="secondary">صيد الثغرات</button>
-          <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
-          <button id="command-run-github-proof" class="secondary">إثبات GitHub</button>
-          <button id="command-run-gmail-proof" class="secondary">إثبات Gmail</button>
-          <button id="command-open-tools" class="secondary">تفعيل الناقص</button>
-          <button id="command-zapier-oauth" class="secondary">ربط Zapier</button>
+          <button id="command-open-reports" class="secondary">التقارير</button>
         </div>
         <div class="command-room-grid" id="command-room-grid">
           <div class="command-room">
@@ -1333,27 +1329,13 @@
         <strong>صيد الثغرات</strong>
         <span>HackerOne · Bugcrowd · تقرير</span>
       </button>
-      <button class="quick-action github" id="run-codespaces">
-        <strong>وكيل Codespaces</strong>
-        <span>GitHub · Remote agent</span>
-      </button>
-      <button class="quick-action model" id="run-model-strategy">
-        <strong>استراتيجية النماذج</strong>
-        <span>Fusion · Advisor · Safety</span>
-      </button>
-      <button class="quick-action knowledge" id="run-knowledge-execution">
-        <strong>استيعاب وتشغيل</strong>
-        <span>معرفة · أدوات · تنفيذ</span>
-      </button>
     </div>
 
     <nav class="workspace-tabs" aria-label="مسارات فتحية">
-      <button class="workspace-tab active" type="button" data-workspace-view="request">تشغيل الوكلاء</button>
+      <button class="workspace-tab active" type="button" data-workspace-view="request">الطلب</button>
       <button class="workspace-tab" type="button" data-workspace-view="trading">التداول</button>
       <button class="workspace-tab" type="button" data-workspace-view="bug-bounty">صيد الثغرات</button>
-      <button class="workspace-tab" type="button" data-workspace-view="knowledge">المعرفة</button>
       <button class="workspace-tab" type="button" data-workspace-view="reports">التقارير</button>
-      <button class="workspace-tab" type="button" data-workspace-view="tools">الأدوات والتفعيل</button>
     </nav>
     <div id="operator-error" class="operator-error hidden"></div>
 
@@ -4605,14 +4587,10 @@
       runCommandCenterCommand("lane_trading", meshQuickTask("lane_trading", "تشغيل وكيل التداول", "شغّل وكيل التداول الورقي بنبض الثانية، حدّث مستشار الاستراتيجية، وسجل إيصالًا واضحًا.")).catch(showError);
     });
     document.getElementById("command-run-bounty").addEventListener("click", () => {
-      setWorkspaceView("bounty");
+      setWorkspaceView("bug-bounty");
       runCommandCenterCommand("lane_bug_bounty", meshQuickTask("lane_bug_bounty", "تشغيل صيد الثغرات", "شغّل مسار صيد الثغرات المصرح: dedupe أولًا، ثم مسودة تقرير بإثبات عملي واضح.")).catch(showError);
     });
-    document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
-    document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
-    document.getElementById("command-run-gmail-proof").addEventListener("click", () => runCommandCenterCommand("verify_gmail_zapier_read").catch(showError));
-    document.getElementById("command-open-tools").addEventListener("click", () => runCommandCenterCommand("activate_tools", meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError));
-    document.getElementById("command-zapier-oauth").addEventListener("click", () => runCommandZapier().catch(showError));
+    document.getElementById("command-open-reports").addEventListener("click", () => setWorkspaceView("reports"));
     document.getElementById("ops-run-now").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("ops-learn-run").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
     document.getElementById("ops-open-activation").addEventListener("click", () => {
@@ -4666,10 +4644,7 @@
     document.getElementById("deploy-open-tools").addEventListener("click", () => setWorkspaceView("tools"));
     document.getElementById("run-engine").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
     document.getElementById("scan-mesh").addEventListener("click", () => createTask({ title: "فحص شبكة الوكلاء", prompt: meshPrompt }).catch(showError));
-    document.getElementById("run-codespaces").addEventListener("click", () => createTask({ title: "تشغيل وكيل GitHub Codespaces", prompt: codespacesPrompt }).catch(showError));
-    document.getElementById("run-model-strategy").addEventListener("click", () => createTask({ title: "استراتيجية OpenRouter/Fusion", prompt: modelStrategyPrompt }).catch(showError));
     document.getElementById("scan-model-strategy").addEventListener("click", () => createTask({ title: "استراتيجية OpenRouter/Fusion", prompt: modelStrategyPrompt }).catch(showError));
-    document.getElementById("run-knowledge-execution").addEventListener("click", () => createTask({ title: "استيعاب وتشغيل فتحية", prompt: knowledgeExecutionPrompt }).catch(showError));
     document.getElementById("knowledge-scan").addEventListener("click", () => intakeAction("scan").catch(showError));
     document.getElementById("knowledge-start").addEventListener("click", () => intakeAction("start").catch(showError));
     document.getElementById("knowledge-stop").addEventListener("click", () => intakeAction("stop").catch(showError));
