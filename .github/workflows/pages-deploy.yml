@@ -7,9 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: fathiya-pages
@@ -17,11 +15,8 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and deploy Pages
+    name: Build and publish gh-pages
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,14 +40,25 @@ jobs:
           cp dist/client/agent-tasks/index.html dist/client/index.html
           touch dist/client/.nojekyll
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist/client
-
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish gh-pages branch
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          deploy_root="$(mktemp -d)"
+          trap 'rm -rf "$deploy_root"' EXIT
+          git clone --branch gh-pages --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$deploy_root"
+          find "$deploy_root" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a dist/client/. "$deploy_root/"
+          touch "$deploy_root/.nojekyll"
+          cd "$deploy_root"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No gh-pages changes to publish."
+          else
+            git commit -m "Deploy FATHIYA Pages ${GITHUB_SHA::7}"
+            git push origin gh-pages
+          fi
