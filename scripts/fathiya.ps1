@@ -20,6 +20,8 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $startScript = Join-Path $PSScriptRoot "start-fathiya.ps1"
 $checkScript = Join-Path $PSScriptRoot "check-fathiya.ps1"
 $activateScript = Join-Path $PSScriptRoot "activate-fathiya.ps1"
+$pwsh = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+$powershellExe = if ($pwsh) { $pwsh.Source } else { "powershell" }
 
 function Invoke-FathiyaCommand {
   param(
@@ -57,21 +59,21 @@ if ($SkipInstall) { $startArgs += "-SkipInstall" }
 $shouldRunCommand = $RunEngine -or $RunTrading -or $RunBugBounty -or $RunKnowledge -or $RunTools
 
 Write-Host "Starting or attaching to FATHIYA..." -ForegroundColor Cyan
-& powershell @startArgs
+& $powershellExe @startArgs
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
 Write-Host ""
 Write-Host "Checking FATHIYA runtime and operator pages..." -ForegroundColor Cyan
-& powershell -ExecutionPolicy Bypass -File $checkScript -ApiPort $ApiPort -WebPort $WebPort
+& $powershellExe -ExecutionPolicy Bypass -File $checkScript -ApiPort $ApiPort -WebPort $WebPort
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
 Write-Host ""
 Write-Host "Activation summary:" -ForegroundColor Cyan
-& powershell -ExecutionPolicy Bypass -File $activateScript -ApiPort $ApiPort -WebPort $WebPort
+& $powershellExe -ExecutionPolicy Bypass -File $activateScript -ApiPort $ApiPort -WebPort $WebPort
 if ($LASTEXITCODE -eq 2) {
   Write-Host "FATHIYA is running with pending activation gates. Open the Tools page to finish external credentials." -ForegroundColor Yellow
   if (-not $shouldRunCommand) {

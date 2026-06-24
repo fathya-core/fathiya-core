@@ -3,7 +3,7 @@ param(
   [int]$WebPort = 5180,
   [string]$PublicDomain = "fathya-core.com",
   [string]$PublicWww = "www.fathya-core.com",
-  [string]$ExpectedPublicBaseUrl = "https://thriving-fenglisu-ef18b1.netlify.app",
+  [string]$ExpectedPublicBaseUrl = "https://fathya-core.github.io/fathiya-core",
   [switch]$StrictActivation
 )
 
@@ -152,16 +152,16 @@ $viewResults = $views | ForEach-Object {
 $originResults = @(
   Test-Origin "https://fathya-core.com"
   Test-Origin "https://www.fathya-core.com"
-  Test-Origin "https://fathya-project.github.io"
+  Test-Origin "https://fathya-core.github.io"
 )
 
 $expectedBase = $ExpectedPublicBaseUrl.TrimEnd("/")
 $publicSiteResults = @(
-  Test-AgentOsPage "expected-netlify" "$expectedBase/agent-tasks/"
+  Test-AgentOsPage "expected-public" "$expectedBase/agent-tasks/"
   Test-AgentOsPage "apex-domain" "https://$PublicDomain/agent-tasks/"
   Test-AgentOsPage "www-domain" "https://$PublicWww/agent-tasks/"
 )
-$expectedPublicPage = $publicSiteResults | Where-Object { $_.name -eq "expected-netlify" } | Select-Object -First 1
+$expectedPublicPage = $publicSiteResults | Where-Object { $_.name -eq "expected-public" } | Select-Object -First 1
 $apexPublicPage = $publicSiteResults | Where-Object { $_.name -eq "apex-domain" } | Select-Object -First 1
 $wwwPublicPage = $publicSiteResults | Where-Object { $_.name -eq "www-domain" } | Select-Object -First 1
 $publicDomainCurrent = [bool](
@@ -324,7 +324,7 @@ $activationGates = @(
     next_step = if ($publicDomainCurrent) {
       "لا إجراء مطلوب."
     } elseif ($expectedPublicPage.current_operator) {
-      "اربط $PublicDomain و $PublicWww بالنشر $expectedBase؛ في GoDaddy غيّر www بعيدًا عن site-dns.bolt.host، ثم شغّل scripts/link-fathiya-domain.ps1 -Apply بعد ضبط NETLIFY_AUTH_TOKEN."
+      "اربط $PublicDomain و $PublicWww بـ GitHub Pages؛ في GoDaddy اجعل apex على 185.199.108.153/109.153/110.153/111.153 واجعل www CNAME إلى fathya-core.github.io، ثم شغّل scripts/check-fathiya-pages-domain.ps1."
     } else {
       "أعد بناء ونشر operator-lite، ثم أعد فحص الدومين."
     }

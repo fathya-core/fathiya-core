@@ -171,6 +171,7 @@ class RuntimeConfig:
                     (
                         "https://fathya-core.com,"
                         "https://www.fathya-core.com,"
+                        "https://fathya-core.github.io,"
                         "https://fathya-project.github.io"
                     ),
                 ).split(",")
