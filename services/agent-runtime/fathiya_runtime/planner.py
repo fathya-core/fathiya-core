@@ -89,6 +89,8 @@ CONNECTED_APP_ALIASES = {
     "Files By Zapier": ("files by zapier", "zapier files", "ملفات زابير"),
 }
 AGENT_PROVIDER_APPS = (
+    "Manus",
+    "Cursor",
     "Agents",
     "AI by Zapier",
     "ChatGPT (OpenAI)",
@@ -98,6 +100,8 @@ AGENT_PROVIDER_APPS = (
     "GitHub",
 )
 AGENT_PROVIDER_ALIASES = {
+    "Manus": ("manus", "مانوس", "مانس"),
+    "Cursor": ("cursor", "كورسور", "كرسر", "كيرسر"),
     "Agents": ("agents", "zapier agents", "وكلاء زابير", "وكيل زابير"),
     "AI by Zapier": (
         "ai by zapier",
@@ -234,8 +238,20 @@ def build_plan(
             step for step in direct_steps if _tool_is_available(step["tool"], tool_catalog)
         ]
         if direct_steps:
-            tool_steps = direct_steps
+            tool_steps = _direct_web_intake_guard_steps(
+                operator_prompt,
+                direct_steps,
+                tool_catalog,
+                max_tool_steps,
+            )
+            static_step = _bug_bounty_static_review_step(operator_prompt)
+            direct_web_intake = bool(
+                static_step
+                and _bug_bounty_static_is_direct_web_intake(static_step.get("args", {}))
+            )
             planner_mode = "local_bug_bounty_execution"
+            if direct_web_intake or tool_steps != direct_steps:
+                planner_mode = f"{planner_mode}+direct_web_intake_guard"
             planner_error = None
         else:
             direct_steps = _tool_bridge_execution_steps(
@@ -525,17 +541,18 @@ def build_follow_up_decision(
             knowledge_mission=bool(task.get("knowledge_mission")),
         )
         steps = _without_seen_steps(steps, seen_signatures)
-        return {
-            "complete": not steps,
-            "reason": (
-                "اكتملت أدوات القراءة/الفحص الحتمية ولا توجد جولة متابعة مفيدة."
-                if not steps
-                else "كشفت المراجعة المحلية خطوة حتمية إضافية تنفذ جزءًا من الطلب."
-            ),
-            "steps": steps,
-            "planner_mode": "local_deterministic_tool_review",
-            "planner_error": None,
-        }
+        if steps or not model.available:
+            return {
+                "complete": not steps,
+                "reason": (
+                    "اكتملت أدوات القراءة/الفحص الحتمية ولا توجد جولة متابعة مفيدة."
+                    if not steps
+                    else "كشفت المراجعة المحلية خطوة حتمية إضافية تنفذ جزءًا من الطلب."
+                ),
+                "steps": steps,
+                "planner_mode": "local_deterministic_tool_review",
+                "planner_error": None,
+            }
     if model.available:
         try:
             plan_complete = getattr(model, "plan_complete", model.complete)
@@ -592,9 +609,10 @@ def build_follow_up_decision(
             )
             steps = _without_seen_steps(steps, seen_signatures)
             provider = getattr(model, "last_provider", "openrouter")
+            requested_incomplete = not bool(payload.get("complete"))
             complete = bool(payload.get("complete")) and not steps
             reason = str(payload.get("reason") or "").strip()
-            if not steps and not complete:
+            if not steps and not complete and not requested_incomplete:
                 complete = True
                 reason = reason or "لم يحدد مراجع الجولة خطوة تنفيذ جديدة قابلة للتحقق."
             return {
@@ -675,6 +693,30 @@ def fast_control_steps(
     explicit_agent_mesh_step = _explicit_agent_mesh_control_step(prompt)
     if explicit_agent_mesh_step and explicit_agent_mesh_step["tool"] in available:
         return [explicit_agent_mesh_step]
+
+    text = prompt.casefold()
+    if "manus" in text and any(
+        term in text
+        for term in ("task", "tasks", "get tasks", "list tasks", "مهام", "المهام", "قائمة")
+    ):
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Manus Tasks عبر Zapier MCP",
+                "args": {
+                    "app": "Manus",
+                    "action": "Get Tasks",
+                    "params": {},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe task identifiers and status summary.",
+                },
+            }
+        )
+    if (
+        ("zapier" in text or "زابير" in text)
+        and any(term in text for term in ("github", "git hub", "repo", "repository", "مستودع", "قيتهب"))
+    ):
+        return _fallback_steps(prompt, tool_catalog, max_tool_steps=6)
 
     safe_zapier_steps = _safe_zapier_read_steps(prompt, tool_catalog)
     if safe_zapier_steps:
@@ -1141,6 +1183,10 @@ def _fallback_steps(
     }
     steps: list[dict[str, Any]] = []
     connector_profiles = _profile_names(available.get("connector_profile", {}))
+    compound_zapier_github = (
+        ("zapier" in text or "زابير" in text)
+        and any(term in text for term in ("github", "git hub", "repo", "repository", "مستودع", "قيتهب"))
+    )
 
     def add(tool: str, description: str, args: dict[str, Any] | None = None) -> None:
         if tool in available and not any(step["tool"] == tool for step in steps):
@@ -1251,7 +1297,8 @@ def _fallback_steps(
             connected_app_catalog["description"],
             connected_app_catalog["args"],
         )
-        return steps[:max_tool_steps]
+        if not compound_zapier_github:
+            return steps[:max_tool_steps]
 
     connector_profile = _connector_profile_step(prompt, connector_profiles)
     if connector_profile:
@@ -1511,7 +1558,15 @@ def _tool_bridge_execution_steps(
         ("zapier" in text or "زابير" in text)
         and "n8n" in text
         and ("codespaces" in text or "كودسبيس" in text)
-        and ("وكلاء التطبيقات" in text or "agent provider" in text or "connected agents" in text)
+        and (
+            "وكلاء التطبيقات" in text
+            or "agent provider" in text
+            or "connected agents" in text
+            or "manus" in text
+            or "cursor" in text
+            or "مانوس" in text
+            or "كورسور" in text
+        )
     )
     if not explicit and not compound_bridge:
         return []
@@ -1671,6 +1726,13 @@ def _knowledge_execution_steps(
         and any(term in text for term in execute_terms)
     ):
         return []
+    evidence_text = " ".join(
+        source.excerpt for source in (source_guidance or []) if source.excerpt
+    ).casefold()
+    requested_repo_check = any(
+        term in f"{text}\n{evidence_text}"
+        for term in ("repository", "repo", "github", "git ", "مستودع", "قيتهب")
+    )
 
     urls = [
         url.rstrip(").,]")
@@ -1724,12 +1786,22 @@ def _knowledge_execution_steps(
             "description": "فحص التنفيذ المحلي: Hugging Face وn8n وKali وGitHub والتداول",
             "args": {"refresh": True},
         },
+    ]
+    if requested_repo_check:
+        steps.append(
+            {
+                "tool": "repo_status",
+                "description": "تنفيذ فحص حالة المستودع المطلوب في دليل المعرفة",
+                "args": {},
+            }
+        )
+    steps.append(
         {
             "tool": "agent_mesh_execute",
             "description": "تشغيل شبكة التنفيذ الداخلية الجاهزة بعد الاستيعاب",
             "args": {"refresh": True, "max_steps": 20},
-        },
-    ]
+        }
+    )
     return steps[:max_tool_steps]
 
 
@@ -2332,6 +2404,16 @@ def _agent_provider_action_hint(prompt: str, provider: str) -> str:
         term in text
         for term in ("launch", "run", "start", "execute", "شغل", "شغّل", "تشغيل", "ابدأ")
     )
+    if "manus" in provider_key:
+        if wants_continue:
+            return "Continue Task"
+        if wants_create or wants_run:
+            return "Create Task"
+    if "cursor" in provider_key:
+        if wants_continue:
+            return "Add Followup Instruction to Agent"
+        if wants_run or wants_create:
+            return "Launch Agent"
     if provider_key == "agents" and (wants_run or wants_create):
         return "Run Agent"
     if "netlify" in provider_key and wants_run:
@@ -2355,7 +2437,30 @@ def _agent_provider_params_from_prompt(
     provider_key = provider.casefold()
     action_key = action.casefold()
     objective = _agent_provider_objective_text(prompt, provider)
-    if provider_key == "agents":
+    if "cursor" in provider_key:
+        repo_url = _github_repo_url_from_text(prompt)
+        if repo_url and not _has_prompt_param(prepared, "repository_url"):
+            prepared["repository_url"] = repo_url
+        if (
+            ("launch" in action_key or "agent" in action_key or not action_key)
+            and objective
+            and not _has_prompt_param(prepared, "prompt_text")
+        ):
+            prepared["prompt_text"] = objective
+    elif "manus" in provider_key:
+        if (
+            ("create" in action_key or "task" in action_key or not action_key)
+            and objective
+            and not _has_prompt_param(prepared, "prompt")
+        ):
+            prepared["prompt"] = objective
+        elif (
+            "continue" in action_key
+            and objective
+            and not _has_prompt_param(prepared, "prompt")
+        ):
+            prepared["prompt"] = objective
+    elif provider_key == "agents":
         if objective and not _has_prompt_param(prepared, "instructions"):
             prepared["instructions"] = objective
     return prepared
@@ -2549,6 +2654,23 @@ def _safe_zapier_read_actions(prompt: str) -> list[dict[str, Any]]:
                 },
             }
         )
+    cursor_agent_id = _cursor_agent_id_from_prompt(prompt)
+    if cursor_agent_id and "cursor" in text and any(
+        term in text for term in ("status", "حالة", "تحقق", "افحص")
+    ):
+        actions.append(
+            {
+                "tool": "zapier_action",
+                "description": "تنفيذ قراءة Cursor Agent Status عبر Zapier MCP",
+                "args": {
+                    "app": "Cursor",
+                    "action": "Find Agent Status",
+                    "params": {"agent_id": cursor_agent_id},
+                    "instructions": prompt[:2_000],
+                    "output": "Return receipt-safe agent status fields.",
+                },
+            }
+        )
     tables_preflight = _zapier_tables_find_records_preflight_step(prompt)
     if tables_preflight:
         actions.append(tables_preflight)
@@ -2694,6 +2816,15 @@ def _github_repository_params_from_prompt(prompt: str) -> dict[str, str] | None:
 
 def _clean_repo_name(value: str) -> str:
     return re.sub(r"\.git$", "", value.strip().rstrip("/).,]؛،"), flags=re.IGNORECASE)
+
+
+def _cursor_agent_id_from_prompt(prompt: str) -> str:
+    match = re.search(
+        r"(?:agent[_\s-]*id|cursor[_\s-]*agent|معرف)\s*[:=]?\s*([A-Za-z0-9][A-Za-z0-9_-]{5,})",
+        prompt,
+        re.IGNORECASE,
+    )
+    return match.group(1) if match else ""
 
 
 def _openrouter_model_strategy_step(prompt: str) -> dict[str, Any] | None:

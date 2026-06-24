@@ -52,7 +52,10 @@ class ZapierProviderSummaryTests(unittest.TestCase):
 
         providers = _mesh_agent_provider_summaries(inventory)
 
-        self.assertEqual({provider["app"] for provider in providers}, {"ChatGPT (OpenAI)"})
+        self.assertEqual(
+            {provider["app"] for provider in providers},
+            {"ChatGPT (OpenAI)"},
+        )
         self.assertTrue(all(provider["status"] == "inventory_only" for provider in providers))
         self.assertTrue(all(provider["inventory_only"] for provider in providers))
         self.assertTrue(
@@ -480,6 +483,8 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn("Gmail", zapier_app_names)
         self.assertNotIn("Manus", provider_by_app)
         self.assertNotIn("Cursor", provider_by_app)
+        self.assertNotIn("Manus", zapier_app_names)
+        self.assertNotIn("Cursor", zapier_app_names)
         self.assertNotIn(
             "Manus",
             {provider["app"] for provider in activation_overview["agent_providers"]},
@@ -530,8 +535,6 @@ class LocalAgentApiTests(unittest.TestCase):
         self.assertIn("verify_gmail_zapier_read", command_by_id)
         self.assertIn("lane_trading", command_by_id)
         self.assertIn("lane_bug_bounty", command_by_id)
-        self.assertNotIn("verify_manus_zapier_read", command_by_id)
-        self.assertNotIn("prepare_cursor_zapier_read", command_by_id)
         self.assertNotIn("agent_provider_manus", command_by_id)
         self.assertNotIn("agent_provider_cursor", command_by_id)
         self.assertEqual(command_by_id["agent_os_full_execute"]["mode"], "execution")

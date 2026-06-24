@@ -2322,11 +2322,11 @@ function AgentTasksPage() {
             </CardContent>
           </Card>
 
-          <section className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {[
               {
                 id: "request" as const,
-                label: "تشغيل",
+                label: "الطلب",
                 icon: BrainCircuit,
                 meta: "وكلاء",
               },
@@ -2347,6 +2347,12 @@ function AgentTasksPage() {
                 label: "التقارير",
                 icon: FileCheck2,
                 meta: String(focusedTasks.length),
+              },
+              {
+                id: "tools" as const,
+                label: "الوكلاء والأدوات",
+                icon: Settings2,
+                meta: `${zapierAppCount || engineReadyCount}`,
               },
             ].map((item) => {
               const Icon = item.icon;
@@ -2374,7 +2380,7 @@ function AgentTasksPage() {
 
           <section className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/50 bg-card/35 px-3 py-2">
             <p className="text-[10px] text-muted-foreground">
-              المعرفة والأدوات مسارات مساعدة للمحرك، وليست صفحات التشغيل اليومية.
+              المعرفة مسار تغذية للمحرك؛ الوكلاء والأدوات في تبويب مستقل للتفعيل والاستكشاف.
             </p>
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -2383,12 +2389,6 @@ function AgentTasksPage() {
                   label: "المعرفة",
                   icon: FolderSearch,
                   meta: intakeRunning ? "يراقب" : `${intake?.tracked_files ?? 0} ملفات`,
-                },
-                {
-                  id: "tools" as const,
-                  label: "الأدوات",
-                  icon: Settings2,
-                  meta: `${zapierAppCount || engineReadyCount}`,
                 },
               ].map((item) => {
                 const Icon = item.icon;

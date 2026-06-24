@@ -205,6 +205,7 @@ class AgentWorker:
                 direct_control = (
                     []
                     if knowledge_only_requested(prompt_for_control)
+                    or _delegation_requires_planned_approval(prompt_for_control)
                     else fast_control_steps(
                         prompt_for_control,
                         tool_catalog,
@@ -212,7 +213,7 @@ class AgentWorker:
                     )
                 )
                 if direct_control:
-                    sources = []
+                    sources = [mission_source] if mission_source else []
                     self._progress(
                         task,
                         20,
@@ -1044,6 +1045,16 @@ def _direct_control_planner_mode(direct_steps: list[dict[str, Any]]) -> str:
         "agent_provider_action_prepare": "local_agent_provider_action_prepare",
         "agent_provider_probe": "local_agent_provider_probe",
     }.get(tool, "local_fast_control")
+
+
+def _delegation_requires_planned_approval(prompt: str) -> bool:
+    text = prompt.casefold()
+    delegation = any(
+        term in text
+        for term in ("delegate", "assign", "launch agent", "فوّض", "فوض", "كلّف", "كلف")
+    )
+    provider = any(term in text for term in ("claude code", "claude", "كلود"))
+    return delegation and provider
 
 
 def _knowledge_execution_should_plan(prompt: str) -> bool:

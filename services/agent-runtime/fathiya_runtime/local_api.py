@@ -1582,6 +1582,24 @@ def _command_center_commands_from_mesh(mesh: dict[str, Any]) -> list[dict[str, A
             lane_id = str(raw.get("id") or "").strip()
             add(raw, source="lane", command_id=f"lane_{lane_id}" if lane_id else None)
 
+    agent_providers = mesh.get("agent_providers", [])
+    if isinstance(agent_providers, list):
+        for provider in agent_providers:
+            if not isinstance(provider, dict):
+                continue
+            command = _command_center_agent_provider_command(provider)
+            if command:
+                add(command, source="agent_provider")
+
+    connected_apps = mesh.get("zapier_apps", [])
+    if isinstance(connected_apps, list):
+        for app in connected_apps:
+            if not isinstance(app, dict):
+                continue
+            command = _command_center_connected_app_command(app)
+            if command:
+                add(command, source="connected_app")
+
     return commands
 
 
@@ -1773,6 +1791,14 @@ def _command_center_agent_provider_command(provider: dict[str, Any]) -> dict[str
 
 
 def _command_center_agent_launch_action(app: str, write_actions: list[str]) -> str:
+    normalized = app.casefold()
+    candidates = [action for action in write_actions if action]
+    if normalized == "agents":
+        return _first_matching_action(candidates, "Run Agent")
+    if "chatgpt" in normalized:
+        return _first_matching_action(candidates, "Send Prompt", "Conversation")
+    if "ai by zapier" in normalized:
+        return _first_matching_action(candidates, "Analyze and Return Data")
     return ""
 
 
@@ -1784,9 +1810,22 @@ def _command_center_agent_launch_params(app: str) -> dict[str, Any]:
     return {}
 
 
+def _first_matching_action(actions: list[str], *preferred: str) -> str:
+    normalized = {action.casefold(): action for action in actions}
+    for item in preferred:
+        exact = normalized.get(item.casefold())
+        if exact:
+            return exact
+    for item in preferred:
+        item_folded = item.casefold()
+        for action in actions:
+            if item_folded in action.casefold():
+                return action
+    return ""
+
+
 def _hidden_operator_provider(app: str) -> bool:
-    normalized = app.casefold()
-    return "cursor" in normalized or "manus" in normalized
+    return app.strip().casefold() in {"cursor", "manus"}
 
 
 def _command_center_slug(value: str) -> str:

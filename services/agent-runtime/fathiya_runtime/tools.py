@@ -5466,7 +5466,7 @@ def _agent_mesh_requests_trading_start(prompt: str) -> bool:
 
 def _is_visible_agent_provider_app(app: str) -> bool:
     normalized = app.strip().casefold()
-    return bool(normalized) and "cursor" not in normalized and "manus" not in normalized
+    return bool(normalized)
 
 
 def _string_list(value: Any) -> list[str]:
@@ -7358,7 +7358,7 @@ def _agent_provider_names(inventory: dict[str, Any]) -> list[str]:
     actions = inventory.get("agent_provider_actions")
     if not isinstance(actions, dict):
         return []
-    preferred = ["ChatGPT (OpenAI)", "Agents", "Apify", "Netlify"]
+    preferred = ["Cursor", "Manus", "ChatGPT (OpenAI)", "Agents", "Apify", "Netlify"]
     names = [name for name in preferred if name in actions and not _hidden_agent_provider_name(name)]
     names.extend(
         sorted(
@@ -7371,8 +7371,7 @@ def _agent_provider_names(inventory: dict[str, Any]) -> list[str]:
 
 
 def _hidden_agent_provider_name(name: str) -> bool:
-    normalized = name.casefold()
-    return "cursor" in normalized or "manus" in normalized
+    return False
 
 
 def _production_base_url(prompt: str, args: dict[str, Any]) -> str:
