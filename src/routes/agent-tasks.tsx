@@ -2014,18 +2014,20 @@ function AgentTasksPage() {
             </Alert>
           )}
 
-          <ExecutionDecisionPanel
-            decision={executionDecision}
-            runningPrimary={startingExecutionOs || startingActivationSweep}
-            onPrimary={() => handleExecutionDecisionAction(executionDecision.primaryAction)}
-            onSecondary={
-              executionDecision.secondaryAction
-                ? () => handleExecutionDecisionAction(executionDecision.secondaryAction!)
-                : undefined
-            }
-          />
+          {workspaceView === "tools" && (
+            <ExecutionDecisionPanel
+              decision={executionDecision}
+              runningPrimary={startingExecutionOs || startingActivationSweep}
+              onPrimary={() => handleExecutionDecisionAction(executionDecision.primaryAction)}
+              onSecondary={
+                executionDecision.secondaryAction
+                  ? () => handleExecutionDecisionAction(executionDecision.secondaryAction!)
+                  : undefined
+              }
+            />
+          )}
 
-          {localMode && (
+          {localMode && workspaceView === "tools" && (
             <AgentLiveCommandStrip
               activeCount={activeCount}
               blockingActionCount={blockingActionCount}
@@ -2628,9 +2630,21 @@ function AgentTasksPage() {
                       مسار واحد يفهم الهدف، يختار النماذج والأدوات، ينفذ الداخلي الجاهز، ثم يعيد إيصالًا.
                     </CardDescription>
                   </div>
-                  <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
-                    {MISSION_MODE_LABELS[missionMode]} · {MISSION_AUTONOMY_LABELS[missionAutonomyMode]}
-                  </Badge>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    <Badge
+                      className={cn(
+                        "text-[10px]",
+                        workerOnline
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                          : "border-amber-500/30 bg-amber-500/10 text-amber-300",
+                      )}
+                    >
+                      {workerOnline ? "المحرك متصل" : runtimeHealth ? "يحتاج فحص" : "يفحص الاتصال"}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {MISSION_MODE_LABELS[missionMode]} · {MISSION_AUTONOMY_LABELS[missionAutonomyMode]}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="grid gap-3 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
