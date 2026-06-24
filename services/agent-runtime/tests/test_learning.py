@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
@@ -9,7 +10,7 @@ from unittest.mock import Mock, patch
 from fathiya_runtime.config import RuntimeConfig
 from fathiya_runtime.learning import build_learning_session, make_learning_source
 from fathiya_runtime.models import AgentModelRouter
-from fathiya_runtime.planner import build_plan, fast_control_steps
+from fathiya_runtime.planner import build_follow_up_decision, build_plan, fast_control_steps
 from fathiya_runtime.retrieval import RetrievedSource
 from fathiya_runtime.tools import ToolExecutor
 
@@ -281,6 +282,125 @@ class LearningBootstrapTests(unittest.TestCase):
         self.assertEqual(tools, ["medium_intelligence_pipeline"])
         self.assertEqual(fast_tools, ["medium_intelligence_pipeline"])
         self.assertEqual(plan[1]["args"]["max_items"], 300)
+
+    def test_medium_pipeline_accepts_many_account_articles_from_json_file(self) -> None:
+        source_path = self.config.knowledge_root / "medium-reading-list.json"
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        source_path.write_text(
+            json.dumps(
+                {
+                    "items": [
+                        {
+                            "title": f"GraphQL BOLA PoC article {index}",
+                            "url": f"https://medium.com/example/article-{index:02d}",
+                            "sourceList": "reading-list",
+                            "text": "Proof of concept request response curl steps to reproduce. "
+                            "As an attacker I could access cross-tenant sensitive data through unauthorized GraphQL resolver bypass impact.",
+                        }
+                        for index in range(51)
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        executor = ToolExecutor(self.config)
+
+        result = executor.execute(
+            "medium_intelligence_pipeline",
+            "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1 source_path: medium-reading-list.json max_items: 51",
+            {
+                "source_paths": [str(source_path)],
+                "max_items": 51,
+                "fetch_live": False,
+            },
+        )
+
+        self.assertEqual(result["processed_count"], 51)
+        self.assertEqual(result["ready_candidate_count"], 51)
+
+    def test_medium_source_path_prompt_disables_live_fetch_when_requested(self) -> None:
+        executor = ToolExecutor(self.config)
+        prompt = "\n".join(
+            [
+                "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1",
+                "source_path: C:/tmp/medium-for-you.json",
+                "fetch_live: false",
+                "max_items: 52",
+            ]
+        )
+
+        plan = build_plan(
+            {"prompt": prompt},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            executor.catalog(),
+            max_tool_steps=6,
+        )
+
+        self.assertFalse(plan[1]["args"]["fetch_live"])
+        self.assertEqual(plan[1]["args"]["source_urls"], [])
+
+    def test_medium_follow_up_completes_without_model_review(self) -> None:
+        class BlockingModel:
+            model = "blocking-model"
+            last_provider = "blocking"
+
+            @property
+            def available(self) -> bool:
+                return True
+
+            def complete(self, *_args: object, **_kwargs: object) -> str:
+                raise AssertionError("Medium deterministic review should not call the model")
+
+            def evaluate(self, _prompt: str, _result: dict[str, object]) -> dict[str, object]:
+                return {"passed": True}
+
+        executor = ToolExecutor(self.config)
+        decision = build_follow_up_decision(
+            {
+                "prompt": "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1 source_path: C:/tmp/medium-for-you.json",
+            },
+            [],
+            BlockingModel(),
+            executor.catalog(),
+            [{"result": {"tool": "medium_intelligence_pipeline", "executed": True}}],
+            set(),
+            round_number=1,
+            max_tool_steps=6,
+        )
+
+        self.assertTrue(decision["complete"])
+        self.assertEqual(decision["planner_mode"], "local_medium_intelligence_complete")
+
+    def test_daily_medium_prompt_keeps_more_than_twenty_urls(self) -> None:
+        executor = ToolExecutor(self.config)
+        urls = "\n".join(
+            f"reference_url: https://medium.com/example/story-{index:02d}"
+            for index in range(51)
+        )
+        prompt = f"FATHIYA_DAILY_INTELLIGENCE_REPORT_V1\nmax_items: 51\n{urls}"
+
+        plan = build_plan(
+            {"prompt": prompt},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            executor.catalog(),
+            max_tool_steps=6,
+        )
+
+        self.assertEqual(len(plan[1]["args"]["source_urls"]), 51)
 
 
 if __name__ == "__main__":

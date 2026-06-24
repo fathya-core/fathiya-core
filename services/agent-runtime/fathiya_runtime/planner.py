@@ -539,6 +539,14 @@ def build_follow_up_decision(
         for item in tool_results
         if isinstance(item.get("result"), dict)
     ]
+    if "medium_intelligence_pipeline" in completed_tools:
+        return {
+            "complete": True,
+            "reason": "اكتمل تقرير Medium وفرز بوابة الجودة ولا يحتاج مراجعة نموذجية إضافية.",
+            "steps": [],
+            "planner_mode": "local_medium_intelligence_complete",
+            "planner_error": None,
+        }
     if completed_tools and all(tool in DETERMINISTIC_SYNTHESIS_TOOLS for tool in completed_tools):
         steps = _deterministic_follow_up_steps(
             operator_prompt,
@@ -2925,11 +2933,11 @@ def _medium_intelligence_step(prompt: str) -> dict[str, Any] | None:
             prompt,
         )
         if match.strip()
-    ][:20]
+    ][:500]
     source_urls = [
         url.rstrip(").,]؛،")
         for url in re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
-    ][:20]
+    ][:500]
     args: dict[str, Any] = {
         "source_urls": source_urls,
         "source_paths": source_paths,
@@ -2937,6 +2945,16 @@ def _medium_intelligence_step(prompt: str) -> dict[str, Any] | None:
         "max_items": 250,
         "fetch_live": True,
     }
+    fetch_live_value = _prompt_inline_value(prompt, "fetch_live", "live_fetch")
+    if fetch_live_value:
+        args["fetch_live"] = fetch_live_value.strip().casefold() not in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }
+    elif source_paths and not source_urls:
+        args["fetch_live"] = False
     max_items = _prompt_inline_value(prompt, "max_items", "limit", "حد")
     if max_items.isdigit():
         args["max_items"] = min(500, max(1, int(max_items)))

@@ -90,24 +90,32 @@ def build_medium_intelligence_report(
         except OSError as exc:
             errors.append(f"{source_path}: {type(exc).__name__}")
             continue
-        raw_items.append(
-            {
-                "title": source_path.stem,
-                "url": str(source_path),
-                "source_name": source_path.name,
-                "text": text[:80_000],
-            }
-        )
+        parsed_items = _items_from_source_blob(text, source_path.name)
+        if parsed_items:
+            raw_items.extend(parsed_items[: max_items - len(raw_items)])
+        else:
+            raw_items.append(
+                {
+                    "title": source_path.stem,
+                    "url": str(source_path),
+                    "source_name": source_path.name,
+                    "text": text[:80_000],
+                }
+            )
 
     if source_text.strip() and len(raw_items) < max_items:
-        raw_items.append(
-            {
-                "title": "operator-supplied-medium-corpus",
-                "url": "",
-                "source_name": "operator-source-text",
-                "text": source_text[:80_000],
-            }
-        )
+        parsed_items = _items_from_source_blob(source_text, "operator-source-text")
+        if parsed_items:
+            raw_items.extend(parsed_items[: max_items - len(raw_items)])
+        else:
+            raw_items.append(
+                {
+                    "title": "operator-supplied-medium-corpus",
+                    "url": "",
+                    "source_name": "operator-source-text",
+                    "text": source_text[:80_000],
+                }
+            )
 
     deduped = _dedupe_raw_items(raw_items)[:max_items]
     items = [analyze_medium_item(item) for item in deduped]
@@ -363,9 +371,51 @@ def _normalize_medium_feed_url(url: str) -> str:
         parts = [part for part in parsed.path.split("/") if part]
         if parts[:1] == ["tag"] and len(parts) >= 2:
             return f"https://medium.com/feed/tag/{parts[1]}"
-        if parts:
+        if len(parts) == 1:
             return f"https://medium.com/feed/{'/'.join(parts)}"
     return url
+
+
+def _items_from_source_blob(text: str, source_name: str) -> list[dict[str, str]]:
+    raw = text.strip()
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(parsed, dict):
+        candidate_items = parsed.get("items") or parsed.get("articles") or parsed.get("stories")
+    else:
+        candidate_items = parsed
+    if not isinstance(candidate_items, list):
+        return []
+    items: list[dict[str, str]] = []
+    for index, item in enumerate(candidate_items):
+        if not isinstance(item, dict):
+            continue
+        title = _clean(str(item.get("title") or item.get("name") or f"{source_name}-{index + 1}"))
+        url = _clean(str(item.get("url") or item.get("href") or ""))
+        body = _clean(
+            str(
+                item.get("text")
+                or item.get("content")
+                or item.get("excerpt")
+                or item.get("summary")
+                or ""
+            )
+        )
+        if not title and not body:
+            continue
+        items.append(
+            {
+                "title": title[:220] or f"{source_name}-{index + 1}",
+                "url": url,
+                "source_name": _clean(str(item.get("source_name") or item.get("sourceList") or source_name)),
+                "text": body[:80_000],
+            }
+        )
+    return items
 
 
 def _parse_feed(text: str, source_url: str, limit: int) -> list[dict[str, str]]:
