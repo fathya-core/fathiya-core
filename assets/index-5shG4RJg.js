@@ -1,0 +1,1 @@
+import{j as o}from"./index-aeJQ3rVO.js";import{F as r}from"./FathiyaFocusRedirect-BlX-f55t.js";import"./badge-DHr9rFO7.js";import"./button-BhZzpD1S.js";import"./arrow-right-CJT0A-r9.js";function s(){return o.jsx(r,{source:"الرئيسية"})}export{s as component};

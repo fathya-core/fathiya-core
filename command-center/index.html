@@ -537,43 +537,6 @@
       background: rgba(114, 214, 168, 0.13);
     }
     .mission-form textarea { min-height: 86px; }
-    .agent-provider-box {
-      border: 1px solid rgba(114, 214, 168, 0.32);
-      background: rgba(7, 18, 14, 0.64);
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 12px;
-      display: grid;
-      gap: 8px;
-    }
-    .agent-provider-box summary {
-      cursor: pointer;
-      color: var(--gold-200);
-      font-size: 12px;
-      font-weight: 700;
-      outline: none;
-    }
-    .agent-provider-box[open] summary {
-      margin-bottom: 8px;
-    }
-    .agent-provider-box h3 { font-size: 13px; }
-    .agent-provider-grid {
-      display: grid;
-      grid-template-columns: 128px minmax(0, 1fr);
-      gap: 8px;
-      align-items: end;
-    }
-    @media (max-width: 620px) { .agent-provider-grid { grid-template-columns: 1fr; } }
-    .agent-provider-box textarea { min-height: 74px; }
-    .agent-provider-status {
-      border: 1px solid rgba(122, 93, 36, 0.3);
-      background: rgba(20, 20, 20, 0.56);
-      border-radius: 7px;
-      padding: 8px 9px;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.6;
-    }
     .mission-status {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1328,9 +1291,7 @@
           <button id="command-run-bounty" class="secondary">صيد الثغرات</button>
           <button id="command-run-knowledge" class="secondary">استيعاب وتشغيل</button>
           <button id="command-run-github-proof" class="secondary">إثبات GitHub</button>
-          <button id="command-run-manus-proof" class="secondary">إثبات Manus</button>
           <button id="command-run-gmail-proof" class="secondary">إثبات Gmail</button>
-          <button id="command-prepare-cursor-proof" class="secondary">تحضير Cursor</button>
           <button id="command-open-tools" class="secondary">تفعيل الناقص</button>
           <button id="command-zapier-oauth" class="secondary">ربط Zapier</button>
         </div>
@@ -1487,7 +1448,7 @@
             <div class="agent-os-split-list" id="agent-os-upgrades">
               <span class="badge warn">يفحص</span>
             </div>
-            <p>Manus وCursor وGmail وباقي Zapier تظهر هنا كمخزون أو OAuth مطلوب، لكنها لا تمنع تشغيل الوكلاء المحليين.</p>
+            <p>Gmail وGitHub وباقي أدوات Zapier تظهر هنا كمخزون أو OAuth مطلوب، لكنها لا تمنع تشغيل الوكلاء المحليين.</p>
           </div>
         </div>
         <div class="agent-os-actions" id="agent-os-actions">
@@ -1519,16 +1480,16 @@
       <div class="agent-explorer view-hidden" id="agent-explorer">
         <div class="row">
           <div>
-            <span class="badge sky">مخزون الوكلاء</span>
+            <span class="badge sky">مخزون Zapier</span>
             <h3 style="margin-top:6px;">الأدوات المتصلة القابلة للحركة</h3>
-            <p class="muted" id="agent-explorer-summary" style="margin-top:4px;">جارٍ تحميل وكلاء التطبيقات وإجراءات Zapier.</p>
+            <p class="muted" id="agent-explorer-summary" style="margin-top:4px;">جارٍ تحميل تطبيقات وإجراءات Zapier.</p>
           </div>
           <button class="secondary" id="agent-explorer-open-tools" type="button">كل الأدوات</button>
         </div>
         <div class="agent-explorer-grid" id="agent-explorer-grid">
           <div class="agent-explorer-item">
             <strong><span>جارٍ التحميل</span><span class="badge warn">يفحص</span></strong>
-            <p>أفحص كتالوج Zapier ووكلاء التطبيقات من المحرك المحلي.</p>
+            <p>أفحص كتالوج Zapier من المحرك المحلي.</p>
           </div>
         </div>
       </div>
@@ -1653,7 +1614,7 @@
       </div>
     </div>
 
-    <div class="card mission-launcher" id="mission-launcher">
+    <div class="card mission-launcher" id="mission-launcher" data-fathiya-primary-view="FATHIYA_PRIMARY_REQUEST_VIEW_V2">
       <div>
         <div class="row">
           <div>
@@ -1722,38 +1683,6 @@
           <button id="run-mission" style="flex:1;">شغّل المهمة</button>
           <button id="mission-open-reports" class="secondary" style="flex:1;">التقارير</button>
         </div>
-        <details class="agent-provider-box">
-          <summary>وكلاء التطبيقات الاختيارية: Cursor / Manus</summary>
-          <div class="row">
-            <div>
-              <h3>تشغيل وكيل تطبيق</h3>
-              <p>حضّر Cursor أو Manus من مخزون Zapier مع الحقول المطلوبة قبل التنفيذ.</p>
-            </div>
-            <span class="badge sky" id="agent-provider-badge">Zapier MCP</span>
-          </div>
-          <div class="agent-provider-grid">
-            <div>
-              <label for="agent-provider">المزود</label>
-              <select id="agent-provider">
-                <option value="Cursor">Cursor</option>
-                <option value="Manus">Manus</option>
-              </select>
-            </div>
-            <div>
-              <label for="agent-provider-repo">رابط المستودع أو الهدف</label>
-              <input id="agent-provider-repo" dir="ltr" placeholder="https://github.com/fathya-core/fathiya-core" />
-            </div>
-          </div>
-          <label for="agent-provider-objective">تعليمات الوكيل</label>
-          <textarea id="agent-provider-objective" placeholder="مثال: راجع مسار فتحية التشغيلي وارجع بملاحظات تنفيذية فقط"></textarea>
-          <div class="row">
-            <button id="prepare-agent-provider" style="flex:1;">حضّر تشغيل الوكيل</button>
-            <button id="probe-agent-provider" class="secondary" style="flex:1;">فحص المزود</button>
-          </div>
-          <div class="agent-provider-status" id="agent-provider-status">
-            Cursor يحتاج رابط مستودع وتعليمات. Manus يحتاج تعليمات فقط ويستخدم private visibility.
-          </div>
-        </details>
       </div>
       <div class="mission-results" id="mission-results"></div>
     </div>
@@ -1799,7 +1728,7 @@
         <label for="direct-title">العنوان</label>
         <input id="direct-title" placeholder="اختياري" />
         <label for="direct-prompt">المهمة</label>
-        <textarea id="direct-prompt" placeholder="مثال: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اعرض مهام Manus الحالية."></textarea>
+        <textarea id="direct-prompt" placeholder="مثال: تحقق من مستودع GitHub fathya-core/fathiya-core، ابحث في Gmail عن OpenRouter Fusion، Search Outlook for invoice 2026، أو اطلب تقرير فتحية اليومي."></textarea>
         <p class="muted" style="font-size:11px;">فتحية تختار تلقائيًا قراءة Zapier المناسبة، تنفذ الجاهز، وتحول غير المربوط إلى متابعة تشغيلية بإيصال.</p>
         <label for="direct-sources">روابط أو مسارات معرفة</label>
         <textarea id="direct-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي، مثال: services/agent-runtime/runtime/knowledge-inbox/openrouter-fusion-email-2026-06-17.md"></textarea>
@@ -1910,6 +1839,7 @@
           <textarea id="knowledge-sources" dir="ltr" placeholder="كل سطر رابط أو مسار محلي. اتركه فارغًا لتشغيل المعرفة الحالية."></textarea>
           <div class="row" style="margin-top:10px;">
             <button id="knowledge-run-current" style="flex:1;">استيعاب وتشغيل الحالي</button>
+            <button id="knowledge-run-daily" class="secondary" style="flex:1;">تقرير يومي</button>
             <button id="knowledge-open-reports" class="secondary" style="flex:1;">عرض التقارير</button>
           </div>
         </div>
@@ -2090,6 +2020,21 @@
       "استخدم Hugging Face المحلي للاسترجاع/الفهم، OpenRouter لتوجيه النماذج، Zapier MCP وn8n وKali وGitHub ووكيل التداول كقدرات تنفيذ.",
       "نفّذ ما هو جاهز الآن، ثم اربط نتيجة الفهم بخطوة عملية: أمر أداة، تقرير، إيصال، أو متابعة OAuth/Settings واضحة.",
       "أخرج إيصالًا يثبت: ما فهمته، الأدوات التي اختيرت، ما نُفذ فعليًا، وما هي الخطوة التنفيذية التالية."
+    ].join("\n");
+    const dailyIntelligenceReportPrompt = [
+      "knowledge execution mission:",
+      "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1",
+      "أنشئ تقرير فتحية اليومي من مصادر المعرفة المحفوظة وروابط البحث المهمة، ثم حوّله إلى تنفيذ عملي.",
+      "source_path: intake/runtime/Gmail---Deep-research-performance-gains-with-multi-model-Fusion-pdf-20b5be5a9fdc.md",
+      "source_path: cards/FATHIYA_OPENROUTER_FUSION_ROUTING_CARD_v1.md",
+      "source_path: reports/study/FATHIYA_BUG_BOUNTY_WEB_AND_LOCAL_TRAINING_REPORT_v1.md",
+      "source_path: reports/study/FATHIYA_BUG_BOUNTY_DEEP_DISCOVERY_TRAINING_REPORT_v1.md",
+      "source_path: raw/imports/awareness_knowledge_roadmap_security_2026_05_15/aks-104-0a649a207d-the-bug-bounty-automation-stack-that-can-generate-10k-open-source-tools.md",
+      "reference_url: https://medium.com/",
+      "reference_url: https://www.datacamp.com/",
+      "reference_url: https://trainingpost.com/",
+      "المطلوب: لخص الجديد، استخرج دروس bug bounty والتعلم الآلي، اختبر الفهم بأسئلة تطبيقية، حدّث توصية النماذج المجانية/القوية، ثم نفذ فحص الأدوات الداخلية الجاهزة وسجل إيصالًا.",
+      "لا تنتظر حسابات خارجية؛ استخدم المعرفة المحلية أولًا، وحوّل أي مصدر يحتاج تسجيل دخول إلى next_action واضح."
     ].join("\n");
     const executionOsPrompt = [
       "agent mesh execute:",
@@ -2352,105 +2297,6 @@
         "لا تجعل OAuth أو إعدادات ناقصة توقف المهمة؛ حوّلها إلى next_action واضح واستمر بما هو متاح.",
         "الأفعال الخارجية عالية الأثر، المال الحقيقي، الحذف، والإرسال العام تبقى كبوابات أثر منفصلة، لكنها لا تمنع التنفيذ المحلي."
       ].join("\n");
-    }
-
-    function selectedAgentProviderSpec() {
-      const provider = document.getElementById("agent-provider").value || "Cursor";
-      if (provider === "Manus") {
-        return {
-          provider,
-          action: "Create Task",
-          title: "تحضير تشغيل وكيل Manus",
-          defaultObjective: "نفذ مراجعة تشغيلية لفتحية وارجع بملاحظات عملية.",
-          needsRepo: false
-        };
-      }
-      return {
-        provider: "Cursor",
-        action: "Launch Agent",
-        title: "تحضير تشغيل وكيل Cursor",
-        defaultObjective: "راجع مسار فتحية التشغيلي وارجع بملاحظات تنفيذية فقط.",
-        needsRepo: true
-      };
-    }
-
-    function setAgentProviderStatus(message, tone = "") {
-      const box = document.getElementById("agent-provider-status");
-      box.textContent = message;
-      box.style.borderColor = tone === "bad"
-        ? "rgba(240, 115, 138, 0.45)"
-        : tone === "ok"
-          ? "rgba(114, 214, 168, 0.45)"
-          : "rgba(122, 93, 36, 0.3)";
-    }
-
-    function syncAgentProviderForm() {
-      const spec = selectedAgentProviderSpec();
-      const repo = document.getElementById("agent-provider-repo");
-      const badge = document.getElementById("agent-provider-badge");
-      repo.disabled = !spec.needsRepo;
-      repo.placeholder = spec.needsRepo
-        ? "https://github.com/fathya-core/fathiya-core"
-        : "غير مطلوب في Manus";
-      badge.textContent = `${spec.provider} · ${spec.action}`;
-      setAgentProviderStatus(
-        spec.needsRepo
-          ? "Cursor يحتاج رابط مستودع وتعليمات. سأضيف repository_ref=main وtarget_auto_create_pr=false تلقائيًا."
-          : "Manus يحتاج تعليمات فقط. سأستخدم agent_profile=manus-1.6 وshare_visibility=private تلقائيًا."
-      );
-    }
-
-    function buildAgentProviderTask() {
-      const spec = selectedAgentProviderSpec();
-      const objectiveInput = document.getElementById("agent-provider-objective").value.trim();
-      const repo = document.getElementById("agent-provider-repo").value.trim();
-      const objective = objectiveInput || spec.defaultObjective;
-      const params = spec.provider === "Cursor"
-        ? {
-          repository_url: repo,
-          prompt_text: objective,
-          repository_ref: "main",
-          target_auto_create_pr: "false"
-        }
-        : {
-          prompt: objective,
-          agent_profile: "manus-1.6",
-          share_visibility: "private"
-        };
-      Object.keys(params).forEach((key) => {
-        if (typeof params[key] === "string" && !params[key].trim()) {
-          delete params[key];
-        }
-      });
-      return {
-        title: spec.title,
-        prompt: [
-          `agent provider action prepare: ${spec.provider}`,
-          `action: ${spec.action}`,
-          `objective: ${objective}`,
-          `params: ${JSON.stringify(params)}`
-        ].join("\n"),
-        missingUiFields: spec.needsRepo && !repo ? ["رابط المستودع"] : []
-      };
-    }
-
-    async function prepareAgentProviderFromForm() {
-      const task = buildAgentProviderTask();
-      if (task.missingUiFields.length) {
-        setAgentProviderStatus(`أكمل أولًا: ${task.missingUiFields.join(", ")}.`, "bad");
-        document.getElementById("agent-provider-repo").focus();
-        return;
-      }
-      setAgentProviderStatus("جارٍ تحضير الوكيل داخل فتحية...", "ok");
-      await createTask({ title: task.title, prompt: task.prompt });
-      setAgentProviderStatus("أرسلت مهمة التحضير. افتح آخر تقرير لترى params_ready والحقول المطلوبة.", "ok");
-    }
-
-    async function probeAgentProviderFromForm() {
-      const spec = selectedAgentProviderSpec();
-      setAgentProviderStatus(`جارٍ فحص مزود ${spec.provider}...`);
-      await runAgentProviderProbe(spec.provider);
-      setAgentProviderStatus(`أرسلت فحص ${spec.provider}. ستظهر أفعال القراءة والكتابة في التقرير.`, "ok");
     }
 
     function buildMissionLauncherTask() {
@@ -2906,8 +2752,6 @@
     function agentAppRank(appName) {
       const name = String(appName || "").toLowerCase();
       const priority = [
-        "cursor",
-        "manus",
         "chatgpt",
         "ai by zapier",
         "agents",
@@ -3251,32 +3095,6 @@
       });
     }
 
-    async function runAgentProviderProbe(app) {
-      const provider = String(app || "").trim();
-      if (!provider) return;
-      await createTask({
-        title: `فحص وكيل تطبيق: ${provider}`,
-        prompt: [
-          `agent provider probe: ${provider}`,
-          "افحص هذا المزود من مخزون Zapier MCP داخل فتحية.",
-          "اعرض أفعال القراءة والكتابة المتاحة، وحضّر الأثر الخارجي كبوابة تشغيل."
-        ].join("\n")
-      });
-    }
-
-    async function runAgentProviderPrepare(app) {
-      const provider = String(app || "").trim();
-      if (!provider) return;
-      await createTask({
-        title: `تحضير تشغيل وكيل: ${provider}`,
-        prompt: [
-          `agent provider action: ${provider}`,
-          "حضّر أفضل فعل Zapier مناسب لتشغيل هذا المزود كوكيل تطبيق.",
-          "حضّر الإجراء الخارجي الآن كبوابة تشغيل؛ أعد action name وtask prompt واحتياج OAuth/الموافقة."
-        ].join("\n")
-      });
-    }
-
     function handleIntegrationReturn() {
       const params = new URLSearchParams(location.search);
       const integration = params.get("integration");
@@ -3570,9 +3388,9 @@
           badge: provider.status === "ready" ? "جاهز" : "مخزون",
           badgeClass: provider.status === "ready" ? "badge ok" : "badge warn",
           text: `${Number(provider.read_count || 0)} قراءة · ${Number(provider.write_count || 0)} كتابة gated · ${provider.execution_mode || "Zapier"}`,
-          commandId: commandById[commandId] ? commandId : "",
-          probe: provider.app,
-          prepare: provider.app
+          commandId: "",
+          probe: "",
+          prepare: ""
         };
       });
       const appCards = apps
@@ -3599,14 +3417,14 @@
         });
       const cards = [...providerCards, ...appCards].slice(0, 8);
       summary.textContent = cards.length
-        ? `${providers.length} وكلاء تطبيق · ${apps.length} تطبيقات Zapier · ${commandCenter?.summary?.zapier_action_count || mesh?.summary?.zapier_action_count || 0} إجراء قابل للفحص.`
-        : "لا يوجد مخزون وكلاء ظاهر بعد. شغّل المحرك أو اربط Zapier.";
+        ? `${providers.length + apps.length} تطبيقات Zapier · ${commandCenter?.summary?.zapier_action_count || mesh?.summary?.zapier_action_count || 0} إجراء قابل للفحص.`
+        : "لا يوجد مخزون Zapier ظاهر بعد. شغّل المحرك أو اربط Zapier.";
       host.innerHTML = "";
       if (!cards.length) {
         host.innerHTML = `
           <div class="agent-explorer-item">
             <strong><span>غير متصل</span><span class="badge warn">ينتظر</span></strong>
-            <p>شغّل API المحلي أو اربط Zapier حتى يظهر مخزون الوكلاء هنا.</p>
+            <p>شغّل API المحلي أو اربط Zapier حتى يظهر مخزون الأدوات هنا.</p>
           </div>
         `;
         return;
@@ -3614,24 +3432,12 @@
       for (const card of cards) {
         const item = document.createElement("div");
         item.className = "agent-explorer-item";
-        const runButton = card.commandId
-          ? `<button type="button" class="secondary" data-agent-explorer-command="${escapeHtml(card.commandId)}">تشغيل</button>`
-          : "";
-        const probeButton = card.probe
-          ? `<button type="button" class="secondary" data-agent-provider-probe="${escapeHtml(card.probe)}">فحص</button>`
-          : "";
-        const prepareButton = card.prepare
-          ? `<button type="button" class="secondary" data-agent-provider-prepare="${escapeHtml(card.prepare)}">تحضير</button>`
-          : "";
         item.innerHTML = `
           <strong>
             <span>${escapeHtml(card.title || "Agent")}</span>
             <span class="${card.badgeClass}">${escapeHtml(card.badge)}</span>
           </strong>
           <p>${escapeHtml(card.text || "--")}</p>
-          <div class="agent-explorer-actions">
-            ${runButton}${probeButton}${prepareButton || '<button type="button" class="secondary" data-workspace-view="tools">تفاصيل</button>'}
-          </div>
         `;
         host.appendChild(item);
       }
@@ -3835,7 +3641,7 @@
         bug_bounty: "مسار صيد مصرح ينتج تقريرًا وقرار جاهزية.",
         knowledge: "استيعاب التقارير ثم تشغيل الأدوات المناسبة.",
         tools: "فحص Zapier وn8n وKali والجسور الناقصة.",
-        connected_apps: "تحضير Manus وCursor وGmail وGitHub عبر Zapier."
+        connected_apps: "قراءات Gmail/GitHub وتطبيقات Zapier عبر OAuth."
       };
       return hints[id] || "أوامر مساعدة مرتبطة بالمحرك.";
     }
@@ -3888,28 +3694,6 @@
           <p>Zapier ${escapeHtml(String(overview.zapier_action_count || mesh.summary?.zapier_action_count || 0))} إجراء · قدرات ${escapeHtml(String(overview.capability_ready || mesh.summary?.capability_ready || "--"))}/${escapeHtml(String(overview.capability_total || mesh.summary?.capability_total || "--"))}</p>
         `;
         host.appendChild(toolsItem);
-        const providerCommands = Array.isArray(commandCenterState?.commands)
-          ? commandCenterState.commands.filter((command) => command?.source === "agent_provider" || command?.source === "connected_app")
-          : [];
-        if (providerCommands.length) {
-          const commandButtons = providerCommands
-            .slice(0, 6)
-            .map((command) => `
-              <button type="button" class="secondary" data-command-center-run="${escapeHtml(command.id)}">${escapeHtml(command.title || command.label || command.id)}</button>
-            `)
-            .join("");
-          const commandItem = document.createElement("div");
-          commandItem.className = "command-summary-item";
-          commandItem.innerHTML = `
-            <strong>
-              <span>أوامر وكلاء التطبيقات</span>
-              <span class="badge sky">${escapeHtml(String(providerCommands.length))}</span>
-            </strong>
-            <p>تشغيل Manus/Cursor/Gmail/GitHub وغيرها كمهام داخل فتحية عبر كتالوج Zapier، مع تحضير الأثر الخارجي بدل تنفيذه عشوائيًا.</p>
-            <div class="row" style="justify-content:flex-start;margin-top:7px;">${commandButtons}</div>
-          `;
-          host.appendChild(commandItem);
-        }
         const providers = Array.isArray(overview.agent_providers)
           ? overview.agent_providers
           : Array.isArray(mesh.agent_providers)
@@ -3921,23 +3705,15 @@
             .slice(0, 4)
             .map((provider) => `${provider.app} ${provider.total_actions || provider.read_count + provider.write_count || 0}`)
             .join(" · ");
-          const providerButtons = providers
-            .slice(0, 4)
-            .map((provider) => `
-              <button type="button" class="secondary" data-agent-provider-probe="${escapeHtml(provider.app)}">${escapeHtml(provider.app)}</button>
-              <button type="button" class="secondary" data-agent-provider-prepare="${escapeHtml(provider.app)}">حضّر ${escapeHtml(provider.app)}</button>
-            `)
-            .join("");
           const needsOAuth = providers.some((provider) => provider.inventory_only);
           const providerItem = document.createElement("div");
           providerItem.className = "command-summary-item";
           providerItem.innerHTML = `
             <strong>
-              <span>وكلاء التطبيقات</span>
+              <span>تطبيقات Zapier</span>
               <span class="${readyProviders ? "badge ok" : "badge warn"}">${escapeHtml(String(readyProviders))}/${escapeHtml(String(providers.length))}</span>
             </strong>
             <p>${escapeHtml(providerNames)}${needsOAuth ? " · اربط Zapier OAuth لتحويلها من مخزون إلى تنفيذ" : " · جاهزة للتفويض"}</p>
-            <div class="row" style="justify-content:flex-start;margin-top:7px;">${providerButtons}</div>
           `;
           host.appendChild(providerItem);
         }
@@ -4820,16 +4596,6 @@
         runCommandCenterCommand(command.getAttribute("data-agent-explorer-command")).catch(showError);
         return;
       }
-      const probe = event.target.closest("[data-agent-provider-probe]");
-      if (probe) {
-        runAgentProviderProbe(probe.getAttribute("data-agent-provider-probe")).catch(showError);
-        return;
-      }
-      const prepare = event.target.closest("[data-agent-provider-prepare]");
-      if (prepare) {
-        runAgentProviderPrepare(prepare.getAttribute("data-agent-provider-prepare")).catch(showError);
-        return;
-      }
       const view = event.target.closest("[data-workspace-view]");
       if (view) setWorkspaceView(view.dataset.workspaceView);
     });
@@ -4844,9 +4610,7 @@
     });
     document.getElementById("command-run-knowledge").addEventListener("click", () => runCommandCenterCommand("learn_and_execute", meshQuickTask("learn_and_execute", "استيعاب وتشغيل فتحية", knowledgeExecutionPrompt)).catch(showError));
     document.getElementById("command-run-github-proof").addEventListener("click", () => runCommandCenterCommand("verify_github_zapier_read", meshQuickTask("verify_github_zapier_read", "قراءة GitHub عبر Zapier", "Zapier action: GitHub / Find Repository\nparams:{\"owner\":\"fathya-core\",\"repo\":\"fathiya-core\"}")).catch(showError));
-    document.getElementById("command-run-manus-proof").addEventListener("click", () => runCommandCenterCommand("verify_manus_zapier_read").catch(showError));
     document.getElementById("command-run-gmail-proof").addEventListener("click", () => runCommandCenterCommand("verify_gmail_zapier_read").catch(showError));
-    document.getElementById("command-prepare-cursor-proof").addEventListener("click", () => runCommandCenterCommand("prepare_cursor_zapier_read").catch(showError));
     document.getElementById("command-open-tools").addEventListener("click", () => runCommandCenterCommand("activate_tools", meshQuickTask("activate_tools", "تفعيل نواقص فتحية", activationSweepPrompt)).catch(showError));
     document.getElementById("command-zapier-oauth").addEventListener("click", () => runCommandZapier().catch(showError));
     document.getElementById("ops-run-now").addEventListener("click", () => runCommandCenterCommand("execute_mesh", meshQuickTask("execute_mesh", "تشغيل محرك فتحية", executionOsPrompt)).catch(showError));
@@ -4866,15 +4630,6 @@
       if (command) {
         runCommandCenterCommand(command.getAttribute("data-command-center-run")).catch(showError);
         return;
-      }
-      const probe = event.target.closest("[data-agent-provider-probe]");
-      if (probe) {
-        runAgentProviderProbe(probe.getAttribute("data-agent-provider-probe")).catch(showError);
-        return;
-      }
-      const prepare = event.target.closest("[data-agent-provider-prepare]");
-      if (prepare) {
-        runAgentProviderPrepare(prepare.getAttribute("data-agent-provider-prepare")).catch(showError);
       }
     });
     document.getElementById("command-room-grid").addEventListener("click", (event) => {
@@ -4924,6 +4679,12 @@
         setWorkspaceView("reports");
       }).catch(showError);
     });
+    document.getElementById("knowledge-run-daily").addEventListener("click", () => {
+      createTask({
+        title: "تقرير فتحية اليومي",
+        prompt: dailyIntelligenceReportPrompt
+      }).then(() => setWorkspaceView("reports")).catch(showError);
+    });
     document.getElementById("knowledge-open-reports").addEventListener("click", () => setWorkspaceView("reports"));
     document.getElementById("knowledge-panel").addEventListener("click", (event) => {
       const openId = event.target.closest("[data-open]")?.getAttribute("data-open");
@@ -4937,9 +4698,6 @@
     document.querySelectorAll("[data-autonomy-mode]").forEach((button) => {
       button.addEventListener("click", () => setMissionAutonomyMode(button.dataset.autonomyMode));
     });
-    document.getElementById("agent-provider").addEventListener("change", () => syncAgentProviderForm());
-    document.getElementById("prepare-agent-provider").addEventListener("click", () => prepareAgentProviderFromForm().catch(showError));
-    document.getElementById("probe-agent-provider").addEventListener("click", () => probeAgentProviderFromForm().catch(showError));
     document.getElementById("open-trading").addEventListener("click", () => setWorkspaceView("trading"));
     document.getElementById("open-bounty").addEventListener("click", () => setWorkspaceView("bounty"));
     document.getElementById("open-reports").addEventListener("click", () => setWorkspaceView("reports"));
@@ -5060,7 +4818,6 @@
       if (refreshTimer || tradingTimer) return;
       updateDeployState(false);
       setWorkspaceView(readWorkspaceViewFromLocation(), { scroll: false });
-      syncAgentProviderForm();
       refreshAll().then(() => handleIntegrationReturn()).catch(showError);
       loadZapierToolCenter(false, "GitHub").catch(showError);
       refreshTimer = setInterval(() => refreshAll().catch(showError), 5000);
