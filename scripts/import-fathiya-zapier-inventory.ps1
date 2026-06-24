@@ -325,7 +325,7 @@ Operator policy:
 - Do not expose internal routing identifiers to the operator.
 
 Required comprehension output:
-- Identify the strongest immediate agent routes for Cursor, Manus, Agents, GitHub, Gmail, Outlook, Netlify, Webhooks, and Zapier Tables.
+- Identify the strongest immediate agent routes for Agents, GitHub, Gmail, Outlook, Netlify, Webhooks, and Zapier Tables.
 - For each route, decide whether it can run as read-only now or must wait for approval/OAuth.
 - Produce a short execution checklist that the FATHIYA operator page can show.
 "@

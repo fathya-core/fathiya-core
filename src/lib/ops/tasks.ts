@@ -2,7 +2,7 @@
 // Source of truth for the 16 tasks. Mirror artifacts in /artifacts/.
 
 export type TaskStatus = "todo" | "in_progress" | "done";
-export type Owner = "Claude" | "GPT" | "Perplexity" | "Manus" | "n8n" | "Zapier";
+export type Owner = "Claude" | "GPT" | "Perplexity" | "OpenRouter" | "n8n" | "Zapier";
 export type LayerId = "A" | "B" | "C" | "D" | "E";
 
 export interface ExpectedArtifact {
@@ -52,7 +52,7 @@ export const TASKS: Task[] = [
     description:
       "5 مداخل تشغيل جاهزة فوق فتحية: target profiling, surface mapping, recon planning, evidence review, status report.",
     layer: "A",
-    owners: ["Manus", "GPT", "Claude"],
+    owners: ["OpenRouter", "GPT", "Claude"],
     status: "todo",
     priority: 1,
     artifacts: [
@@ -100,7 +100,7 @@ export const TASKS: Task[] = [
     title: "n8n Security Operational Flow",
     description: "workflows: تشغيل أمني، تقارير، حالات قياسية، إنذارات.",
     layer: "A",
-    owners: ["GPT", "n8n", "Manus"],
+    owners: ["GPT", "n8n", "OpenRouter"],
     status: "todo",
     priority: 1,
     artifacts: [
@@ -230,7 +230,7 @@ export const TASKS: Task[] = [
     code: "INTEL_CAPMAP",
     title: "Competitive Capability Map",
     description:
-      "مقارنة عملية: Manus / Claude / Perplexity / GPT / OpenRouter — لأي مهمة، بأي تكلفة، بأي مخاطر.",
+      "مقارنة عملية: Claude / Perplexity / GPT / OpenRouter / FATHIYA AI Gateway — لأي مهمة، بأي تكلفة، بأي مخاطر.",
     layer: "C",
     owners: ["Claude", "Perplexity", "GPT"],
     status: "todo",
@@ -263,7 +263,7 @@ export const TASKS: Task[] = [
     description:
       "playbook منظم: catalyst scan, narrative analysis, thesis review, invalidation map, watchlist output.",
     layer: "D",
-    owners: ["Claude", "Perplexity", "Manus"],
+    owners: ["Claude", "Perplexity", "OpenRouter"],
     status: "todo",
     priority: 3,
     artifacts: [
@@ -348,7 +348,7 @@ export const OWNER_COLORS: Record<Owner, string> = {
   Claude: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   GPT: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   Perplexity: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-  Manus: "bg-violet-500/15 text-violet-300 border-violet-500/30",
+  OpenRouter: "bg-violet-500/15 text-violet-300 border-violet-500/30",
   n8n: "bg-rose-500/15 text-rose-300 border-rose-500/30",
   Zapier: "bg-orange-500/15 text-orange-300 border-orange-500/30",
 };

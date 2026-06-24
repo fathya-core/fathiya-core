@@ -40,7 +40,7 @@ target_profiling, surface_mapping, recon_planning, evidence_review, status_repor
   T03: {
     system: ARABIC_RULE,
     userTemplate: `Security Routing Matrix — مصفوفة توجيه أي مهمة أمنية إلى المزود المناسب.
-المزودون: claude, gpt-5, gemini-pro, gemini-flash, perplexity, manus.
+المزودون: claude, gpt-5, gemini-pro, gemini-flash, perplexity, openrouter.
 لكل task_type (recon, vuln_analysis, report_writing, threat_intel, incident_review, false_positive_check):
 primary, fallback, cheap, premium, when, why, max_tokens_hint, fail_closed.
 أرجع JSON: { "version": 1, "policy": {...} }`,
@@ -70,7 +70,7 @@ primary, fallback, cheap, premium, when, why, max_tokens_hint, fail_closed.
   T10: {
     system: ARABIC_RULE,
     userTemplate: `Competitive Capability Map — مقارنة عملية بين المزودين.
-المزودون: Manus, Claude, Perplexity, GPT, OpenRouter, FATHIYA AI Gateway.
+المزودون: Claude, Perplexity, GPT, OpenRouter, FATHIYA AI Gateway.
 لكل مزود × مهمة (research, code, reasoning, writing, security_review, crypto_analysis, structured_output, long_context):
 score (0-10), cost_tier (free/cheap/mid/premium), risk_tier (low/mid/high), notes.
 أرجع JSON: { "version": 1, "providers": [...], "tasks": [...], "matrix": [[...]] }`,
@@ -139,7 +139,7 @@ task_types: news_scan, narrative_analysis, thesis_review, transformation, invali
   T11: {
     system: ARABIC_RULE,
     userTemplate: `Failure Library — سجل إخفاقات المزودين.
-المزودون: Claude, GPT-5, Gemini, Perplexity, Manus.
+المزودون: Claude, GPT-5, Gemini, Perplexity, OpenRouter.
 لكل failure_mode: id, provider, mode (hallucination/over_expansion/cost_drain/refusal/early_stop), trigger_pattern, detection_signal, mitigation, when_to_block.
 أرجع JSON: { "version": 1, "failures": [...] } بحد أدنى 12.`,
     artifactPath: "failures/failure_library.json",

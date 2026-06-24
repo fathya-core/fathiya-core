@@ -1366,7 +1366,7 @@ function buildSnapshot(): CommandCenterSnapshot {
           "knowledge/crypto/radar/FATHIYA_CRYPTO_RADAR_BATCH_v0.json, knowledge/crypto/radar/cards/*.json",
         data_status: hasLiveCryptoRadarData ? "live" : "planned",
         notes: hasLiveCryptoRadarData
-          ? "Canonical PB006 radar data now renders from the preserved Manus source brief, the batch manifest, and four card files. Boundaries remain research and monitoring only with no trading execution."
+          ? "Canonical PB006 radar data now renders from the preserved source brief, the batch manifest, and four card files. Boundaries remain research and monitoring only with no trading execution."
           : "No live signal-card dataset exists. PB006 defines the intake process. Signals will appear once the first PB006 batch runs.",
       },
       scopeAuthorization: {
@@ -1433,7 +1433,7 @@ function buildSnapshot(): CommandCenterSnapshot {
         label: "Crypto Radar Source Brief",
         path: "knowledge/raw/crypto/FATHIYA_CRYPTO_RADAR_SOURCE_BRIEF_v0.md",
         kind: "canonical",
-        note: "Preserved Manus brief used as the sole factual source for the first live radar batch.",
+        note: "Preserved source brief used as the sole factual source for the first live radar batch.",
       },
       {
         label: "Daily Intake Batches",
@@ -1647,7 +1647,7 @@ function buildFallbackSnapshot(error: string): CommandCenterSnapshot {
     lineage: {
       backbonePR: "PR #5 — Validate Operating Backbone v0",
       commandCenterPR: "PR #6 — Add initial FATHIYA Command Center v0",
-      baseBranch: "cursor/validate-backbone-v0",
+      baseBranch: "main",
       note: "Loader error — lineage cannot be verified until knowledge files parse successfully.",
     },
     overview: {
@@ -2389,7 +2389,7 @@ function buildApprovalQueueRows(
 
 function inferToolContract(classId: string, toolContractRegistry: ToolContractRegistry) {
   const lookup: Record<string, string> = {
-    approval_repo_write: "cursor_launch_agent / github_create_or_update_file",
+    approval_repo_write: "github_create_or_update_file",
     approval_external_message: "future_email_contract",
     approval_webhook_or_workflow: "n8n_workflow / zapier_mcp_action",
     approval_market_execution: "separate_market_execution_policy_required",

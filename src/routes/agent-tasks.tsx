@@ -2038,11 +2038,6 @@ function AgentTasksPage() {
               runtimeHealth={runtimeHealth}
               startingBugBounty={startingBugBountyHunt || startingCommandCenterId === "lane_bug_bounty"}
               startingEngine={startingExecutionOs || startingCommandCenterId === "agent_os_full_execute"}
-              startingKnowledge={
-                startingKnowledgeExecution ||
-                startingCommandCenterId === "learn_and_execute" ||
-                startingCommandCenterId === "lane_knowledge"
-              }
               startingTrading={tradingActing || startingCommandCenterId === "lane_trading"}
               tasksCount={tasks.length}
               trading={trading}
@@ -2056,10 +2051,6 @@ function AgentTasksPage() {
               }}
               onRunEngine={() => {
                 void runCommandCenterCommandById("agent_os_full_execute", startExecutionOsMission);
-              }}
-              onRunKnowledge={() => {
-                setWorkspaceView("knowledge");
-                void runCommandCenterCommandById("learn_and_execute", startKnowledgeExecution);
               }}
               onRunTrading={() => {
                 setWorkspaceView("trading");
@@ -4769,7 +4760,6 @@ function AgentLiveCommandStrip({
   runtimeHealth,
   startingBugBounty,
   startingEngine,
-  startingKnowledge,
   startingTrading,
   tasksCount,
   trading,
@@ -4779,7 +4769,6 @@ function AgentLiveCommandStrip({
   onOpenTools,
   onRunBugBounty,
   onRunEngine,
-  onRunKnowledge,
   onRunTrading,
 }: {
   activeCount: number;
@@ -4791,7 +4780,6 @@ function AgentLiveCommandStrip({
   runtimeHealth: AgentRuntimeHealth | null;
   startingBugBounty: boolean;
   startingEngine: boolean;
-  startingKnowledge: boolean;
   startingTrading: boolean;
   tasksCount: number;
   trading: AgentTradingStatus | null;
@@ -4801,7 +4789,6 @@ function AgentLiveCommandStrip({
   onOpenTools: () => void;
   onRunBugBounty: () => void;
   onRunEngine: () => void;
-  onRunKnowledge: () => void;
   onRunTrading: () => void;
 }) {
   const localModel = runtimeHealth?.agent_loop.local_model || "HF local";
@@ -4861,7 +4848,7 @@ function AgentLiveCommandStrip({
             </Button>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <Button type="button" onClick={onRunEngine} disabled={startingEngine}>
               {startingEngine ? <Loader2 className="animate-spin" /> : <Play />}
               تشغيل الوكلاء
@@ -4874,15 +4861,6 @@ function AgentLiveCommandStrip({
             >
               {startingTrading ? <Loader2 className="animate-spin" /> : <TrendingUp />}
               وكيل التداول
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onRunKnowledge}
-              disabled={startingKnowledge}
-            >
-              {startingKnowledge ? <Loader2 className="animate-spin" /> : <FolderSearch />}
-              استيعاب وتشغيل
             </Button>
             <Button
               type="button"
