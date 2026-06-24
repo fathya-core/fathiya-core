@@ -37,6 +37,7 @@ DETERMINISTIC_SYNTHESIS_TOOLS = FAST_CONTROL_TOOLS | {
     "internal_echo",
     "kali_tool_inventory",
     "learning_bootstrap",
+    "medium_intelligence_pipeline",
     "local_capability_inventory",
     "n8n_status",
     "n8n_workflows",
@@ -264,107 +265,119 @@ def build_plan(
                 planner_mode = "local_tool_bridge_execution"
                 planner_error = None
             else:
-                direct_steps = _knowledge_execution_steps(
-                operator_prompt,
-                max_tool_steps,
-                source_guidance=sources,
-                )
+                medium_step = _medium_intelligence_step(operator_prompt)
+                direct_steps = [medium_step] if medium_step else []
                 direct_steps = [
                     step for step in direct_steps if _tool_is_available(step["tool"], tool_catalog)
                 ]
                 if direct_steps:
-                    tool_steps = direct_steps
-                    planner_mode = "local_knowledge_execution"
+                    tool_steps = direct_steps[:max_tool_steps]
+                    planner_mode = "local_medium_intelligence_pipeline"
                     planner_error = None
                 else:
-                    explicit_agent_mesh_step = _explicit_agent_mesh_control_step(
-                        operator_prompt
+                    direct_steps = _knowledge_execution_steps(
+                        operator_prompt,
+                        max_tool_steps,
+                        source_guidance=sources,
                     )
-                    if explicit_agent_mesh_step and _tool_is_available(
-                        explicit_agent_mesh_step["tool"],
-                        tool_catalog,
-                    ):
-                        tool_steps = [explicit_agent_mesh_step]
-                        planner_mode = (
-                            "local_agent_mesh_audit"
-                            if explicit_agent_mesh_step["tool"] == "agent_mesh_audit"
-                            else "local_agent_mesh_execute"
-                        )
+                    direct_steps = [
+                        step for step in direct_steps if _tool_is_available(step["tool"], tool_catalog)
+                    ]
+                    if direct_steps:
+                        tool_steps = direct_steps
+                        planner_mode = "local_knowledge_execution"
                         planner_error = None
                     else:
-                        tool_steps = _safe_zapier_read_steps(
-                            operator_prompt,
-                            tool_catalog,
-                            max_tool_steps=max_tool_steps,
+                        explicit_agent_mesh_step = _explicit_agent_mesh_control_step(
+                            operator_prompt
                         )
-                        if tool_steps:
-                            planner_mode = "local_safe_zapier_read_intent"
+                        if explicit_agent_mesh_step and _tool_is_available(
+                            explicit_agent_mesh_step["tool"],
+                            tool_catalog,
+                        ):
+                            tool_steps = [explicit_agent_mesh_step]
+                            planner_mode = (
+                                "local_agent_mesh_audit"
+                                if explicit_agent_mesh_step["tool"] == "agent_mesh_audit"
+                                else "local_agent_mesh_execute"
+                            )
                             planner_error = None
                         else:
-                            explicit_zapier_action = _zapier_action_step(operator_prompt)
-                            if explicit_zapier_action:
-                                tool_steps = _fallback_steps(
-                                    operator_prompt,
-                                    tool_catalog,
-                                    max_tool_steps,
-                                    source_guidance=sources if task.get("knowledge_mission") else [],
-                                )
-                                planner_mode = "local_explicit_zapier_action"
+                            tool_steps = _safe_zapier_read_steps(
+                                operator_prompt,
+                                tool_catalog,
+                                max_tool_steps=max_tool_steps,
+                            )
+                            if tool_steps:
+                                planner_mode = "local_safe_zapier_read_intent"
                                 planner_error = None
                             else:
-                                direct_step = (
-                                    _agent_mesh_execute_step(operator_prompt)
-                                    or _agent_mesh_audit_step(operator_prompt)
-                                    or _production_site_audit_step(operator_prompt)
-                                    or _integration_probe_step(operator_prompt)
-                                    or _trading_strategy_refresh_step(operator_prompt)
-                                    or _trading_control_step(operator_prompt)
-                                    or _zapier_action_preflight_step(operator_prompt)
-                                    or _openrouter_model_strategy_step(operator_prompt)
-                                    or _agent_provider_action_prepare_step(operator_prompt)
-                                    or _agent_provider_probe_step(operator_prompt)
-                                    or _connected_app_catalog_step(operator_prompt)
-                                )
-                                if direct_step and _tool_is_available(direct_step["tool"], tool_catalog):
-                                    tool_steps = [direct_step]
-                                    planner_mode = {
-                                        "agent_mesh_execute": "local_agent_mesh_execute",
-                                        "agent_mesh_audit": "local_agent_mesh_audit",
-                                        "production_site_audit": "local_production_site_audit",
-                                        "integration_probe": "local_integration_probe",
-                                        "trading_start": "local_trading_control",
-                                        "trading_stop": "local_trading_control",
-                                        "trading_tick": "local_trading_control",
-                                        "trading_status": "local_trading_control",
-                                        "trading_strategy_refresh": "local_trading_strategy_refresh",
-                                        "zapier_action_preflight": "local_zapier_action_preflight",
-                                        "openrouter_model_strategy": "local_openrouter_model_strategy",
-                                        "agent_provider_action_prepare": "local_agent_provider_action_prepare",
-                                        "agent_provider_probe": "local_agent_provider_probe",
-                                        "zapier_action_catalog": "local_connected_app_catalog",
-                                    }.get(direct_step["tool"], "local_direct_tool")
+                                explicit_zapier_action = _zapier_action_step(operator_prompt)
+                                if explicit_zapier_action:
+                                    tool_steps = _fallback_steps(
+                                        operator_prompt,
+                                        tool_catalog,
+                                        max_tool_steps,
+                                        source_guidance=sources if task.get("knowledge_mission") else [],
+                                    )
+                                    planner_mode = "local_explicit_zapier_action"
                                     planner_error = None
                                 else:
-                                    tool_steps = fast_control_steps(operator_prompt, tool_catalog)
-                                    if tool_steps:
-                                        planner_mode = "local_fast_control"
+                                    direct_step = (
+                                        _agent_mesh_execute_step(operator_prompt)
+                                        or _agent_mesh_audit_step(operator_prompt)
+                                        or _production_site_audit_step(operator_prompt)
+                                        or _integration_probe_step(operator_prompt)
+                                        or _trading_strategy_refresh_step(operator_prompt)
+                                        or _trading_control_step(operator_prompt)
+                                        or _zapier_action_preflight_step(operator_prompt)
+                                        or _openrouter_model_strategy_step(operator_prompt)
+                                        or _medium_intelligence_step(operator_prompt)
+                                        or _agent_provider_action_prepare_step(operator_prompt)
+                                        or _agent_provider_probe_step(operator_prompt)
+                                        or _connected_app_catalog_step(operator_prompt)
+                                    )
+                                    if direct_step and _tool_is_available(direct_step["tool"], tool_catalog):
+                                        tool_steps = [direct_step]
+                                        planner_mode = {
+                                            "agent_mesh_execute": "local_agent_mesh_execute",
+                                            "agent_mesh_audit": "local_agent_mesh_audit",
+                                            "production_site_audit": "local_production_site_audit",
+                                            "integration_probe": "local_integration_probe",
+                                            "trading_start": "local_trading_control",
+                                            "trading_stop": "local_trading_control",
+                                            "trading_tick": "local_trading_control",
+                                            "trading_status": "local_trading_control",
+                                            "trading_strategy_refresh": "local_trading_strategy_refresh",
+                                            "zapier_action_preflight": "local_zapier_action_preflight",
+                                            "openrouter_model_strategy": "local_openrouter_model_strategy",
+                                            "medium_intelligence_pipeline": "local_medium_intelligence_pipeline",
+                                            "agent_provider_action_prepare": "local_agent_provider_action_prepare",
+                                            "agent_provider_probe": "local_agent_provider_probe",
+                                            "zapier_action_catalog": "local_connected_app_catalog",
+                                        }.get(direct_step["tool"], "local_direct_tool")
                                         planner_error = None
                                     else:
-                                        tool_steps, planner_mode, planner_error = _model_steps(
-                                            planner_task,
-                                            sources,
-                                            model,
-                                            tool_catalog,
-                                            max_tool_steps,
-                                        )
-                                        if not tool_steps:
-                                            tool_steps = _fallback_steps(
-                                                operator_prompt,
+                                        tool_steps = fast_control_steps(operator_prompt, tool_catalog)
+                                        if tool_steps:
+                                            planner_mode = "local_fast_control"
+                                            planner_error = None
+                                        else:
+                                            tool_steps, planner_mode, planner_error = _model_steps(
+                                                planner_task,
+                                                sources,
+                                                model,
                                                 tool_catalog,
                                                 max_tool_steps,
-                                                source_guidance=sources if task.get("knowledge_mission") else [],
                                             )
-                                            planner_mode = "local_fallback"
+                                            if not tool_steps:
+                                                tool_steps = _fallback_steps(
+                                                    operator_prompt,
+                                                    tool_catalog,
+                                                    max_tool_steps,
+                                                    source_guidance=sources if task.get("knowledge_mission") else [],
+                                                )
+                                                planner_mode = "local_fallback"
                             guarded_steps = _direct_web_intake_guard_steps(
                                 operator_prompt,
                                 tool_steps,
@@ -740,6 +753,10 @@ def fast_control_steps(
     )
     if codespaces_steps:
         return codespaces_steps
+
+    medium_step = _medium_intelligence_step(prompt)
+    if medium_step and medium_step["tool"] in available:
+        return [medium_step]
 
     knowledge_steps = [
         step
@@ -1269,6 +1286,15 @@ def _fallback_steps(
             openrouter_model_strategy["tool"],
             openrouter_model_strategy["description"],
             openrouter_model_strategy["args"],
+        )
+        return steps[:max_tool_steps]
+
+    medium_intelligence = _medium_intelligence_step(prompt)
+    if medium_intelligence:
+        add(
+            medium_intelligence["tool"],
+            medium_intelligence["description"],
+            medium_intelligence["args"],
         )
         return steps[:max_tool_steps]
 
@@ -2853,6 +2879,71 @@ def _openrouter_model_strategy_step(prompt: str) -> dict[str, Any] | None:
         "tool": "openrouter_model_strategy",
         "description": "قراءة استراتيجية OpenRouter وFusion والنماذج المجانية دون إنفاق رموز",
         "args": {},
+    }
+
+
+def _medium_intelligence_step(prompt: str) -> dict[str, Any] | None:
+    text = prompt.casefold()
+    explicit = any(
+        term in text
+        for term in (
+            "fathiya_daily_intelligence_report_v1",
+            "medium intelligence",
+            "medium daily",
+            "تقارير يوميه",
+            "تقارير يومية",
+            "التقارير اليوميه",
+            "التقارير اليومية",
+        )
+    )
+    medium_source = "medium.com" in text or "ميديم" in text
+    operational_report = any(
+        term in text
+        for term in (
+            "daily",
+            "report",
+            "reports",
+            "hundreds",
+            "pipeline",
+            "dedupe",
+            "candidate",
+            "quality_gate",
+            "تقرير",
+            "تقارير",
+            "مئات",
+            "فرز",
+            "بوابة",
+            "جودة",
+        )
+    )
+    if not explicit and not (medium_source and operational_report):
+        return None
+    source_paths = [
+        match.strip().strip("`'\"")
+        for match in re.findall(
+            r"(?im)^\s*(?:source_path|knowledge_path|file_path|مسار\s+المعرفة)\s*:\s*([^\r\n]+)$",
+            prompt,
+        )
+        if match.strip()
+    ][:20]
+    source_urls = [
+        url.rstrip(").,]؛،")
+        for url in re.findall(r"https?://[^\s<>'\"،]+", prompt, re.IGNORECASE)
+    ][:20]
+    args: dict[str, Any] = {
+        "source_urls": source_urls,
+        "source_paths": source_paths,
+        "title": "FATHIYA Medium daily intelligence",
+        "max_items": 250,
+        "fetch_live": True,
+    }
+    max_items = _prompt_inline_value(prompt, "max_items", "limit", "حد")
+    if max_items.isdigit():
+        args["max_items"] = min(500, max(1, int(max_items)))
+    return {
+        "tool": "medium_intelligence_pipeline",
+        "description": "جمع تقارير Medium وفرزها عبر بوابة الجدة والإثبات والأثر قبل أي Draft",
+        "args": args,
     }
 
 

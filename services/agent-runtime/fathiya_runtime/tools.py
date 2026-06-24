@@ -20,6 +20,7 @@ import requests
 
 from .config import RuntimeConfig
 from .learning import build_learning_session, make_learning_source
+from .medium_intel import build_medium_intelligence_report
 from .models import ModelClient, OpenRouterClient
 from .trading import BinanceSpotTestnetGateway, PaperTradingAgent
 from .zapier_mcp import ZapierMCPError, ZapierMCPGateway
@@ -87,6 +88,7 @@ class ToolExecutor:
             "production_site_audit": self._production_site_audit,
             "knowledge_ingest_url": self._knowledge_ingest_url,
             "learning_bootstrap": self._learning_bootstrap,
+            "medium_intelligence_pipeline": self._medium_intelligence_pipeline,
             "n8n_status": self._n8n_status,
             "n8n_workflows": self._n8n_workflows,
             "n8n_webhook": self._n8n_webhook,
@@ -229,6 +231,13 @@ class ToolExecutor:
                     "knowledge",
                     read_only=False,
                     inputs=("source_urls", "source_paths", "source_text", "title", "objective"),
+                ),
+                ToolSpec(
+                    "medium_intelligence_pipeline",
+                    "Collect Medium security writeups at scale and gate them into learning-only, needs-evidence, dedupe-hold, or report-candidate queues.",
+                    "knowledge",
+                    read_only=False,
+                    inputs=("source_urls", "source_paths", "source_text", "max_items", "fetch_live", "title"),
                 ),
                 ToolSpec(
                     "n8n_status",
@@ -2907,6 +2916,46 @@ class ToolExecutor:
             "errors": errors,
             **result,
         }
+
+    def _medium_intelligence_pipeline(
+        self,
+        prompt: str,
+        args: dict[str, Any],
+        _context: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        source_paths: list[Path] = []
+        errors: list[str] = []
+        for path_ref in _value_list(args.get("source_paths")):
+            path = self._resolve_learning_source_path(str(path_ref))
+            if path:
+                source_paths.append(path)
+            else:
+                errors.append(f"{path_ref}: source path not found")
+        source_urls = _value_list(args.get("source_urls")) or re.findall(
+            r"https?://[^\s`'\"<>،]+",
+            prompt,
+        )
+        fetch_live_raw = args.get("fetch_live", True)
+        fetch_live = not (
+            isinstance(fetch_live_raw, str)
+            and fetch_live_raw.strip().casefold() in {"0", "false", "no", "off"}
+        ) and bool(fetch_live_raw)
+        try:
+            max_items = int(args.get("max_items") or _prompt_field(prompt, "max_items") or 200)
+        except (TypeError, ValueError):
+            max_items = 200
+        result = build_medium_intelligence_report(
+            self.config.knowledge_root,
+            source_urls=[str(url) for url in source_urls],
+            source_text=str(args.get("source_text") or ""),
+            source_paths=source_paths,
+            title=str(args.get("title") or "FATHIYA Medium daily intelligence"),
+            max_items=max_items,
+            fetch_live=fetch_live,
+        )
+        if errors:
+            result["errors"] = [*errors, *result.get("errors", [])]
+        return result
 
     def _resolve_learning_source_path(self, value: str) -> Path | None:
         if not value.strip():

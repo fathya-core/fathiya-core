@@ -191,9 +191,11 @@ const KNOWLEDGE_EXECUTION_PROMPT = [
 ].join("\n");
 
 const DAILY_INTELLIGENCE_REPORT_PROMPT = [
+  "medium intelligence pipeline:",
   "knowledge execution mission:",
   "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1",
-  "أنشئ تقرير فتحية اليومي من مصادر المعرفة المحفوظة وروابط البحث المهمة، ثم حوّله إلى تنفيذ عملي.",
+  "أنشئ تقرير فتحية اليومي من مئات مواد Medium ومصادر المعرفة المحفوظة، لكن لا تحول أي فكرة إلى Draft إلا بعد بوابة الجدة والإثبات والأثر.",
+  "max_items: 300",
   "source_path: intake/runtime/Gmail---Deep-research-performance-gains-with-multi-model-Fusion-pdf-20b5be5a9fdc.md",
   "source_path: cards/FATHIYA_OPENROUTER_FUSION_ROUTING_CARD_v1.md",
   "source_path: reports/study/FATHIYA_BUG_BOUNTY_WEB_AND_LOCAL_TRAINING_REPORT_v1.md",
@@ -202,7 +204,8 @@ const DAILY_INTELLIGENCE_REPORT_PROMPT = [
   "reference_url: https://medium.com/",
   "reference_url: https://www.datacamp.com/",
   "reference_url: https://trainingpost.com/",
-  "المطلوب: لخص الجديد، استخرج دروس bug bounty والتعلم الآلي، اختبر الفهم بأسئلة تطبيقية، حدّث توصية النماذج المجانية/القوية، ثم نفذ فحص الأدوات الداخلية الجاهزة وسجل إيصالًا.",
+  "المطلوب: اجمع وفرز، استخرج فرص bug bounty، ضع كل مادة في candidate أو needs_evidence أو dedupe_hold أو learning_only، ثم أعط top candidates فقط مع الأدلة المطلوبة.",
+  "quality_gate: لا تقرير قابل للرفع بلا PoC/requests/responses أو أثر عملي واضح، ولا تقرير مكرر بلا primitive جديد.",
   "لا تنتظر حسابات خارجية؛ استخدم المعرفة المحلية أولًا، وحوّل أي مصدر يحتاج تسجيل دخول إلى next_action واضح.",
 ].join("\n");
 

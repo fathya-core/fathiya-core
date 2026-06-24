@@ -4,6 +4,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from fathiya_runtime.config import RuntimeConfig
 from fathiya_runtime.learning import build_learning_session, make_learning_source
@@ -208,6 +209,78 @@ class LearningBootstrapTests(unittest.TestCase):
             learning_step["args"]["source_paths"],
             ["intake/runtime/openrouter-fusion.md"],
         )
+
+    def test_medium_intelligence_pipeline_gates_candidates_duplicates_and_learning(self) -> None:
+        rss = """<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0"><channel>
+          <item>
+            <title>GraphQL BOLA cross-tenant exploit with PoC</title>
+            <link>https://medium.com/example/graphql-bola-poc</link>
+            <description>Proof of concept with request response curl steps to reproduce. As an attacker I could access cross-tenant sensitive data through unauthorized GraphQL resolver bypass impact.</description>
+          </item>
+          <item>
+            <title>Querybook Google Sheets OAuth CSRF token binding</title>
+            <link>https://medium.com/example/querybook-oauth-csrf</link>
+            <description>Querybook Google Sheets OAuth CSRF can bind attacker Google token to victim user.</description>
+          </item>
+          <item>
+            <title>Bug bounty automation stack tools checklist</title>
+            <link>https://medium.com/example/tools</link>
+            <description>Tips tutorial guide roadmap awesome tools automation stack for recon.</description>
+          </item>
+        </channel></rss>"""
+        response = Mock()
+        response.text = rss
+        response.headers = {"content-type": "application/rss+xml"}
+        response.raise_for_status.return_value = None
+        executor = ToolExecutor(self.config)
+
+        with patch("fathiya_runtime.medium_intel.requests.get", return_value=response):
+            result = executor.execute(
+                "medium_intelligence_pipeline",
+                "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1 medium.com",
+                {"source_urls": ["https://medium.com/feed/tag/bug-bounty"], "max_items": 50},
+            )
+
+        self.assertTrue(result["executed"])
+        self.assertEqual(result["processed_count"], 3)
+        self.assertEqual(result["ready_candidate_count"], 1)
+        self.assertEqual(result["dedupe_hold_count"], 1)
+        self.assertEqual(result["learning_only_count"], 1)
+        self.assertTrue(Path(result["report_path"]).exists())
+        self.assertEqual(result["top_candidates"][0]["gate"], "candidate")
+        self.assertIn("graphql", result["top_candidates"][0]["topics"])
+
+    def test_daily_medium_prompt_routes_to_intelligence_pipeline(self) -> None:
+        executor = ToolExecutor(self.config)
+        prompt = "\n".join(
+            [
+                "knowledge execution mission:",
+                "FATHIYA_DAILY_INTELLIGENCE_REPORT_V1",
+                "reference_url: https://medium.com/",
+                "max_items: 300",
+                "نبي تقارير يومية من ميديم مع dedupe وإثبات قبل أي تقرير.",
+            ]
+        )
+        plan = build_plan(
+            {"prompt": prompt},
+            [],
+            AgentModelRouter(
+                "",
+                "remote-model",
+                enable_local_generation=False,
+                local_model="local-model",
+                local_max_new_tokens=64,
+            ),
+            executor.catalog(),
+            max_tool_steps=6,
+        )
+        tools = [step["tool"] for step in plan if step.get("kind") == "tool"]
+        fast_tools = [step["tool"] for step in fast_control_steps(prompt, executor.catalog())]
+
+        self.assertEqual(tools, ["medium_intelligence_pipeline"])
+        self.assertEqual(fast_tools, ["medium_intelligence_pipeline"])
+        self.assertEqual(plan[1]["args"]["max_items"], 300)
 
 
 if __name__ == "__main__":

@@ -5751,6 +5751,7 @@ class AgentRuntimeVerticalSliceTests(unittest.TestCase):
 
         self.assertIn("knowledge_ingest_url", by_name)
         self.assertIn("learning_bootstrap", by_name)
+        self.assertIn("medium_intelligence_pipeline", by_name)
         self.assertIn("openrouter_model_strategy", by_name)
         self.assertIn("local_capability_inventory", by_name)
         self.assertIn("agent_mesh_execute", by_name)
