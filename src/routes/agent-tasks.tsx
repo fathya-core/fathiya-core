@@ -2621,7 +2621,10 @@ function AgentTasksPage() {
           )}
 
           {workspaceView === "request" && (
-            <Card className="mb-4 border-emerald-500/25 bg-emerald-500/[0.035]">
+            <Card
+              className="mb-4 border-emerald-500/25 bg-emerald-500/[0.035]"
+              data-fathiya-primary-view="FATHIYA_PRIMARY_REQUEST_VIEW_V2"
+            >
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">

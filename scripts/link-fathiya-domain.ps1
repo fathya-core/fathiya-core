@@ -109,6 +109,7 @@ function Test-AgentOsPage {
     $title = if ($titleMatch.Success) { ($titleMatch.Groups[1].Value -replace "\s+", " ").Trim() } else { "" }
     $hasDeployMarker = $response.Content.Contains("FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS")
     $hasOldStopText = $response.Content.Contains("يتوقف عند")
+    $hasPrimaryRequestView = $response.Content.Contains("FATHIYA_PRIMARY_REQUEST_VIEW_V2")
     $hasIdentity = (
       $response.Content.Contains("FATHIYA") -or
       $response.Content.Contains("فتحية") -or
@@ -123,7 +124,7 @@ function Test-AgentOsPage {
       $response.Content.Contains("المسار السريع للتداول") -or
       $response.Content.Contains("صيد ثغرات بزر واحد")
     )
-    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and -not $hasOldStopText)
+    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and $hasPrimaryRequestView -and -not $hasOldStopText)
     [pscustomobject]@{
       url = $Url
       status_code = [int]$response.StatusCode
@@ -132,6 +133,7 @@ function Test-AgentOsPage {
       has_workspace_home = $response.Content.Contains("workspace-home")
       has_deploy_marker = $hasDeployMarker
       has_old_stop_text = $hasOldStopText
+      has_primary_request_view = $hasPrimaryRequestView
       has_fathiya_identity = $hasIdentity
       has_operator_console = $hasOperatorConsole
       is_current_operator = $isCurrentOperator
@@ -146,6 +148,7 @@ function Test-AgentOsPage {
       has_workspace_home = $false
       has_deploy_marker = $false
       has_old_stop_text = $false
+      has_primary_request_view = $false
       has_fathiya_identity = $false
       has_operator_console = $false
       is_current_operator = $false

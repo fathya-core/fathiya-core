@@ -1,6 +1,9 @@
 name: Deploy FATHIYA Operator To Netlify
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -101,6 +104,10 @@ jobs:
             curl --fail --silent --show-error --location "$url" --output "$body"
             if ! grep -q "FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS" "$body"; then
               echo "::error::$label does not contain the current FATHIYA deploy marker: $url"
+              exit 1
+            fi
+            if ! grep -q "FATHIYA_PRIMARY_REQUEST_VIEW_V2" "$body"; then
+              echo "::error::$label does not contain the current primary request view: $url"
               exit 1
             fi
             if grep -q "يتوقف عند" "$body"; then

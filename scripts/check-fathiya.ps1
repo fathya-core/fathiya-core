@@ -79,6 +79,7 @@ function Test-AgentOsPage {
     $content = [string]$response.Content
     $hasDeployMarker = $content.Contains("FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS")
     $hasOldStopText = $content.Contains("يتوقف عند")
+    $hasPrimaryRequestView = $content.Contains("FATHIYA_PRIMARY_REQUEST_VIEW_V2")
     $hasIdentity = (
       $content.Contains("FATHIYA") -or
       $content.Contains("فتحية") -or
@@ -93,7 +94,7 @@ function Test-AgentOsPage {
       $content.Contains("محرك الوكلاء") -or
       $content.Contains("صيد ثغرات بزر واحد")
     )
-    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and -not $hasOldStopText)
+    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and $hasPrimaryRequestView -and -not $hasOldStopText)
     return [pscustomobject]@{
       name = $Name
       url = $Url
@@ -102,6 +103,7 @@ function Test-AgentOsPage {
       current_operator = $isCurrentOperator
       has_deploy_marker = $hasDeployMarker
       has_old_stop_text = $hasOldStopText
+      has_primary_request_view = $hasPrimaryRequestView
       has_fathiya_identity = $hasIdentity
       has_operator_console = $hasOperatorConsole
       etag = ($response.Headers["ETag"] -join ",")
@@ -117,6 +119,7 @@ function Test-AgentOsPage {
       current_operator = $false
       has_deploy_marker = $false
       has_old_stop_text = $false
+      has_primary_request_view = $false
       has_fathiya_identity = $false
       has_operator_console = $false
       etag = ""
