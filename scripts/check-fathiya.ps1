@@ -1,6 +1,9 @@
 param(
   [int]$ApiPort = 8765,
   [int]$WebPort = 5180,
+  [string]$PublicDomain = "fathya-core.com",
+  [string]$PublicWww = "www.fathya-core.com",
+  [string]$ExpectedPublicBaseUrl = "https://thriving-fenglisu-ef18b1.netlify.app",
   [switch]$StrictActivation
 )
 
@@ -65,6 +68,64 @@ function Test-Origin {
   }
 }
 
+function Test-AgentOsPage {
+  param(
+    [string]$Name,
+    [string]$Url
+  )
+
+  try {
+    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 15
+    $content = [string]$response.Content
+    $hasDeployMarker = $content.Contains("FATHIYA_DEPLOY_MARKER_20260621_AGENT_OS")
+    $hasOldStopText = $content.Contains("يتوقف عند")
+    $hasIdentity = (
+      $content.Contains("FATHIYA") -or
+      $content.Contains("فتحية") -or
+      $content.Contains("المنشأة السيادية الذكية") -or
+      $content.Contains("المنصة السيادية الذكية")
+    )
+    $hasOperatorConsole = (
+      $content.Contains("agent-os") -or
+      $content.Contains("agent-tasks") -or
+      $content.Contains("وكيل التداول") -or
+      $content.Contains("صيد الثغرات") -or
+      $content.Contains("محرك الوكلاء") -or
+      $content.Contains("صيد ثغرات بزر واحد")
+    )
+    $isCurrentOperator = (($hasDeployMarker -or ($hasIdentity -and $hasOperatorConsole)) -and -not $hasOldStopText)
+    return [pscustomobject]@{
+      name = $Name
+      url = $Url
+      ok = $response.StatusCode -ge 200 -and $response.StatusCode -lt 300
+      status = [int]$response.StatusCode
+      current_operator = $isCurrentOperator
+      has_deploy_marker = $hasDeployMarker
+      has_old_stop_text = $hasOldStopText
+      has_fathiya_identity = $hasIdentity
+      has_operator_console = $hasOperatorConsole
+      etag = ($response.Headers["ETag"] -join ",")
+      age = ($response.Headers["Age"] -join ",")
+      error = ""
+    }
+  } catch {
+    return [pscustomobject]@{
+      name = $Name
+      url = $Url
+      ok = $false
+      status = 0
+      current_operator = $false
+      has_deploy_marker = $false
+      has_old_stop_text = $false
+      has_fathiya_identity = $false
+      has_operator_console = $false
+      etag = ""
+      age = ""
+      error = $_.Exception.Message
+    }
+  }
+}
+
 $health = $null
 try {
   $health = Invoke-RestMethod -Uri "$apiUrl/api/agent/health" -TimeoutSec 10
@@ -90,6 +151,28 @@ $originResults = @(
   Test-Origin "https://www.fathya-core.com"
   Test-Origin "https://fathya-project.github.io"
 )
+
+$expectedBase = $ExpectedPublicBaseUrl.TrimEnd("/")
+$publicSiteResults = @(
+  Test-AgentOsPage "expected-netlify" "$expectedBase/agent-tasks/"
+  Test-AgentOsPage "apex-domain" "https://$PublicDomain/agent-tasks/"
+  Test-AgentOsPage "www-domain" "https://$PublicWww/agent-tasks/"
+)
+$expectedPublicPage = $publicSiteResults | Where-Object { $_.name -eq "expected-netlify" } | Select-Object -First 1
+$apexPublicPage = $publicSiteResults | Where-Object { $_.name -eq "apex-domain" } | Select-Object -First 1
+$wwwPublicPage = $publicSiteResults | Where-Object { $_.name -eq "www-domain" } | Select-Object -First 1
+$publicDomainCurrent = [bool](
+  $expectedPublicPage.current_operator -and
+  $apexPublicPage.current_operator -and
+  $wwwPublicPage.current_operator
+)
+$publicDomainStatus = if ($publicDomainCurrent) {
+  "ready"
+} elseif ($expectedPublicPage.current_operator -and -not ($apexPublicPage.current_operator -and $wwwPublicPage.current_operator)) {
+  "domain_stale"
+} else {
+  "build_stale"
+}
 
 $integrations = @()
 $integrationSummary = $null
@@ -224,6 +307,26 @@ $activationGates = @(
     summary = $testnetSummary
     next_step = $testnetNextStep
   }
+  [pscustomobject]@{
+    id = "public_domain_current"
+    ok = $publicDomainCurrent
+    status = $publicDomainStatus
+    summary = if ($publicDomainCurrent) {
+      "$PublicDomain و $PublicWww يعرضان نسخة فتحية الحالية."
+    } elseif ($expectedPublicPage.current_operator) {
+      "النشر الصحيح يعمل على $expectedBase، لكن $PublicDomain أو $PublicWww لا يعرضان النسخة الحالية."
+    } else {
+      "النشر المتوقع لا يعرض علامة فتحية الحالية؛ أعد البناء والنشر قبل تعديل DNS."
+    }
+    next_step = if ($publicDomainCurrent) {
+      "لا إجراء مطلوب."
+    } elseif ($expectedPublicPage.current_operator) {
+      "اربط $PublicDomain و $PublicWww بالنشر $expectedBase؛ في GoDaddy غيّر www بعيدًا عن site-dns.bolt.host، ثم شغّل scripts/link-fathiya-domain.ps1 -Apply بعد ضبط NETLIFY_AUTH_TOKEN."
+    } else {
+      "أعد بناء ونشر operator-lite، ثم أعد فحص الدومين."
+    }
+    pages = $publicSiteResults
+  }
 )
 
 $summary = [pscustomobject]@{
@@ -248,6 +351,7 @@ $summary = [pscustomobject]@{
     latest_receipt_id = $health.trading.latest_receipt_id
   }
   web = $viewResults
+  public_site = $publicSiteResults
   allowed_origins = $originResults
   integrations = [pscustomobject]@{
     summary = $integrationSummary
@@ -263,10 +367,10 @@ $failedViews = @($viewResults | Where-Object { -not $_.ok })
 $failedOrigins = @($originResults | Where-Object { -not $_.ok -or -not $_.private_network })
 $failedActivation = @($activationGates | Where-Object { -not $_.ok })
 $upgradeActivation = @($failedActivation | Where-Object {
-  $_.id -in @("zapier_mcp_live_execution", "supabase_production_queue", "broker_testnet")
+  $_.id -in @("zapier_mcp_live_execution", "supabase_production_queue", "broker_testnet", "public_domain_current")
 })
 $blockingActivation = @($failedActivation | Where-Object {
-  $_.id -notin @("zapier_mcp_live_execution", "supabase_production_queue", "broker_testnet")
+  $_.id -notin @("zapier_mcp_live_execution", "supabase_production_queue", "broker_testnet", "public_domain_current")
 })
 $failedRuntime = -not $summary.runtime.ok -or -not $summary.runtime.worker_online
 
