@@ -158,6 +158,17 @@ const TOOL_MESH_PROMPT = [
   "أخرج حالة جاهزية، ماذا يمكن تنفيذه الآن، وما يحتاج تسجيل دخول أو OAuth أو إعداد محلي.",
 ].join("\n");
 
+function agentUiError(error: unknown) {
+  const message = String(error);
+  if (message.includes("Failed to fetch")) {
+    return [
+      "Chrome منع اتصال الجسر المحلي 127.0.0.1:8765.",
+      "اسمح للموقع بالوصول للشبكة المحلية من إعدادات Chrome، أو افتح النسخة المحلية عبر START-FATHIYA.",
+    ].join(" ");
+  }
+  return message;
+}
+
 function AgentTasksPage() {
   const [station, setStation] = useState<StationId>("overview");
   const [tasks, setTasks] = useState<AgentTask[]>([]);
@@ -308,7 +319,7 @@ function AgentTasksPage() {
     if (results[8].status === "fulfilled") setCommandCenter(results[8].value);
 
     const rejected = results.find((result) => result.status === "rejected");
-    if (rejected?.status === "rejected") setError(String(rejected.reason));
+    if (rejected?.status === "rejected") setError(agentUiError(rejected.reason));
     if (!silent) setRefreshing(false);
   }, []);
 
@@ -336,7 +347,7 @@ function AgentTasksPage() {
       setStation(nextStation);
       await Promise.all([loadTasks(), loadDetail(data.task.id)]);
     } catch (taskError) {
-      setError(String(taskError));
+      setError(agentUiError(taskError));
     } finally {
       setBusyAction(null);
     }
@@ -354,7 +365,7 @@ function AgentTasksPage() {
       setStation("reports");
       await Promise.all([loadTasks(), loadDetail(data.task.id)]);
     } catch (commandError) {
-      setError(String(commandError));
+      setError(agentUiError(commandError));
     } finally {
       setBusyAction(null);
     }
@@ -367,7 +378,7 @@ function AgentTasksPage() {
       await agentApi(null, `/api/agent/trading/${action}`, { method: "POST" });
       await loadAll(true);
     } catch (actionError) {
-      setError(String(actionError));
+      setError(agentUiError(actionError));
     } finally {
       setBusyAction(null);
     }
@@ -380,7 +391,7 @@ function AgentTasksPage() {
       await agentApi(null, `/api/agent/intake/${action}`, { method: "POST" });
       await loadAll(true);
     } catch (actionError) {
-      setError(String(actionError));
+      setError(agentUiError(actionError));
     } finally {
       setBusyAction(null);
     }
@@ -394,7 +405,7 @@ function AgentTasksPage() {
       await agentApi(null, `/api/agent/tasks/${selectedTaskId}/${action}`, { method: "POST" });
       await Promise.all([loadTasks(), loadDetail(selectedTaskId)]);
     } catch (actionError) {
-      setError(String(actionError));
+      setError(agentUiError(actionError));
     } finally {
       setBusyAction(null);
     }

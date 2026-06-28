@@ -944,6 +944,14 @@ class LocalAgentApiTests(unittest.TestCase):
             production_preflight.headers["Access-Control-Allow-Private-Network"],
             "true",
         )
+        self.assertEqual(
+            production_preflight.headers["Private-Network-Access-ID"],
+            "02:fa:71:1a:00:01",
+        )
+        self.assertEqual(
+            production_preflight.headers["Private-Network-Access-Name"],
+            "fathiya-local-agent",
+        )
 
         created = requests.post(
             f"{self.base_url}/api/agent/tasks",

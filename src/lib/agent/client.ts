@@ -12,6 +12,10 @@ type AgentApiSession = {
   access_token: string;
 };
 
+type LoopbackRequestInit = RequestInit & {
+  targetAddressSpace?: "loopback";
+};
+
 export async function agentApi<T>(
   session: AgentApiSession | null,
   path: string,
@@ -20,14 +24,18 @@ export async function agentApi<T>(
   if (!isLocalAgentRuntime && !session) {
     throw new Error("Agent operator session is required");
   }
+  const method = init?.method?.toUpperCase() ?? "GET";
+  const headers: HeadersInit = {
+    ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    ...(method !== "GET" || init?.body ? { "Content-Type": "application/json" } : {}),
+    ...init?.headers,
+  };
   const response = await fetch(`${localAgentRuntimeUrl}${path}`, {
     ...init,
-    headers: {
-      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-  });
+    headers,
+    mode: "cors",
+    targetAddressSpace: "loopback",
+  } as LoopbackRequestInit);
 
   if (!response.ok) {
     const body = await response.text();

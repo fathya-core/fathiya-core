@@ -818,6 +818,9 @@ class LocalAgentRequestHandler(BaseHTTPRequestHandler):
         if origin and _operator_origin_allowed(origin, self.server.config):
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Private-Network", "true")
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Private-Network-Access-ID", "02:fa:71:1a:00:01")
+            self.send_header("Private-Network-Access-Name", "fathiya-local-agent")
             self.send_header("Vary", "Origin")
         self.end_headers()
         if body:
