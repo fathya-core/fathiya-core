@@ -687,7 +687,9 @@ function TopBar({
             <h1 className="break-words text-base font-bold tracking-normal text-white">
               FATHIYA - المنطقة السيادية الذكية
             </h1>
-            <p className="text-xs text-slate-400">مشغل خاص: تداول ورقي، صيد ثغرات، معرفة، وتقارير</p>
+            <p className="text-xs text-slate-400">
+              مشغل أمني موثوق: برمجة، صيد ثغرات مصرح، تداول ورقي، معرفة، وتقارير
+            </p>
           </div>
         </div>
 
@@ -705,6 +707,7 @@ function TopBar({
             tone={trading?.running ? "good" : "muted"}
           />
           <StatusTile icon={Cable} label="الأدوات" value={`${connectedTools} جاهز`} tone="info" />
+          <StatusTile icon={ShieldCheck} label="وضع المشغل" value="أمني موثوق" tone="good" />
           <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-700 text-xs font-bold">
               {operatorName.slice(0, 1).toUpperCase()}
