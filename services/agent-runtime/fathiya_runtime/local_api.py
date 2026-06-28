@@ -57,6 +57,7 @@ COMMAND_CENTER_CONNECTED_APP_PRIORITY = (
     "Zapier Manager",
     "Files By Zapier",
 )
+EXCLUDED_INTEGRATION_IDS = {"supabase"}
 
 def _visible_connector_profile(profile: dict[str, Any]) -> bool:
     return bool(
@@ -858,6 +859,8 @@ def _integration_probe(
     integration_id: str,
 ) -> dict[str, Any]:
     checked_at = now_iso()
+    if integration_id in EXCLUDED_INTEGRATION_IDS:
+        raise ValueError(f"Integration is excluded in this FATHIYA build: {integration_id}")
     if integration_id == "local_execution_mesh":
         result = server.tools.execute(
             "local_capability_inventory",
@@ -998,30 +1001,6 @@ def _integration_probe(
                 "requires_approval_for_remote_execution": True,
                 "codespaces": result.get("codespaces", []),
                 "error": result.get("error"),
-            },
-        )
-    if integration_id == "supabase":
-        configured = bool(
-            server.config.supabase_url and server.config.supabase_service_role_key
-        )
-        active = configured and server.config.store == "supabase"
-        return _probe_payload(
-            integration_id,
-            ok=active,
-            status="ready" if active else "partial" if configured else "needs_setup",
-            summary=(
-                "Supabase مفعّل كقناة مهام حالية."
-                if active
-                else "بيانات Supabase موجودة، لكن المشغّل الحالي ما زال على SQLite."
-                if configured
-                else "Supabase ينتظر URL ومفتاح خدمة محلي."
-            ),
-            checked_at=checked_at,
-            action="configuration_check",
-            details={
-                "configured": configured,
-                "active_store": server.config.store,
-                "network_call": False,
             },
         )
     if integration_id == "n8n_local":
@@ -1980,7 +1959,7 @@ def _mesh_activation_overview(
 
 
 def _activation_action_tier(integration_id: str) -> str:
-    if integration_id in {"zapier_mcp", "supabase", "broker_testnet"}:
+    if integration_id in {"zapier_mcp", "broker_testnet"}:
         return "upgrade"
     return "blocking"
 
@@ -2340,7 +2319,7 @@ def _agent_os_full_execute_prompt() -> str:
             "ابدأ من المعرفة المحلية: استرجع ما يلزم عبر Hugging Face، ثم استخدم OpenRouter للتخطيط والتقييم الثقيل عند الحاجة.",
             "نفذ كل ما هو داخلي أو قراءة أو Paper/Testnet متاح الآن عبر الأدوات المحلية: Zapier MCP inventory/live reads، n8n، Kali WSL، GitHub/Codespaces، وAI by Zapier عند توفر OAuth.",
             "افصل المسارات عمليًا: التداول الورقي بنبض الثانية أولًا، صيد الثغرات كمسودة مصرح بها مع dedupe، التقارير كإيصالات، والطلب المباشر كهدف واحد يتحول إلى أدوات.",
-            "لا تتوقف عند نقص Supabase أو Testnet أو OAuth؛ نفذ المتاح الآن، وحوّل الناقص إلى next_action محدد.",
+            "لا تتوقف عند نقص Testnet أو OAuth؛ نفذ المتاح الآن، وحوّل الناقص إلى next_action محدد.",
             "سجل إيصالًا يثبت الأدوات التي تحركت فعليًا، نتيجة كل مسار، وما بقي فقط بسبب إعداد خارجي أو أثر عالي.",
         ]
     )
@@ -2374,7 +2353,7 @@ def _mesh_activation_sweep_prompt() -> str:
             "agent mesh execute:",
             "FATHIYA_ACTIVATION_SWEEP_V1",
             "فعّل الناقص في فتحية كمسار تشغيل واحد لا كتنقل بين الإعدادات.",
-            "افحص بوابات Zapier MCP وGitHub Codespaces وSupabase وn8n المحلي وKali WSL وOpenRouter وHugging Face وBroker Testnet.",
+            "افحص بوابات Zapier MCP وGitHub Codespaces وn8n المحلي وKali WSL وOpenRouter وHugging Face وBroker Testnet وGoDaddy API.",
             "نفذ كل فحص أو قراءة أو تشغيل داخلي آمن متاح الآن، ولا توقف المهمة بسبب بوابات OAuth أو مفاتيح أو موافقة أثر.",
             "حوّل كل بوابة غير جاهزة إلى next_action واضح: ماذا أضغط، ماذا أربط، وأي إعداد محلي مطلوب بدون كشف أسرار.",
             "ابدأ أو تحقق من وكيل التداول الورقي، وأثبت أن مسار النماذج المحلي/OpenRouter جاهز، ثم سجل إيصالًا مرتبًا.",
@@ -2390,7 +2369,7 @@ def _production_site_audit_prompt() -> str:
             "routes: /, /agent-tasks, /command-center, /ai-console",
             "افحص إنتاج فتحية قراءة فقط، وتأكد هل الدومين يعرض المنصة السيادية الذكية وصفحة agent-tasks الحالية.",
             "قارِن الإشارات العامة بالمحلي: الهوية، أقسام التداول، صيد الثغرات، المعرفة، والأدوات.",
-            "لا تغيّر DNS ولا تنشر ولا تدخل بحسابات؛ سجّل إيصالًا واضحًا بما يعمل وما يحتاج نشر أو Supabase.",
+            "لا تغيّر DNS ولا تنشر ولا تدخل بحسابات؛ سجّل إيصالًا واضحًا بما يعمل وما يحتاج نشر أو ربط API.",
         ]
     )
 

@@ -44,17 +44,44 @@ export function classifyAgentRisk(prompt: string): {
   requiresApproval: boolean;
 } {
   const value = agentOperatorPrompt(prompt).toLowerCase();
+  const paperOrTestnetTrading =
+    /\b(paper|testnet|simulation|simulated|sandbox)\b|تداول ورقي|ورقي|محاكاة|تجريبي|بدون مال حقيقي|لا تستخدم مالًا حقيقيًا|لا تستخدم مالا حقيقيا|no real money/i.test(
+      value,
+    );
+  const realMoneyTrading =
+    /\b(real money|mainnet|live broker|market order|limit order|withdraw|deposit)\b|أمر سوق|أمر شراء|أمر بيع|شراء حقيقي|بيع حقيقي|تنفيذ حقيقي|مال حقيقي|تحويل/i.test(
+      value,
+    );
+  const tradingAction =
+    /\b(trading|trade|buy|sell|order|portfolio|wallet)\b|تداول|شراء|بيع|صفقة|محفظة/i.test(value);
+
+  const internalSecurityReview =
+    /\b(static review|dedupe|draft_gate|internal_only|local poc|code review|github issues?|changelog|cves?|root-cause|disclosed reports?)\b|مراجعة ساكنة|مسودة داخلية|draft داخلي|تحقق draft|لا فحص حي|لا استغلال|لا إرسال خارجي|لا ترفعه|لا ترسله|بدون رفع|قبل أي إرسال خارجي/i.test(
+      value,
+    );
+  const liveSecurityAction =
+    /\b(live scan|active scan|run scan|scan target|scan http|scan https|nmap|nuclei|sqlmap|ffuf|gobuster|dirsearch|masscan|active pentest|exploit|weaponize|pentest)\b|فحص حي|اختبار اختراق حي|استغلال فعلي/i.test(
+      value,
+    );
+  const externalBoundary =
+    /\b(internal_only|internal draft|draft only|no external|without sending|before any external)\b|مسودة داخلية|draft داخلي|لا ترفعه|لا ترسله|بدون رفع|قبل أي إرسال خارجي|لا إرسال خارجي/i.test(
+      value,
+    );
+  const externalAction =
+    /\b(send|submit|publish|deploy|email|webhook|upload|file report|raise report)\b|إرسال|ارسل|أرسل|رفع|ارفع|نشر|بريد|ويبهوك|قدم التقرير|تقديم التقرير/i.test(
+      value,
+    );
 
   if (/(delete|remove|drop|wipe|format|حذف|مسح|تهيئة)/i.test(value)) {
     return { riskClass: "destructive", requiresApproval: true };
   }
-  if (/(trade|buy|sell|order|portfolio|wallet|تحويل|شراء|بيع|صفقة|محفظة)/i.test(value)) {
+  if (tradingAction && (!paperOrTestnetTrading || realMoneyTrading)) {
     return { riskClass: "financial", requiresApproval: true };
   }
-  if (/(scan|exploit|pentest|nmap|nuclei|فحص حي|اختبار اختراق|استغلال)/i.test(value)) {
+  if (liveSecurityAction && !internalSecurityReview) {
     return { riskClass: "live_security", requiresApproval: true };
   }
-  if (/(send|publish|deploy|email|webhook|نشر|إرسال|بريد)/i.test(value)) {
+  if (externalAction && !externalBoundary) {
     return { riskClass: "external", requiresApproval: true };
   }
   return { riskClass: "internal_owned", requiresApproval: false };

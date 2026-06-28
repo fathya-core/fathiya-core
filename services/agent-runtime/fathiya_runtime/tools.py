@@ -57,6 +57,11 @@ class ToolExecutionError(RuntimeError):
 
 ToolHandler = Callable[[str, dict[str, Any], list[dict[str, Any]]], dict[str, Any]]
 
+EXCLUDED_TOOL_NAMES = {"agent_delegate"}
+EXCLUDED_CAPABILITY_IDS = {"claude_code"}
+EXCLUDED_INTEGRATION_IDS = {"supabase"}
+EXCLUDED_AGENT_PROVIDER_APPS = {"cursor", "manus"}
+
 
 class ToolExecutor:
     def __init__(
@@ -154,22 +159,6 @@ class ToolExecutor:
                     "openrouter_model_strategy",
                     "Read the OpenRouter routing strategy: cheap-first planning, Fusion deep research, advisor escalation, and safety guardrail models.",
                     "models",
-                ),
-                ToolSpec(
-                    "agent_delegate",
-                    "Delegate an approved objective to Claude Code locally. Use Zapier actions separately for connected apps.",
-                    "agents",
-                    risk_class="external",
-                    requires_approval=True,
-                    read_only=False,
-                    inputs=(
-                        "provider",
-                        "objective",
-                        "mode",
-                        "params",
-                        "max_budget_usd",
-                        "timeout_seconds",
-                    ),
                 ),
                 ToolSpec(
                     "internal_echo",
@@ -405,6 +394,8 @@ class ToolExecutor:
         connector_profiles = self.connector_catalog()
         catalog: list[dict[str, Any]] = []
         for spec in self._specs.values():
+            if spec.name in EXCLUDED_TOOL_NAMES:
+                continue
             item = spec.to_dict()
             if spec.name == "command_profile":
                 item["profiles"] = [
@@ -417,23 +408,6 @@ class ToolExecutor:
                     for profile in profiles
                 ]
                 item["configured"] = bool(profiles)
-            elif spec.name == "agent_delegate":
-                claude_installed = bool(shutil.which("claude"))
-                item["providers"] = [
-                    {
-                        "name": "auto",
-                        "configured": bool(claude_installed),
-                        "connection_mode": "best_ready_agent",
-                    },
-                    {
-                        "name": "claude_code",
-                        "configured": claude_installed,
-                        "connection_mode": "local_cli",
-                    },
-                ]
-                item["configured"] = any(
-                    provider["configured"] for provider in item["providers"]
-                )
             elif spec.name == "connector_profile":
                 item["profiles"] = connector_profiles
                 item["configured"] = any(
@@ -563,6 +537,8 @@ class ToolExecutor:
 
     def integration_probe(self, integration_id: str) -> dict[str, Any]:
         checked_at = datetime.now(UTC).isoformat()
+        if integration_id in EXCLUDED_INTEGRATION_IDS:
+            raise ValueError(f"Integration is excluded in this FATHIYA build: {integration_id}")
         if integration_id == "local_execution_mesh":
             result = self._local_capability_inventory("", {}, [])
             ready_count = int(result.get("ready_count") or 0)
@@ -702,30 +678,6 @@ class ToolExecutor:
                     "requires_approval_for_remote_execution": True,
                     "codespaces": result.get("codespaces", []),
                     "error": result.get("error"),
-                },
-            )
-        if integration_id == "supabase":
-            configured = bool(
-                self.config.supabase_url and self.config.supabase_service_role_key
-            )
-            active = configured and self.config.store == "supabase"
-            return _integration_probe_payload(
-                integration_id,
-                ok=active,
-                status="ready" if active else "partial" if configured else "needs_setup",
-                summary=(
-                    "Supabase مفعّل كقناة مهام حالية."
-                    if active
-                    else "بيانات Supabase موجودة، لكن المشغّل الحالي ما زال على SQLite."
-                    if configured
-                    else "Supabase ينتظر URL ومفتاح خدمة محلي."
-                ),
-                checked_at=checked_at,
-                action="configuration_check",
-                details={
-                    "configured": configured,
-                    "active_store": self.config.store,
-                    "network_call": False,
                 },
             )
         if integration_id == "n8n_local":
@@ -902,21 +854,6 @@ class ToolExecutor:
         ):
             return {**self._capability_cache[1], "cached": True}
 
-        claude = self._probe_cli("claude", ("--version",), auth_args=("auth", "status"))
-        claude.update(
-            {
-                "id": "claude_code",
-                "name": "Claude Code",
-                "execution_mode": "local_cli",
-                "requires_approval": True,
-                "required_for_core": False,
-                "optional": True,
-                "optional_reason": (
-                    "Useful as an extra coding agent, but FATHIYA's local "
-                    "execution mesh does not depend on it."
-                ),
-            }
-        )
         github = self._probe_cli("gh", ("--version",), auth_args=("auth", "status"))
         github.update(
             {
@@ -1040,7 +977,6 @@ class ToolExecutor:
             "testnet_execution_enabled": testnet["execution_enabled"],
         }
         capabilities = [
-            claude,
             github,
             github_codespaces,
             docker,
@@ -1050,6 +986,11 @@ class ToolExecutor:
             hugging_face,
             openrouter,
             trading_agent,
+        ]
+        capabilities = [
+            capability
+            for capability in capabilities
+            if str(capability.get("id") or "") not in EXCLUDED_CAPABILITY_IDS
         ]
         for capability in capabilities:
             capability.setdefault("required_for_core", True)
@@ -1099,6 +1040,8 @@ class ToolExecutor:
         integration_id = str(args.get("integration_id") or "").strip()
         if not integration_id:
             raise ValueError("integration_probe requires integration_id")
+        if integration_id in EXCLUDED_INTEGRATION_IDS:
+            raise ValueError(f"integration_probe is excluded for {integration_id}")
         return self.integration_probe(integration_id)
 
     def _openrouter_model_strategy(
@@ -1302,7 +1245,6 @@ class ToolExecutor:
             "huggingface_local",
             "openrouter",
             "github_codespaces",
-            "supabase",
             "n8n_local",
             "kali_wsl",
             "zapier_mcp",
@@ -1520,7 +1462,7 @@ class ToolExecutor:
                 "integration probe: github_codespaces",
                 "شغّل وكيل GitHub Codespaces للهدف الهندسي",
                 "zapier action: <app>/<action> params:{...}",
-                "فوّض إلى Claude Code خطة تنفيذ هذا الهدف بعد الموافقة",
+                "حضّر مهمة GitHub Codespaces أو n8n أو Zapier MCP مع إيصال واضح",
             ],
         }
 
@@ -1641,7 +1583,6 @@ class ToolExecutor:
             "huggingface_local",
             "openrouter",
             "github_codespaces",
-            "supabase",
             "n8n_local",
             "kali_wsl",
             "zapier_mcp",
@@ -1993,83 +1934,9 @@ class ToolExecutor:
         args: dict[str, Any],
         _context: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        requested_provider = str(args.get("provider") or "auto").strip().lower()
-        aliases = {
-            "claude": "claude_code",
-            "claude-code": "claude_code",
-            "best": "auto",
-            "available": "auto",
-        }
-        requested_provider = aliases.get(requested_provider, requested_provider)
-        provider = (
-            self._select_delegate_provider()
-            if requested_provider == "auto"
-            else requested_provider
-        )
-        objective = " ".join(str(args.get("objective") or prompt).split()).strip()
-        if not objective:
-            raise ValueError("agent_delegate requires an objective")
-        if len(objective) > 8_000:
-            raise ValueError("agent_delegate objective is limited to 8,000 characters")
-        mode = str(args.get("mode") or "plan").strip().lower()
-        if mode not in {"plan", "execute"}:
-            raise ValueError("agent_delegate mode must be plan or execute")
-
-        if provider == "claude_code":
-            executable = shutil.which("claude")
-            if not executable:
-                raise RuntimeError("Claude Code CLI is not installed")
-            try:
-                budget = max(0.1, min(5.0, float(args.get("max_budget_usd", 1.0))))
-            except (TypeError, ValueError) as exc:
-                raise ValueError("max_budget_usd must be numeric") from exc
-            timeout = max(30, min(900, int(args.get("timeout_seconds", 300))))
-            result = self._run(
-                [
-                    executable,
-                    "-p",
-                    objective,
-                    "--output-format",
-                    "json",
-                    "--permission-mode",
-                    "acceptEdits" if mode == "execute" else "plan",
-                    "--max-budget-usd",
-                    str(budget),
-                    "--no-session-persistence",
-                    "--name",
-                    "FATHIYA delegated agent",
-                ],
-                cwd=self.config.repo_root,
-                timeout=timeout,
-            )
-            try:
-                response: Any = json.loads(result["stdout"])
-            except json.JSONDecodeError:
-                response = result["stdout"][:20_000]
-            return {
-                "provider": provider,
-                "requested_provider": requested_provider,
-                "connection_mode": "local_cli",
-                "mode": mode,
-                "delegated": result["return_code"] == 0,
-                "execution_failed": result["return_code"] != 0,
-                "error": result["stderr"] or None,
-                "response": response,
-                "return_code": result["return_code"],
-            }
-
-        raise ValueError("agent_delegate provider must be auto or claude_code")
-
-    def _select_delegate_provider(self) -> str:
-        claude = self._probe_cli(
-            "claude",
-            ("--version",),
-            auth_args=("auth", "status"),
-        )
-        if claude.get("authenticated"):
-            return "claude_code"
-        raise RuntimeError(
-            "No authenticated delegated agent is ready; connect Claude Code or run connected Zapier actions directly"
+        raise ValueError(
+            "agent_delegate is excluded in this FATHIYA build; use GitHub Codespaces, "
+            "Zapier MCP, n8n, VS Code, Genspark Claw, or Bolt routes instead."
         )
 
     def _canonical_repo_url(self) -> str:
@@ -2754,10 +2621,6 @@ class ToolExecutor:
             identity_signal=identity_signal,
             focused_console_signal=focused_console_signal,
             command_signal=command_signal,
-            store=self.config.store,
-            supabase_configured=bool(
-                self.config.supabase_url and self.config.supabase_service_role_key
-            ),
         )
         return {
             "available": True,
@@ -2778,11 +2641,7 @@ class ToolExecutor:
                 "fathiya_identity": identity_signal,
                 "focused_operator_console": focused_console_signal,
                 "command_center": command_signal,
-                "supabase_active_store": self.config.store == "supabase",
-                "supabase_configured": bool(
-                    self.config.supabase_url
-                    and self.config.supabase_service_role_key
-                ),
+                "local_api_bridge": True,
             },
             "checks": checks,
             "next_actions": next_actions,
@@ -5515,7 +5374,7 @@ def _agent_mesh_requests_trading_start(prompt: str) -> bool:
 
 def _is_visible_agent_provider_app(app: str) -> bool:
     normalized = app.strip().casefold()
-    return bool(normalized)
+    return bool(normalized) and normalized not in EXCLUDED_AGENT_PROVIDER_APPS
 
 
 def _string_list(value: Any) -> list[str]:
@@ -5853,7 +5712,6 @@ def _merge_live_local_tools(
         for item in static_tools
     }
     capability_names = {
-        "claude_code": "Claude Code",
         "github_cli": "GitHub CLI",
         "github_codespaces": "GitHub Codespaces",
         "docker": "Docker",
@@ -6898,16 +6756,6 @@ def _agent_mesh_next_actions(
             "Codespaces جاهز كبيئة هندسية بعيدة، والوكيل يقدر يجهز خطة تشغيل قراءة فقط مع إيصال.",
             integration_id="github_codespaces",
         )
-    if integration_probes.get("supabase", {}).get("status") != "ready":
-        add(
-            "configure_supabase_control_plane",
-            "ربط قناة Supabase",
-            "integration probe: supabase",
-            "ربط الموقع الإنتاجي بالمشغل المحلي يحتاج SUPABASE_URL ومفتاح خدمة محفوظين محليًا.",
-            ui_action="settings",
-            settings_group="supabase",
-            integration_id="supabase",
-        )
     if not n8n_workflows.get("available"):
         add(
             "configure_n8n_api",
@@ -7407,7 +7255,7 @@ def _agent_provider_names(inventory: dict[str, Any]) -> list[str]:
     actions = inventory.get("agent_provider_actions")
     if not isinstance(actions, dict):
         return []
-    preferred = ["Cursor", "Manus", "ChatGPT (OpenAI)", "Agents", "Apify", "Netlify"]
+    preferred = ["ChatGPT (OpenAI)", "Agents", "Apify", "Netlify"]
     names = [name for name in preferred if name in actions and not _hidden_agent_provider_name(name)]
     names.extend(
         sorted(
@@ -7514,8 +7362,6 @@ def _production_audit_next_actions(
     identity_signal: bool,
     focused_console_signal: bool,
     command_signal: bool,
-    store: str,
-    supabase_configured: bool,
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     if not root_ok:
@@ -7552,15 +7398,6 @@ def _production_audit_next_actions(
                 "title": "نشر واجهة التشغيل المركزة",
                 "reason": "الإنتاج لا يثبت وجود أقسام التداول وصيد الثغرات والمعرفة والأدوات.",
                 "owner": "frontend",
-            }
-        )
-    if store != "supabase" or not supabase_configured:
-        actions.append(
-            {
-                "id": "activate_supabase_channel",
-                "title": "ربط قناة الإنتاج",
-                "reason": "المحلي يعمل على SQLite؛ قناة مهام الإنتاج تحتاج Supabase قبل استقبال أوامر fathya-core.com.",
-                "owner": "runtime",
             }
         )
     return actions or [
@@ -7612,7 +7449,6 @@ def _agent_mesh_activation_plan(
         "n8n_local",
         "kali_wsl",
         "github_codespaces",
-        "supabase",
         "broker_testnet",
         "local_execution_mesh",
     ]

@@ -1,5 +1,3 @@
-import type { Session } from "@supabase/supabase-js";
-
 const configuredLocalUrl = import.meta.env.VITE_FATHIYA_LOCAL_API_URL?.replace(/\/+$/, "");
 const loopbackUrl = /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/;
 
@@ -10,8 +8,12 @@ export const localAgentRuntimeUrl =
 
 export const isLocalAgentRuntime = Boolean(localAgentRuntimeUrl);
 
+type AgentApiSession = {
+  access_token: string;
+};
+
 export async function agentApi<T>(
-  session: Session | null,
+  session: AgentApiSession | null,
   path: string,
   init?: RequestInit,
 ): Promise<T> {

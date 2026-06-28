@@ -9,6 +9,9 @@ from .trading import BinanceSpotTestnetGateway
 from .zapier_mcp import ZapierTokenStore
 
 
+EXCLUDED_INTEGRATION_IDS = {"supabase"}
+
+
 def build_integration_readiness(
     config: RuntimeConfig,
     connectors: list[dict[str, Any]],
@@ -148,15 +151,6 @@ def build_integration_readiness(
         or "gh auth login -h github.com -p https -s repo,workflow,read:org,gist,codespace -w"
     )
 
-    supabase_missing = [
-        name
-        for name, value in (
-            ("SUPABASE_URL", config.supabase_url),
-            ("SUPABASE_SERVICE_ROLE_KEY", config.supabase_service_role_key),
-        )
-        if not value
-    ]
-    supabase_active = not supabase_missing and config.store == "supabase"
     core_ready_count = int(
         (local_capabilities or {}).get("core_ready_count") or len(ready_capabilities)
     )
@@ -352,53 +346,6 @@ def build_integration_readiness(
             },
         },
         {
-            "id": "supabase",
-            "name": "Supabase",
-            "category": "control_plane",
-            "status": (
-                "ready"
-                if supabase_active
-                else "partial"
-                if not supabase_missing
-                else "needs_setup"
-            ),
-            "connection_mode": "server_api_key",
-            "account_required": True,
-            "credential_policy": "local_server_only",
-            "summary": "قناة المهام الإنتاجية مفعلة."
-            if supabase_active
-            else "بيانات Supabase محفوظة، والمشغّل الحالي ما زال على SQLite."
-            if not supabase_missing
-            else "المشغّل المحلي يعمل على SQLite؛ قناة الإنتاج غير مربوطة.",
-            "next_step": "لا إجراء مطلوب."
-            if supabase_active
-            else (
-                "طبّق supabase/migrations/20260604120000_agent_runtime_v1.sql "
-                "ثم أعد تشغيل المشغّل بوضع Supabase."
-            )
-            if not supabase_missing
-            else (
-                "طبّق supabase/migrations/20260604120000_agent_runtime_v1.sql، "
-                "ثم أدخل URL ومفتاح الخدمة من إعداد Supabase المحلي."
-            ),
-            "missing_env": supabase_missing,
-            "connected_apps": [],
-            "settings_path": "/api/agent/settings/supabase",
-            "settings_label": "إعداد Supabase محليًا",
-            "probe_path": "/api/agent/integrations/supabase/probe",
-            "probe_label": "اختبار القناة",
-            "task_label": "تشغيل وكيل القناة",
-            "task_prompt": (
-                "integration probe: supabase\n"
-                "افحص قناة Supabase للموقع والمشغل المحلي دون كشف المفاتيح، ثم سجل إيصالًا."
-            ),
-            "details": {
-                "active_store": config.store,
-                "restart_required": not supabase_active,
-                "migration_path": "supabase/migrations/20260604120000_agent_runtime_v1.sql",
-            },
-        },
-        {
             "id": "n8n_local",
             "name": "n8n المحلي",
             "category": "automation",
@@ -591,6 +538,11 @@ def build_integration_readiness(
                 "real_funds_possible": False,
             },
         },
+    ]
+    integrations = [
+        item
+        for item in integrations
+        if str(item.get("id") or "") not in EXCLUDED_INTEGRATION_IDS
     ]
 
     return {

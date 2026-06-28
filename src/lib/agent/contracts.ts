@@ -1,4 +1,4 @@
-import type { Json } from "@/integrations/supabase/types";
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export const AGENT_TASK_STATUSES = [
   "queued",
@@ -279,6 +279,34 @@ export type AgentIntegrationSummary = {
   partial: number;
   needs_setup: number;
   needs_operator: number;
+};
+
+export type AgentRuntimeCapability = {
+  id: string;
+  name: string;
+  installed?: boolean;
+  available?: boolean;
+  status: AgentIntegrationStatus | "active" | "degraded" | "unavailable" | string;
+  execution_mode?: string | null;
+  requires_approval?: boolean;
+  required_for_core?: boolean;
+  optional?: boolean;
+  [key: string]: Json | undefined;
+};
+
+export type AgentRuntimeCapabilityInventory = {
+  available: boolean;
+  captured_at: string;
+  ready_count: number;
+  core_ready_count: number;
+  core_capability_count: number;
+  optional_capability_count: number;
+  optional_attention_count: number;
+  partial_count: number;
+  unavailable_count: number;
+  capability_count: number;
+  capabilities: AgentRuntimeCapability[];
+  cached?: boolean;
 };
 
 export type AgentMeshLane = {
