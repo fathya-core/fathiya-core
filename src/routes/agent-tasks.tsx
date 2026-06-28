@@ -99,7 +99,7 @@ const EXCLUDED_TOOL_PATTERN = new RegExp(
 const STATUS_LABELS: Record<AgentTaskStatus, string> = {
   queued: "في الطابور",
   running: "قيد التنفيذ",
-  awaiting_approval: "بانتظار الموافقة",
+  awaiting_approval: "بانتظار إجراء يدوي",
   completed: "مكتملة",
   failed: "فشلت",
   stalled: "متوقفة",
@@ -622,7 +622,6 @@ function AgentTasksPage() {
                     void loadDetail(task.id);
                   }}
                   busyAction={busyAction}
-                  onApprove={() => void taskAction("approve")}
                   onCancel={() => void taskAction("cancel")}
                 />
               )}
@@ -644,7 +643,6 @@ function AgentTasksPage() {
               detail={detail}
               health={health}
               trading={trading}
-              onApprove={() => void taskAction("approve")}
               onCancel={() => void taskAction("cancel")}
               busyAction={busyAction}
             />
@@ -672,9 +670,10 @@ function TopBar({
 }) {
   const runtimeOk = health?.status === "ok";
   const connectedTools =
+    mesh?.summary.integration_ready ??
     mesh?.summary.connected_app_ready_count ??
     mesh?.summary.agent_provider_ready_count ??
-    mesh?.summary.integration_ready ??
+    mesh?.summary.tool_count ??
     0;
 
   return (
@@ -705,7 +704,7 @@ function TopBar({
             value={trading?.running ? "يعمل" : "متوقف"}
             tone={trading?.running ? "good" : "muted"}
           />
-          <StatusTile icon={Cable} label="الأدوات" value={`${connectedTools} متصل`} tone="info" />
+          <StatusTile icon={Cable} label="الأدوات" value={`${connectedTools} جاهز`} tone="info" />
           <div className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-700 text-xs font-bold">
               {operatorName.slice(0, 1).toUpperCase()}
@@ -799,7 +798,7 @@ function OverviewStation({
             ["نطاق العمل", "مصرح فقط"],
             ["بوابة الديدوب", "إلزامية"],
             ["الأدلة", "طلبات/صور/PoC"],
-            ["الرفع الخارجي", "بعد موافقة"],
+            ["الرفع الخارجي", "يدوي عند الطلب"],
           ]}
           actionLabel="ابدأ صيد هدف"
           actionIcon={ShieldQuestion}
@@ -1411,14 +1410,12 @@ function ReportsStation({
   selectedTaskId,
   onSelect,
   busyAction,
-  onApprove,
   onCancel,
 }: {
   tasks: AgentTask[];
   selectedTaskId: string | null;
   onSelect: (task: AgentTask) => void;
   busyAction: string | null;
-  onApprove: () => void;
   onCancel: () => void;
 }) {
   return (
@@ -1426,20 +1423,13 @@ function ReportsStation({
       <StationHeader
         icon={FileCheck2}
         title="التقارير والإيصالات"
-        description="هنا تظهر كل مهمة، حالتها، التقدم، آخر إيصال، وما يحتاج موافقة."
+        description="هنا تظهر كل مهمة، حالتها، التقدم، وآخر إيصال بدون إيقاف أوامر التشغيل الداخلية."
       />
 
       <section className="rounded-lg border border-sky-400/20 bg-[#0b121a]/90 p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-white">سجل المهام</h2>
           <div className="flex gap-2">
-            <ActionButton
-              icon={CheckCircle2}
-              label="موافقة"
-              variant="outline"
-              busy={busyAction === "task:approve"}
-              onClick={onApprove}
-            />
             <ActionButton
               icon={XCircle}
               label="إلغاء"
@@ -1542,7 +1532,6 @@ function InspectorPanel({
   detail,
   health,
   trading,
-  onApprove,
   onCancel,
   busyAction,
 }: {
@@ -1550,7 +1539,6 @@ function InspectorPanel({
   detail: AgentTaskDetail | null;
   health: AgentRuntimeHealth | null;
   trading: AgentTradingStatus | null;
-  onApprove: () => void;
   onCancel: () => void;
   busyAction: string | null;
 }) {
@@ -1588,18 +1576,11 @@ function InspectorPanel({
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                     <InfoBox label="الخطر" value={riskLabel(task.risk_class)} />
-                    <InfoBox label="الموافقة" value={approvalLabel(task.approval_state)} />
+                    <InfoBox label="التنفيذ" value={approvalLabel(task.approval_state)} />
                     <InfoBox label="آخر تحديث" value={formatDate(task.updated_at)} />
                     <InfoBox label="آخر إيصال" value={task.latest_receipt_id ?? "لا يوجد"} />
                   </div>
                   <div className="mt-4 flex gap-2">
-                    <ActionButton
-                      icon={CheckCircle2}
-                      label="موافقة"
-                      variant="outline"
-                      busy={busyAction === "task:approve"}
-                      onClick={onApprove}
-                    />
                     <ActionButton
                       icon={XCircle}
                       label="إلغاء"
@@ -2149,9 +2130,9 @@ function riskLabel(value: AgentTask["risk_class"]) {
 
 function approvalLabel(value: AgentTask["approval_state"]) {
   const labels: Record<string, string> = {
-    not_required: "غير مطلوبة",
-    pending: "معلقة",
-    approved: "موافق",
+    not_required: "مباشر",
+    pending: "مؤجل يدوي",
+    approved: "مفعل",
     rejected: "مرفوض",
   };
   return labels[value] ?? value;
