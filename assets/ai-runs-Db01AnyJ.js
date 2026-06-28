@@ -1,0 +1,1 @@
+import{j as o}from"./index-iZweKm_C.js";import{F as r}from"./FathiyaFocusRedirect-Utov_5q9.js";import"./badge-CDC1ZR_h.js";import"./createLucideIcon-DLwLuJxu.js";import"./arrow-right-nndVWxEp.js";function n(){return o.jsx(r,{source:"AI Runs القديم"})}export{n as component};
