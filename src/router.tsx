@@ -57,6 +57,10 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
 export const getRouter = () => {
   const router = createRouter({
     routeTree,
+    basepath:
+      typeof window !== "undefined" && window.location.pathname.startsWith("/fathiya-core/")
+        ? "/fathiya-core"
+        : "",
     context: {},
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,

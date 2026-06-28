@@ -1,4 +1,4 @@
-name: Deploy FATHIYA Operator To GitHub Pages
+name: Deploy FATHIYA App To GitHub Pages
 
 on:
   push:
@@ -30,14 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static operator
+      - name: Build FATHIYA app
         run: npm run build
 
       - name: Prepare Pages artifact
         shell: bash
         run: |
+          test -f dist/client/index.html
           test -f dist/client/agent-tasks/index.html
-          cp dist/client/agent-tasks/index.html dist/client/index.html
           touch dist/client/.nojekyll
 
       - name: Publish gh-pages branch
