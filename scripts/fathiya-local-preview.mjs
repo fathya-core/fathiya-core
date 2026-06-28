@@ -56,7 +56,13 @@ async function proxyApi(req, res, pathname) {
 
 function serveStatic(req, res, pathname) {
   const decoded = decodeURIComponent(pathname);
-  const target = normalize(join(clientRoot, decoded));
+  let target = normalize(join(clientRoot, decoded));
+  if (!isInside(clientRoot, target) || !existsSync(target)) {
+    return false;
+  }
+  if (statSync(target).isDirectory()) {
+    target = join(target, "index.html");
+  }
   if (!isInside(clientRoot, target) || !existsSync(target) || !statSync(target).isFile()) {
     return false;
   }
